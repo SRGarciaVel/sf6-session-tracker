@@ -10,7 +10,7 @@
     "build:worker": "esbuild src/worker/index.ts --bundle --platform=node --target=node22 --format=esm --packages=external --tsconfig=tsconfig.json --outfile=dist/worker.mjs",
     "start": "next start",
     "start:worker": "node dist/worker.mjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

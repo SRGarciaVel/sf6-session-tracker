@@ -36,7 +36,7 @@ export class ResilientProvider implements SF6DataProvider {
   }
 
   getPlayerProfile(cfnUserId: string): Promise<NormalizedPlayerProfile> {
-    return this.run(`profile:${cfnUserId}`, async (signal) => {
+    return this.run(`profile:${cfnUserId}`, true, async (signal) => {
       const raw = await this.inner.getPlayerProfile(cfnUserId, { signal });
       const parsed = normalizedProfileSchema.safeParse(raw);
       if (!parsed.success) {
@@ -48,8 +48,9 @@ export class ResilientProvider implements SF6DataProvider {
     });
   }
 
+  /** Single-flight but never cached: match lists are the freshness-critical data. */
   getRecentMatches(cfnUserId: string): Promise<NormalizedSF6Match[]> {
-    return this.run(`matches:${cfnUserId}`, async (signal) => {
+    return this.run(`matches:${cfnUserId}`, false, async (signal) => {
       const raw = await this.inner.getRecentMatches(cfnUserId, { signal });
       if (!Array.isArray(raw)) {
         throw new SF6ProviderError("invalid_response", "Provider returned a non-array match list");
@@ -64,14 +65,17 @@ export class ResilientProvider implements SF6DataProvider {
     });
   }
 
-  /** Drop cached results for a player (e.g. right after simulating a mock match). */
+  /** Drop the cached profile for a player. */
   invalidate(cfnUserId: string): void {
     this.cache.delete(`profile:${cfnUserId}`);
-    this.cache.delete(`matches:${cfnUserId}`);
   }
 
-  private async run<T>(key: string, fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
-    const cached = this.cache.get(key);
+  private async run<T>(
+    key: string,
+    cacheable: boolean,
+    fn: (signal: AbortSignal) => Promise<T>,
+  ): Promise<T> {
+    const cached = cacheable ? this.cache.get(key) : undefined;
     if (cached && cached.expiresAt > Date.now()) return cached.value as T;
 
     const existing = this.inflight.get(key);
@@ -79,7 +83,7 @@ export class ResilientProvider implements SF6DataProvider {
 
     const promise = this.withTimeout(fn)
       .then((value) => {
-        if (this.options.cacheTtlMs > 0) {
+        if (cacheable && this.options.cacheTtlMs > 0) {
           this.cache.set(key, { value, expiresAt: Date.now() + this.options.cacheTtlMs });
           this.pruneCache();
         }

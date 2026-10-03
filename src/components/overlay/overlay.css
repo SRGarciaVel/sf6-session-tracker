@@ -1,0 +1,332 @@
+/*
+ * OBS overlay styles. Hand-written on purpose (no Tailwind) so they render identically in
+ * OBS's embedded Chromium (CEF): no oklch(), color-mix(), container queries or :has().
+ * Everything is sized in `em`, relative to the root font-size computed for the canvas.
+ */
+
+.sf6-overlay {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0.4em;
+  overflow: hidden;
+  color: var(--ov-text);
+  font-family: var(--ov-font), "Segoe UI", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  user-select: none;
+}
+
+.sf6-overlay *,
+.sf6-overlay *::before,
+.sf6-overlay *::after {
+  box-sizing: border-box;
+}
+
+.sf6-overlay.ov-align-left {
+  justify-content: flex-start;
+}
+.sf6-overlay.ov-align-center {
+  justify-content: center;
+}
+.sf6-overlay.ov-align-right {
+  justify-content: flex-end;
+}
+
+/* Legible over any gameplay, even with a fully transparent background. */
+.sf6-overlay .ov-shadow {
+  text-shadow:
+    0 0.05em 0.12em rgba(0, 0, 0, 0.75),
+    0 0 0.4em rgba(0, 0, 0, 0.35);
+}
+
+.ov-panel {
+  display: flex;
+  align-items: center;
+  gap: var(--ov-gap);
+  padding: 0.55em 0.9em;
+  background: var(--ov-bg);
+  border: var(--ov-border);
+  border-radius: var(--ov-radius);
+}
+
+.ov-win {
+  color: var(--ov-win);
+}
+.ov-loss {
+  color: var(--ov-loss);
+}
+.ov-accent {
+  color: var(--ov-accent);
+}
+.ov-muted {
+  color: var(--ov-muted);
+}
+.ov-pos {
+  color: var(--ov-win);
+}
+.ov-neg {
+  color: var(--ov-loss);
+}
+.ov-neutral {
+  color: var(--ov-muted);
+}
+
+/* ── Animated values ─────────────────────────────────────────────── */
+
+.ov-num {
+  display: inline-block;
+}
+
+@keyframes ov-tick {
+  0% {
+    transform: translateY(-0.3em);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes ov-glow {
+  0% {
+    filter: brightness(1.6);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+
+.ov-animate .ov-num.ov-changed {
+  animation:
+    ov-tick 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
+    ov-glow 900ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ov-animate .ov-num.ov-changed {
+    animation: none;
+  }
+}
+
+/* ── Recent form chips ───────────────────────────────────────────── */
+
+.ov-form {
+  display: flex;
+  gap: 0.22em;
+}
+
+.ov-form-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15em;
+  height: 1.15em;
+  border-radius: 0.2em;
+  font-size: 0.62em;
+  font-weight: 700;
+  color: #0b0c10;
+  text-shadow: none;
+}
+.ov-form-chip.ov-r-win {
+  background: var(--ov-win);
+}
+.ov-form-chip.ov-r-loss {
+  background: var(--ov-loss);
+}
+.ov-form-chip.ov-r-draw {
+  background: var(--ov-muted);
+}
+
+/* ── Theme: Minimal ──────────────────────────────────────────────── */
+
+.ov-minimal {
+  font-size: 1.35em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ov-minimal .ov-sep {
+  color: var(--ov-accent);
+  opacity: 0.8;
+}
+
+.ov-minimal .ov-unit {
+  margin-left: 0.08em;
+  font-size: 0.8em;
+}
+
+.ov-minimal .ov-delta {
+  margin-left: 0.3em;
+  font-size: 0.8em;
+}
+
+/* ── Theme: Competitive ──────────────────────────────────────────── */
+
+.ov-competitive {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45em;
+}
+
+.ov-competitive .ov-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1em;
+  font-size: 0.62em;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.ov-competitive .ov-title {
+  color: var(--ov-accent);
+}
+
+.ov-competitive .ov-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ov-gap);
+}
+
+.ov-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  min-width: 0;
+}
+
+.ov-stat-label {
+  font-size: 0.55em;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ov-muted);
+}
+
+.ov-stat-value {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25em;
+  font-size: 1.9em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ov-stat-sub {
+  font-size: 0.5em;
+  font-weight: 700;
+}
+
+.ov-competitive .ov-divider {
+  align-self: stretch;
+  width: 0.08em;
+  background: var(--ov-muted);
+  opacity: 0.35;
+}
+
+/* ── Theme: Fighter ──────────────────────────────────────────────── */
+
+.ov-fighter {
+  display: flex;
+  align-items: stretch;
+  gap: 0.35em;
+  padding-left: 0.4em;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.ov-f-block {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0.35em 0.85em;
+  background: var(--ov-bg);
+  border: var(--ov-border);
+  transform: skewX(-12deg);
+}
+
+.ov-f-block.ov-f-main {
+  border-left: 0.32em solid var(--ov-accent);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.035) 0,
+    rgba(255, 255, 255, 0.035) 0.12em,
+    transparent 0.12em,
+    transparent 0.45em
+  );
+  background-color: var(--ov-bg);
+}
+
+.ov-f-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  transform: skewX(12deg);
+}
+
+.ov-f-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12em;
+}
+
+.ov-f-label {
+  font-size: 0.62em;
+  letter-spacing: 0.16em;
+  color: var(--ov-muted);
+}
+
+.ov-f-big {
+  font-size: 2.6em;
+  line-height: 0.9;
+  white-space: nowrap;
+}
+
+.ov-f-mid {
+  font-size: 1.7em;
+  line-height: 0.95;
+  white-space: nowrap;
+}
+
+.ov-f-score .ov-f-dash {
+  margin: 0 0.12em;
+  color: var(--ov-muted);
+}
+
+.ov-f-badge {
+  display: inline-block;
+  padding: 0.12em 0.35em 0.06em;
+  font-size: 0.9em;
+  line-height: 1;
+  color: #0b0c10;
+  text-shadow: none;
+}
+.ov-f-badge.ov-pos {
+  background: var(--ov-win);
+  color: #0b0c10;
+}
+.ov-f-badge.ov-neg {
+  background: var(--ov-loss);
+  color: #0b0c10;
+}
+.ov-f-badge.ov-neutral {
+  background: var(--ov-muted);
+  color: #0b0c10;
+}
+
+.ov-f-streak {
+  background: var(--ov-accent);
+  color: #0b0c10;
+  text-shadow: none;
+}
+.ov-f-streak .ov-f-label {
+  color: rgba(11, 12, 16, 0.75);
+}
