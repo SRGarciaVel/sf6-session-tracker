@@ -7,12 +7,18 @@ import { createOverlay } from "@/server/overlays/service";
 import { publishEvent } from "@/server/realtime/events";
 import { playerRating } from "@/server/sessions/mappers";
 
-export async function findPlayerByUserId(db: DbExecutor, userId: string): Promise<Sf6PlayerRow | null> {
+export async function findPlayerByUserId(
+  db: DbExecutor,
+  userId: string,
+): Promise<Sf6PlayerRow | null> {
   const [row] = await db.select().from(sf6Player).where(eq(sf6Player.userId, userId)).limit(1);
   return row ?? null;
 }
 
-export async function findPlayerById(db: DbExecutor, playerId: string): Promise<Sf6PlayerRow | null> {
+export async function findPlayerById(
+  db: DbExecutor,
+  playerId: string,
+): Promise<Sf6PlayerRow | null> {
   const [row] = await db.select().from(sf6Player).where(eq(sf6Player.id, playerId)).limit(1);
   return row ?? null;
 }

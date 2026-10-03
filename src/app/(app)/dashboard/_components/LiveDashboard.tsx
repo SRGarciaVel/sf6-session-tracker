@@ -1,7 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useEventStream, type StreamStatus } from "@/lib/use-event-stream";
 import type { DashboardLiveState } from "@/server/dashboard/state";
 
@@ -23,7 +31,13 @@ function isDashboardState(data: unknown): data is DashboardLiveState {
 }
 
 /** Holds the authoritative dashboard state, replaced wholesale by each SSE snapshot. */
-export function LiveDashboardProvider({ initial, children }: { initial: DashboardLiveState; children: ReactNode }) {
+export function LiveDashboardProvider({
+  initial,
+  children,
+}: {
+  initial: DashboardLiveState;
+  children: ReactNode;
+}) {
   const router = useRouter();
   const [state, setState] = useState(initial);
 
@@ -48,12 +62,21 @@ export function LiveDashboardProvider({ initial, children }: { initial: Dashboar
 
   const apply = useCallback((data: unknown) => {
     if (!isDashboardState(data)) return;
-    setState((current) => (data.live.generatedAt >= current.live.generatedAt || data.overlayConnections !== current.overlayConnections ? data : current));
+    setState((current) =>
+      data.live.generatedAt >= current.live.generatedAt ||
+      data.overlayConnections !== current.overlayConnections
+        ? data
+        : current,
+    );
   }, []);
 
   const stream = useEventStream({ url: "/api/me/stream", handlers: { dashboard: apply } });
 
-  return <LiveDashboardContext.Provider value={{ state, stream }}>{children}</LiveDashboardContext.Provider>;
+  return (
+    <LiveDashboardContext.Provider value={{ state, stream }}>
+      {children}
+    </LiveDashboardContext.Provider>
+  );
 }
 
 /** Re-renders every `intervalMs`; null on the server/first paint to avoid hydration mismatches. */

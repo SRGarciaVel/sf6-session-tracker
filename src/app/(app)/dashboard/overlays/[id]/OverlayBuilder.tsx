@@ -35,7 +35,9 @@ const PREVIEW_BG: Record<PreviewBg, string> = {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="space-y-3 border-b border-line px-5 py-5 last:border-b-0">
-      <h3 className="font-display text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">{title}</h3>
+      <h3 className="font-display text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">
+        {title}
+      </h3>
       {children}
     </section>
   );
@@ -51,7 +53,10 @@ function Segmented<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="inline-flex rounded-md border border-line-strong bg-surface-2 p-0.5" role="radiogroup">
+    <div
+      className="inline-flex rounded-md border border-line-strong bg-surface-2 p-0.5"
+      role="radiogroup"
+    >
       {options.map((o) => (
         <button
           key={o.value}
@@ -61,7 +66,9 @@ function Segmented<T extends string>({
           onClick={() => onChange(o.value)}
           className={cx(
             "rounded px-3 py-1.5 text-xs font-medium transition-colors",
-            value === o.value ? "bg-surface-3 text-text shadow-[inset_0_0_0_1px_var(--color-line-strong)]" : "text-muted hover:text-text",
+            value === o.value
+              ? "bg-surface-3 text-text shadow-[inset_0_0_0_1px_var(--color-line-strong)]"
+              : "text-muted hover:text-text",
           )}
         >
           {o.label}
@@ -71,7 +78,15 @@ function Segmented<T extends string>({
   );
 }
 
-function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+function Toggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
   return (
     <label className="flex cursor-pointer items-center justify-between gap-3 text-sm">
       <span>{label}</span>
@@ -80,9 +95,17 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={cx("relative h-5 w-9 rounded-full transition-colors", checked ? "bg-accent" : "bg-line-strong")}
+        className={cx(
+          "relative h-5 w-9 rounded-full transition-colors",
+          checked ? "bg-accent" : "bg-line-strong",
+        )}
       >
-        <span className={cx("absolute top-0.5 left-0 size-4 rounded-full bg-text transition-transform", checked ? "translate-x-4.5" : "translate-x-0.5")} />
+        <span
+          className={cx(
+            "absolute top-0.5 left-0 size-4 rounded-full bg-text transition-transform",
+            checked ? "translate-x-4.5" : "translate-x-0.5",
+          )}
+        />
       </button>
     </label>
   );
@@ -124,7 +147,15 @@ function Slider({
   );
 }
 
-function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   const [draft, setDraft] = useState(value);
   const [prev, setPrev] = useState(value);
   if (value !== prev) {
@@ -256,7 +287,14 @@ export function OverlayBuilder({
         </div>
         <div className="flex items-center gap-3">
           {dirty ? <Badge tone="warn">Unsaved changes</Badge> : <Badge tone="win">Saved</Badge>}
-          <Button variant="ghost" onClick={() => { setConfig(saved.config); setName(saved.name); }} disabled={!dirty || pending}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setConfig(saved.config);
+              setName(saved.name);
+            }}
+            disabled={!dirty || pending}
+          >
             Discard
           </Button>
           <Button variant="primary" onClick={save} disabled={!dirty || pending}>
@@ -265,7 +303,10 @@ export function OverlayBuilder({
         </div>
       </div>
       {message && (
-        <p role="status" className={cx("text-sm", message.tone === "ok" ? "text-win" : "text-loss")}>
+        <p
+          role="status"
+          className={cx("text-sm", message.tone === "ok" ? "text-win" : "text-loss")}
+        >
           {message.text}
         </p>
       )}
@@ -274,7 +315,12 @@ export function OverlayBuilder({
         {/* Controls */}
         <div className="overflow-hidden rounded-xl border border-line bg-surface lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
           <Section title="Name">
-            <Input value={name} maxLength={40} onChange={(e) => setName(e.target.value)} aria-label="Overlay name" />
+            <Input
+              value={name}
+              maxLength={40}
+              onChange={(e) => setName(e.target.value)}
+              aria-label="Overlay name"
+            />
           </Section>
 
           <Section title="Theme">
@@ -286,11 +332,17 @@ export function OverlayBuilder({
                   onClick={() => setConfig((c) => applyThemeDefaults(c, t))}
                   className={cx(
                     "rounded-lg border p-3 text-left transition-colors",
-                    config.theme === t ? "border-accent bg-accent/5" : "border-line-strong hover:border-faint",
+                    config.theme === t
+                      ? "border-accent bg-accent/5"
+                      : "border-line-strong hover:border-faint",
                   )}
                 >
-                  <span className="font-display text-sm font-semibold">{OVERLAY_THEME_META[t].name}</span>
-                  <span className="block text-xs text-muted">{OVERLAY_THEME_META[t].description}</span>
+                  <span className="font-display text-sm font-semibold">
+                    {OVERLAY_THEME_META[t].name}
+                  </span>
+                  <span className="block text-xs text-muted">
+                    {OVERLAY_THEME_META[t].description}
+                  </span>
                 </button>
               ))}
             </div>
@@ -300,10 +352,14 @@ export function OverlayBuilder({
             <Segmented<OverlayPresetId>
               value={config.preset}
               onChange={(v) => set("preset", v)}
-              options={(Object.keys(OVERLAY_PRESETS) as OverlayPresetId[]).map((p) => ({ value: p, label: OVERLAY_PRESETS[p].label }))}
+              options={(Object.keys(OVERLAY_PRESETS) as OverlayPresetId[]).map((p) => ({
+                value: p,
+                label: OVERLAY_PRESETS[p].label,
+              }))}
             />
             <p className="text-xs text-faint">
-              OBS Browser Source: {preset.width} × {preset.height}. Any size works — the overlay scales to fit.
+              OBS Browser Source: {preset.width} × {preset.height}. Any size works — the overlay
+              scales to fit.
             </p>
           </Section>
 
@@ -326,7 +382,12 @@ export function OverlayBuilder({
           <Section title="Text">
             <label className="block text-sm">
               <span className="mb-1.5 block">Title</span>
-              <Input value={config.title} maxLength={24} onChange={(e) => set("title", e.target.value)} placeholder="SESSION" />
+              <Input
+                value={config.title}
+                maxLength={24}
+                onChange={(e) => set("title", e.target.value)}
+                placeholder="SESSION"
+              />
             </label>
             <label className="block text-sm">
               <span className="mb-1.5 block">Font</span>
@@ -345,28 +406,92 @@ export function OverlayBuilder({
           </Section>
 
           <Section title="Colors">
-            <ColorField label="Text" value={config.textColor} onChange={(v) => set("textColor", v)} />
-            <ColorField label="Labels" value={config.mutedColor} onChange={(v) => set("mutedColor", v)} />
-            <ColorField label="Accent" value={config.accentColor} onChange={(v) => set("accentColor", v)} />
-            <ColorField label="Wins / positive" value={config.winColor} onChange={(v) => set("winColor", v)} />
-            <ColorField label="Losses / negative" value={config.lossColor} onChange={(v) => set("lossColor", v)} />
+            <ColorField
+              label="Text"
+              value={config.textColor}
+              onChange={(v) => set("textColor", v)}
+            />
+            <ColorField
+              label="Labels"
+              value={config.mutedColor}
+              onChange={(v) => set("mutedColor", v)}
+            />
+            <ColorField
+              label="Accent"
+              value={config.accentColor}
+              onChange={(v) => set("accentColor", v)}
+            />
+            <ColorField
+              label="Wins / positive"
+              value={config.winColor}
+              onChange={(v) => set("winColor", v)}
+            />
+            <ColorField
+              label="Losses / negative"
+              value={config.lossColor}
+              onChange={(v) => set("lossColor", v)}
+            />
           </Section>
 
           <Section title="Background">
-            <ColorField label="Color" value={config.backgroundColor} onChange={(v) => set("backgroundColor", v)} />
-            <Slider label="Opacity" value={config.backgroundOpacity} min={0} max={1} step={0.01} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => set("backgroundOpacity", v)} />
-            <Toggle label="Border" checked={config.borderEnabled} onChange={(v) => set("borderEnabled", v)} />
+            <ColorField
+              label="Color"
+              value={config.backgroundColor}
+              onChange={(v) => set("backgroundColor", v)}
+            />
+            <Slider
+              label="Opacity"
+              value={config.backgroundOpacity}
+              min={0}
+              max={1}
+              step={0.01}
+              format={(v) => `${Math.round(v * 100)}%`}
+              onChange={(v) => set("backgroundOpacity", v)}
+            />
+            <Toggle
+              label="Border"
+              checked={config.borderEnabled}
+              onChange={(v) => set("borderEnabled", v)}
+            />
             {config.borderEnabled && (
               <>
-                <ColorField label="Border color" value={config.borderColor} onChange={(v) => set("borderColor", v)} />
-                <Slider label="Border width" value={config.borderWidth} min={1} max={8} step={1} format={(v) => `${v}px`} onChange={(v) => set("borderWidth", v)} />
+                <ColorField
+                  label="Border color"
+                  value={config.borderColor}
+                  onChange={(v) => set("borderColor", v)}
+                />
+                <Slider
+                  label="Border width"
+                  value={config.borderWidth}
+                  min={1}
+                  max={8}
+                  step={1}
+                  format={(v) => `${v}px`}
+                  onChange={(v) => set("borderWidth", v)}
+                />
               </>
             )}
-            <Slider label="Corner radius" value={config.borderRadius} min={0} max={40} step={1} format={(v) => `${v}px`} onChange={(v) => set("borderRadius", v)} />
+            <Slider
+              label="Corner radius"
+              value={config.borderRadius}
+              min={0}
+              max={40}
+              step={1}
+              format={(v) => `${v}px`}
+              onChange={(v) => set("borderRadius", v)}
+            />
           </Section>
 
           <Section title="Layout">
-            <Slider label="Scale" value={config.scale} min={0.5} max={2} step={0.05} format={(v) => `${v.toFixed(2)}×`} onChange={(v) => set("scale", v)} />
+            <Slider
+              label="Scale"
+              value={config.scale}
+              min={0.5}
+              max={2}
+              step={0.05}
+              format={(v) => `${v.toFixed(2)}×`}
+              onChange={(v) => set("scale", v)}
+            />
             <div className="flex items-center justify-between gap-3 text-sm">
               <span>Spacing</span>
               <Segmented
@@ -391,7 +516,11 @@ export function OverlayBuilder({
                 ]}
               />
             </div>
-            <Toggle label="Animate changes" checked={config.animations} onChange={(v) => set("animations", v)} />
+            <Toggle
+              label="Animate changes"
+              checked={config.animations}
+              onChange={(v) => set("animations", v)}
+            />
           </Section>
         </div>
 
@@ -400,7 +529,10 @@ export function OverlayBuilder({
           <div className="rounded-xl border border-line bg-surface">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
               <h2 className="font-display text-xs font-semibold tracking-[0.18em] text-muted uppercase">
-                Live preview <span className="ml-2 font-mono tracking-normal text-faint normal-case">{preset.width} × {preset.height}</span>
+                Live preview{" "}
+                <span className="ml-2 font-mono tracking-normal text-faint normal-case">
+                  {preset.width} × {preset.height}
+                </span>
               </h2>
               <div className="flex items-center gap-3">
                 <Toggle label="Sample data" checked={useSample} onChange={setUseSample} />
@@ -417,18 +549,33 @@ export function OverlayBuilder({
             </div>
             <div className="p-5">
               <div ref={ref} className="w-full">
-                <div className={cx("overflow-hidden rounded-md ring-1 ring-line", PREVIEW_BG[previewBg])} style={{ width, height: previewHeight }}>
-                  <OverlayView config={config} live={live} sizing={{ mode: "box", width, height: previewHeight }} />
+                <div
+                  className={cx(
+                    "overflow-hidden rounded-md ring-1 ring-line",
+                    PREVIEW_BG[previewBg],
+                  )}
+                  style={{ width, height: previewHeight }}
+                >
+                  <OverlayView
+                    config={config}
+                    live={live}
+                    sizing={{ mode: "box", width, height: previewHeight }}
+                  />
                 </div>
               </div>
               <p className="mt-3 text-xs text-faint">
-                {useSample ? "Showing sample numbers." : "Showing your real session — it updates live as you play."} Unsaved changes only appear here.
+                {useSample
+                  ? "Showing sample numbers."
+                  : "Showing your real session — it updates live as you play."}{" "}
+                Unsaved changes only appear here.
               </p>
             </div>
           </div>
 
           <div className="space-y-3 rounded-xl border border-line bg-surface p-5">
-            <h2 className="font-display text-xs font-semibold tracking-[0.18em] text-muted uppercase">OBS Browser Source URL</h2>
+            <h2 className="font-display text-xs font-semibold tracking-[0.18em] text-muted uppercase">
+              OBS Browser Source URL
+            </h2>
             <input
               readOnly
               value={url}
@@ -438,28 +585,52 @@ export function OverlayBuilder({
             />
             <div className="flex flex-wrap gap-2">
               <CopyButton value={url} label="Copy OBS URL" size="sm" />
-              <a href={url} target="_blank" rel="noreferrer" className={buttonClass("secondary", "sm")}>
+              <a
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className={buttonClass("secondary", "sm")}
+              >
                 Open preview ↗
               </a>
             </div>
-            <p className="text-xs text-faint">The URL never changes when you edit the design. Treat it like a password: anyone with it can view this overlay.</p>
+            <p className="text-xs text-faint">
+              The URL never changes when you edit the design. Treat it like a password: anyone with
+              it can view this overlay.
+            </p>
             <div className="flex flex-wrap gap-2 border-t border-line pt-3">
               {confirm === "rotate" ? (
                 <>
-                  <span className="self-center text-xs text-warn">The old URL stops working immediately.</span>
-                  <Button size="sm" variant="ghost" onClick={() => setConfirm(null)}>Cancel</Button>
-                  <Button size="sm" variant="danger" onClick={rotate} disabled={pending}>Generate new URL</Button>
+                  <span className="self-center text-xs text-warn">
+                    The old URL stops working immediately.
+                  </span>
+                  <Button size="sm" variant="ghost" onClick={() => setConfirm(null)}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" variant="danger" onClick={rotate} disabled={pending}>
+                    Generate new URL
+                  </Button>
                 </>
               ) : confirm === "delete" ? (
                 <>
-                  <span className="self-center text-xs text-warn">Delete this overlay permanently?</span>
-                  <Button size="sm" variant="ghost" onClick={() => setConfirm(null)}>Cancel</Button>
-                  <Button size="sm" variant="danger" onClick={remove} disabled={pending}>Delete</Button>
+                  <span className="self-center text-xs text-warn">
+                    Delete this overlay permanently?
+                  </span>
+                  <Button size="sm" variant="ghost" onClick={() => setConfirm(null)}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" variant="danger" onClick={remove} disabled={pending}>
+                    Delete
+                  </Button>
                 </>
               ) : (
                 <>
-                  <Button size="sm" variant="ghost" onClick={() => setConfirm("rotate")}>Regenerate URL</Button>
-                  <Button size="sm" variant="ghost" onClick={() => setConfirm("delete")}>Delete overlay</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setConfirm("rotate")}>
+                    Regenerate URL
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setConfirm("delete")}>
+                    Delete overlay
+                  </Button>
                 </>
               )}
             </div>

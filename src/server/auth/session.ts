@@ -17,7 +17,9 @@ export interface CurrentUser {
 }
 
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
-  const session = await getAuth().api.getSession({ headers: await headers() });
+  // Read request headers first: this marks the route dynamic before any env/DB access.
+  const requestHeaders = await headers();
+  const session = await getAuth().api.getSession({ headers: requestHeaders });
   if (!session) return null;
   return { id: session.user.id, email: session.user.email, name: session.user.name };
 });

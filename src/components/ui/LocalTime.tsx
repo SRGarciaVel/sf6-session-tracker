@@ -21,7 +21,11 @@ export function LocalTime({ iso, format }: { iso: string; format: "day" | "time"
         ? "Today"
         : days === 1
           ? "Yesterday"
-          : date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+          : date.toLocaleDateString(undefined, {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            });
   }
   return (
     <time dateTime={iso} suppressHydrationWarning>

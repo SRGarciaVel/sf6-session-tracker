@@ -63,7 +63,10 @@ export default async function LandingPage() {
 
         <div className="space-y-4">
           {(["fighter", "competitive", "minimal"] as const).map((theme) => (
-            <div key={theme} className="bg-slash overflow-hidden rounded-lg border border-line bg-surface-2">
+            <div
+              key={theme}
+              className="bg-slash overflow-hidden rounded-lg border border-line bg-surface-2"
+            >
               <div className="aspect-[800/180]">
                 <OverlayView
                   config={applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, theme)}

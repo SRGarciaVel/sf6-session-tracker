@@ -10,7 +10,12 @@ export interface EventStreamOptions {
   /** Named SSE events → handlers (data is the parsed JSON). */
   handlers: Record<string, (data: unknown) => void>;
   /** Plain JSON endpoint polled while the stream is down. */
-  fallback?: { url: string; intervalMs: number; onData: (data: unknown) => void; onGone?: () => void };
+  fallback?: {
+    url: string;
+    intervalMs: number;
+    onData: (data: unknown) => void;
+    onGone?: () => void;
+  };
   /** Reconnect if nothing (not even a ping) arrives for this long. */
   watchdogMs?: number;
 }

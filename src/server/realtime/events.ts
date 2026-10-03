@@ -14,7 +14,11 @@ const eventSchema = z.discriminatedUnion("kind", [
   /** Session / match / rating / tracker state changed. */
   z.object({ kind: z.literal("player"), playerId: z.string().uuid() }),
   /** Overlay config or token changed. */
-  z.object({ kind: z.literal("overlay"), playerId: z.string().uuid(), overlayId: z.string().uuid() }),
+  z.object({
+    kind: z.literal("overlay"),
+    playerId: z.string().uuid(),
+    overlayId: z.string().uuid(),
+  }),
   /** Overlay connection count changed (dashboard only). */
   z.object({ kind: z.literal("presence"), playerId: z.string().uuid() }),
 ]);

@@ -100,7 +100,9 @@ export class ResilientProvider implements SF6DataProvider {
     const timeout = new Promise<never>((_, reject) => {
       timer = setTimeout(() => {
         controller.abort();
-        reject(new SF6ProviderError("timeout", `Provider timed out after ${this.options.timeoutMs}ms`));
+        reject(
+          new SF6ProviderError("timeout", `Provider timed out after ${this.options.timeoutMs}ms`),
+        );
       }, this.options.timeoutMs);
     });
     try {

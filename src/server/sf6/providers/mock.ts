@@ -11,19 +11,71 @@
  */
 import { randomBytes } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
-import type { MatchMode, MatchResult, NormalizedPlayerProfile, NormalizedSF6Match } from "@/domain/sf6/types";
+import type {
+  MatchMode,
+  MatchResult,
+  NormalizedPlayerProfile,
+  NormalizedSF6Match,
+} from "@/domain/sf6/types";
 import type { Database } from "@/server/db/client";
 import { mockCfnMatch, mockCfnPlayer } from "@/server/db/schema";
 import { SF6ProviderError, type SF6DataProvider } from "../provider";
 
 export const SF6_CHARACTERS = [
-  "Ryu", "Ken", "Chun-Li", "Luke", "Jamie", "Juri", "Kimberly", "Guile", "JP", "Marisa",
-  "Manon", "Dee Jay", "Cammy", "Lily", "Zangief", "Blanka", "Dhalsim", "E. Honda", "A.K.I.",
-  "Rashid", "Ed", "Akuma", "M. Bison", "Terry", "Mai", "Elena",
+  "Ryu",
+  "Ken",
+  "Chun-Li",
+  "Luke",
+  "Jamie",
+  "Juri",
+  "Kimberly",
+  "Guile",
+  "JP",
+  "Marisa",
+  "Manon",
+  "Dee Jay",
+  "Cammy",
+  "Lily",
+  "Zangief",
+  "Blanka",
+  "Dhalsim",
+  "E. Honda",
+  "A.K.I.",
+  "Rashid",
+  "Ed",
+  "Akuma",
+  "M. Bison",
+  "Terry",
+  "Mai",
+  "Elena",
 ] as const;
 
-const NAME_PARTS = ["Hado", "Shoryu", "Tatsu", "Drive", "Rush", "Parry", "Punish", "Frame", "Combo", "Neutral"];
-const OPPONENT_NAMES = ["Kazunoko", "Gachikun", "Daigo-fan", "PunkWannabe", "Moke", "TokidoAlt", "Leshar_ish", "AngryBird9", "MenaRD_ish", "XiaoHai_ish", "Snake Eyez", "Nemo2"];
+const NAME_PARTS = [
+  "Hado",
+  "Shoryu",
+  "Tatsu",
+  "Drive",
+  "Rush",
+  "Parry",
+  "Punish",
+  "Frame",
+  "Combo",
+  "Neutral",
+];
+const OPPONENT_NAMES = [
+  "Kazunoko",
+  "Gachikun",
+  "Daigo-fan",
+  "PunkWannabe",
+  "Moke",
+  "TokidoAlt",
+  "Leshar_ish",
+  "AngryBird9",
+  "MenaRD_ish",
+  "XiaoHai_ish",
+  "Snake Eyez",
+  "Nemo2",
+];
 
 const MASTER_LP = 25_000;
 const RANK_TIERS: Array<[name: string, minLp: number, step: number]> = [

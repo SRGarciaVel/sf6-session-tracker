@@ -5,7 +5,13 @@ import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { LocalTime } from "@/components/ui/LocalTime";
 import { Badge, buttonClass, cx } from "@/components/ui/primitives";
-import { deltaTone, formatDelta, formatDuration, formatInteger, formatWinRate } from "@/domain/format";
+import {
+  deltaTone,
+  formatDelta,
+  formatDuration,
+  formatInteger,
+  formatWinRate,
+} from "@/domain/format";
 import { requirePlayer } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
 import { match } from "@/server/db/schema";
@@ -30,13 +36,20 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
 
   const [summary, matches] = await Promise.all([
     summarizeSessionRow(db, session, player),
-    db.select().from(match).where(eq(match.sessionId, session.id)).orderBy(desc(match.playedAt)).limit(200),
+    db
+      .select()
+      .from(match)
+      .where(eq(match.sessionId, session.id))
+      .orderBy(desc(match.playedAt))
+      .limit(200),
   ]);
   const r = summary.rating;
   const unit = r.system === "mr" ? "MR" : "LP";
   const tone = deltaTone(r.primary.delta);
   const ended = summary.status === "ended";
-  const duration = formatDuration((summary.endedAt ?? new Date()).getTime() - summary.startedAt.getTime());
+  const duration = formatDuration(
+    (summary.endedAt ?? new Date()).getTime() - summary.startedAt.getTime(),
+  );
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -53,7 +66,8 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
           {!ended && <Badge tone="win">● Live</Badge>}
         </div>
         <p className="mt-2 text-sm text-muted">
-          {player.displayName} · <LocalTime iso={summary.startedAt.toISOString()} format="datetime" /> · {duration}
+          {player.displayName} ·{" "}
+          <LocalTime iso={summary.startedAt.toISOString()} format="datetime" /> · {duration}
         </p>
 
         <div className="mt-8 grid grid-cols-2 gap-6 sm:grid-cols-4">
@@ -65,11 +79,19 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
 
         <div className="mt-8 grid gap-6 border-t border-line pt-8 sm:grid-cols-2">
           <div>
-            <p className="text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">{unit}</p>
-            <p className="mt-1 font-display text-2xl font-bold tabular">
-              {formatInteger(r.primary.initial)} <span className="text-faint">→</span> {formatInteger(r.primary.current)}
+            <p className="text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">
+              {unit}
             </p>
-            <p className={cx("font-display text-xl font-bold tabular", tone === "positive" ? "text-win" : tone === "negative" ? "text-loss" : "text-muted")}>
+            <p className="mt-1 font-display text-2xl font-bold tabular">
+              {formatInteger(r.primary.initial)} <span className="text-faint">→</span>{" "}
+              {formatInteger(r.primary.current)}
+            </p>
+            <p
+              className={cx(
+                "font-display text-xl font-bold tabular",
+                tone === "positive" ? "text-win" : tone === "negative" ? "text-loss" : "text-muted",
+              )}
+            >
               {formatDelta(r.primary.delta)}
             </p>
             {r.initialRank !== r.rank && r.rank && (
@@ -79,8 +101,12 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
             )}
           </div>
           <div>
-            <p className="text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">Best streak</p>
-            <p className="mt-1 font-display text-2xl font-bold tabular">{summary.bestWinStreak} wins</p>
+            <p className="text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">
+              Best streak
+            </p>
+            <p className="mt-1 font-display text-2xl font-bold tabular">
+              {summary.bestWinStreak} wins
+            </p>
           </div>
         </div>
       </section>
@@ -95,11 +121,17 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
           <ul className="divide-y divide-line">
             {matches.map((m) => (
               <li key={m.id} className="flex items-center gap-4 px-5 py-2.5 text-sm">
-                <span className={cx("grid size-6 shrink-0 place-items-center rounded text-[11px] font-bold", RESULT_STYLE[m.result])}>
+                <span
+                  className={cx(
+                    "grid size-6 shrink-0 place-items-center rounded text-[11px] font-bold",
+                    RESULT_STYLE[m.result],
+                  )}
+                >
                   {m.result === "win" ? "W" : m.result === "loss" ? "L" : "D"}
                 </span>
                 <span className="min-w-0 flex-1 truncate">
-                  {m.playerCharacter ?? "?"} <span className="text-faint">vs</span> {m.opponentCharacter ?? "?"}
+                  {m.playerCharacter ?? "?"} <span className="text-faint">vs</span>{" "}
+                  {m.opponentCharacter ?? "?"}
                   <span className="text-faint"> · {m.opponentName ?? "Unknown"}</span>
                 </span>
                 <span className="text-xs text-faint tabular">

@@ -9,7 +9,13 @@ import {
 } from "@/domain/session/engine";
 import { toLiveSessionState, type PlayerLiveState } from "@/domain/overlay/state";
 import type { Database, DbExecutor } from "@/server/db/client";
-import { gameSession, match, sf6Player, type GameSessionRow, type Sf6PlayerRow } from "@/server/db/schema";
+import {
+  gameSession,
+  match,
+  sf6Player,
+  type GameSessionRow,
+  type Sf6PlayerRow,
+} from "@/server/db/schema";
 import { getEnv } from "@/server/env";
 import { ingestMatchesInTx } from "@/server/ingestion/ingest";
 import { logger } from "@/server/logger";
@@ -25,7 +31,10 @@ import {
 
 const log = logger.child({ component: "sessions" });
 
-export async function getActiveSession(db: DbExecutor, playerId: string): Promise<GameSessionRow | null> {
+export async function getActiveSession(
+  db: DbExecutor,
+  playerId: string,
+): Promise<GameSessionRow | null> {
   const [row] = await db
     .select()
     .from(gameSession)
@@ -71,11 +80,19 @@ export async function startSession(
   const startGraceMs = env.SESSION_START_GRACE_SECONDS * 1000;
 
   const session = await db.transaction(async (tx) => {
-    await tx.select({ id: sf6Player.id }).from(sf6Player).where(eq(sf6Player.id, player.id)).for("update");
+    await tx
+      .select({ id: sf6Player.id })
+      .from(sf6Player)
+      .where(eq(sf6Player.id, player.id))
+      .for("update");
 
     const previous = await getActiveSession(tx, player.id);
     if (previous) {
-      await ingestMatchesInTx(tx, recent, { playerId: player.id, sessionId: previous.id, startGraceMs });
+      await ingestMatchesInTx(tx, recent, {
+        playerId: player.id,
+        sessionId: previous.id,
+        startGraceMs,
+      });
     } else {
       await ingestMatchesInTx(tx, recent, { playerId: player.id, sessionId: null, startGraceMs });
     }
@@ -124,7 +141,11 @@ export async function startSession(
     return created;
   });
 
-  log.info("session.started", { playerId: player.id, sessionId: session.id, baselineMatchId: session.baselineMatchId });
+  log.info("session.started", {
+    playerId: player.id,
+    sessionId: session.id,
+    baselineMatchId: session.baselineMatchId,
+  });
   return session;
 }
 
@@ -183,7 +204,10 @@ export async function summarizeSessionRow(
 }
 
 /** Authoritative live snapshot for overlays and the dashboard. */
-export async function buildPlayerLiveState(db: DbExecutor, playerId: string): Promise<PlayerLiveState | null> {
+export async function buildPlayerLiveState(
+  db: DbExecutor,
+  playerId: string,
+): Promise<PlayerLiveState | null> {
   const player = await findPlayerById(db, playerId);
   if (!player) return null;
   const session = await getCurrentOrLatestSession(db, playerId);
@@ -215,7 +239,12 @@ export async function listSessionHistory(
   const matchRows = await db
     .select()
     .from(match)
-    .where(inArray(match.sessionId, sessions.map((s) => s.id)));
+    .where(
+      inArray(
+        match.sessionId,
+        sessions.map((s) => s.id),
+      ),
+    );
   return sessions.map((s) => ({
     id: s.id,
     summary: summarizeSession({

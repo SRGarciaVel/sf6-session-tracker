@@ -8,6 +8,8 @@ import { sseResponse } from "@/server/realtime/sse";
 export const dynamic = "force-dynamic";
 
 const PING_MS = 15_000;
+/** Tracker health ("last check 12s ago") changes without events; refresh it periodically. */
+const REFRESH_MS = 30_000;
 
 /** Authenticated dashboard stream: session stats + tracker health + overlay connections. */
 export async function GET(request: Request) {
@@ -33,9 +35,11 @@ export async function GET(request: Request) {
       else if (message.type === "presence") void push();
     });
     const ping = setInterval(() => sse.send("ping", { t: Date.now() }), PING_MS);
+    const refresh = setInterval(() => void push(), REFRESH_MS);
 
     return () => {
       clearInterval(ping);
+      clearInterval(refresh);
       unsubscribe();
     };
   });

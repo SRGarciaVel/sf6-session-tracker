@@ -46,7 +46,9 @@ async function tick(): Promise<void> {
   const claimed = await claimDuePlayers(db, workerId, capacity, config.leaseMs);
   for (const player of claimed) {
     const job: Promise<unknown> = pollPlayer(db, provider, player, config, workerId, log)
-      .catch((err: unknown) => log.error("worker.poll_crashed", { playerId: player.id, error: err }))
+      .catch((err: unknown) =>
+        log.error("worker.poll_crashed", { playerId: player.id, error: err }),
+      )
       .finally(() => inFlight.delete(job));
     inFlight.add(job);
   }

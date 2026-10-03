@@ -1,5 +1,9 @@
 import { and, asc, count, eq, gt, sql } from "drizzle-orm";
-import { DEFAULT_OVERLAY_CONFIG, parseOverlayConfig, type OverlayConfig } from "@/domain/overlay/config";
+import {
+  DEFAULT_OVERLAY_CONFIG,
+  parseOverlayConfig,
+  type OverlayConfig,
+} from "@/domain/overlay/config";
 import type { DbExecutor } from "@/server/db/client";
 import { overlay, overlayConnection, sf6Player, type OverlayRow } from "@/server/db/schema";
 import { publishEvent } from "@/server/realtime/events";
@@ -52,13 +56,19 @@ export async function listOverlays(db: DbExecutor, playerId: string): Promise<Ov
 }
 
 /** Public lookup for OBS. Returns null for malformed or unknown tokens. */
-export async function getOverlayByToken(db: DbExecutor, token: string): Promise<OverlayView | null> {
+export async function getOverlayByToken(
+  db: DbExecutor,
+  token: string,
+): Promise<OverlayView | null> {
   if (!isValidOverlayTokenFormat(token)) return null;
   const [row] = await db.select().from(overlay).where(eq(overlay.publicToken, token)).limit(1);
   return row ? toView(row) : null;
 }
 
-export async function getOverlayById(db: DbExecutor, overlayId: string): Promise<OverlayView | null> {
+export async function getOverlayById(
+  db: DbExecutor,
+  overlayId: string,
+): Promise<OverlayView | null> {
   const [row] = await db.select().from(overlay).where(eq(overlay.id, overlayId)).limit(1);
   return row ? toView(row) : null;
 }
@@ -144,7 +154,10 @@ export async function countPlayerConnections(db: DbExecutor, playerId: string): 
     .where(
       and(
         eq(overlay.playerId, playerId),
-        gt(overlayConnection.lastSeenAt, sql`now() - ${`${CONNECTION_STALE_MS} milliseconds`}::interval`),
+        gt(
+          overlayConnection.lastSeenAt,
+          sql`now() - ${`${CONNECTION_STALE_MS} milliseconds`}::interval`,
+        ),
       ),
     );
   return row?.n ?? 0;
@@ -153,7 +166,9 @@ export async function countPlayerConnections(db: DbExecutor, playerId: string): 
 export async function pruneStaleConnections(db: DbExecutor): Promise<number> {
   const rows = await db
     .delete(overlayConnection)
-    .where(sql`${overlayConnection.lastSeenAt} < now() - ${`${CONNECTION_STALE_MS * 2} milliseconds`}::interval`)
+    .where(
+      sql`${overlayConnection.lastSeenAt} < now() - ${`${CONNECTION_STALE_MS * 2} milliseconds`}::interval`,
+    )
     .returning({ id: overlayConnection.id });
   return rows.length;
 }

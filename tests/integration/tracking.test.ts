@@ -18,9 +18,8 @@ const { getDb, closeDb } = await import("@/server/db/client");
 const { authUser, sf6Player } = await import("@/server/db/schema");
 const { ingestMatches } = await import("@/server/ingestion/ingest");
 const { upsertPlayerForUser } = await import("@/server/players/service");
-const { buildPlayerLiveState, endSession, listSessionHistory, startSession } = await import(
-  "@/server/sessions/service"
-);
+const { buildPlayerLiveState, endSession, listSessionHistory, startSession } =
+  await import("@/server/sessions/service");
 const { MockSF6DataProvider } = await import("@/server/sf6/providers/mock");
 const { ResilientProvider } = await import("@/server/sf6/resilient");
 const { claimDuePlayers, pollPlayer } = await import("@/server/tracking/tracker");
@@ -38,7 +37,9 @@ process.env.LOG_LEVEL = "error";
 describe.skipIf(!TEST_DB)("tracking pipeline (integration)", () => {
   const db = TEST_DB ? getDb() : (null as never);
   const mock = TEST_DB ? new MockSF6DataProvider(db) : (null as never);
-  const provider = TEST_DB ? new ResilientProvider(mock, { timeoutMs: 5_000, cacheTtlMs: 0 }) : (null as never);
+  const provider = TEST_DB
+    ? new ResilientProvider(mock, { timeoutMs: 5_000, cacheTtlMs: 0 })
+    : (null as never);
   let cfnUserId: string;
   let playerId: string;
 
@@ -60,7 +61,10 @@ describe.skipIf(!TEST_DB)("tracking pipeline (integration)", () => {
   });
 
   async function currentPlayer() {
-    const [p] = await db.select().from(sf6Player).where(sql`${sf6Player.id} = ${playerId}`);
+    const [p] = await db
+      .select()
+      .from(sf6Player)
+      .where(sql`${sf6Player.id} = ${playerId}`);
     if (!p) throw new Error("player missing");
     return p;
   }
@@ -158,7 +162,9 @@ describe.skipIf(!TEST_DB)("tracking pipeline (integration)", () => {
     const b = (await claimDuePlayers(db, "worker-b", 50, 60_000)).filter((c) => c.id === playerId);
     expect(a.length + b.length).toBe(1);
     // An expired lease can be taken over.
-    await db.execute(sql`update sf6_player set lease_expires_at = now() - interval '1 second' where id = ${playerId}`);
+    await db.execute(
+      sql`update sf6_player set lease_expires_at = now() - interval '1 second' where id = ${playerId}`,
+    );
     const c = (await claimDuePlayers(db, "worker-c", 50, 60_000)).filter((x) => x.id === playerId);
     expect(c).toHaveLength(1);
   });

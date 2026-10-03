@@ -8,7 +8,11 @@
 import { revalidatePath } from "next/cache";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { applyThemeDefaults, DEFAULT_OVERLAY_CONFIG, overlayConfigSchema } from "@/domain/overlay/config";
+import {
+  applyThemeDefaults,
+  DEFAULT_OVERLAY_CONFIG,
+  overlayConfigSchema,
+} from "@/domain/overlay/config";
 import { MATCH_MODES, MATCH_RESULTS } from "@/domain/sf6/types";
 import { fail, ok, type ActionResult } from "@/lib/action-result";
 import { getCurrentUser } from "@/server/auth/session";
@@ -83,8 +87,14 @@ export async function createOverlayAction(
   if (!themeParsed.success) return fail("Invalid theme");
 
   const db = getDb();
-  if ((await listOverlays(db, ctx.player.id)).length >= 10) return fail("You can have up to 10 overlays.");
-  const created = await createOverlay(db, ctx.player.id, name.data, applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, themeParsed.data));
+  if ((await listOverlays(db, ctx.player.id)).length >= 10)
+    return fail("You can have up to 10 overlays.");
+  const created = await createOverlay(
+    db,
+    ctx.player.id,
+    name.data,
+    applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, themeParsed.data),
+  );
   revalidatePath("/dashboard");
   return ok({ overlayId: created.id });
 }
@@ -146,7 +156,9 @@ const simulateSchema = z.object({
   secondsAgo: z.number().int().min(0).max(3600).optional(),
 });
 
-export async function simulateMatchAction(input: z.input<typeof simulateSchema>): Promise<ActionResult<{ result: string }>> {
+export async function simulateMatchAction(
+  input: z.input<typeof simulateSchema>,
+): Promise<ActionResult<{ result: string }>> {
   if (!devToolsEnabled()) return fail("Dev tools are disabled.");
   const ctx = await authorizedPlayer();
   if (!ctx) return fail(UNAUTHORIZED);

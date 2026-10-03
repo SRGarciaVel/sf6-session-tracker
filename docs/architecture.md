@@ -35,18 +35,18 @@ There's no Redis, queue or microservice. Postgres provides the leases (row locks
 
 ## 2. Key decisions
 
-| # | Decision | Why |
-|---|----------|-----|
-| 1 | **Drizzle ORM** (not Prisma) | SQL-first and typed, with no query-engine binary. It runs the same in Next and in the worker. Partial unique indexes and `ON CONFLICT DO NOTHING` are first-class. Migrations are plain SQL in `drizzle/`. |
-| 2 | **SSE** (not WebSocket) | Traffic is server→client only. SSE runs over plain HTTP, `EventSource` auto-reconnects, and it works in OBS CEF without libraries. Every SSE message carries the **full authoritative state**, never a delta. |
-| 3 | **Polling** in a worker, adaptive | 20 s ± jitter while a session is active, exponential backoff on errors (30 → 60 → 120 → 300 s cap), and `Retry-After` is honoured. All values come from env (`src/server/env.ts`). The pure policy lives in `src/domain/tracking/polling.ts`. |
-| 4 | **Caching** | The provider decorator (`ResilientProvider`) adds a timeout, single-flight (concurrent identical calls share one request) and a short TTL cache per CFN id. Overlay reads hit Postgres, so N overlays never fan out to Capcom. |
-| 5 | **better-auth** (email + password) | Maintained, built for Drizzle and Next, sessions stored in DB, httpOnly cookies, origin checks and rate limiting built in. Social logins (Twitch/Discord) can be added as providers later. |
-| 6 | **Hosting: Railway** (or Fly.io / Render) | Needs (a) long-lived SSE connections, (b) a process that runs without an HTTP request, and (c) one persistent `LISTEN` connection. Pure Vercel fits none of those well: functions have max durations and a `setInterval` dies with the instance. Deploy a `web` service, a `worker` service and managed Postgres. |
-| 7 | **Background worker** | `src/worker/index.ts`: a 1 s scheduler tick claims *due* players, polls them with bounded concurrency and schedules the next poll in the DB. Shuts down gracefully on SIGTERM (stops claiming, finishes in-flight work, releases leases). |
-| 8 | **No duplicate trackers** | Each player row holds a **lease**: `lease_owner` and `lease_expires_at`. Players are claimed with `UPDATE … WHERE id IN (SELECT … FOR UPDATE SKIP LOCKED)`. If a worker dies, the lease expires and another worker continues. Even if two workers overlap, ingestion is idempotent (see §4), so stats stay correct. |
-| 9 | **Persistent sessions** | The session baseline is written to Postgres when the session starts. Stats are **derived** from the session's matches by the pure Session Engine, so restarts of OBS, browsers, web or worker cannot lose or reset anything. |
-| 10 | **Overlay tokens** | 192-bit random `base64url` (32 chars) in `overlays.public_token`. It is unrelated to internal ids, so it can't be enumerated. The format is validated before any DB hit, endpoints are rate-limited per IP, and the token can be rotated from the dashboard. |
+| #   | Decision                                  | Why                                                                                                                                                                                                                                                                                                                 |
+| --- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Drizzle ORM** (not Prisma)              | SQL-first and typed, with no query-engine binary. It runs the same in Next and in the worker. Partial unique indexes and `ON CONFLICT DO NOTHING` are first-class. Migrations are plain SQL in `drizzle/`.                                                                                                          |
+| 2   | **SSE** (not WebSocket)                   | Traffic is server→client only. SSE runs over plain HTTP, `EventSource` auto-reconnects, and it works in OBS CEF without libraries. Every SSE message carries the **full authoritative state**, never a delta.                                                                                                       |
+| 3   | **Polling** in a worker, adaptive         | 20 s ± jitter while a session is active, exponential backoff on errors (30 → 60 → 120 → 300 s cap), and `Retry-After` is honoured. All values come from env (`src/server/env.ts`). The pure policy lives in `src/domain/tracking/polling.ts`.                                                                       |
+| 4   | **Caching**                               | The provider decorator (`ResilientProvider`) adds a timeout, single-flight (concurrent identical calls share one request) and a short TTL cache per CFN id. Overlay reads hit Postgres, so N overlays never fan out to Capcom.                                                                                      |
+| 5   | **better-auth** (email + password)        | Maintained, built for Drizzle and Next, sessions stored in DB, httpOnly cookies, origin checks and rate limiting built in. Social logins (Twitch/Discord) can be added as providers later.                                                                                                                          |
+| 6   | **Hosting: Railway** (or Fly.io / Render) | Needs (a) long-lived SSE connections, (b) a process that runs without an HTTP request, and (c) one persistent `LISTEN` connection. Pure Vercel fits none of those well: functions have max durations and a `setInterval` dies with the instance. Deploy a `web` service, a `worker` service and managed Postgres.   |
+| 7   | **Background worker**                     | `src/worker/index.ts`: a 1 s scheduler tick claims _due_ players, polls them with bounded concurrency and schedules the next poll in the DB. Shuts down gracefully on SIGTERM (stops claiming, finishes in-flight work, releases leases).                                                                           |
+| 8   | **No duplicate trackers**                 | Each player row holds a **lease**: `lease_owner` and `lease_expires_at`. Players are claimed with `UPDATE … WHERE id IN (SELECT … FOR UPDATE SKIP LOCKED)`. If a worker dies, the lease expires and another worker continues. Even if two workers overlap, ingestion is idempotent (see §4), so stats stay correct. |
+| 9   | **Persistent sessions**                   | The session baseline is written to Postgres when the session starts. Stats are **derived** from the session's matches by the pure Session Engine, so restarts of OBS, browsers, web or worker cannot lose or reset anything.                                                                                        |
+| 10  | **Overlay tokens**                        | 192-bit random `base64url` (32 chars) in `overlays.public_token`. It is unrelated to internal ids, so it can't be enumerated. The format is validated before any DB hit, endpoints are rate-limited per IP, and the token can be rotated from the dashboard.                                                        |
 
 ## 3. Data model (`src/server/db/schema.ts`)
 
@@ -158,6 +158,7 @@ close OBS mid-session and come back to correct stats. Each poll fetches recent m
   **and** `ENABLE_DEV_TOOLS=true` **and** `SF6_PROVIDER=mock`.
 
 ### Privacy: data kept from CFN
+
 The player's CFN id, display name, main character, rank, LP and MR. For each match: id, timestamp,
 mode, result, both characters and the opponent's display name. Opponent CFN ids and raw payloads
 are **not** stored.

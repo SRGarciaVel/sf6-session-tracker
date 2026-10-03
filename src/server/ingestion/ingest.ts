@@ -56,7 +56,8 @@ export async function ingestMatchesInTx(
       invalid++;
       continue;
     }
-    if (!unique.has(parsed.data.externalMatchId)) unique.set(parsed.data.externalMatchId, parsed.data);
+    if (!unique.has(parsed.data.externalMatchId))
+      unique.set(parsed.data.externalMatchId, parsed.data);
   }
   const result: IngestResult = {
     received: matches.length,
@@ -82,7 +83,9 @@ export async function ingestMatchesInTx(
   const rows = [...unique.values()].map((m) => ({
     playerId: options.playerId,
     sessionId:
-      baseline && options.sessionId && isMatchInSession(baseline, m, { startGraceMs: options.startGraceMs })
+      baseline &&
+      options.sessionId &&
+      isMatchInSession(baseline, m, { startGraceMs: options.startGraceMs })
         ? options.sessionId
         : null,
     externalMatchId: m.externalMatchId,

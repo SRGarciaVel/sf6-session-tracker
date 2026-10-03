@@ -12,10 +12,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <div className="flex items-center gap-6">
             <Logo />
             <nav className="hidden items-center gap-1 text-sm sm:flex">
-              <Link href="/dashboard" className="rounded px-3 py-1.5 text-muted hover:bg-surface-3 hover:text-text">
+              <Link
+                href="/dashboard"
+                className="rounded px-3 py-1.5 text-muted hover:bg-surface-3 hover:text-text"
+              >
                 Dashboard
               </Link>
-              <Link href="/onboarding" className="rounded px-3 py-1.5 text-muted hover:bg-surface-3 hover:text-text">
+              <Link
+                href="/onboarding"
+                className="rounded px-3 py-1.5 text-muted hover:bg-surface-3 hover:text-text"
+              >
                 Player
               </Link>
             </nav>

@@ -1,5 +1,5 @@
 /** Public (unauthenticated) overlay access shared by the OBS page and API routes. */
-import type { OverlayPayload } from "@/domain/overlay/state";
+import { toPublicLiveState, type OverlayPayload } from "@/domain/overlay/state";
 import { getDb } from "@/server/db/client";
 import { buildPlayerLiveState } from "@/server/sessions/service";
 import { rateLimit, type RateLimitResult } from "@/server/security/rate-limit";
@@ -20,7 +20,7 @@ export async function loadOverlayPayload(
   if (!overlay) return null;
   const live = await buildPlayerLiveState(db, overlay.playerId);
   if (!live) return null;
-  return { overlay, payload: { config: overlay.config, live } };
+  return { overlay, payload: { config: overlay.config, live: toPublicLiveState(live) } };
 }
 
 export const NO_STORE_HEADERS = {

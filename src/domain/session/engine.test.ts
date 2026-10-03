@@ -265,7 +265,9 @@ describe("summarizeSession (MR / LP deltas)", () => {
   it("positive MR delta", () => {
     const s = summarizeSession({
       status: "active",
-      baseline: baseline({ initialRating: { rank: "Master", leaguePoints: 25000, masterRate: 1584 } }),
+      baseline: baseline({
+        initialRating: { rank: "Master", leaguePoints: 25000, masterRate: 1584 },
+      }),
       matches: ms,
       currentRating: { rank: "Master", leaguePoints: 25000, masterRate: 1661 },
     });
@@ -276,7 +278,9 @@ describe("summarizeSession (MR / LP deltas)", () => {
   it("negative MR delta", () => {
     const s = summarizeSession({
       status: "active",
-      baseline: baseline({ initialRating: { rank: "Master", leaguePoints: null, masterRate: 1600 } }),
+      baseline: baseline({
+        initialRating: { rank: "Master", leaguePoints: null, masterRate: 1600 },
+      }),
       matches: ms,
       currentRating: { rank: "Master", leaguePoints: null, masterRate: 1582 },
     });

@@ -35,7 +35,9 @@ export function OverlaysPanel({ overlays }: { overlays: OverlaySummary[] }) {
   return (
     <section className="rounded-xl border border-line bg-surface">
       <header className="flex items-center justify-between gap-4 border-b border-line px-5 py-3">
-        <h2 className="font-display text-xs font-semibold tracking-[0.18em] text-muted uppercase">OBS overlays</h2>
+        <h2 className="font-display text-xs font-semibold tracking-[0.18em] text-muted uppercase">
+          OBS overlays
+        </h2>
         <Badge tone={state.overlayConnections > 0 ? "win" : "neutral"}>
           {state.overlayConnections} connected
         </Badge>
@@ -60,7 +62,11 @@ export function OverlaysPanel({ overlays }: { overlays: OverlaySummary[] }) {
                 className="bg-slash overflow-hidden rounded-md border border-line bg-surface-3"
                 style={{ aspectRatio: `${preset.width} / ${preset.height}` }}
               >
-                <OverlayView config={o.config} live={state.live} sizing={{ mode: "box", width: 340, height: (340 * preset.height) / preset.width }} />
+                <OverlayView
+                  config={o.config}
+                  live={state.live}
+                  sizing={{ mode: "box", width: 340, height: (340 * preset.height) / preset.width }}
+                />
               </div>
               <div className="flex gap-2">
                 <input
@@ -73,7 +79,12 @@ export function OverlaysPanel({ overlays }: { overlays: OverlaySummary[] }) {
               </div>
               <div className="flex flex-wrap gap-2">
                 <CopyButton value={o.url} label="Copy OBS URL" size="sm" />
-                <a href={o.url} target="_blank" rel="noreferrer" className={buttonClass("secondary", "sm")}>
+                <a
+                  href={o.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={buttonClass("secondary", "sm")}
+                >
                   Open preview ↗
                 </a>
               </div>
@@ -94,7 +105,9 @@ export function OverlaysPanel({ overlays }: { overlays: OverlaySummary[] }) {
 export function ObsGuide({ width, height }: { width: number; height: number }) {
   return (
     <section className="rounded-xl border border-line bg-surface p-5">
-      <h2 className="font-display text-xs font-semibold tracking-[0.18em] text-muted uppercase">Add to OBS</h2>
+      <h2 className="font-display text-xs font-semibold tracking-[0.18em] text-muted uppercase">
+        Add to OBS
+      </h2>
       <ol className="mt-4 space-y-2 text-sm">
         {[
           "OBS Studio → Sources → +",
@@ -112,8 +125,8 @@ export function ObsGuide({ width, height }: { width: number; height: number }) {
       <div className="mt-4 rounded-md border border-line bg-surface-2 p-3 text-xs text-muted">
         <p className="font-semibold text-text">Recommended Browser Source options</p>
         <p className="mt-1">
-          “Shutdown source when not visible”: <b className="text-text">off</b> · “Refresh browser when scene becomes active”:{" "}
-          <b className="text-text">off</b>
+          “Shutdown source when not visible”: <b className="text-text">off</b> · “Refresh browser
+          when scene becomes active”: <b className="text-text">off</b>
         </p>
         <p className="mt-1 text-faint">
           Optional — your stats live on the server, so a refresh or scene switch never resets them.

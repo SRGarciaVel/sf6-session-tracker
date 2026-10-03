@@ -6,7 +6,12 @@
  */
 import type { SessionSummary, SessionStatus } from "@/domain/session/engine";
 import { EMPTY_STATS } from "@/domain/session/engine";
-import { buildRatingView, EMPTY_RATING, type RatingSnapshot, type RatingView } from "@/domain/sf6/rating";
+import {
+  buildRatingView,
+  EMPTY_RATING,
+  type RatingSnapshot,
+  type RatingView,
+} from "@/domain/sf6/rating";
 import type { MatchResult } from "@/domain/sf6/types";
 import type { OverlayConfig } from "./config";
 
@@ -80,6 +85,11 @@ export function toLiveSessionState(
     recentResults: summary.recentResults,
     rating: summary.rating,
   };
+}
+
+/** Public (unauthenticated) view: strips internal identifiers. */
+export function toPublicLiveState(live: PlayerLiveState): PlayerLiveState {
+  return { ...live, session: { ...live.session, sessionId: null } };
 }
 
 /** Placeholder state for previews before any data exists. */

@@ -24,7 +24,10 @@ export interface SF6DataProvider {
    * Current profile (name, rank, LP, MR) for a CFN User ID.
    * @throws SF6ProviderError code "not_found" if the player does not exist.
    */
-  getPlayerProfile(cfnUserId: string, options?: ProviderCallOptions): Promise<NormalizedPlayerProfile>;
+  getPlayerProfile(
+    cfnUserId: string,
+    options?: ProviderCallOptions,
+  ): Promise<NormalizedPlayerProfile>;
 
   /**
    * The player's most recent matches (any order; duplicates allowed — ingestion dedupes).
@@ -34,11 +37,7 @@ export interface SF6DataProvider {
 }
 
 export type ProviderErrorCode =
-  | "not_found"
-  | "rate_limited"
-  | "unavailable"
-  | "timeout"
-  | "invalid_response";
+  "not_found" | "rate_limited" | "unavailable" | "timeout" | "invalid_response";
 
 export class SF6ProviderError extends Error {
   override readonly name = "SF6ProviderError";

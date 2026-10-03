@@ -1,13 +1,18 @@
+"use client";
+
 /**
  * Pure overlay renderer: (config, live state) → markup. Shared by the OBS Browser Source and the
  * dashboard preview. No data fetching, no stats math — values come pre-computed from the server.
  */
-import { useCallback, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
-  OVERLAY_PRESETS,
-  hexToRgba,
-  type OverlayConfig,
-} from "@/domain/overlay/config";
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import { OVERLAY_PRESETS, hexToRgba, type OverlayConfig } from "@/domain/overlay/config";
 import type { PlayerLiveState } from "@/domain/overlay/state";
 import { deltaTone, formatDelta, formatInteger, formatWinRate } from "@/domain/format";
 import type { MatchResult } from "@/domain/sf6/types";
@@ -132,7 +137,16 @@ function MinimalTheme({ config, live }: ThemeProps) {
     });
   }
   if (f.winRate) items.push({ key: "wr", node: <Animated value={formatWinRate(s.winRate)} /> });
-  if (f.totalGames) items.push({ key: "tg", node: <span><Animated value={s.totalGames} /><span className="ov-unit ov-muted">G</span></span> });
+  if (f.totalGames)
+    items.push({
+      key: "tg",
+      node: (
+        <span>
+          <Animated value={s.totalGames} />
+          <span className="ov-unit ov-muted">G</span>
+        </span>
+      ),
+    });
   if (f.rank) items.push({ key: "rank", node: <span>{r.rank}</span> });
   if (f.rating || f.ratingDelta) {
     items.push({
@@ -145,16 +159,35 @@ function MinimalTheme({ config, live }: ThemeProps) {
               <span className="ov-unit ov-muted"> {r.label}</span>
             </>
           )}
-          {f.ratingDelta && <Animated value={formatDelta(r.delta)} className={`ov-delta ${toneClass(r.delta)}`} />}
+          {f.ratingDelta && (
+            <Animated value={formatDelta(r.delta)} className={`ov-delta ${toneClass(r.delta)}`} />
+          )}
         </span>
       ),
     });
   }
   if (f.winStreak && s.currentWinStreak >= 2) {
-    items.push({ key: "streak", node: <span className="ov-accent"><Animated value={s.currentWinStreak} /> STREAK</span> });
+    items.push({
+      key: "streak",
+      node: (
+        <span className="ov-accent">
+          <Animated value={s.currentWinStreak} /> STREAK
+        </span>
+      ),
+    });
   }
-  if (f.bestStreak) items.push({ key: "best", node: <span><span className="ov-muted">BEST </span><Animated value={s.bestWinStreak} /></span> });
-  if (f.recentForm) items.push({ key: "form", node: <RecentForm results={s.recentResults} max={5} /> });
+  if (f.bestStreak)
+    items.push({
+      key: "best",
+      node: (
+        <span>
+          <span className="ov-muted">BEST </span>
+          <Animated value={s.bestWinStreak} />
+        </span>
+      ),
+    });
+  if (f.recentForm)
+    items.push({ key: "form", node: <RecentForm results={s.recentResults} max={5} /> });
 
   return (
     <div className="ov-panel ov-minimal ov-shadow">
@@ -185,10 +218,42 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
   const r = ratingParts(live);
   const blocks: Array<{ key: string; node: ReactNode }> = [];
 
-  if (f.wins) blocks.push({ key: "w", node: <Stat label="Wins"><Animated value={s.wins} className="ov-win" /></Stat> });
-  if (f.losses) blocks.push({ key: "l", node: <Stat label="Losses"><Animated value={s.losses} className="ov-loss" /></Stat> });
-  if (f.winRate) blocks.push({ key: "wr", node: <Stat label="Win rate"><Animated value={formatWinRate(s.winRate)} /></Stat> });
-  if (f.totalGames) blocks.push({ key: "tg", node: <Stat label="Games"><Animated value={s.totalGames} /></Stat> });
+  if (f.wins)
+    blocks.push({
+      key: "w",
+      node: (
+        <Stat label="Wins">
+          <Animated value={s.wins} className="ov-win" />
+        </Stat>
+      ),
+    });
+  if (f.losses)
+    blocks.push({
+      key: "l",
+      node: (
+        <Stat label="Losses">
+          <Animated value={s.losses} className="ov-loss" />
+        </Stat>
+      ),
+    });
+  if (f.winRate)
+    blocks.push({
+      key: "wr",
+      node: (
+        <Stat label="Win rate">
+          <Animated value={formatWinRate(s.winRate)} />
+        </Stat>
+      ),
+    });
+  if (f.totalGames)
+    blocks.push({
+      key: "tg",
+      node: (
+        <Stat label="Games">
+          <Animated value={s.totalGames} />
+        </Stat>
+      ),
+    });
   if (f.rating || f.ratingDelta) {
     blocks.push({
       key: "rating",
@@ -196,14 +261,36 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
         <Stat label={r.label}>
           {f.rating && <Animated value={r.value} />}
           {f.ratingDelta && (
-            <Animated value={formatDelta(r.delta)} className={`ov-stat-sub ${toneClass(r.delta)}`} />
+            <Animated
+              value={formatDelta(r.delta)}
+              className={`ov-stat-sub ${toneClass(r.delta)}`}
+            />
           )}
         </Stat>
       ),
     });
   }
-  if (f.winStreak) blocks.push({ key: "ws", node: <Stat label="Streak"><Animated value={s.currentWinStreak} className={s.currentWinStreak >= 3 ? "ov-accent" : ""} /></Stat> });
-  if (f.bestStreak) blocks.push({ key: "bs", node: <Stat label="Best"><Animated value={s.bestWinStreak} /></Stat> });
+  if (f.winStreak)
+    blocks.push({
+      key: "ws",
+      node: (
+        <Stat label="Streak">
+          <Animated
+            value={s.currentWinStreak}
+            className={s.currentWinStreak >= 3 ? "ov-accent" : ""}
+          />
+        </Stat>
+      ),
+    });
+  if (f.bestStreak)
+    blocks.push({
+      key: "bs",
+      node: (
+        <Stat label="Best">
+          <Animated value={s.bestWinStreak} />
+        </Stat>
+      ),
+    });
 
   const showHead = config.title.length > 0 || f.rank;
   return (
@@ -253,13 +340,17 @@ function FighterTheme({ config, live }: ThemeProps) {
             {f.winRate && (
               <div className="ov-f-col">
                 <span className="ov-f-label">Win rate</span>
-                <span className="ov-f-mid"><Animated value={formatWinRate(s.winRate)} /></span>
+                <span className="ov-f-mid">
+                  <Animated value={formatWinRate(s.winRate)} />
+                </span>
               </div>
             )}
             {f.totalGames && (
               <div className="ov-f-col">
                 <span className="ov-f-label">Games</span>
-                <span className="ov-f-mid"><Animated value={s.totalGames} /></span>
+                <span className="ov-f-mid">
+                  <Animated value={s.totalGames} />
+                </span>
               </div>
             )}
           </div>
@@ -277,7 +368,10 @@ function FighterTheme({ config, live }: ThemeProps) {
                   </>
                 )}
                 {f.ratingDelta && (
-                  <Animated value={formatDelta(r.delta)} className={`ov-f-badge ${toneClass(r.delta)}`} />
+                  <Animated
+                    value={formatDelta(r.delta)}
+                    className={`ov-f-badge ${toneClass(r.delta)}`}
+                  />
                 )}
               </span>
             </div>
@@ -289,7 +383,9 @@ function FighterTheme({ config, live }: ThemeProps) {
           <div className="ov-f-inner">
             <div className="ov-f-col">
               <span className="ov-f-label">Win streak</span>
-              <span className="ov-f-mid"><Animated value={s.currentWinStreak} /></span>
+              <span className="ov-f-mid">
+                <Animated value={s.currentWinStreak} />
+              </span>
             </div>
           </div>
         </div>
@@ -299,7 +395,9 @@ function FighterTheme({ config, live }: ThemeProps) {
           <div className="ov-f-inner">
             <div className="ov-f-col">
               <span className="ov-f-label">Best</span>
-              <span className="ov-f-mid"><Animated value={s.bestWinStreak} /></span>
+              <span className="ov-f-mid">
+                <Animated value={s.bestWinStreak} />
+              </span>
             </div>
           </div>
         </div>
@@ -379,7 +477,12 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
   ].join(" ");
 
   return (
-    <div ref={rootRef} className={className} style={overlayStyle(config, sizing, fit)} data-session-status={live.session.status}>
+    <div
+      ref={rootRef}
+      className={className}
+      style={overlayStyle(config, sizing, fit)}
+      data-session-status={live.session.status}
+    >
       {config.theme === "minimal" && <MinimalTheme config={config} live={live} />}
       {config.theme === "competitive" && <CompetitiveTheme config={config} live={live} />}
       {config.theme === "fighter" && <FighterTheme config={config} live={live} />}

@@ -30,7 +30,10 @@ export default async function OnboardingPage() {
         </p>
         <OnboardingFlow devHint={devToolsEnabled()} />
         {existing && (
-          <Link href="/dashboard" className="mt-6 block text-center text-sm text-muted hover:text-text">
+          <Link
+            href="/dashboard"
+            className="mt-6 block text-center text-sm text-muted hover:text-text"
+          >
             ← Back to dashboard
           </Link>
         )}

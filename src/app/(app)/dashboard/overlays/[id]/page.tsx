@@ -12,7 +12,9 @@ import { OverlayBuilder } from "./OverlayBuilder";
 export const metadata: Metadata = { title: "Configure overlay" };
 export const dynamic = "force-dynamic";
 
-export default async function OverlayBuilderPage({ params }: PageProps<"/dashboard/overlays/[id]">) {
+export default async function OverlayBuilderPage({
+  params,
+}: PageProps<"/dashboard/overlays/[id]">) {
   const { id } = await params;
   if (!z.string().uuid().safeParse(id).success) notFound();
   const { user, player } = await requirePlayer();
@@ -25,7 +27,12 @@ export default async function OverlayBuilderPage({ params }: PageProps<"/dashboa
   const url = `${getEnv().APP_URL.replace(/\/$/, "")}/overlay/${overlay.publicToken}`;
   return (
     <LiveDashboardProvider initial={live}>
-      <OverlayBuilder overlayId={overlay.id} initialName={overlay.name} initialConfig={overlay.config} url={url} />
+      <OverlayBuilder
+        overlayId={overlay.id}
+        initialName={overlay.name}
+        initialConfig={overlay.config}
+        url={url}
+      />
     </LiveDashboardProvider>
   );
 }

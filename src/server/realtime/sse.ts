@@ -19,7 +19,10 @@ export const SSE_HEADERS: HeadersInit = {
  * Create a streaming SSE response. `setup` runs once the stream is open and returns a cleanup
  * function, called exactly once when the client disconnects or the server closes the stream.
  */
-export function sseResponse(signal: AbortSignal, setup: (ctx: SseContext) => Promise<Cleanup>): Response {
+export function sseResponse(
+  signal: AbortSignal,
+  setup: (ctx: SseContext) => Promise<Cleanup>,
+): Response {
   const encoder = new TextEncoder();
   let closed = false;
   let cleanup: Cleanup | null = null;

@@ -2,7 +2,14 @@
  * Self-hosted fonts (next/font downloads them at build time; no runtime Google requests from
  * OBS). Each exposes a CSS variable; overlays pick one through `var(--ovf-<id>)`.
  */
-import { Bebas_Neue, Chakra_Petch, Inter, JetBrains_Mono, Oswald, Rajdhani } from "next/font/google";
+import {
+  Bebas_Neue,
+  Chakra_Petch,
+  Inter,
+  JetBrains_Mono,
+  Oswald,
+  Rajdhani,
+} from "next/font/google";
 
 const chakraPetch = Chakra_Petch({
   subsets: ["latin"],

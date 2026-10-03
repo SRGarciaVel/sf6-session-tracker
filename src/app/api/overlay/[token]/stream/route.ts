@@ -1,8 +1,12 @@
 import type { OverlayConfig } from "@/domain/overlay/config";
-import type { PlayerLiveState } from "@/domain/overlay/state";
+import { toPublicLiveState, type PlayerLiveState } from "@/domain/overlay/state";
 import { getDb } from "@/server/db/client";
 import { logger } from "@/server/logger";
-import { NO_STORE_HEADERS, limitOverlayRequest, loadOverlayPayload } from "@/server/overlays/public";
+import {
+  NO_STORE_HEADERS,
+  limitOverlayRequest,
+  loadOverlayPayload,
+} from "@/server/overlays/public";
 import {
   getOverlayById,
   heartbeatConnection,
@@ -49,9 +53,12 @@ export async function GET(request: Request, ctx: RouteContext<"/api/overlay/[tok
 
     const unsubscribe = hub.subscribe(overlay.playerId, (message) => {
       if (message.type === "live") {
-        live = message.live;
+        live = toPublicLiveState(message.live);
         sendState();
-      } else if (message.type === "overlay" && (message.overlayId === overlay.id || message.overlayId === "*")) {
+      } else if (
+        message.type === "overlay" &&
+        (message.overlayId === overlay.id || message.overlayId === "*")
+      ) {
         void getOverlayById(db, overlay.id).then((fresh) => {
           if (!fresh || fresh.publicToken !== token) {
             // Deleted or URL rotated: this token is no longer valid.
@@ -81,7 +88,9 @@ export async function GET(request: Request, ctx: RouteContext<"/api/overlay/[tok
       clearInterval(ping);
       unsubscribe();
       await removeConnection(db, connectionId).catch(() => undefined);
-      await publishEvent(db, { kind: "presence", playerId: overlay.playerId }).catch(() => undefined);
+      await publishEvent(db, { kind: "presence", playerId: overlay.playerId }).catch(
+        () => undefined,
+      );
       log.info("sse.disconnect", { overlayId: overlay.id, subscribers: hub.subscriberCount() });
     };
   });

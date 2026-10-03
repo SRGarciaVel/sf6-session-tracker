@@ -41,7 +41,12 @@ export function OnboardingFlow({ devHint }: { devHint: boolean }) {
         {STEPS.map((label, i) => (
           <li key={label} className="space-y-2">
             <div className={cx("h-1 rounded-full", i <= step ? "bg-accent" : "bg-line")} />
-            <span className={cx("text-[11px] font-semibold tracking-wider uppercase", i <= step ? "text-text" : "text-faint")}>
+            <span
+              className={cx(
+                "text-[11px] font-semibold tracking-wider uppercase",
+                i <= step ? "text-text" : "text-faint",
+              )}
+            >
               {label}
             </span>
           </li>
@@ -64,13 +69,20 @@ export function OnboardingFlow({ devHint }: { devHint: boolean }) {
             className="font-mono text-base tracking-wider"
             required
           />
-          <Button type="submit" variant={preview ? "secondary" : "primary"} disabled={pending || cfnId.length < 6} className="h-11">
+          <Button
+            type="submit"
+            variant={preview ? "secondary" : "primary"}
+            disabled={pending || cfnId.length < 6}
+            className="h-11"
+          >
             {pending && !preview ? "Checking…" : "Find player"}
           </Button>
         </div>
         <p className="text-xs text-faint">
-          Find it on Buckler&apos;s Boot Camp → your profile. It&apos;s the numeric User Code, not your fighter name.
-          {devHint && " (Mock mode: any 6–12 digit number works; IDs starting with 000 are “not found”.)"}
+          Find it on Buckler&apos;s Boot Camp → your profile. It&apos;s the numeric User Code, not
+          your fighter name.
+          {devHint &&
+            " (Mock mode: any 6–12 digit number works; IDs starting with 000 are “not found”.)"}
         </p>
       </form>
 
@@ -78,7 +90,9 @@ export function OnboardingFlow({ devHint }: { devHint: boolean }) {
 
       {preview && (
         <div className="animate-rise rounded-lg border border-accent/40 bg-accent/5 p-5">
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-accent uppercase">Player found</p>
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-accent uppercase">
+            Player found
+          </p>
           <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="font-display text-2xl font-bold">{preview.displayName}</p>
@@ -88,12 +102,22 @@ export function OnboardingFlow({ devHint }: { devHint: boolean }) {
             </div>
             <div className="text-right">
               <p className="font-display text-3xl font-bold tabular">
-                {formatInteger(preview.ratingSystem === "mr" ? preview.masterRate : preview.leaguePoints)}
+                {formatInteger(
+                  preview.ratingSystem === "mr" ? preview.masterRate : preview.leaguePoints,
+                )}
               </p>
-              <p className="text-xs font-semibold tracking-widest text-muted">{preview.ratingSystem === "mr" ? "MR" : "LP"}</p>
+              <p className="text-xs font-semibold tracking-widest text-muted">
+                {preview.ratingSystem === "mr" ? "MR" : "LP"}
+              </p>
             </div>
           </div>
-          <Button variant="primary" size="lg" className="mt-5 w-full" onClick={confirm} disabled={pending}>
+          <Button
+            variant="primary"
+            size="lg"
+            className="mt-5 w-full"
+            onClick={confirm}
+            disabled={pending}
+          >
             {pending ? "Setting up…" : "This is me — create my overlay"}
           </Button>
         </div>

@@ -1,5 +1,9 @@
 import { getClientIp } from "@/server/security/client-ip";
-import { NO_STORE_HEADERS, limitOverlayRequest, loadOverlayPayload } from "@/server/overlays/public";
+import {
+  NO_STORE_HEADERS,
+  limitOverlayRequest,
+  loadOverlayPayload,
+} from "@/server/overlays/public";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +13,10 @@ export async function GET(request: Request, ctx: RouteContext<"/api/overlay/[tok
   if (!limit.ok) {
     return Response.json(
       { error: "rate_limited" },
-      { status: 429, headers: { ...NO_STORE_HEADERS, "Retry-After": String(limit.retryAfterSeconds) } },
+      {
+        status: 429,
+        headers: { ...NO_STORE_HEADERS, "Retry-After": String(limit.retryAfterSeconds) },
+      },
     );
   }
   const { token } = await ctx.params;

@@ -39,7 +39,13 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       {mode === "signup" && (
         <div>
           <Label htmlFor="name">Display name</Label>
-          <Input id="name" name="name" autoComplete="nickname" maxLength={40} placeholder="Your streamer name" />
+          <Input
+            id="name"
+            name="name"
+            autoComplete="nickname"
+            maxLength={40}
+            placeholder="Your streamer name"
+          />
         </div>
       )}
       <div>

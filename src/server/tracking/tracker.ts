@@ -48,6 +48,7 @@ export interface ClaimedPlayer {
   id: string;
   cfnUserId: string;
   consecutiveFailures: number;
+  lastSuccessAt: Date | null;
   profileUpdatedAt: Date | null;
   profileRefreshUntil: Date | null;
 }
@@ -56,6 +57,7 @@ interface ClaimedRow extends Record<string, unknown> {
   id: string;
   cfn_user_id: string;
   consecutive_failures: number;
+  last_success_at: Date | string | null;
   profile_updated_at: Date | string | null;
   profile_refresh_until: Date | string | null;
 }
@@ -86,13 +88,14 @@ export async function claimDuePlayers(
         limit ${limit}
         for update skip locked
      )
-    returning p.id, p.cfn_user_id, p.consecutive_failures,
+    returning p.id, p.cfn_user_id, p.consecutive_failures, p.last_success_at,
               p.profile_updated_at, p.profile_refresh_until
   `);
   return rows.map((r) => ({
     id: r.id,
     cfnUserId: r.cfn_user_id,
     consecutiveFailures: Number(r.consecutive_failures),
+    lastSuccessAt: toDate(r.last_success_at),
     profileUpdatedAt: toDate(r.profile_updated_at),
     profileRefreshUntil: toDate(r.profile_refresh_until),
   }));
@@ -106,7 +109,13 @@ export async function releaseAllLeases(db: Database, workerId: string): Promise<
 }
 
 export type PollOutcome =
-  | { status: "ok"; newMatches: number; counted: number; profileRefreshed: boolean; nextDelayMs: number }
+  | {
+      status: "ok";
+      newMatches: number;
+      counted: number;
+      profileRefreshed: boolean;
+      nextDelayMs: number;
+    }
   | { status: "error"; code: string; nextDelayMs: number }
   | { status: "idle" };
 
@@ -144,7 +153,8 @@ export async function pollPlayer(
     const followUpUntil =
       ingest.inserted > 0 ? new Date(now + PROFILE_FOLLOW_UP_MS) : player.profileRefreshUntil;
     const profileStale =
-      player.profileUpdatedAt === null || now - player.profileUpdatedAt.getTime() > config.profileRefreshMs;
+      player.profileUpdatedAt === null ||
+      now - player.profileUpdatedAt.getTime() > config.profileRefreshMs;
     const inFollowUp = followUpUntil !== null && followUpUntil.getTime() > now;
 
     let profileRefreshed = false;
@@ -173,8 +183,10 @@ export async function pollPlayer(
       })
       .where(ownLease);
 
-    if (player.consecutiveFailures > 0) {
-      // Tracker recovered → let the dashboard drop its warning.
+    const firstSuccessOfSession =
+      player.lastSuccessAt === null || player.lastSuccessAt < session.startedAt;
+    if (player.consecutiveFailures > 0 || firstSuccessOfSession) {
+      // Tracker became healthy (recovered / first check) → update dashboard status.
       await publishEvent(db, { kind: "player", playerId: player.id });
     }
     if (ingest.inserted > 0) {

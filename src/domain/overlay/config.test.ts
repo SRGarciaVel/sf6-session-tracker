@@ -60,3 +60,12 @@ describe("formatters", () => {
     expect(formatDelta(1620)).toBe("+1,620");
   });
 });
+
+describe("public overlay state", () => {
+  it("never exposes the internal session id", async () => {
+    const { sampleLiveState, toPublicLiveState } = await import("./state");
+    const live = sampleLiveState();
+    live.session.sessionId = "6f1c1f0e-8a7b-4c9d-9e2f-0a1b2c3d4e5f";
+    expect(JSON.stringify(toPublicLiveState(live))).not.toContain(live.session.sessionId);
+  });
+});
