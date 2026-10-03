@@ -159,12 +159,18 @@ export async function pollPlayer(
 
     let profileRefreshed = false;
     if (ingest.inserted > 0 || inFollowUp || profileStale) {
+      // Stamp the snapshot with the fetch START so a slower overlapping poll can never
+      // overwrite a newer per-character rating (guarded upsert in updatePlayerProfile).
+      const fetchedAt = new Date();
       const profile = await provider.getPlayerProfile(player.cfnUserId);
-      const changed = await updatePlayerProfile(db, player.id, profile);
+      const changed = await updatePlayerProfile(db, player.id, profile, fetchedAt);
       profileRefreshed = true;
       if (changed) {
         await publishEvent(db, { kind: "player", playerId: player.id });
-        plog.info("session.update", { reason: "rating_changed", rank: profile.rank });
+        plog.info("session.update", {
+          reason: "rating_changed",
+          characters: profile.characters.length,
+        });
       }
     }
 

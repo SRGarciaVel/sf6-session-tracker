@@ -35,6 +35,11 @@ export function getSF6DataProvider(): ResilientProvider {
   return g.__sf6Provider;
 }
 
+/** The provider WITHOUT the resilience/validation wrapper — for `provider:check` only. */
+export function getRawSF6DataProvider(): SF6DataProvider {
+  return createInnerProvider();
+}
+
 /** Only available when SF6_PROVIDER=mock. Callers must also check devToolsEnabled(). */
 export function getMockProvider(): MockSF6DataProvider | null {
   return getEnv().SF6_PROVIDER === "mock" ? new MockSF6DataProvider(getDb()) : null;

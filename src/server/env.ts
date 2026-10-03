@@ -31,7 +31,7 @@ const envSchema = z.object({
   TRACKER_LEASE_MS: int(60_000, 10_000),
   WORKER_TICK_MS: int(1_000, 100),
   WORKER_CONCURRENCY: int(10, 1),
-  SESSION_START_GRACE_SECONDS: int(0),
+  SESSION_START_GRACE_SECONDS: int(90),
 
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 });

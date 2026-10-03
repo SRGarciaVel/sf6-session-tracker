@@ -3,6 +3,7 @@
  * and tolerant on read (missing keys fall back to defaults so old configs keep working).
  */
 import { z } from "zod";
+import { CHARACTER_KEY_PATTERN } from "@/domain/sf6/rating";
 import { DEFAULT_LOCALE, LOCALES } from "@/i18n/locale";
 
 export const OVERLAY_THEMES = ["minimal", "competitive", "fighter"] as const;
@@ -68,6 +69,11 @@ export const overlayConfigSchema = z.object({
   showTitle: z.boolean(),
   /** Overlay language, independent from the streamer's dashboard language. */
   locale: z.enum(LOCALES),
+  /**
+   * Character whose rating the overlay shows. null = the active character (latest Ranked match);
+   * a key (e.g. "aki") pins it. W/L stays global either way.
+   */
+  ratingCharacterKey: z.string().regex(CHARACTER_KEY_PATTERN).max(40).nullable(),
   font: z.enum(FONT_IDS),
   textColor: hexColor,
   mutedColor: hexColor,
@@ -107,6 +113,7 @@ export const DEFAULT_OVERLAY_CONFIG: OverlayConfig = {
   title: "",
   showTitle: true,
   locale: DEFAULT_LOCALE,
+  ratingCharacterKey: null,
   font: "barlow-condensed",
   textColor: "#f4f6ff",
   mutedColor: "#a3acd0",

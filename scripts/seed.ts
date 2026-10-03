@@ -26,7 +26,8 @@ async function main() {
 
   const { getAuth } = await import("@/server/auth/auth");
   const { closeDb, getDb } = await import("@/server/db/client");
-  const { authUser, gameSession, match } = await import("@/server/db/schema");
+  const { authUser, gameSession, match, sessionCharacterBaseline } =
+    await import("@/server/db/schema");
   const { getEnv } = await import("@/server/env");
   const { listOverlays } = await import("@/server/overlays/service");
   const { upsertPlayerForUser } = await import("@/server/players/service");
@@ -51,50 +52,84 @@ async function main() {
     .from(gameSession)
     .where(eq(gameSession.playerId, player.id));
   if (existing.length === 0) {
-    const pattern = [
-      { daysAgo: 1, results: "WWLWWWLWLLWWWWWWLWLWWLLWWLWLW" },
-      { daysAgo: 3, results: "LWLWWLLWWLWL" },
+    // Two closed multi-character sessions with per-character baselines and frozen finals.
+    const plans = [
+      {
+        daysAgo: 1,
+        legs: [
+          { key: "aki", results: "WWLWWLW" },
+          { key: "kimberly", results: "WLW" },
+        ],
+      },
+      { daysAgo: 3, legs: [{ key: "kimberly", results: "LWWLWL" }] },
     ];
-    const isMr = profile.masterRate !== null;
-    for (const { daysAgo, results } of pattern) {
+    for (const { daysAgo, legs } of plans) {
       const startedAt = new Date(Date.now() - daysAgo * 86_400_000);
-      let rating = isMr ? (profile.masterRate ?? 1500) - 60 : (profile.leaguePoints ?? 15000) - 500;
-      const initial = rating;
-      const rows = [...results].map((c, i) => {
-        const win = c === "W";
-        rating += isMr ? (win ? 14 : -12) : win ? 110 : -80;
-        return {
-          playerId: player.id,
-          externalMatchId: `seed-${randomBytes(6).toString("hex")}`,
-          playedAt: new Date(startedAt.getTime() + (i + 1) * 4 * 60_000),
-          mode: "ranked" as const,
-          result: win ? ("win" as const) : ("loss" as const),
-          playerCharacter: profile.mainCharacter,
-          opponentName: `Rival${(i * 7) % 23}`,
-          opponentCharacter: SF6_CHARACTERS[(i * 5) % SF6_CHARACTERS.length] ?? null,
-          leaguePointsAfter: isMr ? profile.leaguePoints : rating,
-          masterRateAfter: isMr ? rating : null,
-        };
-      });
-      const endedAt = new Date(startedAt.getTime() + (results.length + 1) * 4 * 60_000);
       const [session] = await db
         .insert(gameSession)
         .values({
           playerId: player.id,
           status: "ended",
           startedAt,
-          endedAt,
-          initialRank: profile.rank,
-          initialLeaguePoints: isMr ? profile.leaguePoints : initial,
-          initialMasterRate: isMr ? initial : null,
-          finalRank: profile.rank,
-          finalLeaguePoints: isMr ? profile.leaguePoints : rating,
-          finalMasterRate: isMr ? rating : null,
+          endedAt: new Date(startedAt.getTime() + 2 * 3_600_000),
           filter: { modes: ["ranked"] },
+          ratingModel: "per_character",
         })
         .returning();
-      if (session)
-        await db.insert(match).values(rows.map((r) => ({ ...r, sessionId: session.id })));
+      if (!session) continue;
+      let minute = 0;
+      for (const leg of legs) {
+        const char = profile.characters.find((c) => c.characterKey === leg.key);
+        if (!char || !char.ratingSystem) continue;
+        const system = char.ratingSystem;
+        const step = system === "mr" ? { win: 14, loss: -12 } : { win: 110, loss: -80 };
+        let rating = (system === "mr" ? char.masterRate : char.leaguePoints) ?? 0;
+        rating -= [...leg.results].reduce((n, c) => n + (c === "W" ? step.win : step.loss), 0);
+        const initial = rating;
+        const rows = [...leg.results].map((c) => {
+          const win = c === "W";
+          const before = rating;
+          rating += win ? step.win : step.loss;
+          minute += 4;
+          return {
+            sessionId: session.id,
+            playerId: player.id,
+            externalMatchId: `seed-${randomBytes(6).toString("hex")}`,
+            playedAt: new Date(startedAt.getTime() + minute * 60_000),
+            mode: "ranked" as const,
+            result: win ? ("win" as const) : ("loss" as const),
+            characterKey: char.characterKey,
+            characterName: char.characterName,
+            opponentName: `Rival${minute % 23}`,
+            opponentCharacter: SF6_CHARACTERS[minute % SF6_CHARACTERS.length] ?? null,
+            ratingBeforeSystem: system,
+            ratingBeforeValue: before,
+            ratingAfterSystem: system,
+            ratingAfterValue: rating,
+          };
+        });
+        await db.insert(match).values(rows);
+        const value = (v: number) => ({
+          lp: system === "lp" ? v : null,
+          mr: system === "mr" ? v : null,
+        });
+        await db.insert(sessionCharacterBaseline).values({
+          sessionId: session.id,
+          characterKey: char.characterKey,
+          characterName: char.characterName,
+          source: "session_start",
+          initialRank: char.rank,
+          initialRatingSystem: system,
+          initialLeaguePoints: value(initial).lp,
+          initialMasterRate: value(initial).mr,
+          finalRank: char.rank,
+          finalRatingSystem: system,
+          finalLeaguePoints: value(rating).lp,
+          finalMasterRate: value(rating).mr,
+          capturedAt: startedAt,
+          finalizedAt: session.endedAt,
+        });
+      }
     }
   }
 

@@ -20,9 +20,6 @@ export interface DashboardLiveState {
   live: PlayerLiveState;
   player: {
     cfnUserId: string;
-    rank: string | null;
-    leaguePoints: number | null;
-    masterRate: number | null;
   };
   tracker: TrackerStatus;
   overlayConnections: number;
@@ -52,9 +49,6 @@ export async function buildDashboardLiveState(
     live: liveState,
     player: {
       cfnUserId: player.cfnUserId,
-      rank: player.rank,
-      leaguePoints: player.leaguePoints,
-      masterRate: player.masterRate,
     },
     tracker: {
       state,

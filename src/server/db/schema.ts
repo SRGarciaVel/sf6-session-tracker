@@ -12,7 +12,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import type { SessionFilter } from "@/domain/session/engine";
-import type { MatchMode, MatchResult } from "@/domain/sf6/types";
+import type { MatchMode, MatchResult, RatingSystem } from "@/domain/sf6/types";
 
 const tz = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
 const createdAt = () => tz("created_at").notNull().defaultNow();
@@ -94,11 +94,8 @@ export const sf6Player = pgTable(
       .references(() => authUser.id, { onDelete: "cascade" }),
     cfnUserId: text("cfn_user_id").notNull(),
     displayName: text("display_name").notNull(),
-    mainCharacter: text("main_character"),
-    // Latest profile snapshot (current rating).
-    rank: text("rank"),
-    leaguePoints: integer("league_points"),
-    masterRate: integer("master_rate"),
+    /** Character shown on the CFN profile card. Ratings live in player_character_rating. */
+    favoriteCharacterKey: text("favorite_character_key"),
     profileUpdatedAt: tz("profile_updated_at"),
     // Tracker state (see docs/architecture.md §2.8).
     nextPollAt: tz("next_poll_at"),
@@ -139,10 +136,20 @@ export const gameSession = pgTable(
     finalLeaguePoints: integer("final_league_points"),
     finalMasterRate: integer("final_master_rate"),
     filter: jsonb("filter").$type<SessionFilter>().notNull(),
+    /**
+     * "per_character": ratings in session_character_baseline.
+     * "legacy": created before per-character ratings; initial_* / final_* above are a single
+     * global value of unknown character and are NOT used for deltas.
+     */
+    ratingModel: text("rating_model")
+      .$type<"per_character" | "legacy">()
+      .notNull()
+      .default("per_character"),
     createdAt: createdAt(),
   },
   (t) => [
     check("game_session_status_ck", sql`${t.status} in ('active', 'ended')`),
+    check("game_session_rating_model_ck", sql`${t.ratingModel} in ('per_character', 'legacy')`),
     // At most one active session per player.
     uniqueIndex("game_session_one_active_uq")
       .on(t.playerId)
@@ -164,13 +171,23 @@ export const match = pgTable(
     playedAt: tz("played_at").notNull(),
     mode: text("mode").$type<MatchMode>().notNull(),
     result: text("result").$type<MatchResult>().notNull(),
-    playerCharacter: text("player_character"),
+    characterKey: text("character_key").notNull(),
+    /** Display name of the character used (column kept from v1 as `player_character`). */
+    characterName: text("player_character").notNull(),
     playerControlType: text("player_control_type"),
     opponentName: text("opponent_name"),
+    opponentCharacterKey: text("opponent_character_key"),
     opponentCharacter: text("opponent_character"),
     opponentRank: text("opponent_rank"),
-    leaguePointsAfter: integer("league_points_after"),
-    masterRateAfter: integer("master_rate_after"),
+    ratingBeforeSystem: text("rating_before_system").$type<RatingSystem>(),
+    ratingBeforeValue: integer("rating_before_value"),
+    ratingBeforeRank: text("rating_before_rank"),
+    ratingBeforePhase: integer("rating_before_phase"),
+    ratingAfterSystem: text("rating_after_system").$type<RatingSystem>(),
+    ratingAfterValue: integer("rating_after_value"),
+    ratingAfterRank: text("rating_after_rank"),
+    ratingAfterRankTier: text("rating_after_rank_tier"),
+    ratingAfterPhase: integer("rating_after_phase"),
     ingestedAt: tz("ingested_at").notNull().defaultNow(),
   },
   (t) => [
@@ -180,6 +197,60 @@ export const match = pgTable(
     index("match_player_played_idx").on(t.playerId, t.playedAt),
     check("match_result_ck", sql`${t.result} in ('win', 'loss', 'draw')`),
   ],
+);
+
+/** Latest known rating of each character of a player (current profile snapshot). */
+export const playerCharacterRating = pgTable(
+  "player_character_rating",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    playerId: uuid("player_id")
+      .notNull()
+      .references(() => sf6Player.id, { onDelete: "cascade" }),
+    characterKey: text("character_key").notNull(),
+    characterName: text("character_name").notNull(),
+    rank: text("rank"),
+    rankTier: text("rank_tier"),
+    ratingSystem: text("rating_system").$type<RatingSystem>(),
+    leaguePoints: integer("league_points"),
+    masterRate: integer("master_rate"),
+    phase: integer("phase"),
+    /** When the provider reported this value (guards against older snapshots overwriting newer). */
+    observedAt: tz("observed_at").notNull(),
+    updatedAt: tz("updated_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("player_character_rating_uq").on(t.playerId, t.characterKey)],
+);
+
+/** Per-character rating at session start (initial_*) and at session end (final_*). */
+export const sessionCharacterBaseline = pgTable(
+  "session_character_baseline",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => gameSession.id, { onDelete: "cascade" }),
+    characterKey: text("character_key").notNull(),
+    characterName: text("character_name").notNull(),
+    /** "session_start" (fresh profile) | "prior_snapshot" (stored earlier snapshot) | "none". */
+    source: text("source").$type<"session_start" | "prior_snapshot" | "none">().notNull(),
+    initialRank: text("initial_rank"),
+    initialRankTier: text("initial_rank_tier"),
+    initialRatingSystem: text("initial_rating_system").$type<RatingSystem>(),
+    initialLeaguePoints: integer("initial_league_points"),
+    initialMasterRate: integer("initial_master_rate"),
+    initialPhase: integer("initial_phase"),
+    finalRank: text("final_rank"),
+    finalRankTier: text("final_rank_tier"),
+    finalRatingSystem: text("final_rating_system").$type<RatingSystem>(),
+    finalLeaguePoints: integer("final_league_points"),
+    finalMasterRate: integer("final_master_rate"),
+    finalPhase: integer("final_phase"),
+    capturedAt: tz("captured_at").notNull(),
+    finalizedAt: tz("finalized_at"),
+    updatedAt: tz("updated_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("session_character_baseline_uq").on(t.sessionId, t.characterKey)],
 );
 
 export const overlay = pgTable(
@@ -218,9 +289,9 @@ export const overlayConnection = pgTable(
 export const mockCfnPlayer = pgTable("mock_cfn_player", {
   cfnUserId: text("cfn_user_id").primaryKey(),
   displayName: text("display_name").notNull(),
-  mainCharacter: text("main_character").notNull(),
-  leaguePoints: integer("league_points").notNull(),
-  masterRate: integer("master_rate"),
+  favoriteCharacterKey: text("favorite_character_key"),
+  /** Character the next simulated match is played with (dev tools). */
+  currentCharacterKey: text("current_character_key"),
   /** Simulated outage: provider calls fail until this time. */
   failUntil: tz("fail_until"),
   createdAt: createdAt(),
@@ -236,13 +307,31 @@ export const mockCfnMatch = pgTable(
     playedAt: tz("played_at").notNull(),
     mode: text("mode").$type<MatchMode>().notNull(),
     result: text("result").$type<MatchResult>().notNull(),
+    characterKey: text("character_key").notNull(),
     playerCharacter: text("player_character").notNull(),
     opponentName: text("opponent_name").notNull(),
     opponentCharacter: text("opponent_character").notNull(),
-    leaguePointsAfter: integer("league_points_after").notNull(),
-    masterRateAfter: integer("master_rate_after"),
+    ratingBeforeSystem: text("rating_before_system").$type<RatingSystem>(),
+    ratingBeforeValue: integer("rating_before_value"),
+    ratingAfterSystem: text("rating_after_system").$type<RatingSystem>(),
+    ratingAfterValue: integer("rating_after_value"),
   },
   (t) => [index("mock_cfn_match_user_played_idx").on(t.cfnUserId, t.playedAt)],
+);
+
+/** Per-character roster of a mock CFN player. */
+export const mockCfnCharacter = pgTable(
+  "mock_cfn_character",
+  {
+    cfnUserId: text("cfn_user_id")
+      .notNull()
+      .references(() => mockCfnPlayer.cfnUserId, { onDelete: "cascade" }),
+    characterKey: text("character_key").notNull(),
+    characterName: text("character_name").notNull(),
+    leaguePoints: integer("league_points").notNull(),
+    masterRate: integer("master_rate"),
+  },
+  (t) => [uniqueIndex("mock_cfn_character_uq").on(t.cfnUserId, t.characterKey)],
 );
 
 export type Sf6PlayerRow = typeof sf6Player.$inferSelect;

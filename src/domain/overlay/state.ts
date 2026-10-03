@@ -2,23 +2,45 @@
  * Live state pushed to overlays and the dashboard. JSON-serializable (dates as ISO strings).
  *
  * Every realtime message carries the *full* authoritative state — clients replace, never
- * increment.
+ * increment. Ratings are per character; W/L stays global.
  */
-import type { SessionSummary, SessionStatus } from "@/domain/session/engine";
+import type {
+  CharacterProgress,
+  RatingModel,
+  SessionStatus,
+  SessionSummary,
+} from "@/domain/session/engine";
 import { EMPTY_STATS } from "@/domain/session/engine";
-import {
-  buildRatingView,
-  EMPTY_RATING,
-  type RatingSnapshot,
-  type RatingView,
-} from "@/domain/sf6/rating";
-import type { MatchResult } from "@/domain/sf6/types";
+import type { CharacterKey, MatchResult, RatingSystem } from "@/domain/sf6/types";
 import type { OverlayConfig } from "./config";
+
+export interface LiveRating {
+  system: RatingSystem;
+  value: number;
+  rank: string | null;
+}
+
+export interface LiveCharacterProgress {
+  characterKey: CharacterKey;
+  characterName: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  games: number;
+  ratingSystem: RatingSystem | null;
+  initial: LiveRating | null;
+  current: LiveRating | null;
+  /** Same character, system and phase only; otherwise null (never invented). */
+  delta: number | null;
+  /** false when the starting rating of this character is unknown. */
+  baselineKnown: boolean;
+}
 
 export interface LiveSessionState {
   /** "none" = the player has never started a session. */
   status: SessionStatus | "none";
   sessionId: string | null;
+  ratingModel: RatingModel;
   startedAt: string | null;
   endedAt: string | null;
   wins: number;
@@ -31,14 +53,14 @@ export interface LiveSessionState {
   currentLossStreak: number;
   bestWinStreak: number;
   recentResults: MatchResult[];
-  rating: RatingView;
+  /** Character of the latest counted match (else favorite / first rated). Presentation only. */
+  activeCharacterKey: CharacterKey | null;
+  /** Played characters first (most recent first), then the rest of the roster. */
+  characters: LiveCharacterProgress[];
 }
 
 export interface PlayerLiveState {
-  player: {
-    displayName: string;
-    mainCharacter: string | null;
-  };
+  player: { displayName: string };
   session: LiveSessionState;
   /** Server time when this snapshot was built; clients drop snapshots older than the current. */
   generatedAt: string;
@@ -53,25 +75,46 @@ export function roundOneDecimal(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
+function toLiveCharacter(p: CharacterProgress): LiveCharacterProgress {
+  const live = (r: CharacterProgress["current"]): LiveRating | null =>
+    r ? { system: r.system, value: r.value, rank: r.rank ?? null } : null;
+  return {
+    characterKey: p.characterKey,
+    characterName: p.characterName,
+    wins: p.wins,
+    losses: p.losses,
+    draws: p.draws,
+    games: p.games,
+    ratingSystem: p.ratingSystem,
+    initial: live(p.initial),
+    current: live(p.current),
+    delta: p.delta,
+    baselineKnown: p.initial !== null,
+  };
+}
+
 export function toLiveSessionState(
   sessionId: string | null,
   summary: SessionSummary | null,
-  currentRating: RatingSnapshot,
+  idle: { characters: CharacterProgress[]; activeCharacterKey: CharacterKey | null },
 ): LiveSessionState {
   if (summary === null) {
     return {
       status: "none",
       sessionId: null,
+      ratingModel: "per_character",
       startedAt: null,
       endedAt: null,
       ...EMPTY_STATS,
       recentResults: [],
-      rating: buildRatingView(currentRating, currentRating),
+      activeCharacterKey: idle.activeCharacterKey,
+      characters: idle.characters.map(toLiveCharacter),
     };
   }
   return {
     status: summary.status,
     sessionId,
+    ratingModel: summary.ratingModel,
     startedAt: summary.startedAt.toISOString(),
     endedAt: summary.endedAt?.toISOString() ?? null,
     wins: summary.wins,
@@ -83,8 +126,22 @@ export function toLiveSessionState(
     currentLossStreak: summary.currentLossStreak,
     bestWinStreak: summary.bestWinStreak,
     recentResults: summary.recentResults,
-    rating: summary.rating,
+    activeCharacterKey: summary.activeCharacterKey,
+    characters: summary.characters.map(toLiveCharacter),
   };
+}
+
+/**
+ * Character whose rating should be shown: a pinned key (overlay `ratingCharacterKey`) if that
+ * character is known, otherwise the active character. Null when nothing is known.
+ */
+export function pickRatingCharacter(
+  session: LiveSessionState,
+  pinnedKey: CharacterKey | null = null,
+): LiveCharacterProgress | null {
+  const byKey = (key: CharacterKey | null) =>
+    key ? (session.characters.find((c) => c.characterKey === key) ?? null) : null;
+  return byKey(pinnedKey) ?? byKey(session.activeCharacterKey);
 }
 
 /** Public (unauthenticated) view: strips internal identifiers. */
@@ -95,10 +152,11 @@ export function toPublicLiveState(live: PlayerLiveState): PlayerLiveState {
 /** Placeholder state for previews before any data exists. */
 export function sampleLiveState(): PlayerLiveState {
   return {
-    player: { displayName: "Player", mainCharacter: "Ryu" },
+    player: { displayName: "Player" },
     session: {
       status: "active",
       sessionId: null,
+      ratingModel: "per_character",
       startedAt: new Date(0).toISOString(),
       endedAt: null,
       wins: 12,
@@ -110,10 +168,22 @@ export function sampleLiveState(): PlayerLiveState {
       currentLossStreak: 0,
       bestWinStreak: 6,
       recentResults: ["win", "loss", "win", "win", "win", "win"],
-      rating: buildRatingView(
-        { ...EMPTY_RATING, rank: "Master", masterRate: 1588 },
-        { ...EMPTY_RATING, rank: "Master", masterRate: 1684 },
-      ),
+      activeCharacterKey: "ryu",
+      characters: [
+        {
+          characterKey: "ryu",
+          characterName: "Ryu",
+          wins: 12,
+          losses: 5,
+          draws: 0,
+          games: 17,
+          ratingSystem: "mr",
+          initial: { system: "mr", value: 1588, rank: "Master" },
+          current: { system: "mr", value: 1684, rank: "Master" },
+          delta: 96,
+          baselineKnown: true,
+        },
+      ],
     },
     generatedAt: new Date(0).toISOString(),
   };
