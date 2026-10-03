@@ -2,7 +2,7 @@
  * Pure overlay renderer: (config, live state) → markup. Shared by the OBS Browser Source and the
  * dashboard preview. No data fetching, no stats math — values come pre-computed from the server.
  */
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   OVERLAY_PRESETS,
   hexToRgba,
@@ -25,9 +25,9 @@ export type OverlaySizing =
 
 type CssVars = CSSProperties & Record<`--${string}`, string>;
 
-export function overlayStyle(config: OverlayConfig, sizing: OverlaySizing): CssVars {
+export function overlayStyle(config: OverlayConfig, sizing: OverlaySizing, fit = 1): CssVars {
   const preset = OVERLAY_PRESETS[config.preset];
-  const base = PRESET_BASE_PX[config.preset] * config.scale;
+  const base = PRESET_BASE_PX[config.preset] * config.scale * fit;
   const fontSize =
     sizing.mode === "viewport"
       ? `calc(min(100vw / ${preset.width}, 100vh / ${preset.height}) * ${base})`
@@ -323,7 +323,54 @@ export interface OverlayViewProps {
   sizing: OverlaySizing;
 }
 
+/**
+ * Auto-fit: if the content is wider/taller than the canvas (narrow OBS source, many fields, big
+ * scale), shrink the root font-size until it fits. Everything is em-based, so content size is
+ * proportional to the font-size and one measurement is enough.
+ */
+function useFitToBox() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const fitRef = useRef(1);
+  const [fit, setFit] = useState(1);
+
+  const measure = useCallback(() => {
+    const root = rootRef.current;
+    const content = root?.firstElementChild as HTMLElement | null | undefined;
+    if (!root || !content) return;
+    const cs = getComputedStyle(root);
+    const availW = root.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const availH = root.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    // Natural (fit = 1) size of the content, derived from its current size.
+    const w = content.scrollWidth / fitRef.current;
+    const h = content.scrollHeight / fitRef.current;
+    if (w <= 0 || h <= 0 || availW <= 0 || availH <= 0) return;
+    const next = Math.max(0.2, Math.floor(Math.min(1, availW / w, availH / h) * 1000) / 1000);
+    if (Math.abs(next - fitRef.current) > 0.004) {
+      fitRef.current = next;
+      setFit(next);
+    }
+  }, []);
+
+  // Content (fields, values, theme) may change on any render: re-measure. The threshold guard
+  // above makes this converge after at most one extra render.
+  useLayoutEffect(() => {
+    measure();
+  });
+
+  // Canvas size changes (OBS source resize, preview resize).
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(root);
+    return () => ro.disconnect();
+  }, [measure]);
+
+  return { rootRef, fit };
+}
+
 export function OverlayView({ config, live, sizing }: OverlayViewProps) {
+  const { rootRef, fit } = useFitToBox();
   const className = [
     "sf6-overlay",
     `ov-theme-${config.theme}`,
@@ -332,7 +379,7 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
   ].join(" ");
 
   return (
-    <div className={className} style={overlayStyle(config, sizing)} data-session-status={live.session.status}>
+    <div ref={rootRef} className={className} style={overlayStyle(config, sizing, fit)} data-session-status={live.session.status}>
       {config.theme === "minimal" && <MinimalTheme config={config} live={live} />}
       {config.theme === "competitive" && <CompetitiveTheme config={config} live={live} />}
       {config.theme === "fighter" && <FighterTheme config={config} live={live} />}

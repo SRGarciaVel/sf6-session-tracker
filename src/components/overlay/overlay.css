@@ -22,6 +22,11 @@
   user-select: none;
 }
 
+/* The theme panel keeps its natural size; auto-fit scales the font instead of squashing. */
+.sf6-overlay > * {
+  flex-shrink: 0;
+}
+
 .sf6-overlay *,
 .sf6-overlay *::before,
 .sf6-overlay *::after {

@@ -132,6 +132,8 @@ export const OVERLAY_THEME_META: Record<OverlayThemeId, OverlayThemeMeta> = {
     defaults: {
       preset: "compact",
       font: "inter",
+      accentColor: "#ffb020",
+      backgroundColor: "#0b0c10",
       backgroundOpacity: 0,
       borderEnabled: false,
       borderRadius: 6,
@@ -144,6 +146,8 @@ export const OVERLAY_THEME_META: Record<OverlayThemeId, OverlayThemeMeta> = {
     defaults: {
       preset: "standard",
       font: "chakra-petch",
+      accentColor: "#ffb020",
+      backgroundColor: "#0b0c10",
       backgroundOpacity: 0.72,
       borderRadius: 10,
     },
