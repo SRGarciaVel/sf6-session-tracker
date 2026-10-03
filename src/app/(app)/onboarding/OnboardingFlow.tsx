@@ -43,10 +43,15 @@ export function OnboardingFlow({ devHint }: { devHint: boolean }) {
       <ol className="grid grid-cols-4 gap-2">
         {STEPS.map((step_, i) => (
           <li key={step_} className="space-y-2">
-            <div className={cx("h-1 rounded-full", i <= step ? "bg-accent" : "bg-line")} />
+            <div
+              className={cx(
+                "h-1.5 -skew-x-[20deg] transition-colors",
+                i <= step ? "bg-cyan shadow-[0_0_8px_rgb(47_224_255/0.5)]" : "bg-line-strong",
+              )}
+            />
             <span
               className={cx(
-                "text-[11px] font-semibold tracking-wider uppercase",
+                "font-display text-xs font-bold tracking-[0.08em] uppercase",
                 i <= step ? "text-text" : "text-faint",
               )}
             >
@@ -90,13 +95,11 @@ export function OnboardingFlow({ devHint }: { devHint: boolean }) {
       <ErrorText>{error}</ErrorText>
 
       {preview && (
-        <div className="animate-rise rounded-lg border border-accent/40 bg-accent/5 p-5">
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-accent uppercase">
-            {t("playerFound")}
-          </p>
+        <div className="animate-panel-in border-l-4 border-cyan bg-cyan/6 p-5">
+          <p className="hud-label text-cyan">{t("playerFound")}</p>
           <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="font-display text-2xl font-bold">{preview.displayName}</p>
+              <p className="font-display text-3xl leading-none font-bold">{preview.displayName}</p>
               <p className="text-sm text-muted">
                 {preview.mainCharacter ?? t("unknownCharacter")} · {preview.rank ?? t("unranked")}
               </p>

@@ -11,7 +11,7 @@ import { listSessionHistory } from "@/server/sessions/service";
 import { DevTools } from "./_components/DevTools";
 import { LiveDashboardProvider } from "./_components/LiveDashboard";
 import { ObsGuide, OverlaysPanel } from "./_components/OverlaysPanel";
-import { PlayerHeader, SessionPanel } from "./_components/SessionPanel";
+import { PlayerHeader, SessionPanel, StatusBar } from "./_components/SessionPanel";
 import { SessionHistory } from "./_components/SessionHistory";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -38,20 +38,38 @@ export default async function DashboardPage() {
   }));
   const firstPreset = OVERLAY_PRESETS[overlays[0]?.config.preset ?? "standard"];
 
+  const tConsole = await getTranslations("Dashboard.console");
+
   return (
     <LiveDashboardProvider initial={live}>
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="min-w-0 space-y-6">
+      <div className="grid items-start gap-5 hud:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="min-w-0 space-y-5">
           <PlayerHeader characterFallback={player.mainCharacter} />
           <SessionPanel />
           <SessionHistory items={history} />
         </div>
-        <aside className="space-y-6">
-          <OverlaysPanel overlays={overlaySummaries} />
-          <ObsGuide width={firstPreset.width} height={firstPreset.height} />
-          {devToolsEnabled() && <DevTools />}
+
+        {/* Control room: one continuous console, modules separated by rules — not a card stack. */}
+        <aside className="hud-panel animate-panel-in [--notch:18px]">
+          <div className="flex items-center gap-3 border-b border-line-strong bg-surface-0/80 px-5 py-2.5">
+            <span className="hud-tag bg-blue/20 text-heading">{tConsole("title")}</span>
+            <span
+              aria-hidden
+              className="h-px flex-1 bg-gradient-to-r from-line-strong to-transparent"
+            />
+          </div>
+          <div className="divide-y divide-line md:grid md:grid-cols-2 md:divide-y-0 hud:block hud:divide-y">
+            <div className="md:border-r md:border-line hud:border-r-0">
+              <OverlaysPanel overlays={overlaySummaries} />
+            </div>
+            <div className="divide-y divide-line">
+              <ObsGuide width={firstPreset.width} height={firstPreset.height} />
+              {devToolsEnabled() && <DevTools />}
+            </div>
+          </div>
         </aside>
       </div>
+      <StatusBar />
     </LiveDashboardProvider>
   );
 }

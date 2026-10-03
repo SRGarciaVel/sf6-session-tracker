@@ -145,7 +145,10 @@
       "confirmEnd": "Yes, end session",
       "startSession": "Start session",
       "startNewSession": "Start new session",
-      "startNewTooltip": "Ends the current session and starts a new one from zero"
+      "startNewTooltip": "Ends the current session and starts a new one from zero",
+      "currentStreak": "Current streak",
+      "noSessionHint": "Start a session to begin counting Ranked matches.",
+      "ratio": "Wins vs losses"
     },
     "tracker": {
       "idle": "Tracking paused — start a session to track matches",
@@ -162,7 +165,11 @@
       "copyUrl": "Copy OBS URL",
       "openPreview": "Open preview ↗",
       "newOverlay": "+ New overlay",
-      "newOverlayName": "Overlay {number}"
+      "newOverlayName": "Overlay {number}",
+      "status": "Status",
+      "canvas": "Canvas",
+      "url": "URL",
+      "language": "Language"
     },
     "obs": {
       "title": "Add to OBS",
@@ -179,7 +186,11 @@
       "title": "Session history",
       "empty": "Your sessions will show up here.",
       "live": "LIVE",
-      "games": "{count, plural, one {# game} other {# games}}"
+      "games": "{count, plural, one {# game} other {# games}}",
+      "colSession": "Session",
+      "colRecord": "Record",
+      "colWinRate": "Win rate",
+      "colRating": "MR / LP"
     },
     "dev": {
       "title": "Dev tools · mock CFN",
@@ -204,6 +215,18 @@
       "title": "Something went wrong",
       "body": "The dashboard couldn't load. Your session keeps tracking in the background — nothing is lost.",
       "retry": "Try again"
+    },
+    "playerTag": "Player",
+    "character": "Character",
+    "console": {
+      "title": "Broadcast console"
+    },
+    "status": {
+      "tracker": "Tracker",
+      "link": "Live link",
+      "linkOk": "Online",
+      "linkDown": "Reconnecting…",
+      "obs": "OBS sources"
     }
   },
   "Recap": {
@@ -291,15 +314,15 @@
     "themes": {
       "minimal": {
         "name": "Minimal",
-        "description": "One compact line. Stays out of the way of gameplay."
+        "description": "Broadcast lower-third. One clean line over gameplay."
       },
       "competitive": {
         "name": "Competitive",
-        "description": "Labelled stat blocks with a clear hierarchy."
+        "description": "Scoreboard with W/L, win rate, MR/LP and streak."
       },
       "fighter": {
-        "name": "Fighter",
-        "description": "Slanted panels and bold type, inspired by fighting-game HUDs."
+        "name": "Street",
+        "description": "Slanted panels, cyan/magenta energy and halftone texture."
       }
     },
     "presets": {

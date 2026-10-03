@@ -28,7 +28,7 @@ export function LocaleSwitcher() {
       role="radiogroup"
       aria-label={tNav("switchLanguage")}
       className={cx(
-        "inline-flex rounded-md border border-line-strong bg-surface-2 p-0.5",
+        "inline-flex items-stretch border-b border-line-strong",
         pending && "opacity-60",
       )}
     >
@@ -43,8 +43,11 @@ export function LocaleSwitcher() {
           disabled={pending}
           onClick={() => choose(l)}
           className={cx(
-            "rounded px-2 py-0.5 text-[11px] font-semibold tracking-wider uppercase transition-colors",
-            l === locale ? "bg-surface-3 text-text" : "text-faint hover:text-text",
+            "relative px-2.5 py-1 font-display text-sm font-bold tracking-[0.1em] uppercase transition-colors",
+            "after:absolute after:inset-x-1 after:-bottom-px after:h-0.5 after:bg-cyan after:transition-transform after:duration-200",
+            l === locale
+              ? "text-text after:scale-x-100 after:shadow-[0_0_8px_var(--color-cyan)]"
+              : "text-faint after:scale-x-0 hover:text-text",
           )}
         >
           {l}

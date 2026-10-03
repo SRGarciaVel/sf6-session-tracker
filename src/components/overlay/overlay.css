@@ -1,10 +1,16 @@
 /*
- * OBS overlay styles. Hand-written on purpose (no Tailwind) so they render identically in
- * OBS's embedded Chromium (CEF): no oklch(), color-mix(), container queries or :has().
- * Everything is sized in `em`, relative to the root font-size computed for the canvas.
+ * OBS overlay styles — broadcast HUD graphics.
+ *
+ * Hand-written on purpose (no Tailwind) so they render identically in OBS's embedded Chromium
+ * (CEF): no oklch(), color-mix(), container queries or :has(). Everything is sized in `em`,
+ * relative to the root font-size computed for the canvas (see OverlayView auto-fit).
+ * User colors arrive as --ov-* custom properties; --ov-cyan / --ov-magenta are fixed HUD tokens.
  */
 
 .sf6-overlay {
+  --ov-cyan: #2fe0ff;
+  --ov-magenta: #ff2e93;
+  --ov-ink: #070a16;
   position: relative;
   box-sizing: border-box;
   display: flex;
@@ -22,15 +28,15 @@
   user-select: none;
 }
 
-/* The theme panel keeps its natural size; auto-fit scales the font instead of squashing. */
-.sf6-overlay > * {
-  flex-shrink: 0;
-}
-
 .sf6-overlay *,
 .sf6-overlay *::before,
 .sf6-overlay *::after {
   box-sizing: border-box;
+}
+
+/* The theme panel keeps its natural size; auto-fit scales the font instead of squashing. */
+.sf6-overlay > * {
+  flex-shrink: 0;
 }
 
 .sf6-overlay.ov-align-left {
@@ -46,24 +52,34 @@
 /* Legible over any gameplay, even with a fully transparent background. */
 .sf6-overlay .ov-shadow {
   text-shadow:
-    0 0.05em 0.12em rgba(0, 0, 0, 0.75),
-    0 0 0.4em rgba(0, 0, 0, 0.35);
+    0 0.05em 0.1em rgba(0, 0, 0, 0.85),
+    0 0 0.35em rgba(0, 0, 0, 0.45);
 }
 
 .ov-panel {
-  display: flex;
-  align-items: center;
-  gap: var(--ov-gap);
-  padding: 0.55em 0.9em;
+  position: relative;
   background: var(--ov-bg);
   border: var(--ov-border);
   border-radius: var(--ov-radius);
 }
 
+/* Shared text roles */
+.ov-label {
+  font-size: 0.5em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ov-muted);
+  white-space: nowrap;
+}
+.ov-unit {
+  font-size: 0.6em;
+  font-weight: 700;
+  color: var(--ov-muted);
+}
 .ov-upper {
   text-transform: uppercase;
 }
-
 .ov-win {
   color: var(--ov-win);
 }
@@ -86,6 +102,42 @@
   color: var(--ov-muted);
 }
 
+/* Delta: arrow glyph + signed value (never color alone). */
+.ov-delta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.18em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ov-arrow {
+  font-size: 0.62em;
+}
+
+/* Wins vs losses ratio bar */
+.ov-ratio {
+  display: flex;
+  gap: 0.08em;
+  height: 0.16em;
+  width: 100%;
+  min-width: 3em;
+}
+.ov-ratio > span {
+  display: block;
+  height: 100%;
+}
+.ov-ratio-w {
+  background: var(--ov-win);
+}
+.ov-ratio-l {
+  background: var(--ov-loss);
+}
+.ov-ratio-empty {
+  flex-grow: 1;
+  background: var(--ov-muted);
+  opacity: 0.35;
+}
+
 /* ── Animated values ─────────────────────────────────────────────── */
 
 .ov-num {
@@ -94,7 +146,7 @@
 
 @keyframes ov-tick {
   0% {
-    transform: translateY(-0.3em);
+    transform: translateY(-0.25em);
     opacity: 0;
   }
   100% {
@@ -102,10 +154,25 @@
     opacity: 1;
   }
 }
-
+@keyframes ov-flash-win {
+  0% {
+    text-shadow: 0 0 0.45em var(--ov-win);
+  }
+  100% {
+    text-shadow: 0 0 0 transparent;
+  }
+}
+@keyframes ov-flash-loss {
+  0% {
+    text-shadow: 0 0 0.45em var(--ov-loss);
+  }
+  100% {
+    text-shadow: 0 0 0 transparent;
+  }
+}
 @keyframes ov-glow {
   0% {
-    filter: brightness(1.6);
+    filter: brightness(1.5);
   }
   100% {
     filter: brightness(1);
@@ -114,34 +181,45 @@
 
 .ov-animate .ov-num.ov-changed {
   animation:
-    ov-tick 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
-    ov-glow 900ms ease-out both;
+    ov-tick 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
+    ov-glow 700ms ease-out both;
+}
+.ov-animate .ov-num.ov-changed.ov-flash-win {
+  animation:
+    ov-tick 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
+    ov-flash-win 700ms ease-out both;
+}
+.ov-animate .ov-num.ov-changed.ov-flash-loss {
+  animation:
+    ov-tick 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
+    ov-flash-loss 700ms ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ov-animate .ov-num.ov-changed {
+  .ov-animate .ov-num.ov-changed,
+  .ov-animate .ov-num.ov-changed.ov-flash-win,
+  .ov-animate .ov-num.ov-changed.ov-flash-loss {
     animation: none;
   }
 }
 
-/* ── Recent form chips ───────────────────────────────────────────── */
+/* ── Recent form chips (letters, not only color) ─────────────────── */
 
 .ov-form {
   display: flex;
-  gap: 0.22em;
+  gap: 0.16em;
 }
-
 .ov-form-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.15em;
-  height: 1.15em;
-  border-radius: 0.2em;
-  font-size: 0.62em;
-  font-weight: 700;
-  color: #0b0c10;
+  width: 1.05em;
+  height: 1.2em;
+  font-size: 0.6em;
+  font-weight: 800;
+  color: var(--ov-ink);
   text-shadow: none;
+  clip-path: polygon(0.18em 0, 100% 0, calc(100% - 0.18em) 100%, 0 100%);
 }
 .ov-form-chip.ov-r-win {
   background: var(--ov-win);
@@ -153,189 +231,264 @@
   background: var(--ov-muted);
 }
 
-/* ── Theme: Minimal ──────────────────────────────────────────────── */
+/* ── Theme: Minimal — broadcast lower-third ──────────────────────── */
 
 .ov-minimal {
-  font-size: 1.35em;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.ov-minimal .ov-sep {
-  color: var(--ov-accent);
-  opacity: 0.8;
-}
-
-.ov-minimal .ov-unit {
-  margin-left: 0.08em;
-  font-size: 0.8em;
-}
-
-.ov-minimal .ov-delta {
-  margin-left: 0.3em;
-  font-size: 0.8em;
-}
-
-/* ── Theme: Competitive ──────────────────────────────────────────── */
-
-.ov-competitive {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.45em;
-}
-
-.ov-competitive .ov-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1em;
-  font-size: 0.62em;
+  gap: 0.6em;
+  padding: 0.3em 0.75em 0.42em 0.5em;
+  font-size: 1.4em;
   font-weight: 700;
-  letter-spacing: 0.22em;
+  white-space: nowrap;
+}
+/* slanted accent block + underline sweep */
+.ov-min-bar {
+  display: block;
+  width: 0.28em;
+  height: 1.05em;
+  background: var(--ov-accent);
+  transform: skewX(-18deg);
+  box-shadow: 0 0 0.35em var(--ov-accent);
+}
+.ov-minimal::after {
+  content: "";
+  position: absolute;
+  left: 0.5em;
+  right: 0;
+  bottom: 0;
+  height: 0.07em;
+  background: linear-gradient(90deg, var(--ov-accent), rgba(255, 255, 255, 0));
+}
+.ov-min-items {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55em;
+}
+.ov-min-sep {
+  display: inline-block;
+  align-self: center;
+  width: 0.06em;
+  height: 0.8em;
+  background: var(--ov-muted);
+  opacity: 0.5;
+  transform: skewX(-18deg);
+}
+.ov-min-wl .ov-unit {
+  margin: 0 0.25em 0 0.06em;
+}
+
+/* ── Theme: Competitive — scoreboard ─────────────────────────────── */
+
+.ov-comp {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  padding: 0.45em 0.95em 0.55em;
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--ov-notch)) 0,
+    100% var(--ov-notch),
+    100% 100%,
+    var(--ov-notch) 100%,
+    0 calc(100% - var(--ov-notch))
+  );
+}
+/* luminous accent strip along the top-left */
+.ov-comp::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 38%;
+  height: 0.1em;
+  background: linear-gradient(90deg, var(--ov-accent), rgba(255, 255, 255, 0));
+}
+.ov-comp-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 0.6em;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-
-.ov-competitive .ov-title {
+.ov-comp-tag {
+  padding: 0.18em 0.6em 0.12em;
+  background: var(--ov-accent);
+  color: var(--ov-ink);
+  text-shadow: none;
+  clip-path: polygon(0.35em 0, 100% 0, calc(100% - 0.35em) 100%, 0 100%);
+}
+.ov-comp-rule {
+  flex: 1;
+  height: 0.08em;
+  min-width: 1em;
+  background: linear-gradient(90deg, var(--ov-muted), rgba(255, 255, 255, 0));
+  opacity: 0.4;
+}
+.ov-comp-rank {
   color: var(--ov-accent);
 }
-
-.ov-competitive .ov-row {
+.ov-comp-main {
   display: flex;
   align-items: flex-end;
   gap: var(--ov-gap);
 }
-
-.ov-stat {
+.ov-cell {
   display: flex;
   flex-direction: column;
-  gap: 0.25em;
-  min-width: 0;
+  gap: 0.22em;
 }
-
-.ov-stat-label {
-  font-size: 0.55em;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ov-muted);
+.ov-big {
+  font-size: 2.15em;
+  font-weight: 800;
+  line-height: 0.88;
 }
-
-.ov-stat-value {
+.ov-mid {
   display: flex;
   align-items: baseline;
   gap: 0.25em;
-  font-size: 1.9em;
+  font-size: 1.55em;
   font-weight: 700;
+  line-height: 0.95;
   white-space: nowrap;
 }
-
-.ov-stat-sub {
-  font-size: 0.5em;
-  font-weight: 700;
+.ov-mid .ov-delta {
+  font-size: 0.55em;
 }
-
-.ov-competitive .ov-divider {
+.ov-comp-score {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.45em;
+}
+.ov-comp-vs {
+  align-self: flex-end;
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ov-muted);
+  opacity: 0.6;
+  transform: skewX(-12deg);
+  padding-bottom: 0.05em;
+}
+.ov-div {
   align-self: stretch;
-  width: 0.08em;
+  width: 0.06em;
   background: var(--ov-muted);
-  opacity: 0.35;
+  opacity: 0.3;
+  transform: skewX(-14deg);
 }
 
-/* ── Theme: Fighter ──────────────────────────────────────────────── */
+/* ── Theme: Street — expressive, diagonal, cyan/magenta ──────────── */
 
-.ov-fighter {
+.ov-street {
+  position: relative;
   display: flex;
   align-items: stretch;
-  gap: 0.35em;
-  padding-left: 0.4em;
-  font-weight: 400;
+  gap: 0.28em;
+  padding: 0.1em 0.3em 0.1em 0.9em;
   text-transform: uppercase;
 }
-
-.ov-f-block {
+/* two thin cyan/magenta slashes leading in */
+.ov-st-slash {
+  position: absolute;
+  left: 0.15em;
+  top: 0.05em;
+  bottom: 0.05em;
+  width: 0.55em;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    var(--ov-cyan) 38%,
+    var(--ov-cyan) 48%,
+    transparent 48%,
+    transparent 62%,
+    var(--ov-magenta) 62%,
+    var(--ov-magenta) 70%,
+    transparent 70%
+  );
+  opacity: 0.9;
+}
+.ov-st-block {
   position: relative;
   display: flex;
   align-items: center;
-  padding: 0.35em 0.85em;
-  background: var(--ov-bg);
-  border: var(--ov-border);
-  transform: skewX(-12deg);
-}
-
-.ov-f-block.ov-f-main {
-  border-left: 0.32em solid var(--ov-accent);
-  background-image: repeating-linear-gradient(
-    -45deg,
-    rgba(255, 255, 255, 0.035) 0,
-    rgba(255, 255, 255, 0.035) 0.12em,
-    transparent 0.12em,
-    transparent 0.45em
-  );
+  padding: 0.3em 0.85em;
   background-color: var(--ov-bg);
+  border: var(--ov-border);
+  transform: skewX(-14deg);
 }
-
-.ov-f-inner {
+/* halftone texture on the main block */
+.ov-st-main {
+  border-left: 0.3em solid var(--ov-accent);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 0.07em, transparent 0.09em);
+  background-size: 0.32em 0.32em;
+  box-shadow: inset 0 -0.1em 0 var(--ov-cyan);
+}
+.ov-st-inner {
   display: flex;
   align-items: center;
-  gap: 0.55em;
-  transform: skewX(12deg);
+  gap: 0.6em;
+  transform: skewX(14deg);
 }
-
-.ov-f-col {
+.ov-st-col {
   display: flex;
   flex-direction: column;
   gap: 0.12em;
 }
-
-.ov-f-label {
-  font-size: 0.62em;
-  letter-spacing: 0.16em;
+.ov-st-label {
+  font-size: 0.6em;
+  letter-spacing: 0.14em;
   color: var(--ov-muted);
-}
-
-.ov-f-big {
-  font-size: 2.6em;
-  line-height: 0.9;
   white-space: nowrap;
 }
-
-.ov-f-mid {
+.ov-st-title {
+  color: var(--ov-accent);
+}
+.ov-st-big {
+  font-size: 2.6em;
+  line-height: 0.88;
+  white-space: nowrap;
+}
+.ov-st-mid {
+  display: flex;
+  align-items: baseline;
+  gap: 0.22em;
   font-size: 1.7em;
   line-height: 0.95;
   white-space: nowrap;
 }
-
-.ov-f-score .ov-f-dash {
-  margin: 0 0.12em;
+.ov-st-dash {
+  margin: 0 0.1em;
   color: var(--ov-muted);
 }
-
-.ov-f-badge {
-  display: inline-block;
-  padding: 0.12em 0.35em 0.06em;
-  font-size: 0.9em;
-  line-height: 1;
-  color: #0b0c10;
+.ov-st-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.15em;
+  padding: 0.12em 0.32em 0.04em;
+  font-size: 0.6em;
+  color: var(--ov-ink);
   text-shadow: none;
 }
-.ov-f-badge.ov-pos {
+.ov-st-badge.ov-pos {
   background: var(--ov-win);
-  color: #0b0c10;
 }
-.ov-f-badge.ov-neg {
+.ov-st-badge.ov-neg {
   background: var(--ov-loss);
-  color: #0b0c10;
 }
-.ov-f-badge.ov-neutral {
+.ov-st-badge.ov-neutral {
   background: var(--ov-muted);
-  color: #0b0c10;
 }
-
-.ov-f-streak {
+/* streak: solid accent burst */
+.ov-st-hot {
   background: var(--ov-accent);
-  color: #0b0c10;
+  color: var(--ov-ink);
   text-shadow: none;
+  box-shadow: 0 0 0.6em var(--ov-accent);
 }
-.ov-f-streak .ov-f-label {
-  color: rgba(11, 12, 16, 0.75);
+.ov-st-hot .ov-st-label {
+  color: var(--ov-ink);
+  opacity: 0.75;
 }

@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { LocalTime } from "@/components/ui/LocalTime";
-import { Badge, buttonClass, cx } from "@/components/ui/primitives";
+import { LiveIndicator, buttonClass, cx } from "@/components/ui/primitives";
 import {
   deltaTone,
   formatDelta,
@@ -63,13 +63,16 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
         {tc("backToDashboard")}
       </Link>
 
-      <section className="bg-slash relative overflow-hidden rounded-2xl border border-line bg-surface p-6 sm:p-10">
-        <div className="absolute inset-x-0 top-0 h-1 bg-accent" />
+      <section className="hud-panel animate-panel-in overflow-hidden p-6 [--notch:20px] sm:p-10">
+        <span
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-magenta via-violet to-cyan"
+        />
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="font-display text-xs font-bold tracking-[0.35em] text-accent uppercase">
+          <p className="font-display text-4xl leading-none font-extrabold uppercase italic sm:text-5xl">
             {ended ? t("complete") : t("inProgress")}
           </p>
-          {!ended && <Badge tone="win">{t("live")}</Badge>}
+          {!ended && <LiveIndicator label={t("live").replace("●", "").trim()} />}
         </div>
         <p className="mt-2 text-sm text-muted">
           {player.displayName} ·{" "}
@@ -93,11 +96,9 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
 
         <div className="mt-8 grid gap-6 border-t border-line pt-8 sm:grid-cols-2">
           <div>
-            <p className="text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">
-              {unit}
-            </p>
+            <p className="hud-label">{unit}</p>
             <p className="mt-1 font-display text-2xl font-bold tabular">
-              {formatInteger(r.primary.initial, locale)} <span className="text-faint">→</span>{" "}
+              {formatInteger(r.primary.initial, locale)} <span className="text-cyan">▶</span>{" "}
               {formatInteger(r.primary.current, locale)}
             </p>
             <p
@@ -109,15 +110,13 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
               {formatDelta(r.primary.delta, locale)}
             </p>
             {r.initialRank !== r.rank && r.rank && (
-              <p className="mt-1 text-sm text-accent">
+              <p className="mt-1 text-sm text-magenta">
                 {r.initialRank ?? "—"} → {r.rank}
               </p>
             )}
           </div>
           <div>
-            <p className="text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">
-              {t("bestStreak")}
-            </p>
+            <p className="hud-label">{t("bestStreak")}</p>
             <p className="mt-1 font-display text-2xl font-bold tabular">
               {t("bestStreakValue", { count: summary.bestWinStreak })}
             </p>
@@ -125,10 +124,8 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
         </div>
       </section>
 
-      <section className="rounded-xl border border-line bg-surface">
-        <h2 className="border-b border-line px-5 py-3 font-display text-xs font-semibold tracking-[0.18em] text-muted uppercase">
-          {t("matchesTitle")}
-        </h2>
+      <section className="hud-panel">
+        <h2 className="hud-heading border-b border-line px-5 py-3">{t("matchesTitle")}</h2>
         {matches.length === 0 ? (
           <p className="p-5 text-sm text-muted">{t("noMatches")}</p>
         ) : (
@@ -137,7 +134,7 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
               <li key={m.id} className="flex items-center gap-4 px-5 py-2.5 text-sm">
                 <span
                   className={cx(
-                    "grid size-6 shrink-0 place-items-center rounded text-[11px] font-bold",
+                    "grid h-7 w-6 shrink-0 place-items-center font-display text-sm font-bold [clip-path:polygon(3px_0,100%_0,calc(100%-3px)_100%,0_100%)]",
                     RESULT_STYLE[m.result],
                   )}
                 >
@@ -173,7 +170,7 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
 function Stat({ label, value, className }: { label: string; value: string; className?: string }) {
   return (
     <div>
-      <p className="text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">{label}</p>
+      <p className="hud-label">{label}</p>
       <p className={cx("mt-1 font-display text-5xl font-bold tabular", className)}>{value}</p>
     </div>
   );

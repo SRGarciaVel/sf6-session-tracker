@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { useRef, useState, useTransition } from "react";
-import { Badge, Button } from "@/components/ui/primitives";
+import { cx } from "@/components/ui/primitives";
 import type { ActionResult } from "@/lib/action-result";
 import { simulateMatchAction, simulateOutageAction } from "../actions";
 
@@ -75,36 +75,45 @@ export function DevTools() {
       setLog((l) => [{ id: nextId.current++, text: line }, ...l].slice(0, 6));
     });
 
+  // Deliberately monochrome and collapsible: an internal tool, not part of the product look.
   return (
-    <section className="rounded-xl border border-dashed border-info/40 bg-info/5 p-5">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-xs font-semibold tracking-[0.18em] text-info uppercase">
-          {t("title")}
-        </h2>
-        <Badge tone="info">{t("badge")}</Badge>
-      </div>
-      <p className="mt-2 text-xs text-muted">{t("description")}</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {TOOLS.map((tool) => (
-          <Button
-            key={tool.key}
-            size="sm"
-            variant={tool.variant}
-            disabled={pending}
-            data-tool={tool.key}
-            onClick={() => run(tool)}
-          >
-            {t(tool.key)}
-          </Button>
-        ))}
-      </div>
-      {log.length > 0 && (
-        <ul className="mt-3 space-y-0.5 font-mono text-[11px] text-faint">
-          {log.map((entry) => (
-            <li key={entry.id}>{entry.text}</li>
+    <details open className="group px-5 py-4 font-mono text-xs text-faint">
+      <summary className="flex cursor-pointer list-none items-center gap-2 select-none hover:text-muted [&::-webkit-details-marker]:hidden">
+        <span aria-hidden className="inline-block transition-transform group-open:rotate-90">
+          ▸
+        </span>
+        <span className="tracking-[0.12em] uppercase">{t("title")}</span>
+        <span className="ml-auto border border-dashed border-line-strong px-1.5 py-px tracking-wider uppercase">
+          {t("badge")}
+        </span>
+      </summary>
+      <div className="mt-3 border border-dashed border-line-strong p-3">
+        <p className="leading-relaxed text-muted">{t("description")}</p>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {TOOLS.map((tool) => (
+            <button
+              key={tool.key}
+              type="button"
+              disabled={pending}
+              data-tool={tool.key}
+              onClick={() => run(tool)}
+              className={cx(
+                "border border-line-strong px-2 py-1 transition-colors hover:border-muted hover:text-text disabled:opacity-40",
+                tool.variant === "secondary" ? "text-muted" : "border-dashed text-faint",
+              )}
+            >
+              {t(tool.key)}
+            </button>
           ))}
-        </ul>
-      )}
-    </section>
+        </div>
+        {log.length > 0 && (
+          <ul className="mt-3 space-y-0.5 text-[11px] text-faint">
+            {log.map((entry) => (
+              <li key={entry.id}>{entry.text}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </details>
   );
 }

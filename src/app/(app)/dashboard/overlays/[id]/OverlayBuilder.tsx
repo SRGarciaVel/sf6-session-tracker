@@ -36,10 +36,8 @@ const PREVIEW_BG: Record<PreviewBg, string> = {
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="space-y-3 border-b border-line px-5 py-5 last:border-b-0">
-      <h3 className="font-display text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">
-        {title}
-      </h3>
+    <section className="space-y-3 border-b border-line px-5 py-4 last:border-b-0">
+      <h3 className="hud-heading">{title}</h3>
       {children}
     </section>
   );
@@ -55,10 +53,7 @@ function Segmented<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div
-      className="inline-flex rounded-md border border-line-strong bg-surface-2 p-0.5"
-      role="radiogroup"
-    >
+    <div className="inline-flex border-b border-line-strong" role="radiogroup">
       {options.map((o) => (
         <button
           key={o.value}
@@ -67,10 +62,11 @@ function Segmented<T extends string>({
           aria-checked={value === o.value}
           onClick={() => onChange(o.value)}
           className={cx(
-            "rounded px-3 py-1.5 text-xs font-medium transition-colors",
+            "relative px-3 py-1.5 font-display text-sm font-semibold tracking-[0.05em] uppercase transition-colors",
+            "after:absolute after:inset-x-1 after:-bottom-px after:h-0.5 after:bg-cyan after:transition-transform after:duration-200",
             value === o.value
-              ? "bg-surface-3 text-text shadow-[inset_0_0_0_1px_var(--color-line-strong)]"
-              : "text-muted hover:text-text",
+              ? "bg-cyan/8 text-text after:scale-x-100 after:shadow-[0_0_8px_var(--color-cyan)]"
+              : "text-muted after:scale-x-0 hover:text-text",
           )}
         >
           {o.label}
@@ -98,14 +94,14 @@ function Toggle({
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={cx(
-          "relative h-5 w-9 rounded-full transition-colors",
-          checked ? "bg-accent" : "bg-line-strong",
+          "relative h-5 w-10 border transition-colors [clip-path:polygon(4px_0,100%_0,calc(100%-4px)_100%,0_100%)]",
+          checked ? "border-cyan bg-cyan/25" : "border-line-strong bg-surface-2",
         )}
       >
         <span
           className={cx(
-            "absolute top-0.5 left-0 size-4 rounded-full bg-text transition-transform",
-            checked ? "translate-x-4.5" : "translate-x-0.5",
+            "absolute top-[3px] left-0 h-3 w-4 transition-transform duration-150",
+            checked ? "translate-x-5 bg-cyan" : "translate-x-1 bg-muted",
           )}
         />
       </button>
@@ -143,7 +139,7 @@ function Slider({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-[var(--color-accent)]"
+        className="w-full accent-[var(--color-cyan)]"
       />
     </label>
   );
@@ -175,7 +171,7 @@ function ColorField({
             setDraft(e.target.value);
             if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) onChange(e.target.value.toLowerCase());
           }}
-          className="h-8 w-20 rounded border border-line-strong bg-surface-2 px-2 font-mono text-xs uppercase"
+          className="h-8 w-20 border border-line-strong bg-surface-2 px-2 font-mono text-xs uppercase focus:border-cyan focus:outline-none"
           aria-label={t("hexAria", { label })}
           maxLength={7}
         />
@@ -183,7 +179,7 @@ function ColorField({
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="size-8 cursor-pointer rounded border border-line-strong bg-transparent"
+          className="size-8 cursor-pointer border border-line-strong bg-transparent"
           aria-label={label}
         />
       </span>
@@ -329,7 +325,7 @@ export function OverlayBuilder({
 
       <div className="grid items-start gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
         {/* Controls */}
-        <div className="overflow-hidden rounded-xl border border-line bg-surface lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+        <div className="hud-panel lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
           <Section title={t("sectionName")}>
             <Input
               value={name}
@@ -340,21 +336,17 @@ export function OverlayBuilder({
           </Section>
 
           <Section title={t("sectionTheme")}>
-            <div className="grid gap-2">
+            <div className="-mx-5 divide-y divide-line border-y border-line">
               {OVERLAY_THEMES.map((theme) => (
                 <button
                   key={theme}
                   type="button"
                   data-theme={theme}
                   onClick={() => setConfig((c) => applyThemeDefaults(c, theme))}
-                  className={cx(
-                    "rounded-lg border p-3 text-left transition-colors",
-                    config.theme === theme
-                      ? "border-accent bg-accent/5"
-                      : "border-line-strong hover:border-faint",
-                  )}
+                  aria-pressed={config.theme === theme}
+                  className="hud-row block w-full px-5 py-2.5 text-left"
                 >
-                  <span className="font-display text-sm font-semibold">
+                  <span className="font-display text-lg leading-tight font-bold uppercase">
                     {t(`themes.${theme}.name`)}
                   </span>
                   <span className="block text-xs text-muted">
@@ -387,7 +379,7 @@ export function OverlayBuilder({
                     type="checkbox"
                     checked={config.fields[f]}
                     onChange={(e) => setField(f, e.target.checked)}
-                    className="size-4 accent-[var(--color-accent)]"
+                    className="size-4 accent-[var(--color-cyan)]"
                   />
                   {t(`fields.${f}`)}
                 </label>
@@ -425,7 +417,7 @@ export function OverlayBuilder({
               <select
                 value={config.font}
                 onChange={(e) => set("font", e.target.value as OverlayFontId)}
-                className="h-10 w-full rounded-md border border-line-strong bg-surface-2 px-3 text-sm"
+                className="h-10 w-full border border-line-strong bg-surface-2 px-3 text-sm focus:border-cyan focus:outline-none"
               >
                 {(Object.keys(OVERLAY_FONTS) as OverlayFontId[]).map((f) => (
                   <option key={f} value={f} style={{ fontFamily: `var(--ovf-${f})` }}>
@@ -557,9 +549,9 @@ export function OverlayBuilder({
 
         {/* Preview */}
         <div className="space-y-4 lg:sticky lg:top-20">
-          <div className="rounded-xl border border-line bg-surface">
+          <div className="hud-panel">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
-              <h2 className="font-display text-xs font-semibold tracking-[0.18em] text-muted uppercase">
+              <h2 className="hud-heading">
                 {t("previewTitle")}{" "}
                 <span className="ml-2 font-mono tracking-normal text-faint normal-case">
                   {preset.width} × {preset.height}
@@ -579,12 +571,18 @@ export function OverlayBuilder({
               </div>
             </div>
             <div className="p-5">
-              <div ref={ref} className="w-full">
+              <div ref={ref} className="relative w-full">
+                {/* program-monitor corner brackets */}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute -top-1.5 -left-1.5 z-10 size-4 border-t-2 border-l-2 border-cyan"
+                />
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute -right-1.5 -bottom-1.5 z-10 size-4 border-r-2 border-b-2 border-cyan"
+                />
                 <div
-                  className={cx(
-                    "overflow-hidden rounded-md ring-1 ring-line",
-                    PREVIEW_BG[previewBg],
-                  )}
+                  className={cx("relative overflow-hidden", PREVIEW_BG[previewBg])}
                   style={{ width, height: previewHeight }}
                 >
                   <OverlayView
@@ -600,16 +598,14 @@ export function OverlayBuilder({
             </div>
           </div>
 
-          <div className="space-y-3 rounded-xl border border-line bg-surface p-5">
-            <h2 className="font-display text-xs font-semibold tracking-[0.18em] text-muted uppercase">
-              {t("urlTitle")}
-            </h2>
+          <div className="hud-panel space-y-3 p-5">
+            <h2 className="hud-heading">{t("urlTitle")}</h2>
             <input
               readOnly
               value={url}
               onFocus={(e) => e.currentTarget.select()}
               aria-label={t("urlTitle")}
-              className="h-9 w-full rounded-md border border-line bg-surface-2 px-3 font-mono text-xs text-muted"
+              className="h-9 w-full border border-line bg-surface-0 px-3 font-mono text-xs text-muted focus:border-cyan focus:text-text focus:outline-none"
             />
             <div className="flex flex-wrap gap-2">
               <CopyButton value={url} label={tDash("copyUrl")} size="sm" />

@@ -47,13 +47,13 @@ export default async function LandingPage() {
 
       <section className="grid flex-1 items-center gap-12 py-12 lg:grid-cols-[1.1fr_1fr]">
         <div>
-          <p className="font-display text-xs font-semibold tracking-[0.3em] text-accent uppercase">
+          <p className="font-display text-xs font-semibold tracking-[0.3em] text-magenta uppercase">
             {t("eyebrow")}
           </p>
           <h1 className="mt-4 font-display text-4xl leading-[1.05] font-bold tracking-tight sm:text-6xl">
             {t("titleLine1")}
             <br />
-            <span className="text-accent">{t("titleLine2")}</span>
+            <span className="text-magenta">{t("titleLine2")}</span>
           </h1>
           <p className="mt-6 max-w-lg text-lg text-muted">{t("subtitle")}</p>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -67,7 +67,7 @@ export default async function LandingPage() {
           {(["fighter", "competitive", "minimal"] as const).map((theme) => (
             <div
               key={theme}
-              className="bg-slash overflow-hidden rounded-lg border border-line bg-surface-2"
+              className="hud-panel overflow-hidden bg-[radial-gradient(ellipse_at_30%_20%,#2a1e48_0%,#10162b_55%,#070a14_100%)] [--notch:10px]"
             >
               <div className="aspect-[800/180]">
                 <OverlayView
@@ -84,11 +84,13 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      <section className="grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-3">
+      <section className="hud-panel grid divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         {STEPS.map((n) => (
-          <div key={n} className="bg-surface p-6">
-            <span className="font-display text-sm font-bold text-accent">0{n}</span>
-            <h3 className="mt-2 font-display text-lg font-semibold">{t(`step${n}Title`)}</h3>
+          <div key={n} className="p-6">
+            <span className="font-display text-3xl leading-none font-extrabold text-cyan italic">
+              0{n}
+            </span>
+            <h3 className="mt-2 font-display text-xl font-bold uppercase">{t(`step${n}Title`)}</h3>
             <p className="mt-1 text-sm text-muted">{t(`step${n}Body`)}</p>
           </div>
         ))}

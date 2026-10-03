@@ -1,35 +1,65 @@
 @import "tailwindcss";
 
 /*
- * Dashboard design tokens. Dark, high-contrast, fighting-game energy without neon overload.
- * (Overlays do NOT use these — see components/overlay/overlay.css.)
+ * SF6 Session Tracker — dashboard design system.
+ *
+ * Visual language: fighting-game HUD × esports broadcast × telemetry.
+ * Deep navy surfaces, cyan for selection/focus, magenta for primary action, green/red-magenta for
+ * results. Glow is reserved for active/live states. (OBS overlays have their own CEF-safe CSS in
+ * components/overlay/overlay.css and do not use these tokens.)
  */
 @theme {
-  --color-bg: #0a0b0e;
-  --color-surface: #111318;
-  --color-surface-2: #171a21;
-  --color-surface-3: #1e222b;
-  --color-line: #242833;
-  --color-line-strong: #323846;
-  --color-text: #eceef2;
-  --color-muted: #8b91a0;
-  --color-faint: #5d6372;
-  --color-accent: #ffb020;
-  --color-accent-strong: #ffc44d;
-  --color-accent-ink: #1a1100;
-  --color-win: #3ddc84;
-  --color-loss: #ff4d5e;
-  --color-warn: #ffcc4d;
-  --color-info: #6cb6ff;
+  /* Layout: below 1200px the control console stops being a sidebar. */
+  --breakpoint-hud: 75rem;
 
-  --font-sans: var(--ovf-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--ovf-chakra-petch), var(--ovf-inter), ui-sans-serif, sans-serif;
+  /* Surfaces — from page to raised */
+  --color-bg: #05070f;
+  --color-surface-0: #080b17;
+  --color-surface: #0c1021;
+  --color-surface-2: #11172d;
+  --color-surface-3: #18203d;
+
+  /* Lines */
+  --color-line: #1d2544;
+  --color-line-strong: #2d3863;
+
+  /* Text (all ≥ 4.5:1 on surface except `faint`, used for non-essential meta ≥ 3:1) */
+  --color-text: #eef1fb;
+  --color-muted: #97a1c6;
+  --color-faint: #6b76a3;
+
+  /* Accents */
+  --color-cyan: #2fe0ff;
+  --color-blue: #3b6cff;
+  --color-heading: #5fb2ff;
+  --color-magenta: #ff2e93;
+  --color-violet: #7c5cff;
+  /* Primary action (white text passes AA on it) */
+  --color-accent: #d81774;
+  --color-accent-strong: #ee1f84;
+  --color-accent-ink: #ffffff;
+
+  /* Results / status */
+  --color-win: #29f0a8;
+  --color-loss: #ff3b72;
+  --color-warn: #ffc53d;
+  --color-info: #5fb2ff;
+
+  /* Typography */
+  --font-sans: var(--ovf-barlow), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--ovf-barlow-condensed), var(--ovf-barlow), ui-sans-serif, sans-serif;
   --font-mono: var(--ovf-jetbrains-mono), ui-monospace, monospace;
 
-  --animate-rise: rise 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  /* Motion */
+  --ease-snap: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-rise: rise 220ms var(--ease-snap) both;
+  --animate-flash-win: flash-win 600ms ease-out both;
+  --animate-flash-loss: flash-loss 600ms ease-out both;
+  --animate-panel-in: panel-in 200ms var(--ease-snap) both;
+
   @keyframes rise {
     0% {
-      transform: translateY(-0.25em);
+      transform: translateY(-0.2em);
       opacity: 0;
     }
     100% {
@@ -37,26 +67,73 @@
       opacity: 1;
     }
   }
+  @keyframes flash-win {
+    0% {
+      text-shadow: 0 0 18px rgb(41 240 168 / 0.9);
+    }
+    100% {
+      text-shadow: none;
+    }
+  }
+  @keyframes flash-loss {
+    0% {
+      text-shadow: 0 0 18px rgb(255 59 114 / 0.9);
+    }
+    100% {
+      text-shadow: none;
+    }
+  }
+  @keyframes panel-in {
+    0% {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
+
+/* ── Base ───────────────────────────────────────────────────────────── */
 
 html {
   color-scheme: dark;
 }
 
 body {
-  background: var(--color-bg);
+  background:
+    radial-gradient(1100px 520px at 88% -8%, rgb(59 108 255 / 0.16), transparent 62%),
+    radial-gradient(900px 480px at -8% 108%, rgb(255 46 147 / 0.07), transparent 60%),
+    var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
+/* Texture: faint dot grid + diagonal hatching. Never competes with data. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(rgb(255 255 255 / 0.045) 1px, transparent 1.3px),
+    repeating-linear-gradient(-58deg, rgb(255 255 255 / 0.014) 0 1px, transparent 1px 26px);
+  background-size:
+    22px 22px,
+    auto;
+  mask-image: linear-gradient(180deg, #000 0%, rgb(0 0 0 / 0.35) 70%, transparent 100%);
+}
+
 ::selection {
-  background: var(--color-accent);
-  color: var(--color-accent-ink);
+  background: var(--color-cyan);
+  color: var(--color-bg);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-cyan);
   outline-offset: 2px;
 }
 
@@ -64,13 +141,368 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Subtle diagonal texture used sparingly on hero surfaces. */
-.bg-slash {
-  background-image: repeating-linear-gradient(
-    -55deg,
-    rgb(255 255 255 / 0.018) 0 2px,
-    transparent 2px 14px
-  );
+/* ── Components ─────────────────────────────────────────────────────── */
+
+@layer components {
+  /*
+   * HUD panel: notched top-right / bottom-left corners. The 1px frame lives in ::before (clipped
+   * with the panel), the diagonal corner strokes in ::after.
+   */
+  .hud-panel {
+    --notch: 14px;
+    --frame: var(--color-line);
+    position: relative;
+    isolation: isolate;
+    background: linear-gradient(180deg, var(--color-surface), var(--color-surface-0));
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--notch)) 0,
+      100% var(--notch),
+      100% 100%,
+      var(--notch) 100%,
+      0 calc(100% - var(--notch))
+    );
+  }
+  .hud-panel::before,
+  .hud-panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .hud-panel::before {
+    border: 1px solid var(--frame);
+  }
+  .hud-panel::after {
+    background:
+      linear-gradient(
+          to bottom left,
+          transparent calc(50% - 0.75px),
+          var(--frame) 50%,
+          transparent calc(50% + 0.75px)
+        )
+        top right / var(--notch) var(--notch) no-repeat,
+      linear-gradient(
+          to bottom left,
+          transparent calc(50% - 0.75px),
+          var(--frame) 50%,
+          transparent calc(50% + 0.75px)
+        )
+        bottom left / var(--notch) var(--notch) no-repeat;
+  }
+
+  /* Section heading: small spaced caps + a rule that runs to the edge (SF6 menu headers). */
+  .hud-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-heading);
+  }
+  .hud-heading::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--color-line-strong), transparent);
+  }
+
+  /* Data label (metric names): compact, readable, not shouty. */
+  .hud-label {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  /* Parallelogram tag (LIVE, rank, theme...). */
+  .hud-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 1.4rem;
+    padding: 0 0.65rem;
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+    background: var(--color-surface-3);
+    color: var(--color-muted);
+  }
+
+  /* Buttons: rectangular, notched, background wipe on hover — no pills, no scale. */
+  .btn {
+    --notch: 7px;
+    --btn-wipe: rgb(47 224 255 / 0.14);
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    user-select: none;
+    cursor: pointer;
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--notch)) 0,
+      100% var(--notch),
+      100% 100%,
+      var(--notch) 100%,
+      0 calc(100% - var(--notch))
+    );
+    transition:
+      color 150ms,
+      background-color 150ms,
+      border-color 150ms,
+      box-shadow 150ms;
+  }
+  .btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--btn-wipe);
+    transform: translateX(-101%);
+    transition: transform 180ms var(--ease-snap);
+  }
+  .btn:hover::before {
+    transform: none;
+  }
+  /* Outlines are clipped by clip-path: draw focus inside. */
+  .btn:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--color-cyan);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+  .btn-sm {
+    height: 2rem;
+    padding: 0 0.85rem;
+    font-size: 0.8rem;
+  }
+  .btn-md {
+    height: 2.5rem;
+    padding: 0 1.15rem;
+    font-size: 0.92rem;
+  }
+  .btn-lg {
+    height: 3rem;
+    padding: 0 1.6rem;
+    font-size: 1.05rem;
+  }
+  .btn-primary {
+    --btn-wipe: rgb(255 255 255 / 0.12);
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+    box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.28);
+  }
+  .btn-primary:hover {
+    background: var(--color-accent-strong);
+    box-shadow: inset 0 -2px 0 var(--color-cyan);
+  }
+  .btn-secondary {
+    border-color: var(--color-line-strong);
+    background: rgb(255 255 255 / 0.02);
+    color: var(--color-text);
+  }
+  .btn-secondary:hover {
+    border-color: var(--color-cyan);
+  }
+  .btn-ghost {
+    color: var(--color-muted);
+  }
+  .btn-ghost:hover {
+    color: var(--color-text);
+  }
+  .btn-danger {
+    --btn-wipe: rgb(255 59 114 / 0.14);
+    border-color: rgb(255 59 114 / 0.55);
+    color: var(--color-loss);
+  }
+
+  /* Top navigation tabs: luminous underline slides in on the active tab. */
+  .hud-tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 1rem;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    transition: color 150ms;
+  }
+  .hud-tab::after {
+    content: "";
+    position: absolute;
+    left: 0.6rem;
+    right: 0.6rem;
+    bottom: -1px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-blue), var(--color-cyan));
+    box-shadow: 0 0 12px rgb(47 224 255 / 0.55);
+    transform: scaleX(0);
+    transition: transform 200ms var(--ease-snap);
+  }
+  .hud-tab:hover {
+    color: var(--color-text);
+  }
+  .hud-tab[aria-current="page"] {
+    color: var(--color-text);
+  }
+  .hud-tab[aria-current="page"]::after {
+    transform: scaleX(1);
+  }
+
+  /* Selectable row (history, theme list): cyan edge + background wipe when hovered/selected. */
+  .hud-row {
+    position: relative;
+    isolation: isolate;
+    transition: background-color 150ms;
+  }
+  .hud-row::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(
+      90deg,
+      rgb(47 224 255 / 0.12),
+      rgb(47 224 255 / 0.02) 70%,
+      transparent
+    );
+    transform-origin: left;
+    transform: scaleX(0);
+    transition: transform 180ms var(--ease-snap);
+  }
+  .hud-row::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--color-cyan);
+    box-shadow: 0 0 10px rgb(47 224 255 / 0.6);
+    opacity: 0;
+    transition: opacity 150ms;
+  }
+  .hud-row:hover::before,
+  .hud-row:focus-visible::before,
+  .hud-row[aria-selected="true"]::before,
+  .hud-row[aria-pressed="true"]::before {
+    transform: scaleX(1);
+  }
+  .hud-row:hover::after,
+  .hud-row:focus-visible::after,
+  .hud-row[aria-selected="true"]::after,
+  .hud-row[aria-pressed="true"]::after {
+    opacity: 1;
+  }
+  .hud-row:focus-visible {
+    outline: none;
+  }
+
+  /* Live indicator: solid dot + one soft ring. */
+  .live-dot {
+    position: relative;
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-win);
+    box-shadow: 0 0 8px rgb(41 240 168 / 0.7);
+  }
+  .live-dot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid var(--color-win);
+    animation: live-ring 2.4s ease-out infinite;
+  }
+  @keyframes live-ring {
+    0% {
+      transform: scale(1);
+      opacity: 0.7;
+    }
+    70%,
+    100% {
+      transform: scale(2.6);
+      opacity: 0;
+    }
+  }
+
+  /* Number update feedback: quick rise + short colored flash (≈200 ms + 600 ms fade). */
+  .num-change {
+    animation: hud-rise 200ms var(--ease-snap) both;
+  }
+  .num-change-win {
+    animation:
+      hud-rise 200ms var(--ease-snap) both,
+      hud-flash-win 650ms ease-out both;
+  }
+  .num-change-loss {
+    animation:
+      hud-rise 200ms var(--ease-snap) both,
+      hud-flash-loss 650ms ease-out both;
+  }
+  @keyframes hud-rise {
+    0% {
+      transform: translateY(-0.18em);
+      opacity: 0;
+    }
+    100% {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  @keyframes hud-flash-win {
+    0% {
+      text-shadow: 0 0 18px rgb(41 240 168 / 0.95);
+    }
+    100% {
+      text-shadow: 0 0 0 transparent;
+    }
+  }
+  @keyframes hud-flash-loss {
+    0% {
+      text-shadow: 0 0 18px rgb(255 59 114 / 0.95);
+    }
+    100% {
+      text-shadow: 0 0 0 transparent;
+    }
+  }
+
+  /* Ratio bar (wins vs losses), telemetry style. */
+  .ratio-bar {
+    display: flex;
+    gap: 2px;
+    height: 6px;
+  }
+  .ratio-bar > span {
+    transition: flex-grow 300ms var(--ease-snap);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -78,6 +510,7 @@ body {
   *::before,
   *::after {
     animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
   }
 }

@@ -17,6 +17,8 @@ export type OverlayPresetId = keyof typeof OVERLAY_PRESETS;
 const PRESET_IDS = Object.keys(OVERLAY_PRESETS) as [OverlayPresetId, ...OverlayPresetId[]];
 
 export const OVERLAY_FONTS = {
+  "barlow-condensed": "Barlow Condensed",
+  barlow: "Barlow",
   "chakra-petch": "Chakra Petch",
   rajdhani: "Rajdhani",
   oswald: "Oswald",
@@ -105,18 +107,18 @@ export const DEFAULT_OVERLAY_CONFIG: OverlayConfig = {
   title: "",
   showTitle: true,
   locale: DEFAULT_LOCALE,
-  font: "chakra-petch",
-  textColor: "#f4f5f7",
-  mutedColor: "#9aa0ad",
-  accentColor: "#ffb020",
-  winColor: "#3ddc84",
-  lossColor: "#ff4d5e",
-  backgroundColor: "#0b0c10",
-  backgroundOpacity: 0.72,
+  font: "barlow-condensed",
+  textColor: "#f4f6ff",
+  mutedColor: "#a3acd0",
+  accentColor: "#2fe0ff",
+  winColor: "#29f0a8",
+  lossColor: "#ff3b72",
+  backgroundColor: "#070a16",
+  backgroundOpacity: 0.82,
   borderEnabled: false,
-  borderColor: "#ffb020",
+  borderColor: "#2fe0ff",
   borderWidth: 2,
-  borderRadius: 10,
+  borderRadius: 0,
   scale: 1,
   spacing: "normal",
   align: "left",
@@ -129,38 +131,49 @@ export interface OverlayThemeMeta {
   defaults: Partial<OverlayConfig>;
 }
 
+/** HUD palettes shared by every theme (cyan / magenta on deep navy). */
+const HUD_PALETTE = {
+  textColor: "#f4f6ff",
+  mutedColor: "#a3acd0",
+  winColor: "#29f0a8",
+  lossColor: "#ff3b72",
+} as const satisfies Partial<OverlayConfig>;
+
 export const OVERLAY_THEME_META: Record<OverlayThemeId, OverlayThemeMeta> = {
   minimal: {
     id: "minimal",
     defaults: {
+      ...HUD_PALETTE,
       preset: "compact",
-      font: "inter",
-      accentColor: "#ffb020",
-      backgroundColor: "#0b0c10",
+      font: "barlow-condensed",
+      accentColor: "#2fe0ff",
+      backgroundColor: "#070a16",
       backgroundOpacity: 0,
       borderEnabled: false,
-      borderRadius: 6,
+      borderRadius: 0,
     },
   },
   competitive: {
     id: "competitive",
     defaults: {
+      ...HUD_PALETTE,
       preset: "standard",
-      font: "chakra-petch",
-      accentColor: "#ffb020",
-      backgroundColor: "#0b0c10",
-      backgroundOpacity: 0.72,
-      borderRadius: 10,
+      font: "barlow-condensed",
+      accentColor: "#2fe0ff",
+      backgroundColor: "#070a16",
+      backgroundOpacity: 0.82,
+      borderRadius: 0,
     },
   },
   fighter: {
     id: "fighter",
     defaults: {
+      ...HUD_PALETTE,
       preset: "standard",
       font: "bebas-neue",
-      accentColor: "#ff3d5a",
-      backgroundColor: "#111216",
-      backgroundOpacity: 0.85,
+      accentColor: "#ff2e93",
+      backgroundColor: "#0a0b1c",
+      backgroundOpacity: 0.88,
       borderRadius: 0,
     },
   },

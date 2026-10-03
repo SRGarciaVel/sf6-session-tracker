@@ -145,7 +145,10 @@
       "confirmEnd": "Sí, finalizar sesión",
       "startSession": "Iniciar sesión de juego",
       "startNewSession": "Iniciar nueva sesión",
-      "startNewTooltip": "Finaliza la sesión actual y empieza una nueva desde cero"
+      "startNewTooltip": "Finaliza la sesión actual y empieza una nueva desde cero",
+      "currentStreak": "Racha actual",
+      "noSessionHint": "Inicia una sesión para empezar a contar partidas Ranked.",
+      "ratio": "Victorias frente a derrotas"
     },
     "tracker": {
       "idle": "Seguimiento en pausa: inicia una sesión para registrar partidas",
@@ -162,7 +165,11 @@
       "copyUrl": "Copiar URL para OBS",
       "openPreview": "Abrir vista previa ↗",
       "newOverlay": "+ Nuevo overlay",
-      "newOverlayName": "Overlay {number}"
+      "newOverlayName": "Overlay {number}",
+      "status": "Estado",
+      "canvas": "Lienzo",
+      "url": "URL",
+      "language": "Idioma"
     },
     "obs": {
       "title": "Añadir a OBS",
@@ -179,7 +186,11 @@
       "title": "Historial de sesiones",
       "empty": "Tus sesiones aparecerán aquí.",
       "live": "EN VIVO",
-      "games": "{count, plural, one {# partida} other {# partidas}}"
+      "games": "{count, plural, one {# partida} other {# partidas}}",
+      "colSession": "Sesión",
+      "colRecord": "Resultado",
+      "colWinRate": "% Victorias",
+      "colRating": "MR / LP"
     },
     "dev": {
       "title": "Herramientas de desarrollo · CFN mock",
@@ -204,6 +215,18 @@
       "title": "Algo salió mal",
       "body": "No se pudo cargar el panel. Tu sesión sigue registrándose en segundo plano: no se pierde nada.",
       "retry": "Reintentar"
+    },
+    "playerTag": "Jugador",
+    "character": "Personaje",
+    "console": {
+      "title": "Consola de emisión"
+    },
+    "status": {
+      "tracker": "Seguimiento",
+      "link": "Enlace en vivo",
+      "linkOk": "En línea",
+      "linkDown": "Reconectando…",
+      "obs": "Fuentes OBS"
     }
   },
   "Recap": {
@@ -291,15 +314,15 @@
     "themes": {
       "minimal": {
         "name": "Minimalista",
-        "description": "Una sola línea compacta. No estorba al gameplay."
+        "description": "Rótulo inferior de retransmisión. Una línea limpia sobre el gameplay."
       },
       "competitive": {
         "name": "Competitivo",
-        "description": "Bloques de estadísticas con etiquetas y jerarquía clara."
+        "description": "Marcador con V/D, porcentaje de victorias, MR/LP y racha."
       },
       "fighter": {
-        "name": "Fighter",
-        "description": "Paneles inclinados y tipografía contundente, inspirados en los HUD de juegos de lucha."
+        "name": "Street",
+        "description": "Paneles en diagonal, energía cian/magenta y textura de tramado."
       }
     },
     "presets": {

@@ -12,7 +12,7 @@ export default function DashboardError({
 }) {
   const t = useTranslations("Dashboard.error");
   return (
-    <div className="mx-auto max-w-md rounded-xl border border-line bg-surface p-8 text-center">
+    <div className="hud-panel mx-auto max-w-md p-8 text-center">
       <p className="font-display text-xs font-bold tracking-[0.3em] text-loss uppercase">
         {t("title")}
       </p>

@@ -3,6 +3,8 @@
  * OBS). Each exposes a CSS variable; overlays pick one through `var(--ovf-<id>)`.
  */
 import {
+  Barlow,
+  Barlow_Condensed,
   Bebas_Neue,
   Chakra_Petch,
   Inter,
@@ -11,6 +13,19 @@ import {
   Rajdhani,
 } from "next/font/google";
 
+// Primary UI + HUD families: condensed display numerals and a matching body face.
+const barlowCondensed = Barlow_Condensed({
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+  variable: "--ovf-barlow-condensed",
+  display: "swap",
+});
+const barlow = Barlow({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--ovf-barlow",
+  display: "swap",
+});
 const chakraPetch = Chakra_Petch({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -39,6 +54,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 /** Put on <html> so every overlay font variable is defined. */
 export const overlayFontVariables = [
+  barlowCondensed.variable,
+  barlow.variable,
   chakraPetch.variable,
   rajdhani.variable,
   oswald.variable,

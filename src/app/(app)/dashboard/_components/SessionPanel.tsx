@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import { Badge, Button, Dot, ErrorText, cx } from "@/components/ui/primitives";
+import { Badge, Button, Dot, ErrorText, LiveIndicator, cx } from "@/components/ui/primitives";
 import {
   deltaTone,
   formatDelta,
@@ -16,105 +16,163 @@ import type { MatchResult } from "@/domain/sf6/types";
 import { endSessionAction, startSessionAction } from "../actions";
 import { timeAgo, useLiveDashboard, useNow } from "./LiveDashboard";
 
-function BigStat({
-  label,
+type Tone = "win" | "loss" | "neutral";
+
+/**
+ * Re-mounts on value change so the rise + flash animation plays; static on first render
+ * (no flashing on page load / refresh).
+ */
+function Changing({
   value,
-  tone,
-  hint,
+  tone = "neutral",
+  className,
 }: {
-  label: string;
   value: string;
-  tone?: "win" | "loss" | "accent" | "muted";
-  hint?: string;
+  tone?: Tone;
+  className?: string;
 }) {
-  const color = { win: "text-win", loss: "text-loss", accent: "text-accent", muted: "text-muted" }[
-    tone ?? "muted"
-  ];
+  const [tracked, setTracked] = useState({ value, version: 0 });
+  if (tracked.value !== value) setTracked({ value, version: tracked.version + 1 });
   return (
-    // Subgrid: label / value / hint rows line up across tiles even when a label wraps (es).
-    <div className="row-span-3 grid grid-rows-subgrid gap-y-1 bg-surface px-4 py-4 sm:px-5">
-      <p className="self-end text-[11px] leading-tight font-semibold tracking-[0.14em] text-muted uppercase">
-        {label}
-      </p>
-      <p
-        key={value}
-        className={cx(
-          "font-display text-3xl font-bold tabular sm:text-4xl",
-          tone ? color : "text-text",
-          "animate-rise",
-        )}
-      >
-        {value}
-      </p>
-      <p className="text-xs text-faint tabular">{hint}</p>
-    </div>
+    <span
+      key={tracked.version}
+      className={cx(
+        "inline-block",
+        className,
+        tracked.version > 0 && `num-change num-change-${tone}`,
+      )}
+    >
+      {value}
+    </span>
   );
 }
 
+const RESULT_KEY = { win: "resultWin", loss: "resultLoss", draw: "resultDraw" } as const;
 const CHIP: Record<MatchResult, string> = {
   win: "bg-win text-bg",
   loss: "bg-loss text-bg",
   draw: "bg-faint text-bg",
 };
 
-/** lastError is stored as "<provider code>: <technical message>"; show a translated message. */
-const TRACKER_ERROR_KEYS = {
-  not_found: "notFound",
-  rate_limited: "rateLimited",
-  timeout: "timeout",
-  unavailable: "unavailable",
-  invalid_response: "invalidResponse",
-} as const;
-
-function trackerErrorKey(lastError: string | null) {
-  const code = lastError?.split(":")[0] ?? "";
-  return code in TRACKER_ERROR_KEYS
-    ? TRACKER_ERROR_KEYS[code as keyof typeof TRACKER_ERROR_KEYS]
-    : "generic";
+/** Arrow glyph + sign: never rely on color alone for up/down. */
+function DeltaChip({ delta, locale }: { delta: number | null; locale: string }) {
+  const tone = deltaTone(delta);
+  const arrow = tone === "positive" ? "▲" : tone === "negative" ? "▼" : "■";
+  return (
+    <Changing
+      value={`${arrow} ${formatDelta(delta, locale)}`}
+      tone={tone === "positive" ? "win" : tone === "negative" ? "loss" : "neutral"}
+      className={cx(
+        "hud-tag h-7 px-3 text-base tabular",
+        tone === "positive" && "bg-win/15 text-win",
+        tone === "negative" && "bg-loss/15 text-loss",
+        tone === "neutral" && "text-muted",
+      )}
+    />
+  );
 }
 
-function TrackerLine() {
-  const t = useTranslations("Dashboard.tracker");
-  const tErrors = useTranslations("Errors");
-  const tc = useTranslations("Common");
-  const locale = useLocale();
-  const { state, stream } = useLiveDashboard();
-  const now = useNow(1000);
-  const { tracker } = state;
+/* ───────────────────────── Player header ───────────────────────── */
 
-  if (tracker.state === "idle") {
-    return (
-      <span className="flex items-center gap-2 text-xs text-muted">
-        <Dot tone="neutral" /> {t("idle")}
-      </span>
-    );
-  }
-  if (tracker.state === "degraded") {
-    return (
-      <span
-        className="flex items-center gap-2 text-xs text-warn"
-        title={tErrors(`provider.${trackerErrorKey(tracker.lastError)}`)}
-      >
-        <Dot tone="warn" /> {t("degraded", { count: tracker.consecutiveFailures })}
-      </span>
-    );
-  }
+export function PlayerHeader({ characterFallback }: { characterFallback: string | null }) {
+  const t = useTranslations("Dashboard");
+  const locale = useLocale();
+  const { state } = useLiveDashboard();
+  const r = state.live.session.rating;
+  const unit = r.system === "mr" ? "MR" : "LP";
+  const current = r.system === "mr" ? state.player.masterRate : state.player.leaguePoints;
+  const name = state.live.player.displayName;
+
   return (
-    <span className="flex items-center gap-2 text-xs text-muted">
-      <span className="relative flex size-2">
-        <span className="absolute inline-flex size-full animate-ping rounded-full bg-win opacity-60" />
-        <Dot tone="win" />
+    <section className="hud-panel animate-panel-in overflow-hidden">
+      {/* oversized outlined name: texture, not content */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-2 -bottom-10 font-display text-[8.5rem] leading-none font-extrabold whitespace-nowrap text-transparent uppercase select-none [-webkit-text-stroke:1px_rgb(255_255_255/0.045)]"
+      >
+        {name}
       </span>
-      {tracker.state === "starting"
-        ? t("starting")
-        : t("ok", {
-            ago: timeAgo(tracker.lastSuccessAt, now, locale, {
-              never: tc("never"),
-              justNow: tc("justNow"),
-            }),
-          })}
-      {stream !== "open" && <span className="text-faint">{t("reconnecting")}</span>}
-    </span>
+      <span aria-hidden className="absolute inset-y-0 left-0 w-1.5 bg-magenta" />
+
+      <div className="relative grid gap-5 py-5 pr-6 pl-6 sm:pl-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3">
+            <span className="hud-tag bg-magenta text-white">{t("playerTag")}</span>
+            <span className="hud-label">{t("eyebrow")}</span>
+          </div>
+          <h1 className="mt-2 truncate font-display text-4xl leading-none font-bold sm:text-5xl">
+            {name}
+          </h1>
+          <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+            <div className="flex items-baseline gap-2">
+              <dt className="hud-label">{t("cfnId")}</dt>
+              <dd className="font-mono text-text">{state.player.cfnUserId}</dd>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <dt className="hud-label">{t("character")}</dt>
+              <dd className="font-display text-base font-semibold uppercase">
+                {state.live.player.mainCharacter ?? characterFallback ?? "—"}
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        <dl className="flex items-stretch">
+          <div className="pr-6">
+            <dt className="hud-label">{t("rank")}</dt>
+            <dd className="mt-1 font-display text-3xl font-bold tracking-wide text-cyan uppercase">
+              {state.player.rank ?? "—"}
+            </dd>
+          </div>
+          <div aria-hidden className="w-px -skew-x-[18deg] bg-line-strong" />
+          <div className="pl-6 text-right">
+            <dt className="hud-label">{t("currentRating", { unit })}</dt>
+            <dd className="mt-1 font-display text-5xl leading-none font-bold tabular">
+              <Changing value={formatInteger(current, locale)} />
+              <span className="ml-1.5 text-lg font-semibold text-muted">{unit}</span>
+            </dd>
+          </div>
+        </dl>
+      </div>
+      <div
+        aria-hidden
+        className="h-0.5 bg-gradient-to-r from-magenta via-violet/50 to-transparent"
+      />
+    </section>
+  );
+}
+
+/* ───────────────────────── Scoreboard ───────────────────────── */
+
+function ScoreSide({
+  label,
+  value,
+  letter,
+  tone,
+  align,
+}: {
+  label: string;
+  value: string;
+  letter: string;
+  tone: "win" | "loss";
+  align: "left" | "right";
+}) {
+  return (
+    <div className={cx("min-w-0", align === "right" && "text-right")}>
+      <p className={cx("hud-label", tone === "win" ? "text-win/90" : "text-loss/90")}>{label}</p>
+      <p
+        className={cx(
+          "mt-1 flex items-baseline gap-1.5 font-display leading-[0.85] font-extrabold tabular",
+          align === "right" && "justify-end",
+          tone === "win" ? "text-win" : "text-loss",
+        )}
+      >
+        <Changing value={value} tone={tone} className="text-7xl sm:text-8xl" />
+        <span className="text-2xl font-bold opacity-70" aria-hidden>
+          {letter}
+        </span>
+      </p>
+    </div>
   );
 }
 
@@ -140,6 +198,7 @@ export function SessionPanel() {
           (s.endedAt ? new Date(s.endedAt).getTime() : now) - new Date(s.startedAt).getTime(),
         )
       : null;
+  const decided = s.wins + s.losses;
 
   const start = () => {
     setError(null);
@@ -158,93 +217,161 @@ export function SessionPanel() {
     });
   };
 
+  const streak =
+    s.currentWinStreak > 0
+      ? { text: t("streakWins", { count: s.currentWinStreak }), tone: "text-win" }
+      : s.currentLossStreak > 0
+        ? { text: t("streakLosses", { count: s.currentLossStreak }), tone: "text-loss" }
+        : { text: "—", tone: "text-muted" };
+
   return (
-    <section className="overflow-hidden rounded-xl border border-line bg-surface">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
-        <div className="flex items-center gap-3">
-          <h2 className="font-display text-xs font-semibold tracking-[0.18em] text-muted uppercase">
-            {t("title")}
-          </h2>
-          {active ? (
-            <Badge tone="win">{t("live")}</Badge>
-          ) : s.status === "ended" ? (
-            <Badge>{t("ended")}</Badge>
-          ) : (
-            <Badge>{t("none")}</Badge>
-          )}
-          {duration && <span className="text-xs text-faint tabular">{duration}</span>}
-        </div>
-        <TrackerLine />
+    <section
+      className="hud-panel animate-panel-in"
+      style={
+        active ? ({ "--frame": "var(--color-line-strong)" } as React.CSSProperties) : undefined
+      }
+    >
+      <span
+        aria-hidden
+        className={cx(
+          "absolute inset-x-0 top-0 h-0.5",
+          active
+            ? "bg-gradient-to-r from-cyan via-blue to-transparent"
+            : "bg-gradient-to-r from-line-strong to-transparent",
+        )}
+      />
+      <header className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 pt-4 sm:px-6">
+        <h2 className="hud-heading min-w-40 flex-1">{t("title")}</h2>
+        {duration && <span className="font-display text-base text-muted tabular">{duration}</span>}
+        {active ? (
+          <LiveIndicator label={t("live").replace("●", "").trim()} />
+        ) : s.status === "ended" ? (
+          <Badge>{t("ended")}</Badge>
+        ) : (
+          <Badge>{t("none")}</Badge>
+        )}
       </header>
 
-      <div className="grid grid-cols-2 gap-px bg-line sm:grid-cols-3 lg:grid-cols-6">
-        <BigStat label={t("wins")} value={formatInteger(s.wins, locale)} tone="win" />
-        <BigStat label={t("losses")} value={formatInteger(s.losses, locale)} tone="loss" />
-        <BigStat
-          label={t("winRate")}
-          value={formatWinRate(s.winRate, locale)}
-          hint={t("games", { count: s.totalGames })}
+      {/* Scoreline: P1-vs-P2 style — wins left, losses right, win rate in the middle. */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3 px-5 pt-5 sm:gap-6 sm:px-8">
+        <ScoreSide
+          label={t("wins")}
+          value={formatInteger(s.wins, locale)}
+          letter={tr("resultWin")}
+          tone="win"
+          align="left"
         />
-        <BigStat
-          label={t("ratingChange", { unit })}
-          value={formatDelta(r.primary.delta, locale)}
-          tone={
-            deltaTone(r.primary.delta) === "positive"
-              ? "win"
-              : deltaTone(r.primary.delta) === "negative"
-                ? "loss"
-                : undefined
-          }
-          hint={
-            r.primary.initial !== null
-              ? `${formatInteger(r.primary.initial, locale)} → ${formatInteger(r.primary.current, locale)}`
-              : undefined
-          }
+        <div className="pb-1 text-center">
+          <p className="hud-label">{t("winRate")}</p>
+          <p className="mt-1 font-display text-5xl leading-none font-bold tabular sm:text-6xl">
+            <Changing value={formatWinRate(s.winRate, locale)} />
+          </p>
+          <p className="mt-1 text-sm text-muted">{t("games", { count: s.totalGames })}</p>
+        </div>
+        <ScoreSide
+          label={t("losses")}
+          value={formatInteger(s.losses, locale)}
+          letter={tr("resultLoss")}
+          tone="loss"
+          align="right"
         />
-        <BigStat
-          label={t("streak")}
-          value={
-            s.currentWinStreak > 0
-              ? t("streakWins", { count: s.currentWinStreak })
-              : s.currentLossStreak > 0
-                ? t("streakLosses", { count: s.currentLossStreak })
-                : "—"
-          }
-          tone={s.currentWinStreak >= 3 ? "accent" : s.currentLossStreak > 0 ? "loss" : undefined}
-        />
-        <BigStat label={t("bestStreak")} value={t("streakWins", { count: s.bestWinStreak })} />
+      </div>
+      <div
+        className="ratio-bar mx-5 mt-4 sm:mx-8"
+        role="img"
+        aria-label={`${t("ratio")}: ${s.wins}–${s.losses}`}
+      >
+        {decided === 0 ? (
+          <span className="grow bg-line-strong" />
+        ) : (
+          <>
+            <span
+              className="bg-win shadow-[0_0_10px_rgb(41_240_168/0.45)]"
+              style={{ flexGrow: s.wins }}
+            />
+            <span className="bg-loss" style={{ flexGrow: s.losses }} />
+          </>
+        )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
-        <div className="flex min-h-6 items-center gap-1" aria-label={t("recentResults")}>
+      {/* Telemetry band: rating track + streaks */}
+      <div className="mt-6 grid border-t border-line md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <div className="px-5 py-4 sm:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <span className="hud-label">{t("ratingChange", { unit })}</span>
+            {r.rank && <span className="hud-tag text-cyan">{r.rank}</span>}
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+            {r.primary.initial !== null && (
+              <>
+                <span className="font-display text-xl font-semibold text-muted tabular">
+                  {formatInteger(r.primary.initial, locale)}
+                </span>
+                <span
+                  aria-hidden
+                  className="relative h-px min-w-12 flex-1 bg-gradient-to-r from-line-strong to-cyan"
+                >
+                  <span className="absolute -top-[5px] -right-1 text-[10px] leading-none text-cyan">
+                    ▶
+                  </span>
+                </span>
+              </>
+            )}
+            <span className="font-display text-4xl leading-none font-bold tabular">
+              <Changing value={formatInteger(r.primary.current, locale)} />
+              <span className="ml-1 text-base font-semibold text-muted">{unit}</span>
+            </span>
+            <DeltaChip delta={r.primary.delta} locale={locale} />
+          </div>
+        </div>
+        <dl className="grid grid-cols-2 border-t border-line md:border-t-0 md:border-l">
+          <div className="px-5 py-4">
+            <dt className="hud-label">{t("currentStreak")}</dt>
+            <dd
+              className={cx(
+                "mt-2 font-display text-4xl leading-none font-bold tabular",
+                streak.tone,
+              )}
+            >
+              <Changing value={streak.text} tone={s.currentWinStreak > 0 ? "win" : "neutral"} />
+            </dd>
+          </div>
+          <div className="border-l border-line px-5 py-4">
+            <dt className="hud-label">{t("bestStreak")}</dt>
+            <dd className="mt-2 font-display text-4xl leading-none font-bold tabular">
+              {t("streakWins", { count: s.bestWinStreak })}
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-surface-0/70 px-5 py-3 sm:px-6">
+        <div className="flex min-h-7 items-center gap-1" aria-label={t("recentResults")}>
           {s.recentResults.length === 0 ? (
-            <span className="text-xs text-faint">
-              {active ? t("waitingFirstMatch") : t("resultsAppearHere")}
+            <span className="text-sm text-muted">
+              {active
+                ? t("waitingFirstMatch")
+                : s.status === "none"
+                  ? t("noSessionHint")
+                  : t("resultsAppearHere")}
             </span>
           ) : (
             s.recentResults.map((res, i) => (
               <span
                 key={`${i}-${res}`}
                 className={cx(
-                  "grid size-6 place-items-center rounded text-[11px] font-bold",
+                  "grid h-7 w-6 place-items-center font-display text-sm font-bold [clip-path:polygon(3px_0,100%_0,calc(100%-3px)_100%,0_100%)]",
                   CHIP[res],
                 )}
               >
-                {res === "win"
-                  ? tr("resultWin")
-                  : res === "loss"
-                    ? tr("resultLoss")
-                    : tr("resultDraw")}
+                {tr(RESULT_KEY[res])}
               </span>
             ))
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {s.sessionId && (
-            <Link
-              href={`/dashboard/sessions/${s.sessionId}`}
-              className="px-2 text-sm text-muted hover:text-text"
-            >
+            <Link href={`/dashboard/sessions/${s.sessionId}`} className="btn btn-ghost btn-md">
               {t("details")}
             </Link>
           )}
@@ -272,7 +399,7 @@ export function SessionPanel() {
             {pending ? tc("working") : active ? t("startNewSession") : t("startSession")}
           </Button>
         </div>
-      </div>
+      </footer>
       {error && (
         <div className="border-t border-line px-5 py-3">
           <ErrorText>{error}</ErrorText>
@@ -282,48 +409,97 @@ export function SessionPanel() {
   );
 }
 
-export function PlayerHeader({ characterFallback }: { characterFallback: string | null }) {
-  const t = useTranslations("Dashboard");
+/* ───────────────────────── Status bar ───────────────────────── */
+
+/** lastError is stored as "<provider code>: <technical message>"; show a translated message. */
+const TRACKER_ERROR_KEYS = {
+  not_found: "notFound",
+  rate_limited: "rateLimited",
+  timeout: "timeout",
+  unavailable: "unavailable",
+  invalid_response: "invalidResponse",
+} as const;
+
+function trackerErrorKey(lastError: string | null) {
+  const code = lastError?.split(":")[0] ?? "";
+  return code in TRACKER_ERROR_KEYS
+    ? TRACKER_ERROR_KEYS[code as keyof typeof TRACKER_ERROR_KEYS]
+    : "generic";
+}
+
+/** Bottom telemetry strip (SF6 hint-bar placement): tracker health, realtime link, OBS sources. */
+export function StatusBar() {
+  const t = useTranslations("Dashboard.tracker");
+  const ts = useTranslations("Dashboard.status");
+  const tc = useTranslations("Common");
+  const tErrors = useTranslations("Errors");
   const locale = useLocale();
-  const { state } = useLiveDashboard();
-  const r = state.live.session.rating;
-  const unit = r.system === "mr" ? "MR" : "LP";
-  const current = r.system === "mr" ? state.player.masterRate : state.player.leaguePoints;
+  const { state, stream } = useLiveDashboard();
+  const now = useNow(1000);
+  const { tracker } = state;
+
+  const trackerText =
+    tracker.state === "idle"
+      ? t("idle")
+      : tracker.state === "degraded"
+        ? t("degraded", { count: tracker.consecutiveFailures })
+        : tracker.state === "starting"
+          ? t("starting")
+          : t("ok", {
+              ago: timeAgo(tracker.lastSuccessAt, now, locale, {
+                never: tc("never"),
+                justNow: tc("justNow"),
+              }),
+            });
+
   return (
-    <div className="bg-slash relative overflow-hidden rounded-xl border border-line bg-surface p-5 sm:p-6">
-      <div className="absolute inset-y-0 left-0 w-1 bg-accent" />
-      <p className="font-display text-[11px] font-semibold tracking-[0.3em] text-accent uppercase">
-        {t("eyebrow")}
-      </p>
-      <div className="mt-2 flex flex-wrap items-end justify-between gap-6">
-        <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            {state.live.player.displayName}
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            {state.live.player.mainCharacter ?? characterFallback ?? "—"} · {t("cfnId")}{" "}
-            <span className="font-mono text-text">{state.player.cfnUserId}</span>
-          </p>
-        </div>
-        <dl className="flex gap-8">
-          <div>
-            <dt className="text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">
-              {t("rank")}
-            </dt>
-            <dd className="mt-1 font-display text-2xl font-bold">{state.player.rank ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">
-              {t("currentRating", { unit })}
-            </dt>
-            <dd
-              key={current ?? "none"}
-              className="mt-1 animate-rise font-display text-2xl font-bold tabular"
-            >
-              {formatInteger(current, locale)}
-            </dd>
-          </div>
-        </dl>
+    <div
+      role="status"
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-line-strong bg-bg/95 backdrop-blur-sm"
+    >
+      <div className="mx-auto flex h-10 max-w-[1440px] items-center gap-5 overflow-hidden px-4 text-[13px] sm:px-6">
+        <span
+          className="flex min-w-0 items-center gap-2"
+          title={
+            tracker.state === "degraded"
+              ? tErrors(`provider.${trackerErrorKey(tracker.lastError)}`)
+              : undefined
+          }
+        >
+          <span className="hud-label hidden sm:inline">{ts("tracker")}</span>
+          {tracker.state === "ok" ? (
+            <span className="live-dot shrink-0" aria-hidden />
+          ) : (
+            <Dot
+              tone={
+                tracker.state === "idle" ? "neutral" : tracker.state === "degraded" ? "warn" : "win"
+              }
+            />
+          )}
+          <span
+            className={cx("truncate", tracker.state === "degraded" ? "text-warn" : "text-muted")}
+          >
+            {trackerText}
+          </span>
+        </span>
+        <span aria-hidden className="hidden h-4 w-px -skew-x-[18deg] bg-line-strong md:block" />
+        <span className="hidden items-center gap-2 md:flex">
+          <span className="hud-label">{ts("link")}</span>
+          <Dot tone={stream === "open" ? "win" : "warn"} />
+          <span className="text-muted">{stream === "open" ? ts("linkOk") : ts("linkDown")}</span>
+        </span>
+        <span aria-hidden className="hidden h-4 w-px -skew-x-[18deg] bg-line-strong md:block" />
+        <span className="ml-auto flex items-center gap-2 md:ml-0">
+          <span className="hud-label">{ts("obs")}</span>
+          <span
+            className={cx(
+              "font-display text-base font-bold tabular",
+              state.overlayConnections > 0 ? "text-win" : "text-muted",
+            )}
+          >
+            {state.overlayConnections}
+          </span>
+        </span>
       </div>
     </div>
   );
