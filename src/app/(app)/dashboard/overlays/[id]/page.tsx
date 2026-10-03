@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requirePlayer } from "@/server/auth/session";
@@ -9,7 +10,9 @@ import { getOwnedOverlay } from "@/server/overlays/service";
 import { LiveDashboardProvider } from "../../_components/LiveDashboard";
 import { OverlayBuilder } from "./OverlayBuilder";
 
-export const metadata: Metadata = { title: "Configure overlay" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTranslations("Meta"))("overlayBuilder") };
+}
 export const dynamic = "force-dynamic";
 
 export default async function OverlayBuilderPage({

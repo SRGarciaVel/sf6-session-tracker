@@ -1,13 +1,16 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useState, useTransition, type FormEvent } from "react";
 import { Button, ErrorText, Input, Label, cx } from "@/components/ui/primitives";
 import { formatInteger } from "@/domain/format";
 import { confirmPlayerAction, lookupPlayerAction, type PlayerPreview } from "./actions";
 
-const STEPS = ["CFN User ID", "Verify", "Confirm", "Overlay"];
+const STEPS = ["stepCfnId", "stepVerify", "stepConfirm", "stepOverlay"] as const;
 
 export function OnboardingFlow({ devHint }: { devHint: boolean }) {
+  const t = useTranslations("Onboarding");
+  const locale = useLocale();
   const [cfnId, setCfnId] = useState("");
   const [preview, setPreview] = useState<PlayerPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,8 +41,8 @@ export function OnboardingFlow({ devHint }: { devHint: boolean }) {
   return (
     <div className="space-y-8">
       <ol className="grid grid-cols-4 gap-2">
-        {STEPS.map((label, i) => (
-          <li key={label} className="space-y-2">
+        {STEPS.map((step_, i) => (
+          <li key={step_} className="space-y-2">
             <div className={cx("h-1 rounded-full", i <= step ? "bg-accent" : "bg-line")} />
             <span
               className={cx(
@@ -47,20 +50,20 @@ export function OnboardingFlow({ devHint }: { devHint: boolean }) {
                 i <= step ? "text-text" : "text-faint",
               )}
             >
-              {label}
+              {t(step_)}
             </span>
           </li>
         ))}
       </ol>
 
       <form onSubmit={lookup} className="space-y-3">
-        <Label htmlFor="cfn">CFN User ID</Label>
+        <Label htmlFor="cfn">{t("cfnLabel")}</Label>
         <div className="flex gap-2">
           <Input
             id="cfn"
             inputMode="numeric"
             autoComplete="off"
-            placeholder="e.g. 1234567890"
+            placeholder={t("cfnPlaceholder")}
             value={cfnId}
             onChange={(e) => {
               setCfnId(e.target.value.replace(/\D/g, "").slice(0, 12));
@@ -75,14 +78,12 @@ export function OnboardingFlow({ devHint }: { devHint: boolean }) {
             disabled={pending || cfnId.length < 6}
             className="h-11"
           >
-            {pending && !preview ? "Checking…" : "Find player"}
+            {pending && !preview ? t("checking") : t("findPlayer")}
           </Button>
         </div>
         <p className="text-xs text-faint">
-          Find it on Buckler&apos;s Boot Camp → your profile. It&apos;s the numeric User Code, not
-          your fighter name.
-          {devHint &&
-            " (Mock mode: any 6–12 digit number works; IDs starting with 000 are “not found”.)"}
+          {t("help")}
+          {devHint && ` ${t("devHint")}`}
         </p>
       </form>
 
@@ -91,19 +92,20 @@ export function OnboardingFlow({ devHint }: { devHint: boolean }) {
       {preview && (
         <div className="animate-rise rounded-lg border border-accent/40 bg-accent/5 p-5">
           <p className="text-[11px] font-semibold tracking-[0.2em] text-accent uppercase">
-            Player found
+            {t("playerFound")}
           </p>
           <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="font-display text-2xl font-bold">{preview.displayName}</p>
               <p className="text-sm text-muted">
-                {preview.mainCharacter ?? "Unknown character"} · {preview.rank ?? "Unranked"}
+                {preview.mainCharacter ?? t("unknownCharacter")} · {preview.rank ?? t("unranked")}
               </p>
             </div>
             <div className="text-right">
               <p className="font-display text-3xl font-bold tabular">
                 {formatInteger(
                   preview.ratingSystem === "mr" ? preview.masterRate : preview.leaguePoints,
+                  locale,
                 )}
               </p>
               <p className="text-xs font-semibold tracking-widest text-muted">
@@ -118,7 +120,7 @@ export function OnboardingFlow({ devHint }: { devHint: boolean }) {
             onClick={confirm}
             disabled={pending}
           >
-            {pending ? "Setting up…" : "This is me — create my overlay"}
+            {pending ? t("settingUp") : t("confirm")}
           </Button>
         </div>
       )}

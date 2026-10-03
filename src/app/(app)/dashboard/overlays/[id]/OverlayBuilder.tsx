@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { OverlayView } from "@/components/overlay/OverlayView";
 import { CopyButton } from "@/components/ui/CopyButton";
@@ -11,7 +12,6 @@ import {
   OVERLAY_FONTS,
   OVERLAY_PRESETS,
   OVERLAY_THEMES,
-  OVERLAY_THEME_META,
   applyThemeDefaults,
   type OverlayConfig,
   type OverlayFieldId,
@@ -19,6 +19,8 @@ import {
   type OverlayPresetId,
 } from "@/domain/overlay/config";
 import { sampleLiveState } from "@/domain/overlay/state";
+import { LOCALES, type Locale } from "@/i18n/locale";
+import { getOverlayMessages } from "@/i18n/overlay-messages";
 import { deleteOverlayAction, rotateOverlayTokenAction, saveOverlayAction } from "../../actions";
 import { useLiveDashboard } from "../../_components/LiveDashboard";
 
@@ -156,6 +158,7 @@ function ColorField({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const t = useTranslations("Builder");
   const [draft, setDraft] = useState(value);
   const [prev, setPrev] = useState(value);
   if (value !== prev) {
@@ -173,7 +176,7 @@ function ColorField({
             if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) onChange(e.target.value.toLowerCase());
           }}
           className="h-8 w-20 rounded border border-line-strong bg-surface-2 px-2 font-mono text-xs uppercase"
-          aria-label={`${label} hex`}
+          aria-label={t("hexAria", { label })}
           maxLength={7}
         />
         <input
@@ -218,6 +221,9 @@ export function OverlayBuilder({
   url: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("Builder");
+  const tc = useTranslations("Common");
+  const tDash = useTranslations("Dashboard.overlays");
   const { state } = useLiveDashboard();
   const [name, setName] = useState(initialName);
   const [config, setConfig] = useState(initialConfig);
@@ -233,6 +239,12 @@ export function OverlayBuilder({
   const preset = OVERLAY_PRESETS[config.preset];
   const previewHeight = Math.round((width * preset.height) / preset.width);
   const live = useSample ? sampleLiveState() : state.live;
+  // Localized default title in the OVERLAY's language (what OBS shows when the title is empty).
+  const overlayStrings = getOverlayMessages(config.locale).Overlay;
+  const defaultTitle =
+    typeof overlayStrings === "object" && typeof overlayStrings.session === "string"
+      ? overlayStrings.session
+      : "";
 
   const set = <K extends keyof OverlayConfig>(key: K, value: OverlayConfig[K]) => {
     setConfig((c) => ({ ...c, [key]: value }));
@@ -253,7 +265,7 @@ export function OverlayBuilder({
       const res = await saveOverlayAction(overlayId, { name, config });
       if (res.ok) {
         setSaved({ name, config });
-        setMessage({ tone: "ok", text: "Saved. Your OBS overlay has updated." });
+        setMessage({ tone: "ok", text: t("savedMessage") });
       } else {
         setMessage({ tone: "error", text: res.error });
       }
@@ -264,7 +276,7 @@ export function OverlayBuilder({
       setConfirm(null);
       const res = await rotateOverlayTokenAction(overlayId);
       if (res.ok) {
-        setMessage({ tone: "ok", text: "New URL generated. Update the Browser Source in OBS." });
+        setMessage({ tone: "ok", text: t("rotatedMessage") });
         router.refresh();
       } else setMessage({ tone: "error", text: res.error });
     });
@@ -281,12 +293,16 @@ export function OverlayBuilder({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <Link href="/dashboard" className="text-sm text-muted hover:text-text">
-            ← Dashboard
+            {tc("backToDashboard")}
           </Link>
-          <h1 className="mt-1 font-display text-2xl font-bold">Configure overlay</h1>
+          <h1 className="mt-1 font-display text-2xl font-bold">{t("title")}</h1>
         </div>
         <div className="flex items-center gap-3">
-          {dirty ? <Badge tone="warn">Unsaved changes</Badge> : <Badge tone="win">Saved</Badge>}
+          {dirty ? (
+            <Badge tone="warn">{t("unsaved")}</Badge>
+          ) : (
+            <Badge tone="win">{t("saved")}</Badge>
+          )}
           <Button
             variant="ghost"
             onClick={() => {
@@ -295,10 +311,10 @@ export function OverlayBuilder({
             }}
             disabled={!dirty || pending}
           >
-            Discard
+            {t("discard")}
           </Button>
           <Button variant="primary" onClick={save} disabled={!dirty || pending}>
-            {pending ? "Saving…" : "Save & update OBS"}
+            {pending ? t("saving") : t("save")}
           </Button>
         </div>
       </div>
@@ -314,58 +330,58 @@ export function OverlayBuilder({
       <div className="grid items-start gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
         {/* Controls */}
         <div className="overflow-hidden rounded-xl border border-line bg-surface lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
-          <Section title="Name">
+          <Section title={t("sectionName")}>
             <Input
               value={name}
               maxLength={40}
               onChange={(e) => setName(e.target.value)}
-              aria-label="Overlay name"
+              aria-label={t("nameAria")}
             />
           </Section>
 
-          <Section title="Theme">
+          <Section title={t("sectionTheme")}>
             <div className="grid gap-2">
-              {OVERLAY_THEMES.map((t) => (
+              {OVERLAY_THEMES.map((theme) => (
                 <button
-                  key={t}
+                  key={theme}
                   type="button"
-                  onClick={() => setConfig((c) => applyThemeDefaults(c, t))}
+                  data-theme={theme}
+                  onClick={() => setConfig((c) => applyThemeDefaults(c, theme))}
                   className={cx(
                     "rounded-lg border p-3 text-left transition-colors",
-                    config.theme === t
+                    config.theme === theme
                       ? "border-accent bg-accent/5"
                       : "border-line-strong hover:border-faint",
                   )}
                 >
                   <span className="font-display text-sm font-semibold">
-                    {OVERLAY_THEME_META[t].name}
+                    {t(`themes.${theme}.name`)}
                   </span>
                   <span className="block text-xs text-muted">
-                    {OVERLAY_THEME_META[t].description}
+                    {t(`themes.${theme}.description`)}
                   </span>
                 </button>
               ))}
             </div>
           </Section>
 
-          <Section title="Size preset">
+          <Section title={t("sectionSize")}>
             <Segmented<OverlayPresetId>
               value={config.preset}
               onChange={(v) => set("preset", v)}
               options={(Object.keys(OVERLAY_PRESETS) as OverlayPresetId[]).map((p) => ({
                 value: p,
-                label: OVERLAY_PRESETS[p].label,
+                label: t(`presets.${p}`),
               }))}
             />
             <p className="text-xs text-faint">
-              OBS Browser Source: {preset.width} × {preset.height}. Any size works — the overlay
-              scales to fit.
+              {t("sizeHint", { width: preset.width, height: preset.height })}
             </p>
           </Section>
 
-          <Section title="Show">
+          <Section title={t("sectionShow")}>
             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-              {(Object.keys(OVERLAY_FIELDS) as OverlayFieldId[]).map((f) => (
+              {OVERLAY_FIELDS.map((f: OverlayFieldId) => (
                 <label key={f} className="flex cursor-pointer items-center gap-2 text-sm">
                   <input
                     type="checkbox"
@@ -373,24 +389,39 @@ export function OverlayBuilder({
                     onChange={(e) => setField(f, e.target.checked)}
                     className="size-4 accent-[var(--color-accent)]"
                   />
-                  {OVERLAY_FIELDS[f]}
+                  {t(`fields.${f}`)}
                 </label>
               ))}
             </div>
           </Section>
 
-          <Section title="Text">
+          <Section title={t("sectionText")}>
+            <div className="space-y-1.5 text-sm">
+              <span className="block">{t("overlayLanguage")}</span>
+              <Segmented<Locale>
+                value={config.locale}
+                onChange={(v) => set("locale", v)}
+                options={LOCALES.map((l) => ({ value: l, label: tc(`languageNames.${l}`) }))}
+              />
+              <p className="text-xs text-faint">{t("overlayLanguageHint")}</p>
+            </div>
+            <Toggle
+              label={t("showTitle")}
+              checked={config.showTitle}
+              onChange={(v) => set("showTitle", v)}
+            />
             <label className="block text-sm">
-              <span className="mb-1.5 block">Title</span>
+              <span className="mb-1.5 block">{t("titleLabel")}</span>
               <Input
                 value={config.title}
                 maxLength={24}
+                disabled={!config.showTitle}
                 onChange={(e) => set("title", e.target.value)}
-                placeholder="SESSION"
+                placeholder={t("titlePlaceholder", { default: defaultTitle })}
               />
             </label>
             <label className="block text-sm">
-              <span className="mb-1.5 block">Font</span>
+              <span className="mb-1.5 block">{t("font")}</span>
               <select
                 value={config.font}
                 onChange={(e) => set("font", e.target.value as OverlayFontId)}
@@ -405,42 +436,42 @@ export function OverlayBuilder({
             </label>
           </Section>
 
-          <Section title="Colors">
+          <Section title={t("sectionColors")}>
             <ColorField
-              label="Text"
+              label={t("colorText")}
               value={config.textColor}
               onChange={(v) => set("textColor", v)}
             />
             <ColorField
-              label="Labels"
+              label={t("colorLabels")}
               value={config.mutedColor}
               onChange={(v) => set("mutedColor", v)}
             />
             <ColorField
-              label="Accent"
+              label={t("colorAccent")}
               value={config.accentColor}
               onChange={(v) => set("accentColor", v)}
             />
             <ColorField
-              label="Wins / positive"
+              label={t("colorWin")}
               value={config.winColor}
               onChange={(v) => set("winColor", v)}
             />
             <ColorField
-              label="Losses / negative"
+              label={t("colorLoss")}
               value={config.lossColor}
               onChange={(v) => set("lossColor", v)}
             />
           </Section>
 
-          <Section title="Background">
+          <Section title={t("sectionBackground")}>
             <ColorField
-              label="Color"
+              label={t("colorBackground")}
               value={config.backgroundColor}
               onChange={(v) => set("backgroundColor", v)}
             />
             <Slider
-              label="Opacity"
+              label={t("opacity")}
               value={config.backgroundOpacity}
               min={0}
               max={1}
@@ -449,19 +480,19 @@ export function OverlayBuilder({
               onChange={(v) => set("backgroundOpacity", v)}
             />
             <Toggle
-              label="Border"
+              label={t("border")}
               checked={config.borderEnabled}
               onChange={(v) => set("borderEnabled", v)}
             />
             {config.borderEnabled && (
               <>
                 <ColorField
-                  label="Border color"
+                  label={t("borderColor")}
                   value={config.borderColor}
                   onChange={(v) => set("borderColor", v)}
                 />
                 <Slider
-                  label="Border width"
+                  label={t("borderWidth")}
                   value={config.borderWidth}
                   min={1}
                   max={8}
@@ -472,7 +503,7 @@ export function OverlayBuilder({
               </>
             )}
             <Slider
-              label="Corner radius"
+              label={t("radius")}
               value={config.borderRadius}
               min={0}
               max={40}
@@ -482,9 +513,9 @@ export function OverlayBuilder({
             />
           </Section>
 
-          <Section title="Layout">
+          <Section title={t("sectionLayout")}>
             <Slider
-              label="Scale"
+              label={t("scale")}
               value={config.scale}
               min={0.5}
               max={2}
@@ -493,31 +524,31 @@ export function OverlayBuilder({
               onChange={(v) => set("scale", v)}
             />
             <div className="flex items-center justify-between gap-3 text-sm">
-              <span>Spacing</span>
+              <span>{t("spacing")}</span>
               <Segmented
                 value={config.spacing}
                 onChange={(v) => set("spacing", v)}
                 options={[
-                  { value: "tight", label: "Tight" },
-                  { value: "normal", label: "Normal" },
-                  { value: "relaxed", label: "Relaxed" },
+                  { value: "tight", label: t("spacingTight") },
+                  { value: "normal", label: t("spacingNormal") },
+                  { value: "relaxed", label: t("spacingRelaxed") },
                 ]}
               />
             </div>
             <div className="flex items-center justify-between gap-3 text-sm">
-              <span>Align</span>
+              <span>{t("align")}</span>
               <Segmented
                 value={config.align}
                 onChange={(v) => set("align", v)}
                 options={[
-                  { value: "left", label: "Left" },
-                  { value: "center", label: "Center" },
-                  { value: "right", label: "Right" },
+                  { value: "left", label: t("alignLeft") },
+                  { value: "center", label: t("alignCenter") },
+                  { value: "right", label: t("alignRight") },
                 ]}
               />
             </div>
             <Toggle
-              label="Animate changes"
+              label={t("animate")}
               checked={config.animations}
               onChange={(v) => set("animations", v)}
             />
@@ -529,20 +560,20 @@ export function OverlayBuilder({
           <div className="rounded-xl border border-line bg-surface">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
               <h2 className="font-display text-xs font-semibold tracking-[0.18em] text-muted uppercase">
-                Live preview{" "}
+                {t("previewTitle")}{" "}
                 <span className="ml-2 font-mono tracking-normal text-faint normal-case">
                   {preset.width} × {preset.height}
                 </span>
               </h2>
               <div className="flex items-center gap-3">
-                <Toggle label="Sample data" checked={useSample} onChange={setUseSample} />
+                <Toggle label={t("sampleData")} checked={useSample} onChange={setUseSample} />
                 <Segmented<PreviewBg>
                   value={previewBg}
                   onChange={setPreviewBg}
                   options={[
-                    { value: "gameplay", label: "Dark" },
-                    { value: "light", label: "Light" },
-                    { value: "checker", label: "Alpha" },
+                    { value: "gameplay", label: t("bgDark") },
+                    { value: "light", label: t("bgLight") },
+                    { value: "checker", label: t("bgAlpha") },
                   ]}
                 />
               </div>
@@ -564,72 +595,62 @@ export function OverlayBuilder({
                 </div>
               </div>
               <p className="mt-3 text-xs text-faint">
-                {useSample
-                  ? "Showing sample numbers."
-                  : "Showing your real session — it updates live as you play."}{" "}
-                Unsaved changes only appear here.
+                {useSample ? t("previewSample") : t("previewLive")} {t("previewUnsaved")}
               </p>
             </div>
           </div>
 
           <div className="space-y-3 rounded-xl border border-line bg-surface p-5">
             <h2 className="font-display text-xs font-semibold tracking-[0.18em] text-muted uppercase">
-              OBS Browser Source URL
+              {t("urlTitle")}
             </h2>
             <input
               readOnly
               value={url}
               onFocus={(e) => e.currentTarget.select()}
-              aria-label="OBS Browser Source URL"
+              aria-label={t("urlTitle")}
               className="h-9 w-full rounded-md border border-line bg-surface-2 px-3 font-mono text-xs text-muted"
             />
             <div className="flex flex-wrap gap-2">
-              <CopyButton value={url} label="Copy OBS URL" size="sm" />
+              <CopyButton value={url} label={tDash("copyUrl")} size="sm" />
               <a
                 href={url}
                 target="_blank"
                 rel="noreferrer"
                 className={buttonClass("secondary", "sm")}
               >
-                Open preview ↗
+                {tDash("openPreview")}
               </a>
             </div>
-            <p className="text-xs text-faint">
-              The URL never changes when you edit the design. Treat it like a password: anyone with
-              it can view this overlay.
-            </p>
+            <p className="text-xs text-faint">{t("urlNote")}</p>
             <div className="flex flex-wrap gap-2 border-t border-line pt-3">
               {confirm === "rotate" ? (
                 <>
-                  <span className="self-center text-xs text-warn">
-                    The old URL stops working immediately.
-                  </span>
+                  <span className="self-center text-xs text-warn">{t("regenerateWarn")}</span>
                   <Button size="sm" variant="ghost" onClick={() => setConfirm(null)}>
-                    Cancel
+                    {tc("cancel")}
                   </Button>
                   <Button size="sm" variant="danger" onClick={rotate} disabled={pending}>
-                    Generate new URL
+                    {t("generateNew")}
                   </Button>
                 </>
               ) : confirm === "delete" ? (
                 <>
-                  <span className="self-center text-xs text-warn">
-                    Delete this overlay permanently?
-                  </span>
+                  <span className="self-center text-xs text-warn">{t("deleteWarn")}</span>
                   <Button size="sm" variant="ghost" onClick={() => setConfirm(null)}>
-                    Cancel
+                    {tc("cancel")}
                   </Button>
                   <Button size="sm" variant="danger" onClick={remove} disabled={pending}>
-                    Delete
+                    {t("deleteConfirm")}
                   </Button>
                 </>
               ) : (
                 <>
                   <Button size="sm" variant="ghost" onClick={() => setConfirm("rotate")}>
-                    Regenerate URL
+                    {t("regenerate")}
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => setConfirm("delete")}>
-                    Delete overlay
+                    {t("delete")}
                   </Button>
                 </>
               )}

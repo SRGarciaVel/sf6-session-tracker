@@ -1,0 +1,20 @@
+{
+  "Overlay": {
+    "session": "Sesión",
+    "wins": "Victorias",
+    "losses": "Derrotas",
+    "winRate": "% Victorias",
+    "games": "Partidas",
+    "streak": "Racha",
+    "best": "Mejor",
+    "winStreak": "Racha",
+    "unitWin": "V",
+    "unitLoss": "D",
+    "unitGames": "P",
+    "resultWin": "V",
+    "resultLoss": "D",
+    "resultDraw": "E",
+    "minimalStreak": "racha <n></n>",
+    "minimalBest": "mejor <n></n>"
+  }
+}

@@ -12,7 +12,9 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { OVERLAY_PRESETS, hexToRgba, type OverlayConfig } from "@/domain/overlay/config";
+import { getOverlayMessages } from "@/i18n/overlay-messages";
 import type { PlayerLiveState } from "@/domain/overlay/state";
 import { deltaTone, formatDelta, formatInteger, formatWinRate } from "@/domain/format";
 import type { MatchResult } from "@/domain/sf6/types";
@@ -76,15 +78,16 @@ function toneClass(delta: number | null): string {
   return tone === "positive" ? "ov-pos" : tone === "negative" ? "ov-neg" : "ov-neutral";
 }
 
-const RESULT_LETTER: Record<MatchResult, string> = { win: "W", loss: "L", draw: "D" };
+const RESULT_KEY = { win: "resultWin", loss: "resultLoss", draw: "resultDraw" } as const;
 
 function RecentForm({ results, max = 8 }: { results: MatchResult[]; max?: number }) {
+  const t = useTranslations("Overlay");
   if (results.length === 0) return null;
   return (
     <span className="ov-form">
       {results.slice(-max).map((r, i) => (
         <span key={`${i}-${r}`} className={`ov-form-chip ov-r-${r}`}>
-          {RESULT_LETTER[r]}
+          {t(RESULT_KEY[r])}
         </span>
       ))}
     </span>
@@ -96,11 +99,12 @@ interface ThemeProps {
   live: PlayerLiveState;
 }
 
-function ratingParts(live: PlayerLiveState) {
+function ratingParts(live: PlayerLiveState, locale: string) {
   const { rating } = live.session;
   return {
+    // MR / LP are official game terms: not translated.
     label: rating.system === "mr" ? "MR" : "LP",
-    value: formatInteger(rating.primary.current),
+    value: formatInteger(rating.primary.current, locale),
     delta: rating.primary.delta,
     rank: rating.rank ?? "—",
   };
@@ -109,9 +113,11 @@ function ratingParts(live: PlayerLiveState) {
 /* ───────────────────────── Minimal ───────────────────────── */
 
 function MinimalTheme({ config, live }: ThemeProps) {
+  const t = useTranslations("Overlay");
+  const locale = config.locale;
   const s = live.session;
   const f = config.fields;
-  const r = ratingParts(live);
+  const r = ratingParts(live, locale);
   const items: Array<{ key: string; node: ReactNode }> = [];
 
   if (f.wins || f.losses) {
@@ -122,28 +128,29 @@ function MinimalTheme({ config, live }: ThemeProps) {
           {f.wins && (
             <>
               <Animated value={s.wins} />
-              <span className="ov-unit ov-win">W</span>
+              <span className="ov-unit ov-win">{t("unitWin")}</span>
             </>
           )}
           {f.wins && f.losses && " "}
           {f.losses && (
             <>
               <Animated value={s.losses} />
-              <span className="ov-unit ov-loss">L</span>
+              <span className="ov-unit ov-loss">{t("unitLoss")}</span>
             </>
           )}
         </span>
       ),
     });
   }
-  if (f.winRate) items.push({ key: "wr", node: <Animated value={formatWinRate(s.winRate)} /> });
+  if (f.winRate)
+    items.push({ key: "wr", node: <Animated value={formatWinRate(s.winRate, locale)} /> });
   if (f.totalGames)
     items.push({
       key: "tg",
       node: (
         <span>
           <Animated value={s.totalGames} />
-          <span className="ov-unit ov-muted">G</span>
+          <span className="ov-unit ov-muted">{t("unitGames")}</span>
         </span>
       ),
     });
@@ -160,7 +167,10 @@ function MinimalTheme({ config, live }: ThemeProps) {
             </>
           )}
           {f.ratingDelta && (
-            <Animated value={formatDelta(r.delta)} className={`ov-delta ${toneClass(r.delta)}`} />
+            <Animated
+              value={formatDelta(r.delta, locale)}
+              className={`ov-delta ${toneClass(r.delta)}`}
+            />
           )}
         </span>
       ),
@@ -170,8 +180,8 @@ function MinimalTheme({ config, live }: ThemeProps) {
     items.push({
       key: "streak",
       node: (
-        <span className="ov-accent">
-          <Animated value={s.currentWinStreak} /> STREAK
+        <span className="ov-accent ov-upper">
+          {t.rich("minimalStreak", { n: () => <Animated value={s.currentWinStreak} /> })}
         </span>
       ),
     });
@@ -180,9 +190,8 @@ function MinimalTheme({ config, live }: ThemeProps) {
     items.push({
       key: "best",
       node: (
-        <span>
-          <span className="ov-muted">BEST </span>
-          <Animated value={s.bestWinStreak} />
+        <span className="ov-upper">
+          {t.rich("minimalBest", { n: () => <Animated value={s.bestWinStreak} /> })}
         </span>
       ),
     });
@@ -213,16 +222,18 @@ function Stat({ label, children }: { label: string; children: ReactNode }) {
 }
 
 function CompetitiveTheme({ config, live }: ThemeProps) {
+  const t = useTranslations("Overlay");
+  const locale = config.locale;
   const s = live.session;
   const f = config.fields;
-  const r = ratingParts(live);
+  const r = ratingParts(live, locale);
   const blocks: Array<{ key: string; node: ReactNode }> = [];
 
   if (f.wins)
     blocks.push({
       key: "w",
       node: (
-        <Stat label="Wins">
+        <Stat label={t("wins")}>
           <Animated value={s.wins} className="ov-win" />
         </Stat>
       ),
@@ -231,7 +242,7 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
     blocks.push({
       key: "l",
       node: (
-        <Stat label="Losses">
+        <Stat label={t("losses")}>
           <Animated value={s.losses} className="ov-loss" />
         </Stat>
       ),
@@ -240,8 +251,8 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
     blocks.push({
       key: "wr",
       node: (
-        <Stat label="Win rate">
-          <Animated value={formatWinRate(s.winRate)} />
+        <Stat label={t("winRate")}>
+          <Animated value={formatWinRate(s.winRate, locale)} />
         </Stat>
       ),
     });
@@ -249,7 +260,7 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
     blocks.push({
       key: "tg",
       node: (
-        <Stat label="Games">
+        <Stat label={t("games")}>
           <Animated value={s.totalGames} />
         </Stat>
       ),
@@ -262,7 +273,7 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
           {f.rating && <Animated value={r.value} />}
           {f.ratingDelta && (
             <Animated
-              value={formatDelta(r.delta)}
+              value={formatDelta(r.delta, locale)}
               className={`ov-stat-sub ${toneClass(r.delta)}`}
             />
           )}
@@ -274,7 +285,7 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
     blocks.push({
       key: "ws",
       node: (
-        <Stat label="Streak">
+        <Stat label={t("streak")}>
           <Animated
             value={s.currentWinStreak}
             className={s.currentWinStreak >= 3 ? "ov-accent" : ""}
@@ -286,18 +297,18 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
     blocks.push({
       key: "bs",
       node: (
-        <Stat label="Best">
+        <Stat label={t("best")}>
           <Animated value={s.bestWinStreak} />
         </Stat>
       ),
     });
 
-  const showHead = config.title.length > 0 || f.rank;
+  const showHead = config.showTitle || f.rank;
   return (
     <div className="ov-panel ov-competitive ov-shadow">
       {showHead && (
         <div className="ov-head">
-          <span className="ov-title">{config.title}</span>
+          <span className="ov-title">{config.showTitle ? config.title || t("session") : ""}</span>
           {f.rank && <span className="ov-muted">{r.rank}</span>}
         </div>
       )}
@@ -317,9 +328,11 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
 /* ───────────────────────── Fighter ───────────────────────── */
 
 function FighterTheme({ config, live }: ThemeProps) {
+  const t = useTranslations("Overlay");
+  const locale = config.locale;
   const s = live.session;
   const f = config.fields;
-  const r = ratingParts(live);
+  const r = ratingParts(live, locale);
   const showScore = f.wins || f.losses;
 
   return (
@@ -329,7 +342,9 @@ function FighterTheme({ config, live }: ThemeProps) {
           <div className="ov-f-inner">
             {showScore && (
               <div className="ov-f-col">
-                <span className="ov-f-label">{config.title || "Session"}</span>
+                {config.showTitle && (
+                  <span className="ov-f-label">{config.title || t("session")}</span>
+                )}
                 <span className="ov-f-big ov-f-score">
                   {f.wins && <Animated value={s.wins} className="ov-win" />}
                   {f.wins && f.losses && <span className="ov-f-dash">-</span>}
@@ -339,15 +354,15 @@ function FighterTheme({ config, live }: ThemeProps) {
             )}
             {f.winRate && (
               <div className="ov-f-col">
-                <span className="ov-f-label">Win rate</span>
+                <span className="ov-f-label">{t("winRate")}</span>
                 <span className="ov-f-mid">
-                  <Animated value={formatWinRate(s.winRate)} />
+                  <Animated value={formatWinRate(s.winRate, locale)} />
                 </span>
               </div>
             )}
             {f.totalGames && (
               <div className="ov-f-col">
-                <span className="ov-f-label">Games</span>
+                <span className="ov-f-label">{t("games")}</span>
                 <span className="ov-f-mid">
                   <Animated value={s.totalGames} />
                 </span>
@@ -369,7 +384,7 @@ function FighterTheme({ config, live }: ThemeProps) {
                 )}
                 {f.ratingDelta && (
                   <Animated
-                    value={formatDelta(r.delta)}
+                    value={formatDelta(r.delta, locale)}
                     className={`ov-f-badge ${toneClass(r.delta)}`}
                   />
                 )}
@@ -382,7 +397,7 @@ function FighterTheme({ config, live }: ThemeProps) {
         <div className="ov-f-block ov-f-streak">
           <div className="ov-f-inner">
             <div className="ov-f-col">
-              <span className="ov-f-label">Win streak</span>
+              <span className="ov-f-label">{t("winStreak")}</span>
               <span className="ov-f-mid">
                 <Animated value={s.currentWinStreak} />
               </span>
@@ -394,7 +409,7 @@ function FighterTheme({ config, live }: ThemeProps) {
         <div className="ov-f-block">
           <div className="ov-f-inner">
             <div className="ov-f-col">
-              <span className="ov-f-label">Best</span>
+              <span className="ov-f-label">{t("best")}</span>
               <span className="ov-f-mid">
                 <Animated value={s.bestWinStreak} />
               </span>
@@ -455,13 +470,21 @@ function useFitToBox() {
     measure();
   });
 
-  // Canvas size changes (OBS source resize, preview resize).
+  // Canvas size changes (OBS source resize, preview resize) and content size changes that
+  // happen without a React render (web font finishing loading → wider text, e.g. longer labels).
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(measure);
     ro.observe(root);
-    return () => ro.disconnect();
+    if (root.firstElementChild) ro.observe(root.firstElementChild);
+    const fonts = typeof document !== "undefined" ? document.fonts : undefined;
+    void fonts?.ready.then(measure);
+    fonts?.addEventListener("loadingdone", measure);
+    return () => {
+      ro.disconnect();
+      fonts?.removeEventListener("loadingdone", measure);
+    };
   }, [measure]);
 
   return { rootRef, fit };
@@ -476,16 +499,20 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
     config.animations ? "ov-animate" : "",
   ].join(" ");
 
+  // The overlay has its own language (config.locale), independent from the dashboard's.
   return (
-    <div
-      ref={rootRef}
-      className={className}
-      style={overlayStyle(config, sizing, fit)}
-      data-session-status={live.session.status}
-    >
-      {config.theme === "minimal" && <MinimalTheme config={config} live={live} />}
-      {config.theme === "competitive" && <CompetitiveTheme config={config} live={live} />}
-      {config.theme === "fighter" && <FighterTheme config={config} live={live} />}
-    </div>
+    <NextIntlClientProvider locale={config.locale} messages={getOverlayMessages(config.locale)}>
+      <div
+        ref={rootRef}
+        lang={config.locale}
+        className={className}
+        style={overlayStyle(config, sizing, fit)}
+        data-session-status={live.session.status}
+      >
+        {config.theme === "minimal" && <MinimalTheme config={config} live={live} />}
+        {config.theme === "competitive" && <CompetitiveTheme config={config} live={live} />}
+        {config.theme === "fighter" && <FighterTheme config={config} live={live} />}
+      </div>
+    </NextIntlClientProvider>
   );
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Badge, Button, Dot, ErrorText, cx } from "@/components/ui/primitives";
 import {
@@ -30,19 +31,22 @@ function BigStat({
     tone ?? "muted"
   ];
   return (
-    <div className="bg-surface px-4 py-4 sm:px-5">
-      <p className="text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">{label}</p>
+    // Subgrid: label / value / hint rows line up across tiles even when a label wraps (es).
+    <div className="row-span-3 grid grid-rows-subgrid gap-y-1 bg-surface px-4 py-4 sm:px-5">
+      <p className="self-end text-[11px] leading-tight font-semibold tracking-[0.14em] text-muted uppercase">
+        {label}
+      </p>
       <p
         key={value}
         className={cx(
-          "mt-1 font-display text-3xl font-bold tabular sm:text-4xl",
+          "font-display text-3xl font-bold tabular sm:text-4xl",
           tone ? color : "text-text",
           "animate-rise",
         )}
       >
         {value}
       </p>
-      {hint && <p className="mt-0.5 text-xs text-faint tabular">{hint}</p>}
+      <p className="text-xs text-faint tabular">{hint}</p>
     </div>
   );
 }
@@ -53,7 +57,27 @@ const CHIP: Record<MatchResult, string> = {
   draw: "bg-faint text-bg",
 };
 
+/** lastError is stored as "<provider code>: <technical message>"; show a translated message. */
+const TRACKER_ERROR_KEYS = {
+  not_found: "notFound",
+  rate_limited: "rateLimited",
+  timeout: "timeout",
+  unavailable: "unavailable",
+  invalid_response: "invalidResponse",
+} as const;
+
+function trackerErrorKey(lastError: string | null) {
+  const code = lastError?.split(":")[0] ?? "";
+  return code in TRACKER_ERROR_KEYS
+    ? TRACKER_ERROR_KEYS[code as keyof typeof TRACKER_ERROR_KEYS]
+    : "generic";
+}
+
 function TrackerLine() {
+  const t = useTranslations("Dashboard.tracker");
+  const tErrors = useTranslations("Errors");
+  const tc = useTranslations("Common");
+  const locale = useLocale();
   const { state, stream } = useLiveDashboard();
   const now = useNow(1000);
   const { tracker } = state;
@@ -61,7 +85,7 @@ function TrackerLine() {
   if (tracker.state === "idle") {
     return (
       <span className="flex items-center gap-2 text-xs text-muted">
-        <Dot tone="neutral" /> Tracking paused — start a session to track matches
+        <Dot tone="neutral" /> {t("idle")}
       </span>
     );
   }
@@ -69,10 +93,9 @@ function TrackerLine() {
     return (
       <span
         className="flex items-center gap-2 text-xs text-warn"
-        title={tracker.lastError ?? undefined}
+        title={tErrors(`provider.${trackerErrorKey(tracker.lastError)}`)}
       >
-        <Dot tone="warn" /> CFN not responding ({tracker.consecutiveFailures} failed checks) —
-        retrying automatically. Your stats are safe.
+        <Dot tone="warn" /> {t("degraded", { count: tracker.consecutiveFailures })}
       </span>
     );
   }
@@ -83,14 +106,23 @@ function TrackerLine() {
         <Dot tone="win" />
       </span>
       {tracker.state === "starting"
-        ? "Tracking started — first check in progress"
-        : `Tracking · last check ${timeAgo(tracker.lastSuccessAt, now)}`}
-      {stream !== "open" && <span className="text-faint">· reconnecting live view…</span>}
+        ? t("starting")
+        : t("ok", {
+            ago: timeAgo(tracker.lastSuccessAt, now, locale, {
+              never: tc("never"),
+              justNow: tc("justNow"),
+            }),
+          })}
+      {stream !== "open" && <span className="text-faint">{t("reconnecting")}</span>}
     </span>
   );
 }
 
 export function SessionPanel() {
+  const t = useTranslations("Dashboard.session");
+  const tc = useTranslations("Common");
+  const tr = useTranslations("Recap");
+  const locale = useLocale();
   const { state } = useLiveDashboard();
   const router = useRouter();
   const now = useNow(30_000);
@@ -131,14 +163,14 @@ export function SessionPanel() {
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
         <div className="flex items-center gap-3">
           <h2 className="font-display text-xs font-semibold tracking-[0.18em] text-muted uppercase">
-            Current session
+            {t("title")}
           </h2>
           {active ? (
-            <Badge tone="win">● Live</Badge>
+            <Badge tone="win">{t("live")}</Badge>
           ) : s.status === "ended" ? (
-            <Badge>Ended</Badge>
+            <Badge>{t("ended")}</Badge>
           ) : (
-            <Badge>No session</Badge>
+            <Badge>{t("none")}</Badge>
           )}
           {duration && <span className="text-xs text-faint tabular">{duration}</span>}
         </div>
@@ -146,12 +178,16 @@ export function SessionPanel() {
       </header>
 
       <div className="grid grid-cols-2 gap-px bg-line sm:grid-cols-3 lg:grid-cols-6">
-        <BigStat label="Wins" value={String(s.wins)} tone="win" />
-        <BigStat label="Losses" value={String(s.losses)} tone="loss" />
-        <BigStat label="Win rate" value={formatWinRate(s.winRate)} hint={`${s.totalGames} games`} />
+        <BigStat label={t("wins")} value={formatInteger(s.wins, locale)} tone="win" />
+        <BigStat label={t("losses")} value={formatInteger(s.losses, locale)} tone="loss" />
         <BigStat
-          label={`${unit} change`}
-          value={formatDelta(r.primary.delta)}
+          label={t("winRate")}
+          value={formatWinRate(s.winRate, locale)}
+          hint={t("games", { count: s.totalGames })}
+        />
+        <BigStat
+          label={t("ratingChange", { unit })}
+          value={formatDelta(r.primary.delta, locale)}
           tone={
             deltaTone(r.primary.delta) === "positive"
               ? "win"
@@ -161,29 +197,29 @@ export function SessionPanel() {
           }
           hint={
             r.primary.initial !== null
-              ? `${formatInteger(r.primary.initial)} → ${formatInteger(r.primary.current)}`
+              ? `${formatInteger(r.primary.initial, locale)} → ${formatInteger(r.primary.current, locale)}`
               : undefined
           }
         />
         <BigStat
-          label="Streak"
+          label={t("streak")}
           value={
             s.currentWinStreak > 0
-              ? `${s.currentWinStreak}W`
+              ? t("streakWins", { count: s.currentWinStreak })
               : s.currentLossStreak > 0
-                ? `${s.currentLossStreak}L`
+                ? t("streakLosses", { count: s.currentLossStreak })
                 : "—"
           }
           tone={s.currentWinStreak >= 3 ? "accent" : s.currentLossStreak > 0 ? "loss" : undefined}
         />
-        <BigStat label="Best streak" value={`${s.bestWinStreak}W`} />
+        <BigStat label={t("bestStreak")} value={t("streakWins", { count: s.bestWinStreak })} />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
-        <div className="flex min-h-6 items-center gap-1" aria-label="Recent results">
+        <div className="flex min-h-6 items-center gap-1" aria-label={t("recentResults")}>
           {s.recentResults.length === 0 ? (
             <span className="text-xs text-faint">
-              {active ? "Waiting for your first ranked match…" : "Results will appear here."}
+              {active ? t("waitingFirstMatch") : t("resultsAppearHere")}
             </span>
           ) : (
             s.recentResults.map((res, i) => (
@@ -194,7 +230,11 @@ export function SessionPanel() {
                   CHIP[res],
                 )}
               >
-                {res === "win" ? "W" : res === "loss" ? "L" : "D"}
+                {res === "win"
+                  ? tr("resultWin")
+                  : res === "loss"
+                    ? tr("resultLoss")
+                    : tr("resultDraw")}
               </span>
             ))
           )}
@@ -205,21 +245,21 @@ export function SessionPanel() {
               href={`/dashboard/sessions/${s.sessionId}`}
               className="px-2 text-sm text-muted hover:text-text"
             >
-              Details
+              {t("details")}
             </Link>
           )}
           {active && !confirmEnd && (
             <Button variant="danger" onClick={() => setConfirmEnd(true)} disabled={pending}>
-              End session
+              {t("endSession")}
             </Button>
           )}
           {active && confirmEnd && (
             <>
               <Button variant="ghost" onClick={() => setConfirmEnd(false)}>
-                Cancel
+                {tc("cancel")}
               </Button>
               <Button variant="danger" onClick={end} disabled={pending}>
-                Yes, end session
+                {t("confirmEnd")}
               </Button>
             </>
           )}
@@ -227,9 +267,9 @@ export function SessionPanel() {
             variant="primary"
             onClick={start}
             disabled={pending}
-            title={active ? "Ends the current session and starts a new one from zero" : undefined}
+            title={active ? t("startNewTooltip") : undefined}
           >
-            {pending ? "Working…" : active ? "Start new session" : "Start session"}
+            {pending ? tc("working") : active ? t("startNewSession") : t("startSession")}
           </Button>
         </div>
       </div>
@@ -243,6 +283,8 @@ export function SessionPanel() {
 }
 
 export function PlayerHeader({ characterFallback }: { characterFallback: string | null }) {
+  const t = useTranslations("Dashboard");
+  const locale = useLocale();
   const { state } = useLiveDashboard();
   const r = state.live.session.rating;
   const unit = r.system === "mr" ? "MR" : "LP";
@@ -251,7 +293,7 @@ export function PlayerHeader({ characterFallback }: { characterFallback: string 
     <div className="bg-slash relative overflow-hidden rounded-xl border border-line bg-surface p-5 sm:p-6">
       <div className="absolute inset-y-0 left-0 w-1 bg-accent" />
       <p className="font-display text-[11px] font-semibold tracking-[0.3em] text-accent uppercase">
-        Street Fighter 6
+        {t("eyebrow")}
       </p>
       <div className="mt-2 flex flex-wrap items-end justify-between gap-6">
         <div>
@@ -259,26 +301,26 @@ export function PlayerHeader({ characterFallback }: { characterFallback: string 
             {state.live.player.displayName}
           </h1>
           <p className="mt-1 text-sm text-muted">
-            {state.live.player.mainCharacter ?? characterFallback ?? "—"} · CFN ID{" "}
+            {state.live.player.mainCharacter ?? characterFallback ?? "—"} · {t("cfnId")}{" "}
             <span className="font-mono text-text">{state.player.cfnUserId}</span>
           </p>
         </div>
         <dl className="flex gap-8">
           <div>
             <dt className="text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">
-              Rank
+              {t("rank")}
             </dt>
             <dd className="mt-1 font-display text-2xl font-bold">{state.player.rank ?? "—"}</dd>
           </div>
           <div>
             <dt className="text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">
-              Current {unit}
+              {t("currentRating", { unit })}
             </dt>
             <dd
               key={current ?? "none"}
               className="mt-1 animate-rise font-display text-2xl font-bold tabular"
             >
-              {formatInteger(current)}
+              {formatInteger(current, locale)}
             </dd>
           </div>
         </dl>

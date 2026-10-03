@@ -3,14 +3,15 @@
  * and tolerant on read (missing keys fall back to defaults so old configs keep working).
  */
 import { z } from "zod";
+import { DEFAULT_LOCALE, LOCALES } from "@/i18n/locale";
 
 export const OVERLAY_THEMES = ["minimal", "competitive", "fighter"] as const;
 export type OverlayThemeId = (typeof OVERLAY_THEMES)[number];
 
 export const OVERLAY_PRESETS = {
-  compact: { label: "Compact", width: 600, height: 120 },
-  standard: { label: "Standard", width: 800, height: 180 },
-  detailed: { label: "Detailed", width: 900, height: 240 },
+  compact: { width: 600, height: 120 },
+  standard: { width: 800, height: 180 },
+  detailed: { width: 900, height: 240 },
 } as const;
 export type OverlayPresetId = keyof typeof OVERLAY_PRESETS;
 const PRESET_IDS = Object.keys(OVERLAY_PRESETS) as [OverlayPresetId, ...OverlayPresetId[]];
@@ -26,19 +27,19 @@ export const OVERLAY_FONTS = {
 export type OverlayFontId = keyof typeof OVERLAY_FONTS;
 const FONT_IDS = Object.keys(OVERLAY_FONTS) as [OverlayFontId, ...OverlayFontId[]];
 
-export const OVERLAY_FIELDS = {
-  wins: "Wins",
-  losses: "Losses",
-  winRate: "Win rate",
-  rating: "MR / LP",
-  ratingDelta: "MR / LP change",
-  rank: "Rank",
-  winStreak: "Win streak",
-  bestStreak: "Best streak",
-  totalGames: "Total games",
-  recentForm: "Recent form",
-} as const;
-export type OverlayFieldId = keyof typeof OVERLAY_FIELDS;
+export const OVERLAY_FIELDS = [
+  "wins",
+  "losses",
+  "winRate",
+  "rating",
+  "ratingDelta",
+  "rank",
+  "winStreak",
+  "bestStreak",
+  "totalGames",
+  "recentForm",
+] as const;
+export type OverlayFieldId = (typeof OVERLAY_FIELDS)[number];
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Expected a #rrggbb color");
 
@@ -60,7 +61,11 @@ export const overlayConfigSchema = z.object({
   theme: z.enum(OVERLAY_THEMES),
   preset: z.enum(PRESET_IDS),
   fields: fieldsSchema,
+  /** Custom title; "" = localized default ("Session" / "Sesión"). */
   title: z.string().trim().max(24),
+  showTitle: z.boolean(),
+  /** Overlay language, independent from the streamer's dashboard language. */
+  locale: z.enum(LOCALES),
   font: z.enum(FONT_IDS),
   textColor: hexColor,
   mutedColor: hexColor,
@@ -97,7 +102,9 @@ export const DEFAULT_OVERLAY_CONFIG: OverlayConfig = {
     totalGames: false,
     recentForm: false,
   },
-  title: "SESSION",
+  title: "",
+  showTitle: true,
+  locale: DEFAULT_LOCALE,
   font: "chakra-petch",
   textColor: "#f4f5f7",
   mutedColor: "#9aa0ad",
@@ -118,8 +125,6 @@ export const DEFAULT_OVERLAY_CONFIG: OverlayConfig = {
 
 export interface OverlayThemeMeta {
   id: OverlayThemeId;
-  name: string;
-  description: string;
   /** Applied when the streamer switches to this theme in the builder. */
   defaults: Partial<OverlayConfig>;
 }
@@ -127,8 +132,6 @@ export interface OverlayThemeMeta {
 export const OVERLAY_THEME_META: Record<OverlayThemeId, OverlayThemeMeta> = {
   minimal: {
     id: "minimal",
-    name: "Minimal",
-    description: "One compact line. Stays out of the way of gameplay.",
     defaults: {
       preset: "compact",
       font: "inter",
@@ -141,8 +144,6 @@ export const OVERLAY_THEME_META: Record<OverlayThemeId, OverlayThemeMeta> = {
   },
   competitive: {
     id: "competitive",
-    name: "Competitive",
-    description: "Labelled stat blocks with a clear hierarchy.",
     defaults: {
       preset: "standard",
       font: "chakra-petch",
@@ -154,8 +155,6 @@ export const OVERLAY_THEME_META: Record<OverlayThemeId, OverlayThemeMeta> = {
   },
   fighter: {
     id: "fighter",
-    name: "Fighter",
-    description: "Slanted panels and bold type, inspired by fighting-game HUDs.",
     defaults: {
       preset: "standard",
       font: "bebas-neue",
@@ -177,9 +176,12 @@ export function parseOverlayConfig(raw: unknown): OverlayConfig {
   const obj = raw as Record<string, unknown>;
   const storedFields =
     obj.fields !== null && typeof obj.fields === "object" ? (obj.fields as object) : {};
+  // Configs saved before i18n had no `locale` and stored the default title literally.
+  const legacy = obj.locale === undefined;
   const merged = {
     ...DEFAULT_OVERLAY_CONFIG,
     ...obj,
+    ...(legacy && obj.title === "SESSION" ? { title: "" } : {}),
     version: 1,
     fields: { ...DEFAULT_OVERLAY_CONFIG.fields, ...storedFields },
   };

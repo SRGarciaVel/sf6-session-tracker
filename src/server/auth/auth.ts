@@ -25,6 +25,12 @@ function createAuth() {
         verification: authVerification,
       },
     }),
+    user: {
+      additionalFields: {
+        // Set only through setLocaleAction (input: false → not writable via the auth API).
+        locale: { type: "string", required: false, input: false },
+      },
+    },
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 8,

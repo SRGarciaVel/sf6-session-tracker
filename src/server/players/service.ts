@@ -1,5 +1,7 @@
 import { eq, sql } from "drizzle-orm";
+import { DEFAULT_OVERLAY_CONFIG } from "@/domain/overlay/config";
 import { ratingSnapshotEquals } from "@/domain/sf6/rating";
+import type { Locale } from "@/i18n/locale";
 import type { NormalizedPlayerProfile } from "@/domain/sf6/types";
 import type { Database, DbExecutor } from "@/server/db/client";
 import { gameSession, match, sf6Player, type Sf6PlayerRow } from "@/server/db/schema";
@@ -32,6 +34,10 @@ export async function upsertPlayerForUser(
   db: Database,
   userId: string,
   profile: NormalizedPlayerProfile,
+  overlayDefaults: { name: string; locale: Locale } = {
+    name: "Gameplay Overlay",
+    locale: DEFAULT_OVERLAY_CONFIG.locale,
+  },
 ): Promise<Sf6PlayerRow> {
   return db.transaction(async (tx) => {
     const existing = await findPlayerByUserId(tx, userId);
@@ -77,7 +83,10 @@ export async function upsertPlayerForUser(
       })
       .returning();
     if (!created) throw new Error("Failed to create player");
-    await createOverlay(tx, created.id, "Gameplay Overlay");
+    await createOverlay(tx, created.id, overlayDefaults.name, {
+      ...DEFAULT_OVERLAY_CONFIG,
+      locale: overlayDefaults.locale,
+    });
     return created;
   });
 }

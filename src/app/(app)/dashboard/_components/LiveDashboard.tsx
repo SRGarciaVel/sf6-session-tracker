@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { formatTimeAgo } from "@/domain/format";
 import { useEventStream, type StreamStatus } from "@/lib/use-event-stream";
 import type { DashboardLiveState } from "@/server/dashboard/state";
 
@@ -94,14 +95,15 @@ export function useNow(intervalMs = 1000): number | null {
   return now;
 }
 
-export function timeAgo(iso: string | null, now: number | null): string {
-  if (!iso) return "never";
+/** Localized "12 s ago" / "hace 12 s" for tracker status. */
+export function timeAgo(
+  iso: string | null,
+  now: number | null,
+  locale: string,
+  labels: { never: string; justNow: string },
+): string {
+  if (!iso) return labels.never;
   if (now === null) return "…";
-  const s = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
-  if (s < 5) return "just now";
-  if (s < 60) return `${s}s ago`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  return `${h}h ${m % 60}m ago`;
+  const { seconds, text } = formatTimeAgo(iso, now, locale);
+  return seconds < 5 ? labels.justNow : text;
 }

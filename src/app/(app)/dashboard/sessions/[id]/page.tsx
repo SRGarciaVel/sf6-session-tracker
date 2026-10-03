@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getLocale, getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
@@ -17,7 +18,9 @@ import { getDb } from "@/server/db/client";
 import { match } from "@/server/db/schema";
 import { getOwnedSession, summarizeSessionRow } from "@/server/sessions/service";
 
-export const metadata: Metadata = { title: "Session recap" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTranslations("Meta"))("sessionRecap") };
+}
 export const dynamic = "force-dynamic";
 
 const RESULT_STYLE = {
@@ -44,6 +47,9 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
       .limit(200),
   ]);
   const r = summary.rating;
+  const t = await getTranslations("Recap");
+  const tc = await getTranslations("Common");
+  const locale = await getLocale();
   const unit = r.system === "mr" ? "MR" : "LP";
   const tone = deltaTone(r.primary.delta);
   const ended = summary.status === "ended";
@@ -54,16 +60,16 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <Link href="/dashboard" className="text-sm text-muted hover:text-text">
-        ← Dashboard
+        {tc("backToDashboard")}
       </Link>
 
       <section className="bg-slash relative overflow-hidden rounded-2xl border border-line bg-surface p-6 sm:p-10">
         <div className="absolute inset-x-0 top-0 h-1 bg-accent" />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="font-display text-xs font-bold tracking-[0.35em] text-accent uppercase">
-            {ended ? "Session complete" : "Session in progress"}
+            {ended ? t("complete") : t("inProgress")}
           </p>
-          {!ended && <Badge tone="win">● Live</Badge>}
+          {!ended && <Badge tone="win">{t("live")}</Badge>}
         </div>
         <p className="mt-2 text-sm text-muted">
           {player.displayName} ·{" "}
@@ -71,10 +77,18 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
         </p>
 
         <div className="mt-8 grid grid-cols-2 gap-6 sm:grid-cols-4">
-          <Stat label="Wins" value={String(summary.wins)} className="text-win" />
-          <Stat label="Losses" value={String(summary.losses)} className="text-loss" />
-          <Stat label="Win rate" value={formatWinRate(summary.winRate)} />
-          <Stat label="Matches" value={String(summary.totalGames)} />
+          <Stat
+            label={t("wins")}
+            value={formatInteger(summary.wins, locale)}
+            className="text-win"
+          />
+          <Stat
+            label={t("losses")}
+            value={formatInteger(summary.losses, locale)}
+            className="text-loss"
+          />
+          <Stat label={t("winRate")} value={formatWinRate(summary.winRate, locale)} />
+          <Stat label={t("matches")} value={formatInteger(summary.totalGames, locale)} />
         </div>
 
         <div className="mt-8 grid gap-6 border-t border-line pt-8 sm:grid-cols-2">
@@ -83,8 +97,8 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
               {unit}
             </p>
             <p className="mt-1 font-display text-2xl font-bold tabular">
-              {formatInteger(r.primary.initial)} <span className="text-faint">→</span>{" "}
-              {formatInteger(r.primary.current)}
+              {formatInteger(r.primary.initial, locale)} <span className="text-faint">→</span>{" "}
+              {formatInteger(r.primary.current, locale)}
             </p>
             <p
               className={cx(
@@ -92,7 +106,7 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
                 tone === "positive" ? "text-win" : tone === "negative" ? "text-loss" : "text-muted",
               )}
             >
-              {formatDelta(r.primary.delta)}
+              {formatDelta(r.primary.delta, locale)}
             </p>
             {r.initialRank !== r.rank && r.rank && (
               <p className="mt-1 text-sm text-accent">
@@ -102,10 +116,10 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
           </div>
           <div>
             <p className="text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">
-              Best streak
+              {t("bestStreak")}
             </p>
             <p className="mt-1 font-display text-2xl font-bold tabular">
-              {summary.bestWinStreak} wins
+              {t("bestStreakValue", { count: summary.bestWinStreak })}
             </p>
           </div>
         </div>
@@ -113,10 +127,10 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
 
       <section className="rounded-xl border border-line bg-surface">
         <h2 className="border-b border-line px-5 py-3 font-display text-xs font-semibold tracking-[0.18em] text-muted uppercase">
-          Matches
+          {t("matchesTitle")}
         </h2>
         {matches.length === 0 ? (
-          <p className="p-5 text-sm text-muted">No ranked matches in this session.</p>
+          <p className="p-5 text-sm text-muted">{t("noMatches")}</p>
         ) : (
           <ul className="divide-y divide-line">
             {matches.map((m) => (
@@ -127,12 +141,16 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
                     RESULT_STYLE[m.result],
                   )}
                 >
-                  {m.result === "win" ? "W" : m.result === "loss" ? "L" : "D"}
+                  {m.result === "win"
+                    ? t("resultWin")
+                    : m.result === "loss"
+                      ? t("resultLoss")
+                      : t("resultDraw")}
                 </span>
                 <span className="min-w-0 flex-1 truncate">
-                  {m.playerCharacter ?? "?"} <span className="text-faint">vs</span>{" "}
+                  {m.playerCharacter ?? "?"} <span className="text-faint">{t("vs")}</span>{" "}
                   {m.opponentCharacter ?? "?"}
-                  <span className="text-faint"> · {m.opponentName ?? "Unknown"}</span>
+                  <span className="text-faint"> · {m.opponentName ?? t("unknownOpponent")}</span>
                 </span>
                 <span className="text-xs text-faint tabular">
                   <LocalTime iso={m.playedAt.toISOString()} format="time" />
@@ -145,7 +163,7 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
 
       <div className="flex justify-end">
         <Link href="/dashboard" className={buttonClass("secondary")}>
-          Back to dashboard
+          {t("backToDashboard")}
         </Link>
       </div>
     </div>

@@ -1,12 +1,13 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "./primitives";
 
 export function CopyButton({
   value,
-  label = "Copy",
-  copiedLabel = "Copied!",
+  label,
+  copiedLabel,
   variant = "primary",
   size = "md",
 }: {
@@ -16,6 +17,7 @@ export function CopyButton({
   variant?: "primary" | "secondary" | "ghost";
   size?: "sm" | "md";
 }) {
+  const t = useTranslations("Common");
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -36,7 +38,7 @@ export function CopyButton({
 
   return (
     <Button variant={variant} size={size} onClick={copy} aria-live="polite">
-      {copied ? copiedLabel : label}
+      {copied ? (copiedLabel ?? t("copied")) : (label ?? t("copy"))}
     </Button>
   );
 }

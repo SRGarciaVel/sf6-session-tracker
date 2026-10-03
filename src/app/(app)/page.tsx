@@ -1,39 +1,44 @@
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import { OverlayView } from "@/components/overlay/OverlayView";
+import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 import { Logo } from "@/components/ui/Logo";
 import { buttonClass } from "@/components/ui/primitives";
 import { DEFAULT_OVERLAY_CONFIG, applyThemeDefaults } from "@/domain/overlay/config";
 import { sampleLiveState } from "@/domain/overlay/state";
+import { isLocale } from "@/i18n/locale";
 import { getCurrentUser } from "@/server/auth/session";
 
 export const dynamic = "force-dynamic";
 
-const STEPS = [
-  ["01", "Enter your CFN User ID", "We verify the player and read rank, LP and MR."],
-  ["02", "Start a session", "Your current MR/LP and last match become the baseline."],
-  ["03", "Add one URL to OBS", "Browser Source → paste → done. Stats update by themselves."],
-] as const;
+const STEPS = [1, 2, 3] as const;
 
 export default async function LandingPage() {
   const user = await getCurrentUser();
   const live = sampleLiveState();
+  const t = await getTranslations("Landing");
+  const tc = await getTranslations("Common");
+  const locale = await getLocale();
+  // Example overlays follow the visitor's language.
+  const previewLocale = isLocale(locale) ? locale : DEFAULT_OVERLAY_CONFIG.locale;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 sm:px-6">
       <nav className="flex items-center justify-between py-6">
         <Logo />
         <div className="flex items-center gap-2">
+          <LocaleSwitcher />
           {user ? (
             <Link href="/dashboard" className={buttonClass("primary", "sm")}>
-              Open dashboard
+              {t("openDashboard")}
             </Link>
           ) : (
             <>
               <Link href="/login" className={buttonClass("ghost", "sm")}>
-                Log in
+                {t("login")}
               </Link>
               <Link href="/signup" className={buttonClass("primary", "sm")}>
-                Get started
+                {t("getStarted")}
               </Link>
             </>
           )}
@@ -43,20 +48,17 @@ export default async function LandingPage() {
       <section className="grid flex-1 items-center gap-12 py-12 lg:grid-cols-[1.1fr_1fr]">
         <div>
           <p className="font-display text-xs font-semibold tracking-[0.3em] text-accent uppercase">
-            Street Fighter 6 · OBS overlay
+            {t("eyebrow")}
           </p>
           <h1 className="mt-4 font-display text-4xl leading-[1.05] font-bold tracking-tight sm:text-6xl">
-            Your session stats,
+            {t("titleLine1")}
             <br />
-            <span className="text-accent">live on stream.</span>
+            <span className="text-accent">{t("titleLine2")}</span>
           </h1>
-          <p className="mt-6 max-w-lg text-lg text-muted">
-            Wins, losses, win rate, MR and LP update automatically after every ranked match. No
-            hotkeys, no manual counters.
-          </p>
+          <p className="mt-6 max-w-lg text-lg text-muted">{t("subtitle")}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href={user ? "/dashboard" : "/signup"} className={buttonClass("primary", "lg")}>
-              {user ? "Go to dashboard" : "Create free account"}
+              {user ? t("goToDashboard") : t("createAccount")}
             </Link>
           </div>
         </div>
@@ -69,7 +71,10 @@ export default async function LandingPage() {
             >
               <div className="aspect-[800/180]">
                 <OverlayView
-                  config={applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, theme)}
+                  config={{
+                    ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, theme),
+                    locale: previewLocale,
+                  }}
                   live={live}
                   sizing={{ mode: "box", width: 520, height: 117 }}
                 />
@@ -80,18 +85,16 @@ export default async function LandingPage() {
       </section>
 
       <section className="grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-3">
-        {STEPS.map(([n, title, body]) => (
+        {STEPS.map((n) => (
           <div key={n} className="bg-surface p-6">
-            <span className="font-display text-sm font-bold text-accent">{n}</span>
-            <h3 className="mt-2 font-display text-lg font-semibold">{title}</h3>
-            <p className="mt-1 text-sm text-muted">{body}</p>
+            <span className="font-display text-sm font-bold text-accent">0{n}</span>
+            <h3 className="mt-2 font-display text-lg font-semibold">{t(`step${n}Title`)}</h3>
+            <p className="mt-1 text-sm text-muted">{t(`step${n}Body`)}</p>
           </div>
         ))}
       </section>
 
-      <footer className="py-10 text-xs text-faint">
-        Not affiliated with or endorsed by Capcom. Street Fighter is a trademark of Capcom Co., Ltd.
-      </footer>
+      <footer className="py-10 text-xs text-faint">{tc("notAffiliated")}</footer>
     </main>
   );
 }

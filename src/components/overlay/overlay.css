@@ -60,6 +60,10 @@
   border-radius: var(--ov-radius);
 }
 
+.ov-upper {
+  text-transform: uppercase;
+}
+
 .ov-win {
   color: var(--ov-win);
 }

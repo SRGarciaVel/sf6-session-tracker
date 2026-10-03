@@ -14,6 +14,7 @@ export interface CurrentUser {
   id: string;
   email: string;
   name: string;
+  locale: string | null;
 }
 
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
@@ -21,7 +22,12 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const requestHeaders = await headers();
   const session = await getAuth().api.getSession({ headers: requestHeaders });
   if (!session) return null;
-  return { id: session.user.id, email: session.user.email, name: session.user.name };
+  return {
+    id: session.user.id,
+    email: session.user.email,
+    name: session.user.name,
+    locale: session.user.locale ?? null,
+  };
 });
 
 export async function requireUser(): Promise<CurrentUser> {

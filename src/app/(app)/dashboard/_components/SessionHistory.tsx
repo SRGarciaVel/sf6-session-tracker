@@ -1,18 +1,22 @@
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import { LocalTime } from "@/components/ui/LocalTime";
 import { Panel, cx } from "@/components/ui/primitives";
 import { deltaTone, formatDelta, formatWinRate } from "@/domain/format";
 import type { SessionSummary } from "@/domain/session/engine";
 
-export function SessionHistory({
+export async function SessionHistory({
   items,
 }: {
   items: Array<{ id: string; summary: SessionSummary }>;
 }) {
+  const t = await getTranslations("Dashboard.history");
+  const tr = await getTranslations("Recap");
+  const locale = await getLocale();
   return (
-    <Panel title="Session history">
+    <Panel title={t("title")}>
       {items.length === 0 ? (
-        <p className="text-sm text-muted">Your sessions will show up here.</p>
+        <p className="text-sm text-muted">{t("empty")}</p>
       ) : (
         <ul className="-my-2 divide-y divide-line">
           {items.map(({ id, summary: s }) => {
@@ -28,21 +32,21 @@ export function SessionHistory({
                     <span className="block font-medium">
                       <LocalTime iso={s.startedAt.toISOString()} format="day" />
                       {s.status === "active" && (
-                        <span className="ml-2 text-xs font-semibold text-win">LIVE</span>
+                        <span className="ml-2 text-xs font-semibold text-win">{t("live")}</span>
                       )}
                     </span>
                     <span className="text-xs text-faint tabular">
-                      <LocalTime iso={s.startedAt.toISOString()} format="time" /> · {s.totalGames}{" "}
-                      games
+                      <LocalTime iso={s.startedAt.toISOString()} format="time" /> ·{" "}
+                      {t("games", { count: s.totalGames })}
                     </span>
                   </span>
                   <span className="font-display font-semibold tabular">
-                    <span className="text-win">{s.wins}W</span>{" "}
+                    <span className="text-win">{`${s.wins}${tr("resultWin")}`}</span>{" "}
                     <span className="text-faint">/</span>{" "}
-                    <span className="text-loss">{s.losses}L</span>
+                    <span className="text-loss">{`${s.losses}${tr("resultLoss")}`}</span>
                   </span>
                   <span className="w-14 text-right font-display tabular">
-                    {formatWinRate(Math.round(s.winRate * 10) / 10)}
+                    {formatWinRate(Math.round(s.winRate * 10) / 10, locale)}
                   </span>
                   <span
                     className={cx(
@@ -54,7 +58,7 @@ export function SessionHistory({
                           : "text-muted",
                     )}
                   >
-                    {formatDelta(s.rating.primary.delta)} {unit}
+                    {formatDelta(s.rating.primary.delta, locale)} {unit}
                   </span>
                 </Link>
               </li>

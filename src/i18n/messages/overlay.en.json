@@ -1,0 +1,20 @@
+{
+  "Overlay": {
+    "session": "Session",
+    "wins": "Wins",
+    "losses": "Losses",
+    "winRate": "Win rate",
+    "games": "Games",
+    "streak": "Streak",
+    "best": "Best",
+    "winStreak": "Win streak",
+    "unitWin": "W",
+    "unitLoss": "L",
+    "unitGames": "G",
+    "resultWin": "W",
+    "resultLoss": "L",
+    "resultDraw": "D",
+    "minimalStreak": "<n></n> streak",
+    "minimalBest": "best <n></n>"
+  }
+}

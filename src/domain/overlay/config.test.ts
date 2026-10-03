@@ -45,19 +45,22 @@ describe("overlay config", () => {
   });
 });
 
-describe("formatters", () => {
+describe("formatters (locale-aware via Intl)", () => {
   it("win rate", () => {
-    expect(formatWinRate(70.6)).toBe("70.6%");
-    expect(formatWinRate(60)).toBe("60%");
-    expect(formatWinRate(Number.NaN)).toBe("0%");
+    expect(formatWinRate(70.6, "en")).toBe("70.6%");
+    expect(formatWinRate(60, "en")).toBe("60%");
+    expect(formatWinRate(Number.NaN, "en")).toBe("0%");
+    // Spanish uses a decimal comma and a (non-breaking) space before %.
+    expect(formatWinRate(66.7, "es").replace(/\s/g, " ")).toBe("66,7 %");
   });
 
   it("deltas", () => {
-    expect(formatDelta(24)).toBe("+24");
-    expect(formatDelta(-18)).toBe("−18");
-    expect(formatDelta(0)).toBe("±0");
-    expect(formatDelta(null)).toBe("—");
-    expect(formatDelta(1620)).toBe("+1,620");
+    expect(formatDelta(24, "en")).toBe("+24");
+    expect(formatDelta(-18, "en")).toBe("-18");
+    expect(formatDelta(0, "en")).toBe("±0");
+    expect(formatDelta(null, "en")).toBe("—");
+    expect(formatDelta(1620, "en")).toBe("+1,620");
+    expect(formatDelta(18430, "es")).toBe("+18.430");
   });
 });
 

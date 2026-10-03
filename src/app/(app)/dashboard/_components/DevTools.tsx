@@ -1,110 +1,107 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { useRef, useState, useTransition } from "react";
 import { Badge, Button } from "@/components/ui/primitives";
+import type { ActionResult } from "@/lib/action-result";
 import { simulateMatchAction, simulateOutageAction } from "../actions";
+
+type ToolKey = "win" | "loss" | "random" | "casual" | "outOfOrder" | "outage" | "clearOutage";
+type LogKey =
+  | "logWin"
+  | "logLoss"
+  | "logRandom"
+  | "logCasual"
+  | "logOutOfOrder"
+  | "logOutage"
+  | "logClearOutage";
+
+const TOOLS: Array<{
+  key: ToolKey;
+  log: LogKey;
+  variant: "secondary" | "ghost";
+  run: () => Promise<ActionResult<unknown>>;
+}> = [
+  {
+    key: "win",
+    log: "logWin",
+    variant: "secondary",
+    run: () => simulateMatchAction({ result: "win" }),
+  },
+  {
+    key: "loss",
+    log: "logLoss",
+    variant: "secondary",
+    run: () => simulateMatchAction({ result: "loss" }),
+  },
+  { key: "random", log: "logRandom", variant: "secondary", run: () => simulateMatchAction({}) },
+  {
+    key: "casual",
+    log: "logCasual",
+    variant: "ghost",
+    run: () => simulateMatchAction({ result: "win", mode: "casual" }),
+  },
+  {
+    key: "outOfOrder",
+    log: "logOutOfOrder",
+    variant: "ghost",
+    run: () => simulateMatchAction({ result: "win", secondsAgo: 20 }),
+  },
+  { key: "outage", log: "logOutage", variant: "ghost", run: () => simulateOutageAction(60) },
+  {
+    key: "clearOutage",
+    log: "logClearOutage",
+    variant: "ghost",
+    run: () => simulateOutageAction(0),
+  },
+];
 
 /**
  * Development-only panel (rendered only when devToolsEnabled()). Writes to the MOCK CFN; the
  * worker then detects the match through the normal pipeline — nothing here touches stats.
  */
 export function DevTools() {
+  const t = useTranslations("Dashboard.dev");
+  const locale = useLocale();
   const [pending, startTransition] = useTransition();
-  const [log, setLog] = useState<string[]>([]);
+  const [log, setLog] = useState<Array<{ id: number; text: string }>>([]);
+  const nextId = useRef(0);
 
-  const run = (label: string, fn: () => Promise<{ ok: boolean; error?: string }>) =>
+  const run = (tool: (typeof TOOLS)[number]) =>
     startTransition(async () => {
-      const res = await fn();
-      setLog((l) =>
-        [
-          `${new Date().toLocaleTimeString()} ${res.ok ? "✓" : "✗"} ${label}${res.ok ? "" : ` — ${res.error}`}`,
-          ...l,
-        ].slice(0, 6),
-      );
+      const res = await tool.run();
+      const time = new Date().toLocaleTimeString(locale);
+      const line = `${time} ${res.ok ? "✓" : "✗"} ${t(tool.log)}${res.ok ? "" : ` — ${res.error}`}`;
+      setLog((l) => [{ id: nextId.current++, text: line }, ...l].slice(0, 6));
     });
 
   return (
     <section className="rounded-xl border border-dashed border-info/40 bg-info/5 p-5">
       <div className="flex items-center justify-between">
         <h2 className="font-display text-xs font-semibold tracking-[0.18em] text-info uppercase">
-          Dev tools · mock CFN
+          {t("title")}
         </h2>
-        <Badge tone="info">dev only</Badge>
+        <Badge tone="info">{t("badge")}</Badge>
       </div>
-      <p className="mt-2 text-xs text-muted">
-        Creates matches in the fake CFN. The worker detects them (≈1–2 s) and every open overlay
-        updates without reloading.
-      </p>
+      <p className="mt-2 text-xs text-muted">{t("description")}</p>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={pending}
-          onClick={() => run("ranked win", () => simulateMatchAction({ result: "win" }))}
-        >
-          + Win
-        </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={pending}
-          onClick={() => run("ranked loss", () => simulateMatchAction({ result: "loss" }))}
-        >
-          + Loss
-        </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={pending}
-          onClick={() => run("random ranked", () => simulateMatchAction({}))}
-        >
-          Random
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={pending}
-          onClick={() =>
-            run("casual win (ignored)", () =>
-              simulateMatchAction({ result: "win", mode: "casual" }),
-            )
-          }
-        >
-          Casual (filtered)
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={pending}
-          onClick={() =>
-            run("late match (played 20s ago)", () =>
-              simulateMatchAction({ result: "win", secondsAgo: 20 }),
-            )
-          }
-        >
-          Out-of-order
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={pending}
-          onClick={() => run("CFN outage 60s", () => simulateOutageAction(60))}
-        >
-          Outage 60s
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={pending}
-          onClick={() => run("outage cleared", () => simulateOutageAction(0))}
-        >
-          Clear outage
-        </Button>
+        {TOOLS.map((tool) => (
+          <Button
+            key={tool.key}
+            size="sm"
+            variant={tool.variant}
+            disabled={pending}
+            data-tool={tool.key}
+            onClick={() => run(tool)}
+          >
+            {t(tool.key)}
+          </Button>
+        ))}
       </div>
       {log.length > 0 && (
         <ul className="mt-3 space-y-0.5 font-mono text-[11px] text-faint">
-          {log.map((line) => (
-            <li key={line}>{line}</li>
+          {log.map((entry) => (
+            <li key={entry.id}>{entry.text}</li>
           ))}
         </ul>
       )}

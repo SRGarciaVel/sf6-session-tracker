@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { OVERLAY_PRESETS } from "@/domain/overlay/config";
 import { requirePlayer } from "@/server/auth/session";
@@ -13,7 +14,9 @@ import { ObsGuide, OverlaysPanel } from "./_components/OverlaysPanel";
 import { PlayerHeader, SessionPanel } from "./_components/SessionPanel";
 import { SessionHistory } from "./_components/SessionHistory";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTranslations("Meta"))("dashboard") };
+}
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {

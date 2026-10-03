@@ -2,3 +2,6 @@ allowBuilds:
   esbuild: true
   sharp: false
   unrs-resolver: false
+  # next-intl's optional message extractor; not used at runtime
+  "@parcel/watcher": false
+  "@swc/core": false

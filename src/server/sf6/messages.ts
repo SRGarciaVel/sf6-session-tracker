@@ -1,20 +1,23 @@
 import { SF6ProviderError } from "./provider";
 
-/** User-facing message for provider failures (never leaks internals). */
-export function providerErrorMessage(err: unknown): string {
+export type ProviderErrorKey =
+  "notFound" | "rateLimited" | "timeout" | "unavailable" | "invalidResponse" | "generic";
+
+/** Translation key (namespace Errors.provider) for a provider failure; never leaks internals. */
+export function providerErrorKey(err: unknown): ProviderErrorKey {
   if (err instanceof SF6ProviderError) {
     switch (err.code) {
       case "not_found":
-        return "No Street Fighter 6 player found with that CFN User ID.";
+        return "notFound";
       case "rate_limited":
-        return "Capcom is rate-limiting requests right now. Try again in a minute.";
+        return "rateLimited";
       case "timeout":
-        return "Capcom took too long to answer. Try again in a moment.";
+        return "timeout";
       case "unavailable":
-        return "Capcom / CFN is unavailable right now. Try again in a moment.";
+        return "unavailable";
       case "invalid_response":
-        return "CFN returned unexpected data. Try again later.";
+        return "invalidResponse";
     }
   }
-  return "Something went wrong while contacting CFN.";
+  return "generic";
 }

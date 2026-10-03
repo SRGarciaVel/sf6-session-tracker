@@ -25,6 +25,8 @@ export const authUser = pgTable("auth_user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
+  /** Explicit UI language preference ("es" | "en"); NULL = not chosen yet. */
+  locale: text("locale"),
   createdAt: createdAt(),
   updatedAt: tz("updated_at").notNull().defaultNow(),
 });
