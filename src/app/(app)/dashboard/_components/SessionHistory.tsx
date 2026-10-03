@@ -6,7 +6,7 @@ import { deltaTone, formatDelta, formatWinRate } from "@/domain/format";
 import type { SessionSummary } from "@/domain/session/engine";
 
 const COLS =
-  "grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-5 sm:grid-cols-[minmax(0,1.4fr)_7rem_minmax(0,1fr)_6.5rem_1rem]";
+  "grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-5 sm:grid-cols-[minmax(0,1.3fr)_7rem_minmax(0,0.9fr)_10rem_1rem]";
 
 /** Compact replay-list style rows: dense, line-separated, cyan edge on hover/focus. */
 export async function SessionHistory({
@@ -32,8 +32,12 @@ export async function SessionHistory({
           </div>
           <ul className="divide-y divide-line">
             {items.map(({ id, summary: s }) => {
-              const unit = s.rating.system === "mr" ? "MR" : "LP";
-              const tone = deltaTone(s.rating.primary.delta);
+              // Compact row: the session's active character only (details page lists all).
+              const featured =
+                s.characters.find((c) => c.characterKey === s.activeCharacterKey) ?? null;
+              const system = featured?.current?.system ?? featured?.ratingSystem ?? null;
+              const unit = system === "mr" ? "MR" : system === "lp" ? "LP" : "";
+              const tone = deltaTone(featured?.delta ?? null);
               const decided = s.wins + s.losses;
               const live = s.status === "active";
               return (
@@ -91,7 +95,12 @@ export async function SessionHistory({
                       <span aria-hidden className="mr-1 text-xs">
                         {tone === "positive" ? "▲" : tone === "negative" ? "▼" : ""}
                       </span>
-                      {formatDelta(s.rating.primary.delta, locale)}
+                      {featured && (
+                        <span className="mr-1.5 text-xs font-semibold text-muted uppercase">
+                          {featured.characterName}
+                        </span>
+                      )}
+                      {formatDelta(featured?.delta ?? null, locale)}
                       <span className="ml-1 text-xs font-semibold text-muted">{unit}</span>
                     </span>
                     <span aria-hidden className="hidden text-faint sm:block">

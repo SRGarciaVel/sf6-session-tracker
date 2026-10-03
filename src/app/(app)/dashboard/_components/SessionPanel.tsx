@@ -13,6 +13,7 @@ import {
   formatWinRate,
 } from "@/domain/format";
 import type { MatchResult } from "@/domain/sf6/types";
+import { pickRatingCharacter, type LiveCharacterProgress } from "@/domain/overlay/state";
 import { endSessionAction, startSessionAction } from "../actions";
 import { timeAgo, useLiveDashboard, useNow } from "./LiveDashboard";
 
@@ -74,13 +75,14 @@ function DeltaChip({ delta, locale }: { delta: number | null; locale: string }) 
 
 /* ───────────────────────── Player header ───────────────────────── */
 
-export function PlayerHeader({ characterFallback }: { characterFallback: string | null }) {
+export function PlayerHeader() {
   const t = useTranslations("Dashboard");
   const locale = useLocale();
   const { state } = useLiveDashboard();
-  const r = state.live.session.rating;
-  const unit = r.system === "mr" ? "MR" : "LP";
-  const current = r.system === "mr" ? state.player.masterRate : state.player.leaguePoints;
+  // Ratings are per character: show the active (or favorite) character, never a global value.
+  const active = pickRatingCharacter(state.live.session);
+  const unit = unitOf(active);
+  const current = active?.current?.value ?? null;
   const name = state.live.player.displayName;
 
   return (
@@ -111,7 +113,7 @@ export function PlayerHeader({ characterFallback }: { characterFallback: string 
             <div className="flex items-baseline gap-2">
               <dt className="hud-label">{t("character")}</dt>
               <dd className="font-display text-base font-semibold uppercase">
-                {state.live.player.mainCharacter ?? characterFallback ?? "—"}
+                {active?.characterName ?? t("noCharacter")}
               </dd>
             </div>
           </dl>
@@ -121,7 +123,7 @@ export function PlayerHeader({ characterFallback }: { characterFallback: string 
           <div className="pr-6">
             <dt className="hud-label">{t("rank")}</dt>
             <dd className="mt-1 font-display text-3xl font-bold tracking-wide text-cyan uppercase">
-              {state.player.rank ?? "—"}
+              {active?.current?.rank ?? active?.initial?.rank ?? "—"}
             </dd>
           </div>
           <div aria-hidden className="w-px -skew-x-[18deg] bg-line-strong" />
@@ -139,6 +141,76 @@ export function PlayerHeader({ characterFallback }: { characterFallback: string 
         className="h-0.5 bg-gradient-to-r from-magenta via-violet/50 to-transparent"
       />
     </section>
+  );
+}
+
+function unitOf(c: LiveCharacterProgress | null): string {
+  const system = c?.current?.system ?? c?.ratingSystem ?? null;
+  return system === "mr" ? "MR" : system === "lp" ? "LP" : "";
+}
+
+/** One compact row per character played this session — ratings never mixed across rows. */
+export function CharacterBreakdown({
+  characters,
+  legacy,
+}: {
+  characters: LiveCharacterProgress[];
+  legacy: boolean;
+}) {
+  const t = useTranslations("Dashboard.session");
+  const tr = useTranslations("Recap");
+  const locale = useLocale();
+  return (
+    <div className="border-t border-line px-5 py-3 sm:px-6">
+      <p className="hud-label">{t("characters")}</p>
+      {legacy && <p className="mt-1 text-xs text-faint">{t("legacyNote")}</p>}
+      <ul className="mt-2 divide-y divide-line/70">
+        {characters.map((c) => {
+          const unit = unitOf(c);
+          return (
+            <li
+              key={c.characterKey}
+              data-character-row={c.characterKey}
+              className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-4 py-1.5 sm:grid-cols-[minmax(0,1fr)_5rem_minmax(0,1fr)_6rem]"
+            >
+              <span className="min-w-0 truncate font-display text-base font-bold uppercase">
+                {c.characterName}
+                {c.initial?.rank && c.current?.rank && c.initial.rank !== c.current.rank && (
+                  <span className="ml-2 text-xs font-semibold text-magenta normal-case">
+                    {c.initial.rank} → {c.current.rank}
+                  </span>
+                )}
+              </span>
+              <span className="font-display text-base font-bold tabular">
+                <span className="text-win">{`${c.wins}${tr("resultWin")}`}</span>
+                <span className="mx-1 text-faint">/</span>
+                <span className="text-loss">{`${c.losses}${tr("resultLoss")}`}</span>
+              </span>
+              <span className="hidden font-display text-base text-muted tabular sm:block">
+                {c.initial && c.delta !== null
+                  ? `${formatInteger(c.initial.value, locale)} → ${formatInteger(c.current?.value ?? null, locale)}`
+                  : formatInteger(c.current?.value ?? null, locale)}{" "}
+                <span className="text-xs">{unit}</span>
+              </span>
+              <span
+                data-delta
+                title={c.baselineKnown ? undefined : t("noBaseline")}
+                className={cx(
+                  "text-right font-display text-base font-bold tabular",
+                  deltaTone(c.delta) === "positive"
+                    ? "text-win"
+                    : deltaTone(c.delta) === "negative"
+                      ? "text-loss"
+                      : "text-muted",
+                )}
+              >
+                {c.delta === null ? "—" : `${formatDelta(c.delta, locale)} ${unit}`}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
@@ -167,7 +239,9 @@ function ScoreSide({
           tone === "win" ? "text-win" : "text-loss",
         )}
       >
-        <Changing value={value} tone={tone} className="text-7xl sm:text-8xl" />
+        <span data-testid={`score-${tone === "win" ? "wins" : "losses"}`}>
+          <Changing value={value} tone={tone} className="text-7xl sm:text-8xl" />
+        </span>
         <span className="text-2xl font-bold opacity-70" aria-hidden>
           {letter}
         </span>
@@ -189,9 +263,10 @@ export function SessionPanel() {
   const [confirmEnd, setConfirmEnd] = useState(false);
 
   const s = state.live.session;
-  const r = s.rating;
+  const featured = pickRatingCharacter(s);
+  const played = s.characters.filter((c) => c.games > 0);
   const active = s.status === "active";
-  const unit = r.system === "mr" ? "MR" : "LP";
+  const unit = unitOf(featured);
   const duration =
     s.startedAt && now !== null
       ? formatDuration(
@@ -298,14 +373,24 @@ export function SessionPanel() {
       <div className="mt-6 grid border-t border-line md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="px-5 py-4 sm:px-6">
           <div className="flex items-center justify-between gap-3">
-            <span className="hud-label">{t("ratingChange", { unit })}</span>
-            {r.rank && <span className="hud-tag text-cyan">{r.rank}</span>}
+            <span className="flex items-baseline gap-2">
+              <span className="hud-label">{t("activeCharacter")}</span>
+              <span
+                className="font-display text-xl leading-none font-bold uppercase"
+                data-testid="active-character"
+              >
+                {featured?.characterName ?? "—"}
+              </span>
+            </span>
+            {featured?.current?.rank && (
+              <span className="hud-tag text-cyan">{featured.current.rank}</span>
+            )}
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-            {r.primary.initial !== null && (
+            {featured?.initial && featured.delta !== null && (
               <>
                 <span className="font-display text-xl font-semibold text-muted tabular">
-                  {formatInteger(r.primary.initial, locale)}
+                  {formatInteger(featured.initial.value, locale)}
                 </span>
                 <span
                   aria-hidden
@@ -318,10 +403,10 @@ export function SessionPanel() {
               </>
             )}
             <span className="font-display text-4xl leading-none font-bold tabular">
-              <Changing value={formatInteger(r.primary.current, locale)} />
+              <Changing value={formatInteger(featured?.current?.value ?? null, locale)} />
               <span className="ml-1 text-base font-semibold text-muted">{unit}</span>
             </span>
-            <DeltaChip delta={r.primary.delta} locale={locale} />
+            <DeltaChip delta={featured?.delta ?? null} locale={locale} />
           </div>
         </div>
         <dl className="grid grid-cols-2 border-t border-line md:border-t-0 md:border-l">
@@ -344,6 +429,10 @@ export function SessionPanel() {
           </div>
         </dl>
       </div>
+
+      {(played.length > 0 || s.ratingModel === "legacy") && (
+        <CharacterBreakdown characters={played} legacy={s.ratingModel === "legacy"} />
+      )}
 
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-surface-0/70 px-5 py-3 sm:px-6">
         <div className="flex min-h-7 items-center gap-1" aria-label={t("recentResults")}>

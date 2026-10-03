@@ -101,20 +101,23 @@ export function OnboardingFlow({ devHint }: { devHint: boolean }) {
             <div>
               <p className="font-display text-3xl leading-none font-bold">{preview.displayName}</p>
               <p className="text-sm text-muted">
-                {preview.mainCharacter ?? t("unknownCharacter")} · {preview.rank ?? t("unranked")}
+                {preview.character?.characterName ?? t("unknownCharacter")} ·{" "}
+                {preview.character?.rank ?? t("unranked")}
+              </p>
+              <p className="text-xs text-faint">
+                {t("charactersFound", { count: preview.characterCount })}
               </p>
             </div>
-            <div className="text-right">
-              <p className="font-display text-3xl font-bold tabular">
-                {formatInteger(
-                  preview.ratingSystem === "mr" ? preview.masterRate : preview.leaguePoints,
-                  locale,
-                )}
-              </p>
-              <p className="text-xs font-semibold tracking-widest text-muted">
-                {preview.ratingSystem === "mr" ? "MR" : "LP"}
-              </p>
-            </div>
+            {preview.character && (
+              <div className="text-right">
+                <p className="font-display text-3xl font-bold tabular">
+                  {formatInteger(preview.character.value, locale)}
+                </p>
+                <p className="text-xs font-semibold tracking-widest text-muted">
+                  {preview.character.ratingSystem === "mr" ? "MR" : "LP"}
+                </p>
+              </div>
+            )}
           </div>
           <Button
             variant="primary"

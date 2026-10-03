@@ -44,7 +44,7 @@ export default async function DashboardPage() {
     <LiveDashboardProvider initial={live}>
       <div className="grid items-start gap-5 hud:grid-cols-[minmax(0,1fr)_400px]">
         <div className="min-w-0 space-y-5">
-          <PlayerHeader characterFallback={player.mainCharacter} />
+          <PlayerHeader />
           <SessionPanel />
           <SessionHistory items={history} />
         </div>

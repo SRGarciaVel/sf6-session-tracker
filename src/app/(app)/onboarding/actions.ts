@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { resolveRatingSystem, type RatingSystem } from "@/domain/sf6/rating";
+import { ratingPointOf } from "@/domain/sf6/rating";
+import type { NormalizedPlayerProfile, RatingSystem } from "@/domain/sf6/types";
 import { getRequestLocale } from "@/i18n/server";
 import { fail, ok, type ActionResult } from "@/lib/action-result";
 import { getCurrentUser } from "@/server/auth/session";
@@ -17,11 +18,35 @@ import { setUserLocale } from "@/server/users/locale";
 export interface PlayerPreview {
   cfnUserId: string;
   displayName: string;
-  mainCharacter: string | null;
-  rank: string | null;
-  leaguePoints: number | null;
-  masterRate: number | null;
-  ratingSystem: RatingSystem;
+  /** Favorite character (or the first with a rating): shown as the headline card. */
+  character: {
+    characterName: string;
+    rank: string | null;
+    ratingSystem: RatingSystem;
+    value: number;
+  } | null;
+  characterCount: number;
+}
+
+function toPreview(profile: NormalizedPlayerProfile): PlayerPreview {
+  const rated = profile.characters.filter((c) => ratingPointOf(c) !== null);
+  const featured =
+    rated.find((c) => c.characterKey === profile.favoriteCharacterKey) ?? rated[0] ?? null;
+  const point = featured ? ratingPointOf(featured) : null;
+  return {
+    cfnUserId: profile.cfnUserId,
+    displayName: profile.displayName,
+    character:
+      featured && point
+        ? {
+            characterName: featured.characterName,
+            rank: featured.rank,
+            ratingSystem: point.system,
+            value: point.value,
+          }
+        : null,
+    characterCount: profile.characters.length,
+  };
 }
 
 /** Step 2: validate a CFN User ID through the data provider. */
@@ -39,7 +64,7 @@ export async function lookupPlayerAction(rawId: string): Promise<ActionResult<Pl
 
   try {
     const profile = await getSF6DataProvider().getPlayerProfile(parsed.data);
-    return ok({ ...profile, ratingSystem: resolveRatingSystem(profile) });
+    return ok(toPreview(profile));
   } catch (err) {
     logger.warn("onboarding.lookup_failed", { userId: user.id, error: err });
     return fail(t(`provider.${providerErrorKey(err)}`));

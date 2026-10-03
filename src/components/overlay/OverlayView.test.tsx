@@ -74,4 +74,73 @@ describe("OverlayView i18n", () => {
     const digits = (s: string) => s.replace(/[^0-9]/g, "");
     expect(digits(render(cfg("competitive", "es")))).toBe(digits(render(cfg("competitive", "en"))));
   });
+
+  it("shows the ACTIVE character's rating and switches with it, keeping global W/L", () => {
+    const live = sampleLiveState();
+    live.session.characters = [
+      {
+        characterKey: "kimberly",
+        characterName: "Kimberly",
+        wins: 1,
+        losses: 0,
+        draws: 0,
+        games: 1,
+        ratingSystem: "mr",
+        initial: { system: "mr", value: 1479, rank: "Master" },
+        current: { system: "mr", value: 1500, rank: "Master" },
+        delta: 21,
+        baselineKnown: true,
+      },
+      {
+        characterKey: "aki",
+        characterName: "A.K.I.",
+        wins: 11,
+        losses: 5,
+        draws: 0,
+        games: 16,
+        ratingSystem: "lp",
+        initial: { system: "lp", value: 21579, rank: "Diamond 2" },
+        current: { system: "lp", value: 21898, rank: "Diamond 2" },
+        delta: 319,
+        baselineKnown: true,
+      },
+    ];
+    const html = (config: OverlayConfig, l = live) =>
+      renderToStaticMarkup(<OverlayView config={config} live={l} sizing={{ mode: "viewport" }} />)
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ");
+
+    live.session.activeCharacterKey = "aki";
+    const aki = html(cfg("competitive", "en"));
+    expect(aki).toContain("A.K.I.");
+    expect(aki).toContain("21,898");
+    expect(aki).toContain("+319");
+
+    live.session.activeCharacterKey = "kimberly";
+    const kim = html(cfg("competitive", "en"));
+    expect(kim).toContain("Kimberly");
+    expect(kim).toContain("1,500");
+    expect(kim).toContain("MR");
+    expect(kim).not.toContain("21,898");
+    // Global W/L unchanged by the switch.
+    expect(kim).toContain("12");
+    expect(kim).toContain("5");
+
+    // A pinned character wins over the active one.
+    const pinned = html({ ...cfg("competitive", "en"), ratingCharacterKey: "aki" });
+    expect(pinned).toContain("A.K.I.");
+    expect(pinned).toContain("21,898");
+  });
+
+  it("unknown starting rating renders no delta (—), never a fabricated one", () => {
+    const live = sampleLiveState();
+    const [ryu] = live.session.characters;
+    if (!ryu) throw new Error("sample");
+    live.session.characters = [{ ...ryu, initial: null, delta: null, baselineKnown: false }];
+    const text = renderToStaticMarkup(
+      <OverlayView config={cfg("competitive", "en")} live={live} sizing={{ mode: "viewport" }} />,
+    );
+    expect(text).toContain("—");
+    expect(text).not.toContain("+96");
+  });
 });

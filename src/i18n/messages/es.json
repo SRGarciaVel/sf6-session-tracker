@@ -92,7 +92,8 @@
     "confirm": "Soy yo — crear mi overlay",
     "settingUp": "Configurando…",
     "backToDashboard": "← Volver al panel",
-    "defaultOverlayName": "Overlay de juego"
+    "defaultOverlayName": "Overlay de juego",
+    "charactersFound": "{count, plural, =0 {Sin personajes con datos de Ranked} one {# personaje con datos de Ranked} other {# personajes con datos de Ranked}}"
   },
   "Errors": {
     "sessionExpired": "Tu sesión ha caducado. Vuelve a iniciar sesión.",
@@ -148,7 +149,11 @@
       "startNewTooltip": "Finaliza la sesión actual y empieza una nueva desde cero",
       "currentStreak": "Racha actual",
       "noSessionHint": "Inicia una sesión para empezar a contar partidas Ranked.",
-      "ratio": "Victorias frente a derrotas"
+      "ratio": "Victorias frente a derrotas",
+      "activeCharacter": "Personaje activo",
+      "characters": "Personajes en esta sesión",
+      "noBaseline": "Se desconoce el rating inicial de este personaje: no se muestra un cambio inventado.",
+      "legacyNote": "Sesión registrada antes del rating por personaje: los cambios de rating no están disponibles."
     },
     "tracker": {
       "idle": "Seguimiento en pausa: inicia una sesión para registrar partidas",
@@ -209,7 +214,9 @@
       "logCasual": "Victoria casual (ignorada)",
       "logOutOfOrder": "Partida tardía (jugada hace 20 s)",
       "logOutage": "Caída de CFN 60 s",
-      "logClearOutage": "Caída eliminada"
+      "logClearOutage": "Caída eliminada",
+      "character": "Personaje",
+      "logCharacter": "Ahora con {name}"
     },
     "error": {
       "title": "Algo salió mal",
@@ -227,7 +234,8 @@
       "linkOk": "En línea",
       "linkDown": "Reconectando…",
       "obs": "Fuentes OBS"
-    }
+    },
+    "noCharacter": "Sin personaje todavía"
   },
   "Recap": {
     "complete": "Sesión completada",
@@ -246,7 +254,8 @@
     "resultWin": "V",
     "resultLoss": "D",
     "resultDraw": "E",
-    "backToDashboard": "Volver al panel"
+    "backToDashboard": "Volver al panel",
+    "characters": "Personajes"
   },
   "Builder": {
     "title": "Configurar overlay",
@@ -341,7 +350,9 @@
       "bestStreak": "Mejor racha",
       "totalGames": "Total de partidas",
       "recentForm": "Últimos resultados"
-    }
+    },
+    "ratingCharacter": "Rating mostrado",
+    "ratingCharacterActive": "Personaje activo (última partida Ranked)"
   },
   "NotFound": {
     "title": "Página no encontrada",

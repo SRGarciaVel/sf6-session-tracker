@@ -92,7 +92,8 @@
     "confirm": "This is me — create my overlay",
     "settingUp": "Setting up…",
     "backToDashboard": "← Back to dashboard",
-    "defaultOverlayName": "Gameplay Overlay"
+    "defaultOverlayName": "Gameplay Overlay",
+    "charactersFound": "{count, plural, =0 {No ranked characters yet} one {# character with ranked data} other {# characters with ranked data}}"
   },
   "Errors": {
     "sessionExpired": "Your session expired. Please log in again.",
@@ -148,7 +149,11 @@
       "startNewTooltip": "Ends the current session and starts a new one from zero",
       "currentStreak": "Current streak",
       "noSessionHint": "Start a session to begin counting Ranked matches.",
-      "ratio": "Wins vs losses"
+      "ratio": "Wins vs losses",
+      "activeCharacter": "Active character",
+      "characters": "Characters this session",
+      "noBaseline": "Starting rating unknown for this character — no delta is shown rather than a guessed one.",
+      "legacyNote": "Session recorded before per-character ratings: rating changes are not available."
     },
     "tracker": {
       "idle": "Tracking paused — start a session to track matches",
@@ -209,7 +214,9 @@
       "logCasual": "Casual win (ignored)",
       "logOutOfOrder": "Late match (played 20s ago)",
       "logOutage": "CFN outage 60s",
-      "logClearOutage": "Outage cleared"
+      "logClearOutage": "Outage cleared",
+      "character": "Character",
+      "logCharacter": "Now playing {name}"
     },
     "error": {
       "title": "Something went wrong",
@@ -227,7 +234,8 @@
       "linkOk": "Online",
       "linkDown": "Reconnecting…",
       "obs": "OBS sources"
-    }
+    },
+    "noCharacter": "No character yet"
   },
   "Recap": {
     "complete": "Session complete",
@@ -246,7 +254,8 @@
     "resultWin": "W",
     "resultLoss": "L",
     "resultDraw": "D",
-    "backToDashboard": "Back to dashboard"
+    "backToDashboard": "Back to dashboard",
+    "characters": "Characters"
   },
   "Builder": {
     "title": "Configure overlay",
@@ -341,7 +350,9 @@
       "bestStreak": "Best streak",
       "totalGames": "Total games",
       "recentForm": "Recent form"
-    }
+    },
+    "ratingCharacter": "Rating shown",
+    "ratingCharacterActive": "Active character (latest Ranked match)"
   },
   "NotFound": {
     "title": "Page not found",

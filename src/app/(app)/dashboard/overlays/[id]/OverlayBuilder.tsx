@@ -397,6 +397,22 @@ export function OverlayBuilder({
               />
               <p className="text-xs text-faint">{t("overlayLanguageHint")}</p>
             </div>
+            <label className="block text-sm">
+              <span className="mb-1.5 block">{t("ratingCharacter")}</span>
+              <select
+                value={config.ratingCharacterKey ?? ""}
+                onChange={(e) => set("ratingCharacterKey", e.target.value || null)}
+                className="h-10 w-full border border-line-strong bg-surface-2 px-3 text-sm focus:border-cyan focus:outline-none"
+                data-testid="rating-character"
+              >
+                <option value="">{t("ratingCharacterActive")}</option>
+                {state.live.session.characters.map((c) => (
+                  <option key={c.characterKey} value={c.characterKey}>
+                    {c.characterName}
+                  </option>
+                ))}
+              </select>
+            </label>
             <Toggle
               label={t("showTitle")}
               checked={config.showTitle}

@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRef, useState, useTransition } from "react";
 import { cx } from "@/components/ui/primitives";
 import type { ActionResult } from "@/lib/action-result";
-import { simulateMatchAction, simulateOutageAction } from "../actions";
+import { simulateCharacterAction, simulateMatchAction, simulateOutageAction } from "../actions";
 
 type ToolKey = "win" | "loss" | "random" | "casual" | "outOfOrder" | "outage" | "clearOutage";
 type LogKey =
@@ -56,6 +56,14 @@ const TOOLS: Array<{
   },
 ];
 
+/** Mock roster + one character outside the session baseline (Sagat). */
+const DEV_CHARACTERS = [
+  { key: "aki", name: "A.K.I." },
+  { key: "kimberly", name: "Kimberly" },
+  { key: "cammy", name: "Cammy" },
+  { key: "sagat", name: "Sagat" },
+] as const;
+
 /**
  * Development-only panel (rendered only when devToolsEnabled()). Writes to the MOCK CFN; the
  * worker then detects the match through the normal pipeline — nothing here touches stats.
@@ -103,6 +111,30 @@ export function DevTools() {
               )}
             >
               {t(tool.key)}
+            </button>
+          ))}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 tracking-[0.12em] uppercase">{t("character")}</span>
+          {DEV_CHARACTERS.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              disabled={pending}
+              data-character={c.key}
+              onClick={() =>
+                startTransition(async () => {
+                  const res = await simulateCharacterAction(c.key);
+                  const time = new Date().toLocaleTimeString(locale);
+                  const line = res.ok
+                    ? `${time} ✓ ${t("logCharacter", { name: res.data.characterName })}`
+                    : `${time} ✗ ${res.error}`;
+                  setLog((l) => [{ id: nextId.current++, text: line }, ...l].slice(0, 6));
+                })
+              }
+              className="border border-line-strong px-2 py-1 text-muted transition-colors hover:border-muted hover:text-text disabled:opacity-40"
+            >
+              {c.name}
             </button>
           ))}
         </div>

@@ -199,6 +199,24 @@ export async function simulateOutageAction(seconds: number): Promise<ActionResul
   return ok(undefined);
 }
 
+const MOCK_CHARACTERS = ["aki", "kimberly", "cammy", "sagat"] as const;
+
+/** Dev only: switch the character the mock CFN uses for the next simulated matches. */
+export async function simulateCharacterAction(
+  characterKey: string,
+): Promise<ActionResult<{ characterName: string }>> {
+  const t = await getTranslations("Errors");
+  if (!devToolsEnabled()) return fail(t("devToolsDisabled"));
+  const ctx = await authorizedPlayer();
+  if (!ctx) return fail(t("sessionExpired"));
+  const key = z.enum(MOCK_CHARACTERS).safeParse(characterKey);
+  if (!key.success) return fail(t("invalidInput"));
+  const mock = getMockProvider();
+  if (!mock) return fail(t("mockInactive"));
+  const characterName = await mock.setCharacter(ctx.player.cfnUserId, key.data);
+  return ok({ characterName });
+}
+
 /** Dev convenience: poll on the next worker tick instead of waiting for the interval. */
 async function nudgeTracker(playerId: string) {
   const db = getDb();

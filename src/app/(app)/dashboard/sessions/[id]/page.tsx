@@ -6,14 +6,10 @@ import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { LocalTime } from "@/components/ui/LocalTime";
 import { LiveIndicator, buttonClass, cx } from "@/components/ui/primitives";
-import {
-  deltaTone,
-  formatDelta,
-  formatDuration,
-  formatInteger,
-  formatWinRate,
-} from "@/domain/format";
+import { formatDuration, formatInteger, formatWinRate } from "@/domain/format";
+import { toLiveSessionState } from "@/domain/overlay/state";
 import { requirePlayer } from "@/server/auth/session";
+import { CharacterBreakdown } from "../../_components/SessionPanel";
 import { getDb } from "@/server/db/client";
 import { match } from "@/server/db/schema";
 import { getOwnedSession, summarizeSessionRow } from "@/server/sessions/service";
@@ -46,12 +42,14 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
       .orderBy(desc(match.playedAt))
       .limit(200),
   ]);
-  const r = summary.rating;
+  // Per-character progress (never a single global rating).
+  const characters = toLiveSessionState(session.id, summary, {
+    characters: [],
+    activeCharacterKey: null,
+  }).characters.filter((c) => c.games > 0);
   const t = await getTranslations("Recap");
   const tc = await getTranslations("Common");
   const locale = await getLocale();
-  const unit = r.system === "mr" ? "MR" : "LP";
-  const tone = deltaTone(r.primary.delta);
   const ended = summary.status === "ended";
   const duration = formatDuration(
     (summary.endedAt ?? new Date()).getTime() - summary.startedAt.getTime(),
@@ -94,33 +92,16 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
           <Stat label={t("matches")} value={formatInteger(summary.totalGames, locale)} />
         </div>
 
-        <div className="mt-8 grid gap-6 border-t border-line pt-8 sm:grid-cols-2">
-          <div>
-            <p className="hud-label">{unit}</p>
-            <p className="mt-1 font-display text-2xl font-bold tabular">
-              {formatInteger(r.primary.initial, locale)} <span className="text-cyan">▶</span>{" "}
-              {formatInteger(r.primary.current, locale)}
-            </p>
-            <p
-              className={cx(
-                "font-display text-xl font-bold tabular",
-                tone === "positive" ? "text-win" : tone === "negative" ? "text-loss" : "text-muted",
-              )}
-            >
-              {formatDelta(r.primary.delta, locale)}
-            </p>
-            {r.initialRank !== r.rank && r.rank && (
-              <p className="mt-1 text-sm text-magenta">
-                {r.initialRank ?? "—"} → {r.rank}
-              </p>
-            )}
-          </div>
+        <div className="mt-8 grid gap-6 border-t border-line pt-8">
           <div>
             <p className="hud-label">{t("bestStreak")}</p>
             <p className="mt-1 font-display text-2xl font-bold tabular">
               {t("bestStreakValue", { count: summary.bestWinStreak })}
             </p>
           </div>
+        </div>
+        <div className="-mx-6 mt-6 sm:-mx-10">
+          <CharacterBreakdown characters={characters} legacy={summary.ratingModel === "legacy"} />
         </div>
       </section>
 
@@ -145,7 +126,7 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
                       : t("resultDraw")}
                 </span>
                 <span className="min-w-0 flex-1 truncate">
-                  {m.playerCharacter ?? "?"} <span className="text-faint">{t("vs")}</span>{" "}
+                  {m.characterName} <span className="text-faint">{t("vs")}</span>{" "}
                   {m.opponentCharacter ?? "?"}
                   <span className="text-faint"> · {m.opponentName ?? t("unknownOpponent")}</span>
                 </span>

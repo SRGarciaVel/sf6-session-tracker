@@ -15,7 +15,7 @@ import {
 import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { OVERLAY_PRESETS, hexToRgba, type OverlayConfig } from "@/domain/overlay/config";
 import { getOverlayMessages } from "@/i18n/overlay-messages";
-import type { PlayerLiveState } from "@/domain/overlay/state";
+import { pickRatingCharacter, type PlayerLiveState } from "@/domain/overlay/state";
 import { deltaTone, formatDelta, formatInteger, formatWinRate } from "@/domain/format";
 import type { MatchResult } from "@/domain/sf6/types";
 import "./overlay.css";
@@ -157,14 +157,20 @@ interface ThemeProps {
   live: PlayerLiveState;
 }
 
-function ratingParts(live: PlayerLiveState, locale: string) {
-  const { rating } = live.session;
+/**
+ * Rating of ONE character: the overlay's pinned `ratingCharacterKey`, else the active character
+ * (latest Ranked match). W/L stays global; this never mixes characters.
+ */
+function ratingParts(live: PlayerLiveState, config: OverlayConfig) {
+  const c = pickRatingCharacter(live.session, config.ratingCharacterKey);
+  const system = c?.current?.system ?? c?.ratingSystem ?? null;
   return {
     // MR / LP are official game terms: not translated.
-    label: rating.system === "mr" ? "MR" : "LP",
-    value: formatInteger(rating.primary.current, locale),
-    delta: rating.primary.delta,
-    rank: rating.rank ?? "—",
+    label: system === "mr" ? "MR" : system === "lp" ? "LP" : "",
+    character: c?.characterName ?? "—",
+    value: formatInteger(c?.current?.value ?? null, config.locale),
+    delta: c?.delta ?? null,
+    rank: c?.current?.rank ?? c?.initial?.rank ?? "—",
   };
 }
 
@@ -185,7 +191,7 @@ function MinimalTheme({ config, live }: ThemeProps) {
   const locale = config.locale;
   const s = live.session;
   const f = config.fields;
-  const r = ratingParts(live, locale);
+  const r = ratingParts(live, config);
   const items: Array<{ key: string; node: ReactNode }> = [];
 
   if (f.wins || f.losses) {
@@ -229,6 +235,7 @@ function MinimalTheme({ config, live }: ThemeProps) {
       key: "rating",
       node: (
         <span className="ov-delta">
+          <span className="ov-unit ov-upper">{r.character}</span>
           {f.rating && (
             <>
               <Animated value={r.value} />
@@ -298,7 +305,7 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
   const locale = config.locale;
   const s = live.session;
   const f = config.fields;
-  const r = ratingParts(live, locale);
+  const r = ratingParts(live, config);
   const groups: Array<{ key: string; node: ReactNode }> = [];
 
   if (f.wins || f.losses) {
@@ -352,9 +359,14 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
     groups.push({
       key: "rating",
       node: (
-        <Cell label={r.label}>
+        <Cell label={r.character}>
           <span className="ov-mid">
-            {f.rating && <Animated value={r.value} />}
+            {f.rating && (
+              <>
+                <Animated value={r.value} />
+                <span className="ov-unit">{r.label}</span>
+              </>
+            )}
             {f.ratingDelta && <Delta delta={r.delta} locale={locale} className="ov-delta" />}
           </span>
         </Cell>
@@ -410,7 +422,7 @@ function FighterTheme({ config, live }: ThemeProps) {
   const locale = config.locale;
   const s = live.session;
   const f = config.fields;
-  const r = ratingParts(live, locale);
+  const r = ratingParts(live, config);
   const showScore = f.wins || f.losses;
 
   return (
@@ -455,7 +467,9 @@ function FighterTheme({ config, live }: ThemeProps) {
         <div className="ov-st-block">
           <div className="ov-st-inner">
             <div className="ov-st-col">
-              <span className="ov-st-label">{f.rank ? r.rank : r.label}</span>
+              <span className="ov-st-label">
+                {f.rank ? `${r.character} · ${r.rank}` : r.character}
+              </span>
               <span className="ov-st-mid">
                 {f.rating && (
                   <>
