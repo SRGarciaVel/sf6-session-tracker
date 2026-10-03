@@ -247,7 +247,30 @@ scripts/             migrate, seed, provider-check
 tests/integration/   pipeline tests against Postgres
 ```
 
-## Security & privacy
+## Internationalization (es / en)
+
+Built with **next-intl**. The locale is not part of the URL, so overlay URLs never change.
+
+- **Languages:** Spanish (`es`, the default) and English (`en`).
+- **Catalogs:**
+  - `src/i18n/messages/{es,en}.json` holds the dashboard, auth and onboarding strings.
+  - `src/i18n/messages/overlay.{es,en}.json` holds the OBS overlay strings. They are kept tiny so
+    every language ships with the overlay client.
+  - Missing keys fall back to English. A test enforces identical key sets.
+- **User language:** chosen with the ES | EN selector in the navbar and auth pages.
+  - It is stored in a 1-year `NEXT_LOCALE` cookie and, when signed in, in `auth_user.locale`.
+  - Resolution order: account → cookie → `es`.
+  - There is no browser-language detection, so an explicit choice is never overridden.
+- **Overlay language:** `overlay.config.locale` is independent from the dashboard language.
+  - New overlays inherit the user's language.
+  - Changing it in the builder updates the open Browser Source live through the existing realtime
+    channel. Token, session, stats and tracker are untouched.
+- **Formatting:** numbers, percentages, dates and relative times use `Intl` with the active locale
+  (`66,7 %` · `18.430` in Spanish; `66.7%` · `18,430` in English).
+- **Not translated:** official terms (Street Fighter 6, CFN, MR, LP, Ranked, OBS) and rank names
+  as reported by CFN.
+- **Adding a string:** add the key to both catalogs and use `useTranslations` (client) or
+  `getTranslations` (server).
 
 - Zod validation on every input boundary: actions, env, provider output, overlay config and
   realtime events.

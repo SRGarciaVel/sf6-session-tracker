@@ -166,7 +166,19 @@ The player's CFN id, display name, main character, rank, LP and MR. For each mat
 mode, result, both characters and the opponent's display name. Opponent CFN ids and raw payloads
 are **not** stored.
 
-## 10. Extension points (not implemented)
+## 9b. Internationalization
+
+- **next-intl without i18n routing.** `src/i18n/request.ts` resolves the locale per request:
+  account (`auth_user.locale`) → `NEXT_LOCALE` cookie → `es`.
+- Each overlay stores its own `config.locale`.
+  - `OverlayView` wraps itself in a `NextIntlClientProvider` for that locale, using the small
+    overlay catalogs, so OBS and the dashboard previews render in the overlay's language.
+  - A language change is an ordinary config save: `overlay` event → SSE → full state. Language is
+    presentation-only. It never touches the Session Engine, tracker, ingestion or tokens, and
+    integration tests assert exactly that.
+- Formatters in `src/domain/format.ts` take a locale and use `Intl`.
+
+(not implemented)
 
 - **Custom CSS:** store it in `overlay.config.customCss`. Sanitize it server-side: reject `<`,
   `@import`, `url(` except `data:` fonts, `expression(` and `behavior`. Scope it under

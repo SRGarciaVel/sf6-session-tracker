@@ -18,5 +18,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   assignment under lock). Realtime events are invalidation signals; clients receive full state.
 - Overlay CSS (`src/components/overlay/overlay.css`) must stay OBS/CEF-safe: no Tailwind, no
   oklch()/color-mix()/container queries/:has().
+- No hardcoded user-facing text: add keys to BOTH `src/i18n/messages/es.json` and `en.json` (or
+  the `overlay.*.json` catalogs for OBS text) and format numbers/dates via `src/domain/format.ts`.
 - Before committing: `pnpm check` (typecheck + lint + tests; integration tests need
   `TEST_DATABASE_URL`) and `pnpm build`. Don't silence errors with ts-ignore/eslint-disable/any.
