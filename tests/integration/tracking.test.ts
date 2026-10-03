@@ -124,15 +124,15 @@ describe.skipIf(!TEST_DB)("tracking pipeline (integration)", () => {
     expect(await liveSession()).toMatchObject({ wins: 0, losses: 1 });
   });
 
-  it("tracks the rating delta from the baseline", async () => {
+  it("tracks the rating delta of the played character from its own baseline", async () => {
     await startSession(db, provider, await currentPlayer());
-    const before = await liveSession();
-    const initial = before.rating.primary.current;
+    const before = (await liveSession()).characters.find((c) => c.characterKey === "aki");
     await mock.simulateMatch(cfnUserId, { result: "win" });
     await pollOnce();
-    const after = await liveSession();
-    expect(after.rating.primary.initial).toBe(initial);
-    expect(after.rating.primary.delta).toBeGreaterThan(0);
+    const after = (await liveSession()).characters.find((c) => c.characterKey === "aki");
+    expect(after?.initial?.value).toBe(before?.current?.value);
+    expect(after?.delta).toBeGreaterThan(0);
+    expect(after?.ratingSystem).toBe("lp");
   });
 
   it("a provider outage does not reset or change the score, and backs off", async () => {

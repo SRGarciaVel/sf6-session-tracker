@@ -1,5 +1,12 @@
 # Auditoría técnica — SF6 Session Tracker (2026-10-03)
 
+> **Estado de seguimiento:**
+>
+> - **Resueltos:** F-01, F-02, F-03, F-05, F-07 y P0-1, P0-2, P0-3 (modelo de rating por
+>   personaje, pertenencia a la sesión por ID con 90 s de gracia, `provider:check` ampliado).
+>   Detalles en `docs/architecture.md` §3–§5.
+> - **Pendientes:** el resto de prioridades.
+
 Alcance: modelo multi-personaje, integración CFN real, autenticación/cuentas, robustez de
 producción y cobertura de tests. **Sin cambios estructurales.** Solo se añadió un test de
 auditoría de lectura (`tests/integration/authorization.test.ts`).

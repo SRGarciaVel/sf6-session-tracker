@@ -13,6 +13,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Architecture & decisions: `docs/architecture.md`. Read it before structural changes.
 - Session math lives ONLY in `src/domain/session/engine.ts` (pure, unit tested). Never compute
   W/L, win rate, streaks or deltas in React, API routes, the worker or the provider.
+- Ratings (rank/LP/MR) belong to a CHARACTER (`characterKey`), never to the player. Never
+  subtract ratings of different characters, systems (MR vs LP) or phases; unknown ⇒ `null`.
 - Capcom/CFN access lives ONLY in `src/server/sf6/providers/*` behind `SF6DataProvider`.
 - Matches enter the system only through `src/server/ingestion/ingest.ts` (dedupe + session
   assignment under lock). Realtime events are invalidation signals; clients receive full state.

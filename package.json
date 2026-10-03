@@ -21,7 +21,8 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
-    "provider:check": "tsx scripts/provider-check.ts"
+    "provider:check": "tsx scripts/provider-check.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "better-auth": "^1.7.7",
@@ -34,6 +35,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22.20.5",
     "@types/react": "^19",

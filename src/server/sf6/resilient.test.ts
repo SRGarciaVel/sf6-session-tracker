@@ -6,10 +6,18 @@ import { ResilientProvider } from "./resilient";
 const profile: NormalizedPlayerProfile = {
   cfnUserId: "1234567890",
   displayName: "Tester",
-  mainCharacter: "Ryu",
-  rank: "Master",
-  leaguePoints: 25000,
-  masterRate: 1500,
+  favoriteCharacterKey: "ryu",
+  characters: [
+    {
+      characterKey: "ryu",
+      characterName: "Ryu",
+      rank: "Master",
+      rankTier: "master",
+      ratingSystem: "mr",
+      leaguePoints: 25000,
+      masterRate: 1500,
+    },
+  ],
 };
 
 const goodMatch: NormalizedSF6Match = {
@@ -17,8 +25,9 @@ const goodMatch: NormalizedSF6Match = {
   playedAt: new Date("2026-10-03T18:00:00Z"),
   mode: "ranked",
   result: "win",
-  playerCharacter: "Ryu",
-  opponent: { name: "Opp", character: "Ken" },
+  characterKey: "ryu",
+  characterName: "Ryu",
+  opponent: { name: "Opp", characterKey: "ken", characterName: "Ken" },
 };
 
 function fakeProvider(overrides: Partial<SF6DataProvider> = {}): SF6DataProvider {

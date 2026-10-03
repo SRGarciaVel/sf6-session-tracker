@@ -50,26 +50,52 @@ There's no Redis, queue or microservice. Postgres provides the leases (row locks
 
 ## 3. Data model (`src/server/db/schema.ts`)
 
+**Ratings belong to characters, never to the player.** In SF6 rank, LP and MR are tracked per
+character, and two characters' ratings are never subtracted from each other.
+
 ```
-auth_user ─1:1─ sf6_player ─1:N─ game_session ─1:N─ match
-                    │                 (baseline)      (unique player_id+external_match_id)
+auth_user ─1:1─ sf6_player ─1:N─ player_character_rating   (current snapshot per character)
+                    │
+                    ├─1:N─ game_session ─1:N─ session_character_baseline  (initial + final per character)
+                    │            └─1:N─ match  (character_key, rating_before/after; unique player+external id)
                     ├─1:N─ match  (pre-session matches have session_id = NULL)
-                    └─1:N─ overlay ─1:N─ overlay_connection (presence, for "connections: 2")
+                    └─1:N─ overlay ─1:N─ overlay_connection (presence)
 ```
 
-- **sf6_player**: CFN id and the latest profile snapshot (`rank`, `league_points`, `master_rate`).
-  It also stores tracker state: `next_poll_at`, `consecutive_failures`, `last_success_at`,
-  `last_error`, `lease_owner`, `lease_expires_at`, `profile_refresh_until`.
-- **game_session**: `status` (`active` | `ended`), `started_at`, `ended_at`, the baseline
-  (`baseline_match_id`, `baseline_played_at`, `initial_rank/lp/mr`), final values set when it ends,
-  and `filter` (jsonb, default `{ modes: ["ranked"] }`). A **partial unique index** allows only one
-  active session per player.
-- **match**: a normalized match, linked to the session it was counted in. Unique on
-  `(player_id, external_match_id)`. W/L, win rate and streaks are **not stored**; they are derived.
-- **overlay**: `public_token` and `config` (jsonb, validated by Zod, versioned). An overlay belongs
-  to a player and outlives sessions. Themes are code-defined presets (`src/domain/overlay`), so they
-  have no table.
-- **mock_cfn_player / mock_cfn_match**: fake CFN data, used only by `MockSF6DataProvider`.
+- **sf6_player**: CFN id, display name and `favorite_character_key`. It also holds tracker state:
+  `next_poll_at`, `consecutive_failures`, `last_success_at`, `last_error`, `lease_owner`,
+  `lease_expires_at` and `profile_refresh_until`. It has **no rating columns**.
+- **player_character_rating**: the latest profile value per `(player_id, character_key)` (unique),
+  covering rank, rank tier, `rating_system` (`lp` | `mr`), LP, MR and phase.
+  - `observed_at` guards the upsert: an older snapshot never overwrites a newer one.
+- **game_session**: status, start and end times, the match baseline (`baseline_match_id`,
+  `baseline_played_at`), `filter`, and `rating_model`.
+  - `rating_model` is `per_character`, or `legacy` for sessions created before migration 0002.
+  - The old `initial_*` / `final_*` columns are kept read-only for legacy sessions and are
+    **never used for deltas**, because their character is unknown.
+  - A partial unique index allows one active session per player.
+- **session_character_baseline**: one row per `(session_id, character_key)` (unique).
+  - `initial_*` is written at session start for every character of the profile
+    (`source = session_start`, or `prior_snapshot` for characters only known from an earlier
+    snapshot).
+  - `final_*` and `finalized_at` are frozen when the session ends.
+  - Characters played without a start baseline get a row with `source = none` at the end.
+- **match**: `character_key` (required) plus `player_character` (display name), opponent fields,
+  and `rating_before_*` / `rating_after_*` (system, value, rank, phase).
+  - Unique on `(player_id, external_match_id)`.
+  - W/L, win rate, streaks and deltas are **derived, not stored**.
+- **overlay**: `public_token` and `config`. The config is jsonb; `ratingCharacterKey` set to
+  `null` means "active character".
+- **mock_cfn_player / mock_cfn_character / mock_cfn_match**: the fake CFN, used only by the mock
+  provider.
+
+Migrations `0002` (additive, with a hand-written deterministic backfill) and `0003` (NOT NULL
+constraints, dropping the global rating columns):
+
+- Old sessions are marked `legacy`, with **no invented baselines**.
+- Each match's `character_key` is derived from its stored name with the same slug rule as
+  `toCharacterKey()`.
+- The v1 "rating after" becomes `rating_after_*`: MR if present, otherwise LP.
 
 ## 4. Match ingestion and exactly-once effect
 
@@ -80,27 +106,39 @@ FETCH (provider) → NORMALIZE (provider) → VALIDATE (zod) → DEDUPLICATE + P
 
 - Each match is inserted with `ON CONFLICT (player_id, external_match_id) DO NOTHING RETURNING`.
   Only rows that are actually inserted can be assigned to a session.
-- Session membership is decided **once**, at insert time, by the pure `isMatchInSession()`. It
-  checks the mode filter, `played_at >= started_at - grace`, `played_at <= ended_at`, and that the
-  match is not the baseline match.
-- When a session starts, the recent matches are ingested first with `session_id = NULL`. Matches
-  played before the session therefore become "known" and can never be counted later.
-- Re-processing the same response 10× changes nothing. Out-of-order arrival doesn't matter either,
-  because stats are recomputed from matches sorted by `played_at`.
+- **Membership is decided by identity first, time second** (`isMatchInSession`, decided once at
+  insert time):
+  1. Matches known when the session started are ingested with `session_id = NULL` before the
+     session row exists, so they can never count.
+  2. A _new_ ID counts only if all of these hold:
+     - the mode passes the filter;
+     - `played_at >= started_at − SESSION_START_GRACE_SECONDS` (default **90 s**, absorbing
+       coarse or offset CFN timestamps);
+     - it is **not strictly older** than the newest baseline match (older means pre-session
+       history that showed up late);
+     - `played_at <= ended_at`.
+- Re-processing the same response 10× changes nothing, and out-of-order arrival doesn't matter.
 
 ## 5. Session Engine (`src/domain/session`)
 
 These are pure functions with no IO, React or DB, and they are fully unit tested.
 
-- `applyMatchToSession(state, match)` is idempotent (dedupe by id) and order-independent (sorted
-  insert, then recompute).
-- `computeSessionStats(matches)` returns W/L/D, total, win rate (`wins/(wins+losses)*100`, `0` for 0
-  games), current win/loss streak, best win streak and recent form.
-- `isMatchInSession(baseline, match)` decides membership (see §4).
-- `buildRatingView(initial, current)` returns LP and MR deltas. The primary system is `mr` when the
-  player has a Master Rate, otherwise `lp`. A promotion during the session keeps the LP delta.
+- `computeSessionStats(matches)`: **global** W/L/D, win rate, streaks and form across all
+  characters.
+- `computeCharacterProgress({ baselines, matches, current })`: per character, the W/L, initial and
+  current rating, and the delta.
+  - **Initial:** the start baseline, else `ratingBefore` of the character's first match, else
+    **unknown**.
+  - **Current:** `ratingAfter` of the latest match, else a profile snapshot **not older than that
+    match**, else the baseline if the character wasn't played.
+  - **Delta:** `current − initial` only for the **same character, system (LP/MR) and phase**;
+    otherwise `null`. Never `current − 0`, never MR − LP.
+- `resolveActiveCharacter`: the character of the latest counted (Ranked) match, else the
+  favorite, else the first rated character, else `null`. This is presentation only.
+- `isMatchInSession`: see §4.
 
-Draws do not count toward win rate, and they reset both streaks.
+Ended sessions use their frozen `final_*` values, never later profile values. Draws don't count
+toward win rate and reset both streaks.
 
 ## 6. Tracking lifecycle
 

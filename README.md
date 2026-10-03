@@ -105,18 +105,26 @@ ids starting with `000` return "not found".
 ## Tests
 
 ```bash
-pnpm test
+pnpm test        # unit + integration (integration needs TEST_DATABASE_URL)
+pnpm test:e2e    # Playwright, against the dev stack (needs `pnpm db:seed`; starts `pnpm dev` if not running)
 ```
 
-- `src/domain/**`: Session Engine unit tests (0 matches, W/L, win rate, duplicates, out-of-order,
-  baseline, MR/LP deltas, promotion, restart/new session), plus the polling policy and overlay
-  config.
-- `src/server/**`: the resilient provider (timeout, single-flight, validation), rate limiting,
-  token format, log redaction.
-- `tests/integration/**`: the full pipeline against Postgres (`TEST_DATABASE_URL`). It covers
-  baseline exclusion, 10× re-ingestion, ranked filter, rating delta, CFN outage and backoff, worker
-  lease exclusivity, end/restart sessions, the final fetch on end, and the one-active-session
-  constraint.
+- `src/domain/**`: the Session Engine.
+  - Global W/L, win rate, duplicates, out-of-order matches, membership (IDs, grace, baseline).
+  - **Per-character progress:** LP and MR deltas, Diamond together with Master, never LP − MR,
+    never one character minus another, characters outside the baseline (with and without
+    `ratingBefore`), phase mismatch, current-rating priority, active character.
+- `src/server/**`: resilient provider, the **contract checker** (ERROR/WARNING/PASS), rate
+  limiting, tokens, log redaction.
+- `src/components/overlay/**`: overlay ES/EN rendering, active or pinned character, no fabricated
+  delta.
+- `tests/integration/**` (Postgres):
+  - The tracking pipeline, leases, outages, IDOR, i18n.
+  - **Per-character flows:** baselines for every character at start, A.K.I. → Kimberly, overlay
+    pinning, frozen finals and history, legacy sessions, guarded snapshots.
+- `e2e/multi-character.spec.ts`: A.K.I. win, then switch to Kimberly and win.
+  - Global 2W, separate deltas, and the overlay follows Kimberly.
+  - Refreshing the overlay keeps the state.
 
 ## How `SF6DataProvider` works
 
@@ -136,43 +144,64 @@ interface SF6DataProvider {
 ```
 
 The provider is the **only** code that knows about Capcom. It fetches and normalizes data, and
-nothing else: no stats, no sessions, no UI. Everything else consumes the normalized types in
-`src/domain/sf6/types.ts`:
+nothing else. **Ratings belong to characters**:
 
 ```ts
+type NormalizedPlayerProfile = {
+  cfnUserId: string;
+  displayName: string;
+  favoriteCharacterKey?: string | null;
+  characters: Array<{
+    characterKey: string; // stable slug: "aki", "kimberly", "m-bison" (not the localized name)
+    characterName: string;
+    rank: string | null; // "Diamond 2", "Master"
+    rankTier: string | null; // "diamond-2", "master"
+    ratingSystem: "lp" | "mr" | null; // DECLARED by the provider; never guessed from the label
+    leaguePoints: number | null;
+    masterRate: number | null;
+    phase?: number | null;
+  }>;
+};
+
 type NormalizedSF6Match = {
   externalMatchId: string; // stable unique id (replay/battle id), never a timestamp
-  playedAt: Date;
+  playedAt: Date; // absolute instant (UTC)
   mode: "ranked" | "casual" | "battle_hub" | "custom_room" | "unknown";
   result: "win" | "loss" | "draw"; // from the tracked player's perspective
-  playerCharacter: string | null;
-  opponent: { name: string | null; character: string | null; rank?: string | null };
-  ratingAfter?: { leaguePoints: number | null; masterRate: number | null } | null;
+  characterKey: string; // REQUIRED
+  characterName: string;
+  opponent: {
+    name: string | null;
+    characterKey?: string | null;
+    characterName?: string | null;
+    rank?: string | null;
+  };
+  ratingBefore?: { system: "lp" | "mr"; value: number; rank?; rankTier?; phase? } | null;
+  ratingAfter?: { system: "lp" | "mr"; value: number; rank?; rankTier?; phase? } | null;
 };
 ```
 
-`getSF6DataProvider()` (`src/server/sf6/index.ts`) wraps the selected provider in
-`ResilientProvider`. That adds a timeout, single-flight request dedupe, a short profile cache and
-Zod validation of every returned object (invalid matches are dropped and logged). From there the
-data flows **FETCH → NORMALIZE → VALIDATE → DEDUPLICATE → PERSIST → UPDATE SESSION → PUBLISH**
-(`src/server/ingestion/ingest.ts`).
+`getSF6DataProvider()` wraps the selected provider in `ResilientProvider`, which adds a timeout,
+single-flight, a short profile cache and Zod validation (invalid matches are dropped and logged).
+From there the data flows **FETCH → NORMALIZE → VALIDATE → DEDUPLICATE → PERSIST → UPDATE SESSION
+→ PUBLISH**.
 
 ## How to replace `MockSF6DataProvider`
 
-1. Implement the two methods in **`src/server/sf6/providers/capcom.ts`**. The file header lists
-   the contract and the rules:
-   - Resolve P1/P2 into the tracked player's perspective.
-   - Use a stable, unique `externalMatchId`.
-   - Map the battle type to `mode`.
-   - Throw `SF6ProviderError` with code `not_found` (permanent), `rate_limited` (pass
-     `retryAfterMs` if known), `unavailable` or `invalid_response`.
-   - Pass `options.signal` to `fetch()`.
-2. Put any credentials (cookies or tokens) in server env vars, read them in the provider, and
-   never log them.
-3. Set `SF6_PROVIDER=capcom`.
-4. Verify it: `pnpm provider:check <yourCfnId>`. It prints the normalized profile and matches and
-   warns about duplicate ids or future timestamps.
-5. Run the app. Nothing else needs to change.
+1. Implement the two methods in **`src/server/sf6/providers/capcom.ts`**. Its header lists exactly
+   which CFN fields map to which contract fields.
+2. Keep credentials in server env vars and never log them. Set `SF6_PROVIDER=capcom`.
+3. Run **`pnpm provider:check <cfnId>`** (for example `1733837998`). It calls the provider _raw_
+   (without the wrapper that silently drops bad entries) and prints:
+   - PROFILE, CHARACTERS (key, name, rank, tier, system, LP, MR, phase), and MATCHES (id, time,
+     mode, result, character, opponent, rating before and after);
+   - findings classified as **ERROR / WARNING / PASS**:
+     - **ERROR:** contract violations, missing `characterKey`, `cfnUserId` mismatch.
+     - **WARNING:** duplicate keys or IDs, incoherent MR+LP, future timestamps, `unknown` mode,
+       match characters missing from the profile, unordered pages, no `ratingAfter`.
+   - The exit code is 1 only when there are errors.
+4. Compare the output against CFN using the checklist in `docs/audit/2026-10-03-technical-audit.md`
+   §2.4.
 
 ## How to configure OBS
 

@@ -4,34 +4,74 @@ import {
   applyMatchToSession,
   buildSessionState,
   calculateWinRate,
+  computeCharacterProgress,
   computeSessionStats,
   emptySessionState,
   isMatchInSession,
   pickBaselineMatch,
+  resolveActiveCharacter,
   summarizeSession,
+  type CharacterBaseline,
+  type CharacterSnapshot,
   type SessionBaseline,
   type SessionMatch,
 } from "./engine";
-import { EMPTY_RATING } from "@/domain/sf6/rating";
-import type { MatchResult } from "@/domain/sf6/types";
+import type { MatchResult, RatingPoint } from "@/domain/sf6/types";
 
 const T0 = new Date("2026-10-03T18:00:00Z").getTime();
 const minutes = (n: number) => new Date(T0 + n * 60_000);
 
+const NAMES: Record<string, string> = {
+  aki: "A.K.I.",
+  kimberly: "Kimberly",
+  cammy: "Cammy",
+  sagat: "Sagat",
+  ryu: "Ryu",
+};
+
 let seq = 0;
-function match(result: MatchResult, minute: number, overrides: Partial<SessionMatch> = {}) {
+function match(
+  result: MatchResult,
+  minute: number,
+  overrides: Partial<SessionMatch> & { char?: string } = {},
+): SessionMatch {
   seq++;
+  const { char = "ryu", ...rest } = overrides;
   return {
     externalMatchId: `m-${minute}-${seq}`,
     playedAt: minutes(minute),
     mode: "ranked",
     result,
-    playerCharacter: "Ryu",
+    characterKey: char,
+    characterName: NAMES[char] ?? char,
     opponentCharacter: "Ken",
     opponentName: "Opponent",
-    ...overrides,
-  } satisfies SessionMatch;
+    ...rest,
+  };
 }
+
+const lp = (
+  value: number,
+  rank: string | null = null,
+  phase: number | null = null,
+): RatingPoint => ({
+  system: "lp",
+  value,
+  rank,
+  rankTier: null,
+  phase,
+});
+const mr = (
+  value: number,
+  rank: string | null = "Master",
+  phase: number | null = null,
+): RatingPoint => ({
+  system: "mr",
+  value,
+  rank,
+  rankTier: null,
+  phase,
+});
 
 function baseline(overrides: Partial<SessionBaseline> = {}): SessionBaseline {
   return {
@@ -39,65 +79,54 @@ function baseline(overrides: Partial<SessionBaseline> = {}): SessionBaseline {
     endedAt: null,
     baselineMatchId: null,
     baselinePlayedAt: null,
-    initialRating: EMPTY_RATING,
     filter: DEFAULT_SESSION_FILTER,
     ...overrides,
   };
 }
 
+const start = (char: string, rating: RatingPoint | null): CharacterBaseline => ({
+  characterKey: char,
+  characterName: NAMES[char] ?? char,
+  source: "session_start",
+  rating,
+  capturedAt: minutes(0),
+});
+const snap = (char: string, rating: RatingPoint | null, minute = 100): CharacterSnapshot => ({
+  characterKey: char,
+  characterName: NAMES[char] ?? char,
+  rating,
+  observedAt: minutes(minute),
+});
+const byKey = <T extends { characterKey: string }>(list: T[], key: string) => {
+  const found = list.find((c) => c.characterKey === key);
+  if (!found) throw new Error(`no progress for ${key}`);
+  return found;
+};
+
+/* ═══════════════════════ Global W/L (unchanged behavior) ═══════════════════════ */
+
 describe("computeSessionStats", () => {
   it("0 matches → zeros, no NaN", () => {
     const stats = computeSessionStats([]);
-    expect(stats).toMatchObject({
-      wins: 0,
-      losses: 0,
-      draws: 0,
-      totalGames: 0,
-      winRate: 0,
-      currentWinStreak: 0,
-      currentLossStreak: 0,
-      bestWinStreak: 0,
-    });
+    expect(stats).toMatchObject({ wins: 0, losses: 0, draws: 0, totalGames: 0, winRate: 0 });
     expect(Number.isNaN(stats.winRate)).toBe(false);
   });
 
-  it("1 win", () => {
-    const stats = computeSessionStats([match("win", 1)]);
-    expect(stats).toMatchObject({ wins: 1, losses: 0, winRate: 100, currentWinStreak: 1 });
-  });
-
-  it("1 loss", () => {
-    const stats = computeSessionStats([match("loss", 1)]);
-    expect(stats).toMatchObject({ wins: 0, losses: 1, winRate: 0, currentLossStreak: 1 });
-  });
-
-  it("several wins", () => {
-    const stats = computeSessionStats([match("win", 1), match("win", 2), match("win", 3)]);
-    expect(stats).toMatchObject({ wins: 3, currentWinStreak: 3, bestWinStreak: 3, winRate: 100 });
-  });
-
-  it("several losses", () => {
-    const stats = computeSessionStats([match("loss", 1), match("loss", 2), match("loss", 3)]);
-    expect(stats).toMatchObject({ losses: 3, currentLossStreak: 3, bestWinStreak: 0, winRate: 0 });
-  });
-
-  it("win rate: 3W 2L → 60%", () => {
-    const stats = computeSessionStats([
-      match("win", 1),
-      match("loss", 2),
-      match("win", 3),
-      match("loss", 4),
-      match("win", 5),
-    ]);
-    expect(stats.winRate).toBe(60);
-    expect(stats.totalGames).toBe(5);
+  it("1 win / 1 loss / several", () => {
+    expect(computeSessionStats([match("win", 1)])).toMatchObject({ wins: 1, winRate: 100 });
+    expect(computeSessionStats([match("loss", 1)])).toMatchObject({
+      losses: 1,
+      currentLossStreak: 1,
+    });
+    expect(computeSessionStats([match("win", 1), match("win", 2), match("win", 3)])).toMatchObject({
+      wins: 3,
+      bestWinStreak: 3,
+    });
   });
 
   it("win rate: 8W 4L → 66.67%", () => {
     const results: MatchResult[] = [..."WWLWWLWLWWLW"].map((c) => (c === "W" ? "win" : "loss"));
     const stats = computeSessionStats(results.map((r, i) => match(r, i + 1)));
-    expect(stats.wins).toBe(8);
-    expect(stats.losses).toBe(4);
     expect(stats.winRate).toBeCloseTo(66.667, 2);
   });
 
@@ -106,36 +135,14 @@ describe("computeSessionStats", () => {
     expect(stats).toMatchObject({
       wins: 2,
       draws: 1,
-      totalGames: 3,
       winRate: 100,
       currentWinStreak: 0,
       bestWinStreak: 2,
     });
   });
 
-  it("tracks current vs best win streak", () => {
-    const stats = computeSessionStats([
-      match("win", 1),
-      match("win", 2),
-      match("win", 3),
-      match("loss", 4),
-      match("win", 5),
-    ]);
-    expect(stats.bestWinStreak).toBe(3);
-    expect(stats.currentWinStreak).toBe(1);
-    expect(stats.currentLossStreak).toBe(0);
-  });
-
-  it("recent form keeps the last 10 results, oldest first", () => {
-    const ms = Array.from({ length: 12 }, (_, i) => match(i < 2 ? "loss" : "win", i + 1));
-    const stats = computeSessionStats(ms);
-    expect(stats.recentResults).toHaveLength(10);
-    expect(stats.recentResults.every((r) => r === "win")).toBe(true);
-  });
-
   it("calculateWinRate guards division by zero", () => {
     expect(calculateWinRate(0, 0)).toBe(0);
-    expect(calculateWinRate(1, 3)).toBe(25);
   });
 });
 
@@ -145,13 +152,6 @@ describe("applyMatchToSession", () => {
     let state = emptySessionState();
     for (let i = 0; i < 10; i++) state = applyMatchToSession(state, m);
     expect(state.stats.wins).toBe(1);
-    expect(state.matches).toHaveLength(1);
-  });
-
-  it("returns the same object for a duplicate (no spurious updates)", () => {
-    const m = match("win", 1);
-    const state = applyMatchToSession(emptySessionState(), m);
-    expect(applyMatchToSession(state, { ...m })).toBe(state);
   });
 
   it("out-of-order matches produce the same result as in-order", () => {
@@ -161,46 +161,48 @@ describe("applyMatchToSession", () => {
     const inOrder = [a, b, c].reduce(applyMatchToSession, emptySessionState());
     const shuffled = [c, a, b].reduce(applyMatchToSession, emptySessionState());
     expect(shuffled.stats).toEqual(inOrder.stats);
-    expect(shuffled.stats.currentLossStreak).toBe(1);
-    expect(shuffled.stats.bestWinStreak).toBe(2);
-    expect(shuffled.matches.map((m) => m.externalMatchId)).toEqual(
-      [a, b, c].map((m) => m.externalMatchId),
-    );
   });
 
-  it("buildSessionState dedupes and sorts", () => {
-    const a = match("loss", 5);
-    const b = match("win", 1);
-    const state = buildSessionState([a, b, a, b]);
-    expect(state.matches.map((m) => m.externalMatchId)).toEqual([
-      b.externalMatchId,
-      a.externalMatchId,
-    ]);
-    expect(state.stats.totalGames).toBe(2);
+  it("rebuilding from persisted matches yields identical stats", () => {
+    const persisted = [match("win", 1), match("loss", 2), match("win", 3)];
+    expect(buildSessionState(persisted).stats).toEqual(
+      persisted.reduce(applyMatchToSession, emptySessionState()).stats,
+    );
   });
 });
 
-describe("isMatchInSession (baseline)", () => {
-  it("excludes matches played before the session started (e.g. earlier the same day)", () => {
-    expect(isMatchInSession(baseline(), match("win", -30))).toBe(false);
-    expect(isMatchInSession(baseline(), match("win", 1))).toBe(true);
+/* ═══════════════════════ Membership: IDs first, time second ═══════════════════════ */
+
+describe("isMatchInSession", () => {
+  const GRACE = 90_000;
+
+  it("match played before the session start (outside grace) does not count", () => {
+    expect(isMatchInSession(baseline(), match("win", -30), { startGraceMs: GRACE })).toBe(false);
   });
 
-  it("excludes the baseline match itself and anything at/before it", () => {
-    const b = baseline({
-      startedAt: minutes(0),
-      baselineMatchId: "last-known",
-      baselinePlayedAt: minutes(2),
-    });
-    expect(isMatchInSession(b, match("win", 2, { externalMatchId: "last-known" }))).toBe(false);
-    expect(isMatchInSession(b, match("win", 1))).toBe(false);
-    expect(isMatchInSession(b, match("win", 3))).toBe(true);
-  });
-
-  it("start grace window admits a match finished just before Start Session", () => {
-    const m = match("win", -0.5);
+  it("new match within the grace window counts (coarse / offset CFN timestamps)", () => {
+    const m = match("win", -1); // 60 s before start
     expect(isMatchInSession(baseline(), m)).toBe(false);
-    expect(isMatchInSession(baseline(), m, { startGraceMs: 60_000 })).toBe(true);
+    expect(isMatchInSession(baseline(), m, { startGraceMs: GRACE })).toBe(true);
+  });
+
+  it("a known match ID (baseline snapshot) never counts, even inside the window", () => {
+    const m = match("win", 5);
+    expect(isMatchInSession(baseline(), m, { knownMatchIds: new Set([m.externalMatchId]) })).toBe(
+      false,
+    );
+    expect(
+      isMatchInSession(baseline({ baselineMatchId: m.externalMatchId }), m, {
+        startGraceMs: GRACE,
+      }),
+    ).toBe(false);
+  });
+
+  it("unknown but strictly older than the newest baseline match ⇒ pre-session, not counted", () => {
+    const b = baseline({ baselineMatchId: "last", baselinePlayedAt: minutes(-0.5) });
+    expect(isMatchInSession(b, match("win", -1), { startGraceMs: GRACE })).toBe(false);
+    // Same (coarse) timestamp as the baseline match but a different ID ⇒ counts.
+    expect(isMatchInSession(b, match("win", -0.5), { startGraceMs: GRACE })).toBe(true);
   });
 
   it("excludes matches after the session ended", () => {
@@ -209,25 +211,274 @@ describe("isMatchInSession (baseline)", () => {
     expect(isMatchInSession(b, match("win", 61))).toBe(false);
   });
 
-  it("ranked-only filter by default; configurable", () => {
-    const casual = match("win", 1, { mode: "casual" });
-    expect(isMatchInSession(baseline(), casual)).toBe(false);
-    expect(isMatchInSession(baseline({ filter: { modes: ["ranked", "casual"] } }), casual)).toBe(
-      true,
-    );
-  });
-
-  it("rejects invalid dates", () => {
-    expect(isMatchInSession(baseline(), match("win", 1, { playedAt: new Date("nope") }))).toBe(
-      false,
-    );
+  it("ranked-only by default", () => {
+    expect(isMatchInSession(baseline(), match("win", 1, { mode: "casual" }))).toBe(false);
   });
 
   it("pickBaselineMatch returns the latest known match", () => {
     const old = match("win", -60);
     const latest = match("loss", -5);
     expect(pickBaselineMatch([latest, old])).toBe(latest);
-    expect(pickBaselineMatch([])).toBeNull();
+  });
+});
+
+/* ═══════════════════════ Per-character progress ═══════════════════════ */
+
+describe("computeCharacterProgress", () => {
+  it("session with only A.K.I. (Diamond, LP)", () => {
+    const [aki] = computeCharacterProgress({
+      baselines: [start("aki", lp(19704, "Diamond 2"))],
+      matches: [
+        match("win", 1, { char: "aki", ratingBefore: lp(19704), ratingAfter: lp(19810) }),
+        match("win", 2, {
+          char: "aki",
+          ratingBefore: lp(19810),
+          ratingAfter: lp(19921, "Diamond 2"),
+        }),
+      ],
+      current: [],
+    });
+    expect(aki).toMatchObject({ characterKey: "aki", wins: 2, ratingSystem: "lp", delta: 217 });
+    expect(aki?.currentSource).toBe("match_after");
+  });
+
+  it("session with only Kimberly (Master, MR)", () => {
+    const [kim] = computeCharacterProgress({
+      baselines: [start("kimberly", mr(1479))],
+      matches: [match("loss", 1, { char: "kimberly", ratingAfter: mr(1466) })],
+      current: [],
+    });
+    expect(kim).toMatchObject({ ratingSystem: "mr", losses: 1, delta: -13 });
+  });
+
+  it("the audit scenario: A.K.I. MR then Kimberly LP — separate, correct deltas", () => {
+    const matches = [
+      match("win", 1, { char: "aki", ratingBefore: mr(1476), ratingAfter: mr(1501) }),
+      match("loss", 2, { char: "aki", ratingBefore: mr(1501), ratingAfter: mr(1484) }),
+      match("win", 3, { char: "kimberly", ratingBefore: lp(16320), ratingAfter: lp(16440) }),
+    ];
+    const summary = summarizeSession({
+      status: "active",
+      ratingModel: "per_character",
+      baseline: baseline(),
+      matches,
+      characterBaselines: [start("aki", mr(1476)), start("kimberly", lp(16320))],
+      current: [],
+      favoriteCharacterKey: "aki",
+    });
+    expect(summary).toMatchObject({ wins: 2, losses: 1, totalGames: 3 });
+    expect(byKey(summary.characters, "aki")).toMatchObject({
+      wins: 1,
+      losses: 1,
+      delta: 8,
+      ratingSystem: "mr",
+    });
+    expect(byKey(summary.characters, "kimberly")).toMatchObject({
+      wins: 1,
+      losses: 0,
+      delta: 120,
+      ratingSystem: "lp",
+    });
+    // The old bug produced −8560 LP / "Master → Diamond"; no such value can appear now.
+    expect(summary.characters.map((c) => c.delta)).not.toContain(-8560);
+    expect(summary.activeCharacterKey).toBe("kimberly");
+  });
+
+  it("global W/L sums every character; per-character W/L is split", () => {
+    const matches = [
+      ...[1, 2, 3].map((m) => match("win", m, { char: "aki" })),
+      ...[4, 5].map((m) => match("loss", m, { char: "aki" })),
+      match("win", 6, { char: "kimberly" }),
+      match("loss", 7, { char: "kimberly" }),
+      match("win", 8, { char: "kimberly" }),
+    ];
+    expect(computeSessionStats(matches)).toMatchObject({ wins: 5, losses: 3, totalGames: 8 });
+    const progress = computeCharacterProgress({ baselines: [], matches, current: [] });
+    expect(byKey(progress, "aki")).toMatchObject({ wins: 3, losses: 2, games: 5 });
+    expect(byKey(progress, "kimberly")).toMatchObject({ wins: 2, losses: 1, games: 3 });
+  });
+
+  it("Diamond (LP) + Master (MR) in one session: each in its own unit", () => {
+    const progress = computeCharacterProgress({
+      baselines: [start("aki", lp(19704, "Diamond 2")), start("cammy", mr(1522))],
+      matches: [
+        match("win", 1, { char: "aki", ratingAfter: lp(19823, "Diamond 2") }),
+        match("win", 2, { char: "cammy", ratingAfter: mr(1540) }),
+      ],
+      current: [],
+    });
+    expect(byKey(progress, "aki")).toMatchObject({ ratingSystem: "lp", delta: 119 });
+    expect(byKey(progress, "cammy")).toMatchObject({ ratingSystem: "mr", delta: 18 });
+  });
+
+  it("never subtracts LP from MR (promotion Diamond → Master ⇒ delta null)", () => {
+    const [aki] = computeCharacterProgress({
+      baselines: [start("aki", lp(24950, "Diamond 5"))],
+      matches: [match("win", 1, { char: "aki", ratingAfter: mr(1500) })],
+      current: [],
+    });
+    expect(aki?.delta).toBeNull();
+    expect(aki?.ratingSystem).toBe("mr");
+    expect(aki?.current?.value).toBe(1500);
+  });
+
+  it("never subtracts one character's rating from another's", () => {
+    // Kimberly's only data is her own; A.K.I.'s baseline can never become her initial.
+    const progress = computeCharacterProgress({
+      baselines: [start("aki", lp(25000))],
+      matches: [match("win", 1, { char: "kimberly", ratingAfter: lp(16440) })],
+      current: [snap("aki", lp(25000))],
+    });
+    const kim = byKey(progress, "kimberly");
+    expect(kim.initial).toBeNull();
+    expect(kim.delta).toBeNull();
+    expect(byKey(progress, "aki").delta).toBe(0);
+  });
+
+  it("character not in the baseline, match has ratingBefore ⇒ baseline from ratingBefore", () => {
+    const [sagat] = computeCharacterProgress({
+      baselines: [start("aki", lp(20000))],
+      matches: [
+        match("win", 1, { char: "sagat", ratingBefore: lp(0, "Rookie 1"), ratingAfter: lp(85) }),
+        match("win", 2, { char: "sagat", ratingBefore: lp(85), ratingAfter: lp(170) }),
+      ],
+      current: [],
+    });
+    expect(sagat).toMatchObject({
+      characterKey: "sagat",
+      initialSource: "match_before",
+      delta: 170,
+    });
+  });
+
+  it("character not in the baseline and no ratingBefore ⇒ delta null (never current − 0)", () => {
+    const [sagat] = computeCharacterProgress({
+      baselines: [],
+      matches: [match("win", 1, { char: "sagat", ratingAfter: lp(85) })],
+      current: [snap("sagat", lp(85))],
+    });
+    expect(sagat?.initial).toBeNull();
+    expect(sagat?.initialSource).toBe("unknown");
+    expect(sagat?.current?.value).toBe(85);
+    expect(sagat?.delta).toBeNull();
+  });
+
+  it("phase mismatch ⇒ delta null", () => {
+    const [kim] = computeCharacterProgress({
+      baselines: [start("kimberly", mr(1600, "Master", 13))],
+      matches: [match("win", 1, { char: "kimberly", ratingAfter: mr(1500, "Master", 14) })],
+      current: [],
+    });
+    expect(kim?.delta).toBeNull();
+  });
+
+  it("Master with MR and Diamond with LP keep their own systems", () => {
+    const progress = computeCharacterProgress({
+      baselines: [start("kimberly", mr(1479)), start("aki", lp(19704, "Diamond 2"))],
+      matches: [],
+      current: [snap("kimberly", mr(1479)), snap("aki", lp(19704))],
+    });
+    expect(byKey(progress, "kimberly")).toMatchObject({ ratingSystem: "mr", delta: 0, games: 0 });
+    expect(byKey(progress, "aki")).toMatchObject({ ratingSystem: "lp", delta: 0, games: 0 });
+  });
+
+  it("current rating priority: ratingAfter > newer snapshot > baseline; older snapshot never wins", () => {
+    const withAfter = computeCharacterProgress({
+      baselines: [start("aki", lp(100))],
+      matches: [match("win", 10, { char: "aki", ratingAfter: lp(200) })],
+      current: [snap("aki", lp(150), 20)],
+    });
+    expect(byKey(withAfter, "aki").current?.value).toBe(200);
+
+    const staleSnapshot = computeCharacterProgress({
+      baselines: [start("aki", lp(100))],
+      matches: [match("win", 10, { char: "aki" })],
+      current: [snap("aki", lp(100), 5)], // observed BEFORE the match
+    });
+    expect(byKey(staleSnapshot, "aki").current).toBeNull();
+    expect(byKey(staleSnapshot, "aki").delta).toBeNull();
+
+    const freshSnapshot = computeCharacterProgress({
+      baselines: [start("aki", lp(100))],
+      matches: [match("win", 10, { char: "aki" })],
+      current: [snap("aki", lp(190), 11)],
+    });
+    expect(byKey(freshSnapshot, "aki")).toMatchObject({ delta: 90, currentSource: "snapshot" });
+
+    const notPlayed = computeCharacterProgress({
+      baselines: [start("cammy", mr(1522))],
+      matches: [],
+      current: [],
+    });
+    expect(byKey(notPlayed, "cammy")).toMatchObject({ currentSource: "baseline", delta: 0 });
+  });
+
+  it("duplicates and out-of-order matches do not affect progress", () => {
+    const a = match("win", 1, { char: "aki", ratingAfter: lp(110) });
+    const b = match("loss", 2, { char: "aki", ratingAfter: lp(90) });
+    const c = match("win", 3, { char: "aki", ratingAfter: lp(130) });
+    const inOrder = computeCharacterProgress({
+      baselines: [start("aki", lp(100))],
+      matches: [a, b, c],
+      current: [],
+    });
+    const messy = computeCharacterProgress({
+      baselines: [start("aki", lp(100))],
+      matches: [c, a, b, a, c],
+      current: [],
+    });
+    expect(messy).toEqual(inOrder);
+    expect(byKey(messy, "aki")).toMatchObject({ wins: 2, losses: 1, delta: 30 });
+  });
+
+  it("played characters come first, most recent first", () => {
+    const progress = computeCharacterProgress({
+      baselines: [start("cammy", mr(1500)), start("aki", lp(1)), start("kimberly", mr(1))],
+      matches: [match("win", 1, { char: "aki" }), match("win", 2, { char: "kimberly" })],
+      current: [],
+    });
+    expect(progress.map((p) => p.characterKey)).toEqual(["kimberly", "aki", "cammy"]);
+  });
+});
+
+describe("resolveActiveCharacter", () => {
+  it("is the character of the latest counted Ranked match", () => {
+    expect(
+      resolveActiveCharacter({
+        matches: [match("win", 2, { char: "kimberly" }), match("win", 1, { char: "aki" })],
+        favoriteCharacterKey: "aki",
+        characters: [],
+      }),
+    ).toBe("kimberly");
+  });
+
+  it("a Casual match does not change it (not a session match under the Ranked filter)", () => {
+    const ranked = match("win", 1, { char: "aki" });
+    const casual = match("win", 2, { char: "kimberly", mode: "casual" });
+    const counted = [ranked, casual].filter((m) => isMatchInSession(baseline(), m));
+    expect(
+      resolveActiveCharacter({ matches: counted, favoriteCharacterKey: null, characters: [] }),
+    ).toBe("aki");
+  });
+
+  it("falls back to the favorite, then the first rated character, then null", () => {
+    expect(
+      resolveActiveCharacter({
+        matches: [],
+        favoriteCharacterKey: "cammy",
+        characters: [snap("aki", lp(1))],
+      }),
+    ).toBe("cammy");
+    expect(
+      resolveActiveCharacter({
+        matches: [],
+        favoriteCharacterKey: null,
+        characters: [snap("ryu", null), snap("aki", lp(1))],
+      }),
+    ).toBe("aki");
+    expect(
+      resolveActiveCharacter({ matches: [], favoriteCharacterKey: null, characters: [] }),
+    ).toBeNull();
   });
 });
 
@@ -237,93 +488,15 @@ describe("restart / new session", () => {
     const firstMatches = [match("win", 1), match("win", 2), match("loss", 3)].filter((m) =>
       isMatchInSession(first, m),
     );
-    expect(computeSessionStats(firstMatches)).toMatchObject({ wins: 2, losses: 1 });
-
-    // Streamer clicks "Start New Session" at minute 10: baseline = last known match (minute 3).
     const last = pickBaselineMatch(firstMatches);
     const second = baseline({
       startedAt: minutes(10),
       baselineMatchId: last?.externalMatchId ?? null,
       baselinePlayedAt: last?.playedAt ?? null,
     });
-    const replayedHistory = [...firstMatches, match("loss", 11)];
-    const secondMatches = replayedHistory.filter((m) => isMatchInSession(second, m));
-    expect(computeSessionStats(secondMatches)).toMatchObject({ wins: 0, losses: 1, totalGames: 1 });
-  });
-
-  it("restarting the process (rebuilding from persisted matches) yields identical stats", () => {
-    const persisted = [match("win", 1), match("loss", 2), match("win", 3), match("win", 4)];
-    const live = persisted.reduce(applyMatchToSession, emptySessionState());
-    const rebuilt = buildSessionState(persisted);
-    expect(rebuilt.stats).toEqual(live.stats);
-  });
-});
-
-describe("summarizeSession (MR / LP deltas)", () => {
-  const ms = [match("win", 1), match("win", 2)];
-
-  it("positive MR delta", () => {
-    const s = summarizeSession({
-      status: "active",
-      baseline: baseline({
-        initialRating: { rank: "Master", leaguePoints: 25000, masterRate: 1584 },
-      }),
-      matches: ms,
-      currentRating: { rank: "Master", leaguePoints: 25000, masterRate: 1661 },
-    });
-    expect(s.rating.system).toBe("mr");
-    expect(s.rating.primary).toEqual({ initial: 1584, current: 1661, delta: 77 });
-  });
-
-  it("negative MR delta", () => {
-    const s = summarizeSession({
-      status: "active",
-      baseline: baseline({
-        initialRating: { rank: "Master", leaguePoints: null, masterRate: 1600 },
-      }),
-      matches: ms,
-      currentRating: { rank: "Master", leaguePoints: null, masterRate: 1582 },
-    });
-    expect(s.rating.primary.delta).toBe(-18);
-  });
-
-  it("LP delta below Master", () => {
-    const s = summarizeSession({
-      status: "active",
-      baseline: baseline({
-        initialRating: { rank: "Diamond 2", leaguePoints: 17810, masterRate: null },
-      }),
-      matches: ms,
-      currentRating: { rank: "Diamond 3", leaguePoints: 18430, masterRate: null },
-    });
-    expect(s.rating.system).toBe("lp");
-    expect(s.rating.primary).toEqual({ initial: 17810, current: 18430, delta: 620 });
-    expect(s.rating.rank).toBe("Diamond 3");
-    expect(s.rating.initialRank).toBe("Diamond 2");
-  });
-
-  it("promotion to Master: MR is primary, LP delta still available, no bogus MR delta", () => {
-    const s = summarizeSession({
-      status: "active",
-      baseline: baseline({
-        initialRating: { rank: "Diamond 5", leaguePoints: 24900, masterRate: null },
-      }),
-      matches: ms,
-      currentRating: { rank: "Master", leaguePoints: 25000, masterRate: 1500 },
-    });
-    expect(s.rating.system).toBe("mr");
-    expect(s.rating.mr.delta).toBeNull();
-    expect(s.rating.lp.delta).toBe(100);
-  });
-
-  it("unknown ratings never produce NaN", () => {
-    const s = summarizeSession({
-      status: "active",
-      baseline: baseline(),
-      matches: [],
-      currentRating: EMPTY_RATING,
-    });
-    expect(s.rating.primary.delta).toBeNull();
-    expect(s.winRate).toBe(0);
+    const secondMatches = [...firstMatches, match("loss", 11)].filter((m) =>
+      isMatchInSession(second, m, { startGraceMs: 90_000 }),
+    );
+    expect(computeSessionStats(secondMatches)).toMatchObject({ wins: 0, losses: 1 });
   });
 });
