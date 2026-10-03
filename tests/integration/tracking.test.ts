@@ -202,6 +202,22 @@ describe.skipIf(!TEST_DB)("tracking pipeline (integration)", () => {
     expect(history[1]?.summary).toMatchObject({ status: "ended", wins: 1 });
   });
 
+  it("ending a session does a final fetch so a just-finished match still counts", async () => {
+    await startSession(db, provider, await currentPlayer());
+    await mock.simulateMatch(cfnUserId, { result: "win" });
+    // No poll: the match finished right before the streamer clicked "End session".
+    await endSession(db, playerId, provider);
+    expect(await liveSession()).toMatchObject({ status: "ended", wins: 1 });
+  });
+
+  it("ending a session still works when CFN is down", async () => {
+    await startSession(db, provider, await currentPlayer());
+    await mock.setOutage(cfnUserId, 60);
+    await endSession(db, playerId, provider);
+    expect((await liveSession()).status).toBe("ended");
+    await mock.setOutage(cfnUserId, 0);
+  });
+
   it("only one active session can exist per player (DB constraint)", async () => {
     await startSession(db, provider, await currentPlayer());
     await expect(

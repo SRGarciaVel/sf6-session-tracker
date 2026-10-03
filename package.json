@@ -20,7 +20,8 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
-    "check": "pnpm typecheck && pnpm lint && pnpm test"
+    "check": "pnpm typecheck && pnpm lint && pnpm test",
+    "provider:check": "tsx scripts/provider-check.ts"
   },
   "dependencies": {
     "better-auth": "^1.7.7",

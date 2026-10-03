@@ -21,6 +21,7 @@ import { ingestMatchesInTx } from "@/server/ingestion/ingest";
 import { logger } from "@/server/logger";
 import { findPlayerById, updatePlayerProfile } from "@/server/players/service";
 import { publishEvent } from "@/server/realtime/events";
+import type { NormalizedPlayerProfile, NormalizedSF6Match } from "@/domain/sf6/types";
 import type { SF6DataProvider } from "@/server/sf6/provider";
 import {
   matchRowToSessionMatch,
@@ -166,8 +167,36 @@ async function endSessionInTx(
     .where(and(eq(gameSession.id, sessionId), eq(gameSession.status, "active")));
 }
 
-/** End the player's active session; final rating = latest known snapshot. Idempotent. */
-export async function endSession(db: Database, playerId: string): Promise<GameSessionRow | null> {
+/**
+ * End the player's active session. Idempotent.
+ *
+ * With a provider, a final fetch runs first so a match finished seconds before "End session"
+ * (i.e. after the last poll) is still counted, and the final rating is fresh. If CFN is down the
+ * session ends anyway with the last known data.
+ */
+export async function endSession(
+  db: Database,
+  playerId: string,
+  provider?: SF6DataProvider,
+): Promise<GameSessionRow | null> {
+  let finalMatches: NormalizedSF6Match[] | null = null;
+  let finalProfile: NormalizedPlayerProfile | null = null;
+  if (provider) {
+    const player = await findPlayerById(db, playerId);
+    if (player) {
+      const [matches, profile] = await Promise.allSettled([
+        provider.getRecentMatches(player.cfnUserId),
+        provider.getPlayerProfile(player.cfnUserId),
+      ]);
+      if (matches.status === "fulfilled") finalMatches = matches.value;
+      if (profile.status === "fulfilled") finalProfile = profile.value;
+      if (matches.status === "rejected" || profile.status === "rejected") {
+        log.warn("session.end_final_fetch_failed", { playerId });
+      }
+    }
+  }
+  const startGraceMs = getEnv().SESSION_START_GRACE_SECONDS * 1000;
+
   const ended = await db.transaction(async (tx) => {
     const [active] = await tx
       .select()
@@ -175,6 +204,10 @@ export async function endSession(db: Database, playerId: string): Promise<GameSe
       .where(and(eq(gameSession.playerId, playerId), eq(gameSession.status, "active")))
       .for("update");
     if (!active) return null;
+    if (finalMatches) {
+      await ingestMatchesInTx(tx, finalMatches, { playerId, sessionId: active.id, startGraceMs });
+    }
+    if (finalProfile) await updatePlayerProfile(tx, playerId, finalProfile);
     const player = await findPlayerById(tx, playerId);
     if (!player) return null;
     await endSessionInTx(tx, active.id, playerRating(player));

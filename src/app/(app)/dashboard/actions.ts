@@ -66,7 +66,7 @@ export async function startSessionAction(): Promise<ActionResult> {
 export async function endSessionAction(): Promise<ActionResult<{ sessionId: string | null }>> {
   const ctx = await authorizedPlayer();
   if (!ctx) return fail(UNAUTHORIZED);
-  const ended = await endSession(getDb(), ctx.player.id);
+  const ended = await endSession(getDb(), ctx.player.id, getSF6DataProvider());
   revalidatePath("/dashboard");
   return ok({ sessionId: ended?.id ?? null });
 }
