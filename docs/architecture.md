@@ -166,7 +166,26 @@ The player's CFN id, display name, main character, rank, LP and MR. For each mat
 mode, result, both characters and the opponent's display name. Opponent CFN ids and raw payloads
 are **not** stored.
 
-## 9b. Internationalization
+## 9a. Visual system (dashboard + overlays)
+
+- **Dashboard tokens** live in `src/app/(app)/globals.css` (`@theme`).
+  - Navy surfaces (`bg`, `surface-0…3`), lines, text (`text`, `muted`, `faint`) and accents:
+    `cyan` for selection/focus, `magenta`/`accent` for the primary action, `heading`, `blue`,
+    `violet`.
+  - Status colors `win`, `loss`, `warn`; motion `--ease-snap`; breakpoint `hud` (1200px).
+- **Component classes:**
+  - `.hud-panel`: notched panel with a clipped frame.
+  - `.hud-heading`: section header with a rule.
+  - `.hud-label`, `.hud-tag` (parallelogram), `.btn-*` (notched buttons with a wipe on hover).
+  - `.hud-tab`: underline tabs.
+  - `.hud-row`: selectable row with a cyan edge and a wipe.
+  - `.live-dot`, `.ratio-bar`, and `.num-change-*` (number-update feedback).
+- **Fonts:** Barlow Condensed for display and numerals, Barlow for body (OFL, via `next/font`).
+- **Overlays** have their own CEF-safe CSS (`components/overlay/overlay.css`). They are composed as
+  continuous HUD graphics, not per-stat boxes: Minimal (lower-third), Competitive (scoreboard) and
+  Street (diagonal blocks, cyan/magenta, halftone).
+- **Not color alone:** up/down is always an arrow glyph plus a sign; results always carry a
+  letter (W/L, V/D).
 
 - **next-intl without i18n routing.** `src/i18n/request.ts` resolves the locale per request:
   account (`auth_user.locale`) → `NEXT_LOCALE` cookie → `es`.

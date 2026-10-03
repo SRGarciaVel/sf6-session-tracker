@@ -20,5 +20,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   oklch()/color-mix()/container queries/:has().
 - No hardcoded user-facing text: add keys to BOTH `src/i18n/messages/es.json` and `en.json` (or
   the `overlay.*.json` catalogs for OBS text) and format numbers/dates via `src/domain/format.ts`.
+- Visual system: use the tokens/classes in `src/app/(app)/globals.css` (`hud-panel`, `hud-heading`,
+  `hud-label`, `hud-tag`, `btn-*`, `hud-row`) — no rounded SaaS cards, no ad-hoc hex colors.
 - Before committing: `pnpm check` (typecheck + lint + tests; integration tests need
   `TEST_DATABASE_URL`) and `pnpm build`. Don't silence errors with ts-ignore/eslint-disable/any.
