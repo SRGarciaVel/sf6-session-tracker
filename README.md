@@ -2,6 +2,7 @@
 
 **Real-time Street Fighter 6 session tracking and OBS overlays powered by a browser companion.**
 
+[![CI](https://github.com/SRGarciaVel/sf6-session-tracker/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SRGarciaVel/sf6-session-tracker/actions/workflows/ci.yml)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-4169E1?logo=postgresql&logoColor=white)
@@ -147,7 +148,7 @@ Full report, threat model and production requirements:
 **Install and run**
 
 ```bash
-git clone <this-repo-url> sf6-session-tracker && cd sf6-session-tracker
+git clone https://github.com/SRGarciaVel/sf6-session-tracker.git && cd sf6-session-tracker
 corepack enable pnpm
 pnpm install
 cp .env.example .env   # then set BETTER_AUTH_SECRET: openssl rand -base64 32

@@ -9,9 +9,8 @@ supported for security fixes other than the `main` branch.
 anything that could expose user data, Capcom/Buckler sessions, companion device tokens or overlay
 URLs.
 
-- **Preferred:** GitHub **private vulnerability reporting** on this repository (Security tab →
-  "Report a vulnerability"), once the maintainer has enabled it.
-  <!-- TODO(maintainer): enable it under Settings → Code security → Private vulnerability reporting. -->
+- **Preferred:** GitHub **private vulnerability reporting** on this repository: go to
+  [Security → Report a vulnerability](https://github.com/SRGarciaVel/sf6-session-tracker/security/advisories/new).
 - **Otherwise:** contact the maintainer privately through the contact options on their GitHub
   profile, and ask for a private channel before sharing details.
 
