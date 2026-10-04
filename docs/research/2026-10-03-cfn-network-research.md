@@ -141,3 +141,42 @@ camuflados, la integración es frágil por definición y debe tratarse como no s
    de modo, rating por partida) sin volver a tocar el sitio.
 4. Comprobar si el 403 depende de la IP: ejecutar `inspect_cfn_network.py` una vez desde la
    red donde correrá el worker. Si da 403, el acceso automatizado no está permitido allí.
+
+## Prueba de navegador persistente (2026-10-04)
+
+Herramienta: `scripts/research/test_persistent_browser.ts`.
+
+```bash
+pnpm research:cfn-browser --login
+pnpm research:cfn-browser --login-plain
+pnpm research:cfn-browser --check
+pnpm research:cfn-browser --check-headless
+```
+
+- **Configuración:**
+  - Chromium 1243 de Playwright (`channel: "chromium"`), con interfaz vía WSLg.
+  - Perfil dedicado `~/.sf6-buckler-browser-profile`, fuera del repo.
+  - Sin stealth, sin flags extra, sin UA propio.
+- **`--login` (Chromium controlado por Playwright):**
+  - La portada de Buckler carga.
+  - El login en `auth.cid.capcom.com` entra en bucle en "Performing security verification":
+    al pulsar "Verify you are human" vuelve a la misma página. La persona no pudo completar
+    el login.
+  - Se detuvo la prueba, sin reintentos ni evasión.
+- **`--check` visible, una sola carga, sin sesión:**
+  - `/profile/1733837998` devuelve `403` con `x-cache: Error from cloudfront`.
+  - Pero el cuerpo es **la aplicación de Buckler**: título "Profile | Buckler's Boot Camp",
+    `__NEXT_DATA__` presente, `buildId` `fd-cwVZtHmfmH_deY-WuZ`, página `/profile/[sid]` y el
+    texto "must log in".
+  - Es el 403 de "requiere login" de la propia app, **no** el bloqueo WAF de 919 B que
+    recibieron headless y `httpx`.
+  - CFN en datos estructurados: no (no hay sesión).
+- **No probados:** `--check-headless` y `play.json`/`battlelog.json` desde el contexto. Se
+  omitieron porque `--check` visible no tuvo sesión válida.
+- **Clasificación: E — SESSION_NOT_VALID.**
+  - El borde deja pasar Chromium visible controlado por Playwright.
+  - Lo que falla es la verificación de seguridad del login de Capcom ID bajo automatización.
+- **Siguiente intento permitido:** `--login-plain`.
+  - Abre el mismo binario y el mismo perfil **sin** Playwright, para que la persona inicie
+    sesión de forma normal.
+  - Después, `--check` una vez.

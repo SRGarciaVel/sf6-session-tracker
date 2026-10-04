@@ -53,3 +53,5 @@ next-env.d.ts
 /debug_output
 __pycache__/
 *.pyc
+# Dedicated research browser profile (normally ~/.sf6-buckler-browser-profile, outside the repo)
+.sf6-buckler-browser-profile/

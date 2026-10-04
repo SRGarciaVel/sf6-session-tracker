@@ -22,7 +22,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
     "provider:check": "tsx scripts/provider-check.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "research:cfn-browser": "tsx scripts/research/test_persistent_browser.ts"
   },
   "dependencies": {
     "better-auth": "^1.7.7",
