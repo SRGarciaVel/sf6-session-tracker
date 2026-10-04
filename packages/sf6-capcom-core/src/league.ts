@@ -10,7 +10,7 @@
  * No other rank number has a label in any captured payload or JS bundle, so they stay null
  * (the raw number is kept as `leagueRankRaw`). Do not complete this table from memory.
  */
-import type { RatingSystem } from "@/domain/sf6/types";
+import type { RatingSystem } from "./types";
 import type { CapcomLeagueInfo } from "./schemas";
 
 /** Rank labels observed verbatim in Capcom payloads. Extend only with captured evidence. */

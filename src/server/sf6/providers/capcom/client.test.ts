@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Logger, LogFields } from "@/server/logger";
 import { normalizedMatchSchema, SF6ProviderError } from "../../provider";
 import { checkProviderOutput } from "../../contract-check";
-import { BuildIdCache, extractBuildId } from "./build-id";
+import { BuildIdCache, extractBuildId } from "@sf6/capcom-core";
 import { CapcomBucklerClient, parseRetryAfter } from "./client";
 import { createCapcomFixtureFetch, DEFAULT_FIXTURE_DIR, FIXTURE_CFN_ID } from "./fixture-fetch";
 import { CapcomSF6DataProvider } from "./index";

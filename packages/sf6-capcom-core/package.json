@@ -1,0 +1,10 @@
+{
+  "name": "@sf6/capcom-core",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Pure Buckler's Boot Camp schemas, parsers and normalizers (no I/O). Consumed via the @sf6/capcom-core tsconfig path alias.",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

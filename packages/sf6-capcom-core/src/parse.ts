@@ -4,17 +4,17 @@
  * Every mapping rule is backed by the captured HAR; see docs/capcom-provider.md.
  */
 import type { z } from "zod";
-import { CHARACTER_KEY_PATTERN } from "@/domain/sf6/rating";
-import type {
-  CharacterRatingProfile,
-  ControlType,
-  MatchMode,
-  MatchResult,
-  NormalizedPlayerProfile,
-  NormalizedSF6Match,
-  RatingPoint,
-} from "@/domain/sf6/types";
-import { SF6ProviderError } from "../../provider";
+import { CapcomPayloadError } from "./errors";
+import {
+  CHARACTER_KEY_PATTERN,
+  type CharacterRatingProfile,
+  type ControlType,
+  type MatchMode,
+  type MatchResult,
+  type NormalizedPlayerProfile,
+  type NormalizedSF6Match,
+  type RatingPoint,
+} from "./types";
 import { mapLeagueInfo, type MappedLeague } from "./league";
 import {
   battlelogPageSchema,
@@ -39,8 +39,7 @@ function describeIssues(error: z.ZodError): string {
 function parseOrThrow<T>(schema: z.ZodType<T>, raw: unknown, what: string): T {
   const parsed = schema.safeParse(raw);
   if (!parsed.success) {
-    throw new SF6ProviderError(
-      "invalid_response",
+    throw new CapcomPayloadError(
       `Capcom ${what} payload is not as expected — ${describeIssues(parsed.error)}`,
     );
   }
@@ -121,8 +120,7 @@ export function normalizeCapcomProfile(
   const warnings: string[] = [];
   const ownId = String(play.fighter_banner_info.personal_info.short_id);
   if (ownId !== options.cfnUserId || String(play.sid) !== options.cfnUserId) {
-    throw new SF6ProviderError(
-      "invalid_response",
+    throw new CapcomPayloadError(
       `Capcom play payload belongs to ${ownId}, expected ${options.cfnUserId}`,
     );
   }

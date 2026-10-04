@@ -20,15 +20,29 @@ import {
   type SF6DataProvider,
 } from "../../provider";
 import { CapcomBucklerClient, type CapcomClientOptions } from "./client";
-import { collectMatchesSince, DEFAULT_MAX_BATTLELOG_PAGES_PER_POLL } from "./pagination";
 import {
+  CapcomPayloadError,
+  collectMatchesSince,
+  DEFAULT_MAX_BATTLELOG_PAGES_PER_POLL,
   normalizeCapcomMatches,
   normalizeCapcomProfile,
   parseCapcomBattlelogPayload,
   parseCapcomPlayPayload,
   type NormalizedCapcomMatches,
   type NormalizedCapcomProfile,
-} from "./parse";
+} from "@sf6/capcom-core";
+
+/** The shared core throws CapcomPayloadError; the server contract speaks SF6ProviderError. */
+function asProviderError<T>(fn: () => T): T {
+  try {
+    return fn();
+  } catch (err) {
+    if (err instanceof CapcomPayloadError) {
+      throw new SF6ProviderError("invalid_response", err.message, { cause: err });
+    }
+    throw err;
+  }
+}
 
 export interface CapcomProviderOptions {
   maxBattlelogPagesPerPoll?: number;
@@ -78,15 +92,16 @@ export class CapcomSF6DataProvider implements SF6DataProvider, MatchHistoryCapab
     options?: ProviderCallOptions,
   ): Promise<NormalizedCapcomProfile> {
     const raw = await this.client.getPlayData(cfnUserId, options?.signal);
-    const result = normalizeCapcomProfile(parseCapcomPlayPayload(raw), { cfnUserId });
+    const result = asProviderError(() =>
+      normalizeCapcomProfile(parseCapcomPlayPayload(raw), { cfnUserId }),
+    );
     this.warn("capcom_profile_warnings", cfnUserId, result.warnings);
     return result;
   }
 
   private async battlelogPage(cfnUserId: string, page: number, signal?: AbortSignal) {
-    const parsed = parseCapcomBattlelogPayload(
-      await this.client.getBattlelogPage(cfnUserId, page, signal),
-    );
+    const raw = await this.client.getBattlelogPage(cfnUserId, page, signal);
+    const parsed = asProviderError(() => parseCapcomBattlelogPayload(raw));
     if (parsed.cfnUserId !== cfnUserId) {
       throw new SF6ProviderError(
         "invalid_response",

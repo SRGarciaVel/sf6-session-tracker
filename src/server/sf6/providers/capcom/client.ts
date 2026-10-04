@@ -14,7 +14,7 @@
  */
 import type { Logger } from "@/server/logger";
 import { SF6ProviderError } from "../../provider";
-import { BuildIdCache, extractBuildId } from "./build-id";
+import { BuildIdCache, extractBuildId } from "@sf6/capcom-core";
 
 export const DEFAULT_CAPCOM_BASE_URL = "https://www.streetfighter.com/6/buckler";
 const USER_AGENT = "sf6-session-tracker (personal stats tool)";

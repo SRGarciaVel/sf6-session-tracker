@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { ratingDelta } from "@/domain/sf6/rating";
-import { normalizedMatchSchema, normalizedProfileSchema, SF6ProviderError } from "../../provider";
-import { mapLeagueInfo } from "./league";
+import { normalizedMatchSchema, normalizedProfileSchema } from "@/server/sf6/provider";
+import { CapcomPayloadError } from "../src/errors";
+import { mapLeagueInfo } from "../src/league";
 import {
   countRoundsWon,
   mapReplayBattleType,
@@ -13,9 +14,9 @@ import {
   resolveMatchPerspective,
   TrackedPlayerNotInReplayError,
   uploadedAtToDate,
-} from "./parse";
-import { replaySchema } from "./schemas";
-import { CFN, cardFixture, playFixture, replaysOf } from "./test-fixtures";
+} from "../src/parse";
+import { replaySchema } from "../src/schemas";
+import { CFN, cardFixture, playFixture, replaysOf } from "./fixtures";
 
 const NOW = new Date("2026-10-04T00:00:00Z");
 const profileOf = (raw: unknown = playFixture()) =>
@@ -155,11 +156,11 @@ describe("Capcom profile (play.json / card)", () => {
       pageProps: { play: { character_league_infos: Record<string, unknown>[] } };
     };
     delete raw.pageProps.play.character_league_infos[3]!.league_info;
-    expect(() => parseCapcomPlayPayload(raw)).toThrowError(SF6ProviderError);
+    expect(() => parseCapcomPlayPayload(raw)).toThrowError(CapcomPayloadError);
     try {
       parseCapcomPlayPayload(raw);
     } catch (err) {
-      expect((err as SF6ProviderError).code).toBe("invalid_response");
+      expect((err as CapcomPayloadError).code).toBe("invalid_response");
       expect((err as Error).message).toContain("character_league_infos.3.league_info");
     }
     expect(() => parseCapcomCardPayload({ sid: CFN })).toThrowError(/card payload/);

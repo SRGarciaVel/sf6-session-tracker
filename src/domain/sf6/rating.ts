@@ -59,4 +59,4 @@ export function toCharacterKey(name: string): CharacterKey {
     .toLowerCase();
 }
 
-export const CHARACTER_KEY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+export { CHARACTER_KEY_PATTERN } from "./types";

@@ -5,7 +5,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { extractBuildId } from "./build-id";
+import { extractBuildId } from "@sf6/capcom-core";
 
 export const FIXTURE_CFN_ID = "1733837998";
 export const DEFAULT_FIXTURE_DIR = join(process.cwd(), "tests", "fixtures", "capcom");

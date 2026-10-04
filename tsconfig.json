@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@sf6/capcom-core": ["./packages/sf6-capcom-core/src/index.ts"],
+      "@sf6/capcom-core/*": ["./packages/sf6-capcom-core/src/*"]
     },
     "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true,

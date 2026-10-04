@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { collectMatchesSince } from "./pagination";
-import { parseCapcomBattlelogPayload, type CapcomBattlelogPage } from "./parse";
-import { battlelogFixture, replaysOf } from "./test-fixtures";
+import { collectMatchesSince } from "../src/pagination";
+import { parseCapcomBattlelogPayload, type CapcomBattlelogPage } from "../src/parse";
+import { battlelogFixture, replaysOf } from "./fixtures";
 
 const realPage = (n: 1 | 2) => parseCapcomBattlelogPayload(battlelogFixture(n));
 const ids = (replays: unknown[]) => replays.map((r) => (r as { replay_id: string }).replay_id);
