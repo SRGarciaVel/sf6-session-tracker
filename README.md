@@ -6,6 +6,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-4169E1?logo=postgresql&logoColor=white)
 ![Status](https://img.shields.io/badge/status-pre--beta-orange)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 SF6 Session Tracker is for players and streamers. You start a session and play Ranked. Your wins,
 losses, win rate, streaks and LP/MR change for each character update on a dashboard and on an
@@ -340,4 +341,4 @@ browser profiles.
 
 ## License
 
-**No license has been chosen yet.** Until one is added, all rights are reserved by the author.
+[MIT](LICENSE) © 2026 Sebastián García.

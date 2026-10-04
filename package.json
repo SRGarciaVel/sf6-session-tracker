@@ -1,6 +1,7 @@
 {
   "name": "sf6-session-tracker",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "dev": "concurrently -k -n web,worker -c magenta,cyan \"pnpm:dev:web\" \"pnpm:dev:worker\"",
