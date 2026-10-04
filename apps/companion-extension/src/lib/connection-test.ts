@@ -37,13 +37,17 @@ export async function runConnectionTest(
       pageLocale: null,
       requestLocale: null,
       signature: null,
+      notes: [],
     };
     results.push(r);
     if (rateLimited) {
       r.failure = "skipped_after_rate_limit";
       continue;
     }
-    const client = new CompanionBucklerClient(makeTransport(kind));
+    const client = new CompanionBucklerClient(makeTransport(kind), {
+      onWarning: (event, fields) =>
+        r.notes.push(`${event}:${String(fields.endpoint)}:${String(fields.status)}`),
+    });
     let step: "buildId" | "play" | "battlelog" = "buildId";
     try {
       const meta = await client.getPageMeta(cfnUserId);

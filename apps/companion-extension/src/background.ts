@@ -36,7 +36,7 @@ let bucklerKind: string | null = null;
 function bucklerFor(kind: Parameters<typeof transportFor>[0] | null) {
   if (!kind) return null;
   if (!buckler || bucklerKind !== kind) {
-    buckler = new CompanionBucklerClient(transportFor(kind));
+    buckler = new CompanionBucklerClient(transportFor(kind), { onWarning: log });
     bucklerKind = kind;
   }
   return buckler;

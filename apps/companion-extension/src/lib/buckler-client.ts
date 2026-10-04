@@ -7,10 +7,16 @@
  * "/en/" was only the locale of that capture. If the page locale is refused as a locale
  * mismatch, `en` (Buckler's default locale) is tried once; nothing else. 403 / 429 /
  * login-required stop immediately.
+ *
+ * Requests carry `x-nextjs-data: 1`, exactly like Buckler's own Next.js router (HAR).
  */
 import {
   BUCKLER_DEFAULT_LOCALE,
+  NEXT_DATA_REQUEST_HEADERS,
   TtlCache,
+  parseCapcomBattlelogPayload,
+  parseCapcomPlayPayload,
+  replaySchema,
   bucklerPaths,
   classifyBucklerFailure,
   describeBucklerResponse,
@@ -45,14 +51,22 @@ export class CompanionBucklerClient {
 
   constructor(
     readonly transport: BucklerTransport,
-    options: { now?: () => number; meta?: TtlCache<BucklerPageMeta> } = {},
+    options: {
+      now?: () => number;
+      meta?: TtlCache<BucklerPageMeta>;
+      /** Safe structured warnings (never bodies). */
+      onWarning?: (event: string, fields: Record<string, unknown>) => void;
+    } = {},
   ) {
     this.meta = options.meta ?? new TtlCache<BucklerPageMeta>(META_TTL_MS, options.now);
+    this.onWarning = options.onWarning ?? (() => undefined);
   }
 
-  private async fetchText(path: string) {
+  private readonly onWarning: (event: string, fields: Record<string, unknown>) => void;
+
+  private async fetchText(path: string, headers?: Record<string, string>) {
     try {
-      return await this.transport.fetchText(path);
+      return await this.transport.fetchText(path, headers);
     } catch (err) {
       if (err instanceof NoBucklerTabError) throw new BucklerError("no_tab", null, err.message);
       throw new BucklerError("unavailable", null, err instanceof Error ? err.message : String(err));
@@ -87,21 +101,54 @@ export class CompanionBucklerClient {
     return (await this.getPageMeta(cfnId)).buildId;
   }
 
+  /**
+   * Fetch + structurally validate a `_next/data` endpoint.
+   *
+   * Acceptance rule: 200 → must pass the endpoint schema. 400 → accepted ONLY if the body passes
+   * the same schema (logged as buckler_non_200_valid_payload); otherwise classified. 401 / 403 /
+   * 429 / 5xx and every other status are never accepted, whatever the body.
+   */
   private async nextData(
     cfnId: string,
+    endpoint: "play" | "battlelog",
     pathFor: (buildId: string, locale: string) => string,
+    isValid: (data: unknown) => boolean,
   ): Promise<unknown> {
     let staleRetried = false;
     let localeOverride: string | null = null;
     for (;;) {
       const meta = await this.getPageMeta(cfnId);
       const locale: string = localeOverride ?? meta.locale;
-      const res = await this.fetchText(pathFor(meta.buildId, locale));
+      const res = await this.fetchText(pathFor(meta.buildId, locale), {
+        ...NEXT_DATA_REQUEST_HEADERS,
+      });
       const sig = describeBucklerResponse(res.status, res.contentType, res.text);
-      if (res.status === 200 && sig.json && sig.redirectPath === null) {
-        this.effectiveLocale = locale;
-        return JSON.parse(res.text) as unknown;
+
+      if ((res.status === 200 || res.status === 400) && sig.json && sig.redirectPath === null) {
+        const data = JSON.parse(res.text) as unknown;
+        if (isValid(data)) {
+          if (res.status !== 200) {
+            this.onWarning("buckler_non_200_valid_payload", {
+              status: res.status,
+              endpoint,
+              transport: this.transport.kind,
+              locale,
+            });
+          }
+          this.effectiveLocale = locale;
+          return data;
+        }
+        if (res.status === 200) {
+          throw new BucklerError(
+            "invalid_response",
+            200,
+            `${endpoint}: 200 but the payload does not match the schema`,
+            sig,
+            locale,
+          );
+        }
       }
+
       const failure = classifyBucklerFailure(sig, {
         requestedLocale: locale,
         pageLocale: meta.locale,
@@ -130,10 +177,37 @@ export class CompanionBucklerClient {
   }
 
   getPlay(cfnId: string): Promise<unknown> {
-    return this.nextData(cfnId, (b, l) => bucklerPaths.play(b, cfnId, l));
+    return this.nextData(
+      cfnId,
+      "play",
+      (b, l) => bucklerPaths.play(b, cfnId, l),
+      (data) => {
+        try {
+          return String(parseCapcomPlayPayload(data).sid) === cfnId;
+        } catch {
+          return false;
+        }
+      },
+    );
   }
 
   getBattlelogPage(cfnId: string, page: number): Promise<unknown> {
-    return this.nextData(cfnId, (b, l) => bucklerPaths.battlelog(b, cfnId, page, l));
+    return this.nextData(
+      cfnId,
+      "battlelog",
+      (b, l) => bucklerPaths.battlelog(b, cfnId, page, l),
+      (data) => {
+        try {
+          const parsed = parseCapcomBattlelogPayload(data);
+          // Envelope + every replay must match the schema (no silently empty "success").
+          return (
+            parsed.cfnUserId === cfnId &&
+            parsed.replays.every((r) => replaySchema.safeParse(r).success)
+          );
+        } catch {
+          return false;
+        }
+      },
+    );
   }
 }

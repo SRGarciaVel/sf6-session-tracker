@@ -58,6 +58,13 @@ export const bucklerPaths = {
   },
 };
 
+/**
+ * Headers Buckler's own Next.js router sends with every `_next/data` fetch (HAR: play.json and
+ * battlelog.json were requested with `x-nextjs-data: 1`; every other header was browser-generated).
+ * It is Next.js' data-request protocol header, not an identity header.
+ */
+export const NEXT_DATA_REQUEST_HEADERS: Readonly<Record<string, string>> = { "x-nextjs-data": "1" };
+
 /* ───────── Next.js page metadata ───────── */
 
 export interface BucklerPageMeta {
@@ -137,6 +144,12 @@ export interface BucklerResponseSignature {
   /** Top-level JSON keys / pageProps keys (names only). */
   keys: string[];
   pagePropsKeys: string[];
+  /** Serialized size of each pageProps entry (bytes) — tells an empty `play` from a real one. */
+  pagePropsSizes: Record<string, number>;
+  /** Key NAMES inside object-valued pageProps entries (e.g. play, fighter_banner_info). */
+  nestedKeys: Record<string, string[]>;
+  /** Numeric/boolean values of code-like keys (…code, …status, …result, error…) at depth ≤ 2. */
+  codes: Record<string, number | boolean>;
   /** Path of a Next.js gSSP redirect (`pageProps.__N_REDIRECT`), query stripped. */
   redirectPath: string | null;
   /** HTML: does it carry Buckler's own __NEXT_DATA__ (app page) and which Next page. */
@@ -158,6 +171,9 @@ export function describeBucklerResponse(
     json: false,
     keys: [],
     pagePropsKeys: [],
+    pagePropsSizes: {},
+    nestedKeys: {},
+    codes: {},
     redirectPath: null,
     hasNextData: false,
     nextPage: null,
@@ -175,6 +191,14 @@ export function describeBucklerResponse(
         sig.pagePropsKeys = Object.keys(p).slice(0, 16);
         if (typeof p.__N_REDIRECT === "string")
           sig.redirectPath = p.__N_REDIRECT.split("?")[0] ?? null;
+        for (const [k, v] of Object.entries(p)) {
+          if (k === "__namespaces") continue;
+          sig.pagePropsSizes[k] = JSON.stringify(v ?? null).length;
+          if (v && typeof v === "object" && !Array.isArray(v)) {
+            sig.nestedKeys[k] = Object.keys(v).slice(0, 12);
+          }
+        }
+        collectCodes(p, "pageProps", 0, sig.codes);
       }
     }
   } catch {
@@ -188,6 +212,24 @@ export function describeBucklerResponse(
     sig.title = title?.[1]?.trim().slice(0, 80) ?? null;
   }
   return sig;
+}
+
+const CODE_KEY = /(^|_)(code|status|result|error|err)(_|$)|^(error|code|status|result)/i;
+
+function collectCodes(
+  obj: Record<string, unknown>,
+  path: string,
+  depth: number,
+  out: Record<string, number | boolean>,
+): void {
+  for (const [k, v] of Object.entries(obj)) {
+    if (k === "__namespaces" || Object.keys(out).length >= 12) continue;
+    if ((typeof v === "number" || typeof v === "boolean") && CODE_KEY.test(k)) {
+      out[`${path}.${k}`] = v;
+    } else if (v && typeof v === "object" && !Array.isArray(v) && depth < 2) {
+      collectCodes(v as Record<string, unknown>, `${path}.${k}`, depth + 1, out);
+    }
+  }
 }
 
 const LOGIN_PATH = /auth|login|signin|sign-in/i;

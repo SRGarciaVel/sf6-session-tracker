@@ -71,6 +71,7 @@ function render(s: PublicStatus) {
           (r.failure ? ` — ${r.failure}${r.status ? ` ${r.status}` : ""}` : "") +
           (r.characters !== null ? ` · ${r.characters} chars` : "") +
           (r.replays !== null ? ` · ${r.replays} replays` : "") +
+          (r.notes?.length ? ` · ${r.notes.join(" ")}` : "") +
           (r.pageLocale
             ? ` · locale ${r.pageLocale}${r.requestLocale && r.requestLocale !== r.pageLocale ? `→${r.requestLocale}` : ""}`
             : "") +
@@ -78,6 +79,19 @@ function render(s: PublicStatus) {
             ? `\n    ↳ ${r.signature.contentType ?? "?"} ${r.signature.bytes}B` +
               (r.signature.json
                 ? ` keys[${r.signature.keys.join(",")}] pageProps[${r.signature.pagePropsKeys.join(",")}]`
+                : "") +
+              (Object.keys(r.signature.pagePropsSizes ?? {}).length
+                ? `\n    ↳ sizes ${Object.entries(r.signature.pagePropsSizes)
+                    .map(([k, v]) => `${k}=${v}`)
+                    .join(" ")}`
+                : "") +
+              (r.signature.nestedKeys?.play
+                ? `\n    ↳ play[${r.signature.nestedKeys.play.join(",")}]`
+                : "") +
+              (Object.keys(r.signature.codes ?? {}).length
+                ? `\n    ↳ codes ${Object.entries(r.signature.codes)
+                    .map(([k, v]) => `${k}=${String(v)}`)
+                    .join(" ")}`
                 : "") +
               (r.signature.redirectPath ? ` redirect ${r.signature.redirectPath}` : "") +
               (r.signature.hasNextData ? ` app-page ${r.signature.nextPage ?? ""}` : "") +

@@ -27,8 +27,8 @@ export interface PageMetaRaw {
 
 export interface BucklerTransport {
   readonly kind: CompanionTransportKind;
-  /** GET a same-origin Buckler path ("/6/buckler/..."). */
-  fetchText(path: string): Promise<RawResponse>;
+  /** GET a same-origin Buckler path ("/6/buckler/..."), optionally with request headers. */
+  fetchText(path: string, headers?: Record<string, string>): Promise<RawResponse>;
   /**
    * Next.js metadata of the OPEN Buckler page, without a request (tab transports): only
    * {buildId, locale, defaultLocale, locales} + location.pathname — never the full __NEXT_DATA__.
@@ -46,8 +46,9 @@ export class NoBucklerTabError extends Error {
 export function serviceWorkerTransport(fetchImpl: typeof fetch = fetch): BucklerTransport {
   return {
     kind: "service_worker",
-    async fetchText(path) {
+    async fetchText(path, headers = {}) {
       const res = await fetchImpl(`${BUCKLER_ORIGIN}${path}`, {
+        headers,
         credentials: "include",
         cache: "no-store",
       });
@@ -63,8 +64,8 @@ export function serviceWorkerTransport(fetchImpl: typeof fetch = fetch): Buckler
 /* Injected functions: serialized by chrome.scripting, so they must be self-contained. They
    only fetch the requested same-origin path / read the buildId; no document.cookie, no storage. */
 
-async function pageFetchText(path: string): Promise<RawResponse> {
-  const res = await fetch(path, { credentials: "same-origin", cache: "no-store" });
+async function pageFetchText(path: string, headers: Record<string, string>): Promise<RawResponse> {
+  const res = await fetch(path, { headers, credentials: "same-origin", cache: "no-store" });
   return {
     status: res.status,
     contentType: res.headers.get("content-type"),
@@ -126,8 +127,8 @@ export function tabTransport(
   };
   return {
     kind: world === "MAIN" ? "main_tab" : "isolated_tab",
-    async fetchText(path) {
-      const result = await api.execute(await tabId(), world, pageFetchText, [path]);
+    async fetchText(path, headers = {}) {
+      const result = await api.execute(await tabId(), world, pageFetchText, [path, headers]);
       if (!result) throw new Error("injected fetch returned nothing");
       return result;
     },

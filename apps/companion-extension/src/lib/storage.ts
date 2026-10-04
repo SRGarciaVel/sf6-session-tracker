@@ -32,6 +32,8 @@ export interface TransportTestResult {
   requestLocale: string | null;
   /** Safe description of the failing answer: status, content type, key NAMES — never values. */
   signature: BucklerResponseSignature | null;
+  /** Safe warnings during the test (e.g. buckler_non_200_valid_payload:play:400). */
+  notes: string[];
 }
 
 export interface ConnectionTestReport {

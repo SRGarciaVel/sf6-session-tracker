@@ -289,6 +289,33 @@ pnpm companion:build
 - **Fixtures:** `profile-1733837998-es-es.html` es **derivado** de la captura en inglés (solo
   cambia `__NEXT_DATA__.locale`), no es una captura real.
 
+## 10c. Respuestas 400 de `_next/data` (prueba real, 2026-10-04)
+
+- **Lo observado:** en Chrome con sesión iniciada, `play.json` respondió **400** con JSON que
+  tiene la forma de página de Buckler:
+  - `keys[pageProps,__N_SSP]`;
+  - `pageProps[fighter_banner_info, play, sid, …, __namespaces]`.
+- **Medido con el HAR:** las partes fijas del `pageProps` (traducciones ~18,9 KB, banner ~2,9 KB,
+  listas) suman ~22,9 KB.
+  - El 400 pesó 23.174 B en `en`, así que `play` ocupa unos **260 B**, frente a 242 KB en un
+    `play.json` real.
+  - Es decir: el 400 trae el "envoltorio" de la página pero **no los datos**.
+- **Causa del 400:** sin confirmar. No hay evidencia de por qué Buckler responde así.
+  - Única diferencia de aplicación entre nuestra petición y la del propio sitio (HAR): el router
+    de Next.js de Buckler envía `x-nextjs-data: 1` y el companion no lo hacía. Las demás
+    cabeceras las pone el navegador.
+  - Ahora se envía en todo `_next/data`. Es la cabecera del protocolo de datos de Next.js, no una
+    cabecera de identidad; el cliente de servidor ya la usaba.
+  - Si con ella sigue el 400, la firma del test mostrará las claves y los tamaños dentro de `play`
+    y los códigos numéricos.
+- **Regla de aceptación:**
+  - 200 → debe pasar el esquema del endpoint;
+  - 400 → se acepta **solo** si pasa el mismo esquema (`play`: `character_league_infos` válidos y
+    `sid` = CFN; `battlelog`: sobre válido, `sid` = CFN y **todos** los replays válidos), y se
+    registra `buckler_non_200_valid_payload` (estado, endpoint, transporte, locale; nunca el
+    body);
+  - 401, 403, 404, 429, 3xx y 5xx → nunca se aceptan, sea cual sea el body.
+
 ## 11. Probar la conexión con Buckler
 
 1. Inicia sesión en Buckler's Boot Camp **a mano** en ese mismo navegador.
