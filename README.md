@@ -48,25 +48,27 @@ Seeded demo login: `demo@sf6.local` / `demo-password-123`.
 
 All variables are validated at startup by `src/server/env.ts`. Defaults are in `.env.example`.
 
-| Variable                                             | Default                 | Purpose                                                                                                |
-| ---------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------ |
-| `DATABASE_URL`                                       | —                       | Postgres connection string (**required**)                                                              |
-| `TEST_DATABASE_URL`                                  | —                       | Database for integration tests. They are skipped if unset.                                             |
-| `APP_URL`                                            | `http://localhost:3000` | Public base URL, used for overlay URLs and auth origin checks                                          |
-| `BETTER_AUTH_SECRET`                                 | —                       | ≥ 32 random chars (**required**, keep secret)                                                          |
-| `TRUST_PROXY`                                        | `false`                 | Trust `X-Forwarded-For` for rate limiting. **Set `true` on Railway/Fly/Render.**                       |
-| `SF6_PROVIDER`                                       | `mock`                  | `mock` (simulated), `companion` (real data via the browser extension) or `capcom` (server prototype)   |
-| `PROVIDER_TIMEOUT_MS`                                | `10000`                 | Per-request timeout for the provider                                                                   |
-| `PROVIDER_CACHE_TTL_MS`                              | `5000`                  | Profile lookup cache (match lists are never cached)                                                    |
-| `ENABLE_DEV_TOOLS`                                   | `false`                 | Mock-match tools in the dashboard. Only active when `NODE_ENV≠production` **and** `SF6_PROVIDER=mock`. |
-| `TRACKER_POLL_INTERVAL_MS`                           | `20000`                 | Poll interval during an active session                                                                 |
-| `TRACKER_POLL_JITTER_MS`                             | `3000`                  | ± random jitter per poll                                                                               |
-| `TRACKER_BACKOFF_BASE_MS` / `TRACKER_BACKOFF_MAX_MS` | `30000` / `300000`      | Exponential backoff on provider errors                                                                 |
-| `TRACKER_PROFILE_REFRESH_MS`                         | `300000`                | Profile (MR/LP/rank) refresh when no new matches                                                       |
-| `TRACKER_LEASE_MS`                                   | `60000`                 | Worker lease. A crashed worker's players are taken over after this.                                    |
-| `WORKER_TICK_MS` / `WORKER_CONCURRENCY`              | `1000` / `10`           | Scheduler tick and max parallel polls per worker                                                       |
-| `SESSION_START_GRACE_SECONDS`                        | `0`                     | Count matches finished up to N s before "Start session"                                                |
-| `LOG_LEVEL`                                          | `info`                  | `debug` · `info` · `warn` · `error`                                                                    |
+| Variable                                             | Default                                  | Purpose                                                                                                |
+| ---------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`                                       | —                                        | Postgres connection string (**required**)                                                              |
+| `TEST_DATABASE_URL`                                  | —                                        | Database for integration tests. They are skipped if unset.                                             |
+| `APP_URL`                                            | `http://localhost:3000`                  | Public base URL, used for overlay URLs and auth origin checks                                          |
+| `BETTER_AUTH_SECRET`                                 | —                                        | ≥ 32 random chars (**required**, keep secret)                                                          |
+| `TRUST_PROXY`                                        | `false`                                  | Trust `X-Forwarded-For` for rate limiting. **Set `true` on Railway/Fly/Render.**                       |
+| `SF6_PROVIDER`                                       | `mock`                                   | `mock` (simulated), `companion` (real data via the browser extension) or `capcom` (server prototype)   |
+| `PROVIDER_TIMEOUT_MS`                                | `10000`                                  | Per-request timeout for the provider                                                                   |
+| `PROVIDER_CACHE_TTL_MS`                              | `5000`                                   | Profile lookup cache (match lists are never cached)                                                    |
+| `RATE_LIMIT_STORE`                                   | `memory` (dev) / `postgres` (production) | Where rate-limit counters live. `postgres` is shared by every instance (see docs/security-audit.md).   |
+| `CLIENT_IP_HEADER`                                   | `x-forwarded-for`                        | Client IP header set by your proxy (read only with `TRUST_PROXY=true`; rightmost entry).               |
+| `ENABLE_DEV_TOOLS`                                   | `false`                                  | Mock-match tools in the dashboard. Only active when `NODE_ENV≠production` **and** `SF6_PROVIDER=mock`. |
+| `TRACKER_POLL_INTERVAL_MS`                           | `20000`                                  | Poll interval during an active session                                                                 |
+| `TRACKER_POLL_JITTER_MS`                             | `3000`                                   | ± random jitter per poll                                                                               |
+| `TRACKER_BACKOFF_BASE_MS` / `TRACKER_BACKOFF_MAX_MS` | `30000` / `300000`                       | Exponential backoff on provider errors                                                                 |
+| `TRACKER_PROFILE_REFRESH_MS`                         | `300000`                                 | Profile (MR/LP/rank) refresh when no new matches                                                       |
+| `TRACKER_LEASE_MS`                                   | `60000`                                  | Worker lease. A crashed worker's players are taken over after this.                                    |
+| `WORKER_TICK_MS` / `WORKER_CONCURRENCY`              | `1000` / `10`                            | Scheduler tick and max parallel polls per worker                                                       |
+| `SESSION_START_GRACE_SECONDS`                        | `0`                                      | Count matches finished up to N s before "Start session"                                                |
+| `LOG_LEVEL`                                          | `info`                                   | `debug` · `info` · `warn` · `error`                                                                    |
 
 Secrets are only read on the server. Nothing is exposed through `NEXT_PUBLIC_*`.
 
