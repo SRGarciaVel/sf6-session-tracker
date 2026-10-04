@@ -1,355 +1,343 @@
 # SF6 Session Tracker
 
-Automatic **Street Fighter 6** session stats for OBS. The streamer enters their CFN User ID, starts
-a session and adds one Browser Source URL. Wins, losses, win rate, MR/LP delta, rank and streaks
-then update on stream after every ranked match, with no hotkeys and no manual counters.
+**Real-time Street Fighter 6 session tracking and OBS overlays powered by a browser companion.**
 
-```
-Login → CFN User ID → Start session → Copy overlay URL → OBS Browser Source → play
-```
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-4169E1?logo=postgresql&logoColor=white)
+![Status](https://img.shields.io/badge/status-pre--beta-orange)
 
-- **Server-authoritative sessions.** The baseline is stored in Postgres. Refreshing OBS, switching
-  scenes, closing OBS or restarting the PC never resets the score.
-- **One tracker per player**, independent of OBS. Ten open overlays still mean one CFN request per
-  poll.
-- **Exactly-once effect.** A match counts once, even if it is fetched 100 times or arrives out of
-  order.
-- **Live updates over SSE.** The overlay changes without reloading, and every message is the full
-  authoritative state.
-- **Three overlay themes** (Minimal, Competitive, Fighter) and a visual builder with live preview.
-  The OBS URL stays stable when the design changes.
+SF6 Session Tracker is for players and streamers. You start a session and play Ranked. Your wins,
+losses, win rate, streaks and LP/MR change for each character update on a dashboard and on an
+OBS overlay, with no hotkeys or manual counters.
 
-Architecture and design decisions are in **[docs/architecture.md](docs/architecture.md)**.
+Match data comes from **Buckler's Boot Camp**. A small Chromium extension, the **SF6 Session
+Companion**, reads it inside your own logged-in browser. Your Capcom credentials and cookies never
+reach the server.
+
+> This project is not affiliated with or endorsed by Capcom. Street Fighter is a trademark of
+> Capcom Co., Ltd.
 
 ---
 
-## Requirements
+## Contents
 
-- Node.js **22.12+** (`.nvmrc`)
-- pnpm **12** (`corepack enable pnpm`)
-- PostgreSQL **15+** (Docker Compose file included)
-- OBS Studio **31+** recommended (any recent Chromium-based Browser Source works)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Privacy](#privacy)
+- [Security](#security)
+- [Quick start](#quick-start)
+- [Environment variables](#environment-variables)
+- [SF6 Session Companion](#sf6-session-companion)
+- [OBS setup](#obs-setup)
+- [Development commands](#development-commands)
+- [Project status](#project-status)
+- [Known limitations](#known-limitations)
+- [Repository structure](#repository-structure)
+- [Documentation](#documentation)
+- [Contributing](#contributing) · [License](#license)
 
-## Installation
+## Features
 
-```bash
-corepack enable pnpm
-pnpm install
-cp .env.example .env          # then set BETTER_AUTH_SECRET (openssl rand -base64 32)
-docker compose up -d          # Postgres on localhost:5433 (+ sf6_tracker_test DB)
-pnpm db:migrate
-pnpm db:seed                  # optional demo data
-pnpm dev                      # web (http://localhost:3000) + tracking worker
+**Sessions and stats**
+
+- Session-based tracking: **Start session** takes a baseline. Every later match counts only once,
+  even if it is fetched again or arrives out of order.
+- Wins, losses, win rate, current and best streak, recent form and session duration.
+- **Multi-character ratings.** LP/MR belong to each character. Each character has its own session
+  baseline, and the app never subtracts one character's rating from another's or LP from MR.
+- The rank and the active character (the last one played) are shown automatically.
+- Session history with a recap page per session.
+
+**Data pipeline**
+
+- Automatic ingestion from Buckler through the companion. Profile and battlelog are normalized
+  in the browser by the same code the server uses.
+- Duplicate protection keyed on the replay id, enforced by a unique index in the database.
+- Recovery after a pause or restart: the companion walks back the battlelog until it finds a
+  match the tracker already knows. A possible gap is reported, never hidden.
+- The backend is authoritative for sessions, W/L, baselines, deltas and deduplication.
+
+**Streaming**
+
+- OBS Browser Source overlay with three themes (Minimal, Competitive, Street) and a visual
+  builder with live preview.
+- Persistent overlay URL: design changes apply live and the URL stays the same.
+- Realtime updates over **SSE**. A reload or scene change never resets the stats.
+- Spanish and English for both the dashboard and the overlay, set independently.
+
+**In beta:** the SF6 Session Companion (Chromium only) and the whole live-data pipeline. See
+[Project status](#project-status).
+
+## Architecture
+
+```mermaid
+flowchart TD
+    B["Buckler's Boot Camp<br/>(Capcom)"] -->|"read in the user's browser<br/>with their normal session"| C["SF6 Session Companion<br/>Chromium MV3 extension"]
+    C -->|"normalized profile + matches<br/>Bearer device token"| API["Next.js API<br/>/api/companion/*"]
+    API --> DB[("PostgreSQL")]
+    W["Worker<br/>Session Engine"] <--> DB
+    DB -->|"LISTEN / NOTIFY"| SSE["SSE hub"]
+    SSE --> D["Dashboard"]
+    SSE --> O["OBS overlay"]
 ```
 
-Seeded demo login: `demo@sf6.local` / `demo-password-123`.
+- **Buckler is queried in the browser**, not by the server. Server-side access is blocked
+  (CloudFront 403, and Capcom's login verification fails under automation). See
+  [docs/research](docs/research/2026-10-03-cfn-network-research.md).
+- **Capcom cookies never reach the backend.** The extension sends normalized data only.
+- **The backend is authoritative.** Ingestion deduplicates and assigns matches to sessions under
+  a database lock. The pure **Session Engine** (`src/domain/session`) computes the stats.
+- **The worker** keeps tracking state and profile snapshots up to date. Multiple workers
+  coordinate through database leases.
+- **OBS never talks to Capcom** or to the extension. It reads the authoritative state from the
+  server over SSE.
+
+More detail: [docs/architecture.md](docs/architecture.md) and [docs/companion.md](docs/companion.md).
+
+## Privacy
+
+The companion **does not transmit** your Capcom password, your Buckler cookies or any Capcom
+session token.
+
+It sends only the normalized data the tracker needs:
+
+- your CFN id and fighter name;
+- per-character rank, LP and MR;
+- for each match: replay id, time, mode and result, your character, and your opponent's display
+  name, character and rank.
+
+Payloads are built from an allow-list. A guard blocks credential-like keys on the client, and the
+server rejects them.
+
+What is stored and for how long is listed in
+[docs/security-audit.md § Privacy](docs/security-audit.md#sec-015--privacidad-y-retención-low-accepted-documentado).
+Account deletion and data retention policies are **not implemented yet**.
+
+## Security
+
+- **Companion pairing:** one-time code, valid for 10 minutes, exchanged for a device token.
+- **Device tokens:** 256-bit, stored as SHA-256 only, revocable from the dashboard and the
+  extension, and revoked automatically after 90 days unused.
+- **Strict validation:** server-side schemas, unknown top-level keys rejected, and limits on body
+  size (enforced while streaming), match count and timestamps.
+- **Rate limiting:** shared across instances (Postgres) in production, for auth and app
+  endpoints.
+- **Ownership checks on every resource.** Companion data is scoped per account, so one account can
+  never feed another's sessions.
+- **Overlay URLs:** read-only, 192-bit tokens, rotatable; `no-referrer`, `noindex` and
+  `no-store`.
+- **Headers:** CSP per surface (the app cannot be framed; the overlay can be embedded), HSTS on
+  https.
+
+Full report, threat model and production requirements:
+[docs/security-audit.md](docs/security-audit.md). To report a vulnerability, see
+[SECURITY.md](.github/SECURITY.md).
+
+## Quick start
+
+**Requirements**
+
+- Node.js **≥ 22.12** (`.nvmrc`: 22)
+- pnpm **12** (`corepack enable pnpm`)
+- PostgreSQL **15+** (a Docker Compose file is included)
+- A Chromium-based browser (Chrome, Edge or Brave) for the companion
+
+**Install and run**
+
+```bash
+git clone <this-repo-url> sf6-session-tracker && cd sf6-session-tracker
+corepack enable pnpm
+pnpm install
+cp .env.example .env   # then set BETTER_AUTH_SECRET: openssl rand -base64 32
+docker compose up -d   # Postgres on localhost:5433, plus the sf6_tracker_test database
+pnpm db:migrate
+pnpm dev               # web on http://localhost:3000 + tracking worker
+```
+
+**Try it without Buckler:** keep `SF6_PROVIDER=mock` and `ENABLE_DEV_TOOLS=true`, then run
+`pnpm db:seed` (login `demo@sf6.local` / `demo-password-123`, a fake CFN). The dashboard shows a
+**Dev tools** panel that simulates matches through the real pipeline.
+
+**Real data:** set `SF6_PROVIDER=companion` and follow
+[SF6 Session Companion](#sf6-session-companion).
 
 ## Environment variables
 
-All variables are validated at startup by `src/server/env.ts`. Defaults are in `.env.example`.
+All variables are validated at startup (`src/server/env.ts`). `.env.example` has working local
+defaults. Never commit real values.
 
-| Variable                                             | Default                                  | Purpose                                                                                                |
-| ---------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `DATABASE_URL`                                       | —                                        | Postgres connection string (**required**)                                                              |
-| `TEST_DATABASE_URL`                                  | —                                        | Database for integration tests. They are skipped if unset.                                             |
-| `APP_URL`                                            | `http://localhost:3000`                  | Public base URL, used for overlay URLs and auth origin checks                                          |
-| `BETTER_AUTH_SECRET`                                 | —                                        | ≥ 32 random chars (**required**, keep secret)                                                          |
-| `TRUST_PROXY`                                        | `false`                                  | Trust `X-Forwarded-For` for rate limiting. **Set `true` on Railway/Fly/Render.**                       |
-| `SF6_PROVIDER`                                       | `mock`                                   | `mock` (simulated), `companion` (real data via the browser extension) or `capcom` (server prototype)   |
-| `PROVIDER_TIMEOUT_MS`                                | `10000`                                  | Per-request timeout for the provider                                                                   |
-| `PROVIDER_CACHE_TTL_MS`                              | `5000`                                   | Profile lookup cache (match lists are never cached)                                                    |
-| `RATE_LIMIT_STORE`                                   | `memory` (dev) / `postgres` (production) | Where rate-limit counters live. `postgres` is shared by every instance (see docs/security-audit.md).   |
-| `CLIENT_IP_HEADER`                                   | `x-forwarded-for`                        | Client IP header set by your proxy (read only with `TRUST_PROXY=true`; rightmost entry).               |
-| `ENABLE_DEV_TOOLS`                                   | `false`                                  | Mock-match tools in the dashboard. Only active when `NODE_ENV≠production` **and** `SF6_PROVIDER=mock`. |
-| `TRACKER_POLL_INTERVAL_MS`                           | `20000`                                  | Poll interval during an active session                                                                 |
-| `TRACKER_POLL_JITTER_MS`                             | `3000`                                   | ± random jitter per poll                                                                               |
-| `TRACKER_BACKOFF_BASE_MS` / `TRACKER_BACKOFF_MAX_MS` | `30000` / `300000`                       | Exponential backoff on provider errors                                                                 |
-| `TRACKER_PROFILE_REFRESH_MS`                         | `300000`                                 | Profile (MR/LP/rank) refresh when no new matches                                                       |
-| `TRACKER_LEASE_MS`                                   | `60000`                                  | Worker lease. A crashed worker's players are taken over after this.                                    |
-| `WORKER_TICK_MS` / `WORKER_CONCURRENCY`              | `1000` / `10`                            | Scheduler tick and max parallel polls per worker                                                       |
-| `SESSION_START_GRACE_SECONDS`                        | `0`                                      | Count matches finished up to N s before "Start session"                                                |
-| `LOG_LEVEL`                                          | `info`                                   | `debug` · `info` · `warn` · `error`                                                                    |
+**Required**
 
-Secrets are only read on the server. Nothing is exposed through `NEXT_PUBLIC_*`.
+| Variable             | Purpose                                                                                                                    |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`       | Postgres connection string                                                                                                 |
+| `BETTER_AUTH_SECRET` | ≥ 32 random characters. The `.env.example` placeholder is rejected in production                                           |
+| `APP_URL`            | Public base URL (overlay URLs, auth origin checks)                                                                         |
+| `SF6_PROVIDER`       | `mock` (simulated), `companion` (real data through the extension) or `capcom` (server prototype, not usable in production) |
 
-## Database setup
+**Optional / configuration**
 
-```bash
-docker compose up -d       # or point DATABASE_URL at any Postgres
-pnpm db:migrate            # applies SQL migrations in ./drizzle
-pnpm db:generate           # after editing src/server/db/schema.ts → new migration
-pnpm db:studio             # browse data
-```
+| Variable                                                                                                                                                    | Purpose                                                                                |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `TEST_DATABASE_URL`                                                                                                                                         | Database for integration tests (skipped when unset)                                    |
+| `TRUST_PROXY`, `CLIENT_IP_HEADER`                                                                                                                           | Client IP from your proxy's header (rightmost entry); required behind a proxy          |
+| `RATE_LIMIT_STORE`                                                                                                                                          | `memory` (dev default) or `postgres` (production default, shared by instances)         |
+| `PROVIDER_TIMEOUT_MS`, `PROVIDER_CACHE_TTL_MS`                                                                                                              | Provider timeout and profile cache                                                     |
+| `COMPANION_SNAPSHOT_MAX_AGE_MS`                                                                                                                             | Maximum age of companion data to start or end a session                                |
+| `TRACKER_POLL_INTERVAL_MS`, `TRACKER_POLL_JITTER_MS`, `TRACKER_BACKOFF_BASE_MS`, `TRACKER_BACKOFF_MAX_MS`, `TRACKER_PROFILE_REFRESH_MS`, `TRACKER_LEASE_MS` | Worker cadence, backoff and leases                                                     |
+| `WORKER_TICK_MS`, `WORKER_CONCURRENCY`                                                                                                                      | Worker scheduler                                                                       |
+| `SESSION_START_GRACE_SECONDS`                                                                                                                               | Count matches finished up to N s before "Start session"                                |
+| `ENABLE_DEV_TOOLS`                                                                                                                                          | Mock-match tools (only with `SF6_PROVIDER=mock`, never in production)                  |
+| `LOG_LEVEL`                                                                                                                                                 | `debug` · `info` · `warn` · `error`                                                    |
+| `CAPCOM_*`                                                                                                                                                  | Server-side Capcom prototype only ([docs/capcom-provider.md](docs/capcom-provider.md)) |
 
-Key constraints:
+Secrets are read on the server only. Nothing uses `NEXT_PUBLIC_*`. The extension build reads
+`COMPANION_TRACKER_ORIGINS`, a public list of allowed tracker origins.
 
-- `match (player_id, external_match_id)` is unique and backs deduplication.
-- A partial unique index on `game_session (player_id) WHERE status = 'active'` allows only one
-  active session per player.
+## SF6 Session Companion
 
-## Development
-
-| Command                       | What it does                                                  |
-| ----------------------------- | ------------------------------------------------------------- |
-| `pnpm dev`                    | Next.js dev server **and** tracking worker (auto-reload)      |
-| `pnpm dev:web` / `dev:worker` | Run them separately                                           |
-| `pnpm check`                  | typecheck + lint + tests                                      |
-| `pnpm format`                 | Prettier                                                      |
-| `pnpm build`                  | Production build: Next.js + worker bundle (`dist/worker.mjs`) |
-| `pnpm provider:check <cfnId>` | Call the configured provider and validate its output          |
-
-**Trying it without CFN.** With `SF6_PROVIDER=mock` and `ENABLE_DEV_TOOLS=true`, the dashboard
-shows a **Dev tools** panel. It creates matches in a fake CFN: win, loss, casual (filtered), an
-out-of-order late match, and a 60 s CFN outage. The worker detects them through the real pipeline,
-and every open overlay updates without reloading. In mock mode any 6–12 digit CFN id exists, and
-ids starting with `000` return "not found".
-
-## Tests
+A Manifest V3 extension (`apps/companion-extension`) for Chrome, Edge and Brave.
 
 ```bash
-pnpm test        # unit + integration (integration needs TEST_DATABASE_URL)
-pnpm test:e2e    # Playwright, against the dev stack (needs `pnpm db:seed`; starts `pnpm dev` if not running)
+pnpm companion:build   # dev build → apps/companion-extension/dist (localhost:3000 allowed)
+pnpm companion:dev     # rebuild on change + debug diagnostics in the popup
 ```
 
-- `src/domain/**`: the Session Engine.
-  - Global W/L, win rate, duplicates, out-of-order matches, membership (IDs, grace, baseline).
-  - **Per-character progress:** LP and MR deltas, Diamond together with Master, never LP − MR,
-    never one character minus another, characters outside the baseline (with and without
-    `ratingBefore`), phase mismatch, current-rating priority, active character.
-- `src/server/**`: resilient provider, the **contract checker** (ERROR/WARNING/PASS), rate
-  limiting, tokens, log redaction.
-- `src/components/overlay/**`: overlay ES/EN rendering, active or pinned character, no fabricated
-  delta.
-- `tests/integration/**` (Postgres):
-  - The tracking pipeline, leases, outages, IDOR, i18n.
-  - **Per-character flows:** baselines for every character at start, A.K.I. → Kimberly, overlay
-    pinning, frozen finals and history, legacy sessions, guarded snapshots.
-- `e2e/multi-character.spec.ts`: A.K.I. win, then switch to Kimberly and win.
-  - Global 2W, separate deltas, and the overlay follows Kimberly.
-  - Refreshing the overlay keeps the state.
+1. Open `chrome://extensions` (or `edge://` / `brave://`), enable **Developer mode**, click
+   **Load unpacked** and select `apps/companion-extension/dist`. Reload it after every rebuild.
+2. Run the tracker with `SF6_PROVIDER=companion`.
+3. Log in to **Buckler's Boot Camp** normally in the same browser.
+4. In the tracker, go to Dashboard or Onboarding → **Connect Companion** and copy the one-time code.
+5. In the extension popup, pick the tracker, enter the code and click **Connect**. Then click
+   **Test Buckler connection**. You should see PASS, the mode, 32 characters and 10 recent matches.
+6. Click **Sync now**. Your real profile appears and you can start a session.
 
-E2E runs use the **dev** database and leave throwaway `<x>@test.local` accounts (some with active
-sessions) behind. Remove them, and only them, with:
+The extension only talks to Buckler and to the tracker origins fixed at build time. For a
+production tracker:
 
 ```bash
-pnpm dev:cleanup-test-accounts                 # dry run: lists accounts and row counts
-pnpm dev:cleanup-test-accounts --confirm <N>   # N = accounts shown by the dry run
+COMPANION_TRACKER_ORIGINS=https://your-tracker.example pnpm companion:build:prod
 ```
 
-It refuses `NODE_ENV=production` and non-local `DATABASE_URL`/`APP_URL`, never touches other
-domains (the seeded `demo@sf6.local` included), and deletes in one transaction through the
-`ON DELETE CASCADE` foreign keys.
+Permissions, polling, recovery and limits: [docs/companion.md](docs/companion.md).
 
-## How `SF6DataProvider` works
+## OBS setup
 
-```ts
-// src/server/sf6/provider.ts
-interface SF6DataProvider {
-  readonly name: string;
-  getPlayerProfile(
-    cfnUserId: string,
-    opts?: { signal?: AbortSignal },
-  ): Promise<NormalizedPlayerProfile>;
-  getRecentMatches(
-    cfnUserId: string,
-    opts?: { signal?: AbortSignal },
-  ): Promise<NormalizedSF6Match[]>;
-}
-```
+1. In the dashboard, copy the overlay URL (`https://<your-domain>/overlay/<token>`).
+2. In OBS Studio, add a source: **Sources → + → Browser**, and paste the URL.
+3. Set the size of your preset: **Compact 600×120 · Standard 800×180 · Detailed 900×240**. Other
+   sizes also work because the overlay scales to fit.
+4. Optional: turn off "Shutdown source when not visible" and "Refresh browser when scene becomes
+   active". Stats live on the server, so a refresh never resets them.
 
-The provider is the **only** code that knows about Capcom. It fetches and normalizes data, and
-nothing else. **Ratings belong to characters**:
+The background is transparent, and changes saved in the overlay builder apply live. **Keep the URL
+private.** It works like a read-only secret link. If it leaks (for example, on stream), click
+**Regenerate URL** in the builder: the old URL stops working immediately.
 
-```ts
-type NormalizedPlayerProfile = {
-  cfnUserId: string;
-  displayName: string;
-  favoriteCharacterKey?: string | null;
-  characters: Array<{
-    characterKey: string; // stable slug: "aki", "kimberly", "m-bison" (not the localized name)
-    characterName: string;
-    rank: string | null; // "Diamond 2", "Master"
-    rankTier: string | null; // "diamond-2", "master"
-    ratingSystem: "lp" | "mr" | null; // DECLARED by the provider; never guessed from the label
-    leaguePoints: number | null;
-    masterRate: number | null;
-    phase?: number | null;
-  }>;
-};
+## Development commands
 
-type NormalizedSF6Match = {
-  externalMatchId: string; // stable unique id (replay/battle id), never a timestamp
-  playedAt: Date; // absolute instant (UTC)
-  mode: "ranked" | "casual" | "battle_hub" | "custom_room" | "unknown";
-  result: "win" | "loss" | "draw"; // from the tracked player's perspective
-  characterKey: string; // REQUIRED
-  characterName: string;
-  opponent: {
-    name: string | null;
-    characterKey?: string | null;
-    characterName?: string | null;
-    rank?: string | null;
-  };
-  ratingBefore?: { system: "lp" | "mr"; value: number; rank?; rankTier?; phase? } | null;
-  ratingAfter?: { system: "lp" | "mr"; value: number; rank?; rankTier?; phase? } | null;
-};
-```
+| Command                                                           | What it does                                                              |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `pnpm dev`                                                        | Next.js dev server **and** the tracking worker (auto-reload)              |
+| `pnpm dev:web` · `pnpm dev:worker`                                | Run them separately                                                       |
+| `pnpm build` · `pnpm start` · `pnpm start:worker`                 | Production build (Next.js + `dist/worker.mjs`) and start                  |
+| `pnpm typecheck` · `pnpm lint` · `pnpm test`                      | Types (app + extension), ESLint, Vitest (unit + integration)              |
+| `pnpm check`                                                      | typecheck + lint + test                                                   |
+| `pnpm format` · `pnpm format:check`                               | Prettier                                                                  |
+| `pnpm test:e2e`                                                   | Playwright against the dev stack (see the note below)                     |
+| `pnpm db:migrate` · `pnpm db:generate` · `pnpm db:studio`         | Apply migrations, generate one after a schema change, browse data         |
+| `pnpm db:seed`                                                    | Demo account with mock data (`SF6_PROVIDER=mock` only)                    |
+| `pnpm companion:build` · `companion:dev` · `companion:build:prod` | Build the extension                                                       |
+| `pnpm provider:check <cfnId>` · `--fixture`                       | Validate a provider's output against the contract (fixtures work offline) |
+| `pnpm dev:reassign-cfn --email <e> --cfn <id> [--dry-run]`        | Dev only: point an account at another CFN                                 |
+| `pnpm dev:cleanup-test-accounts [--confirm N]`                    | Dev only: remove `@test.local` accounts (dry run by default)              |
+| `pnpm research:cfn-browser`                                       | Research tool from the Buckler investigation (not used by the app)        |
 
-`getSF6DataProvider()` wraps the selected provider in `ResilientProvider`, which adds a timeout,
-single-flight, a short profile cache and Zod validation (invalid matches are dropped and logged).
-From there the data flows **FETCH → NORMALIZE → VALIDATE → DEDUPLICATE → PERSIST → UPDATE SESSION
-→ PUBLISH**.
+**Tests.** Integration tests need `TEST_DATABASE_URL` (the `sf6_tracker_test` database from Docker
+Compose; run `DATABASE_URL=$TEST_DATABASE_URL pnpm db:migrate` once).
 
-## Real CFN data: SF6 Session Companion
+> **E2E note:** `pnpm test:e2e` runs against the **dev** database and leaves throwaway
+> `<x>@test.local` accounts behind. Remove them, and only them, with:
+>
+> ```bash
+> pnpm dev:cleanup-test-accounts                 # dry run: lists accounts and row counts
+> pnpm dev:cleanup-test-accounts --confirm <N>   # N = accounts shown by the dry run
+> ```
+>
+> It refuses `NODE_ENV=production` and non-local databases, and never touches other domains.
 
-Buckler's Boot Camp cannot be read from a server (CloudFront 403, login verification fails under
-automation). Real data comes from the **SF6 Session Companion**, a Manifest V3 extension
-(Chrome/Edge/Brave) that reads Buckler with the user's normal browser session and sends only
-normalized data. Set `SF6_PROVIDER=companion`, build it with `pnpm companion:build` and see
-**[docs/companion.md](docs/companion.md)** (install, pairing, security model, limits).
+## Project status
 
-## Implementing a server-side provider
+| Area                  | Status                                                                                  |
+| --------------------- | --------------------------------------------------------------------------------------- |
+| Companion MVP         | **Working.** Validated in a real browser with a real CFN                                |
+| Security audit        | **Ready with accepted risks** for a closed beta, subject to the production requirements |
+| Production deployment | **Not done yet**                                                                        |
+| Closed beta           | **Not started**                                                                         |
 
-1. Implement the two methods of `SF6DataProvider` (see **`src/server/sf6/providers/capcom/`**,
-   the HAR-based prototype, and **[docs/capcom-provider.md](docs/capcom-provider.md)**).
-2. Keep credentials in server env vars and never log them. Set `SF6_PROVIDER=capcom`.
-3. Run **`pnpm provider:check <cfnId>`** (for example `1733837998`). It calls the provider _raw_
-   (without the wrapper that silently drops bad entries) and prints:
-   - PROFILE, CHARACTERS (key, name, rank, tier, system, LP, MR, phase), and MATCHES (id, time,
-     mode, result, character, opponent, rating before and after);
-   - findings classified as **ERROR / WARNING / PASS**:
-     - **ERROR:** contract violations, missing `characterKey`, `cfnUserId` mismatch.
-     - **WARNING:** duplicate keys or IDs, incoherent MR+LP, future timestamps, `unknown` mode,
-       match characters missing from the profile, unordered pages, no `ratingAfter`.
-   - The exit code is 1 only when there are errors.
-4. Compare the output against CFN using the checklist in `docs/audit/2026-10-03-technical-audit.md`
-   §2.4.
+Before the beta: production deployment, a Ranked end-to-end smoke test in production, and closed
+beta feedback.
 
-## How to configure OBS
+**Deployment constraints** (a guide will follow):
 
-1. In the dashboard, click **Copy OBS URL** (`https://your-domain/overlay/<token>`).
-2. In OBS Studio, go to **Sources → + → Browser** and paste the URL.
-3. Set the size from your preset: **Compact 600×120 · Standard 800×180 · Detailed 900×240**. Any
-   other size works too, because the overlay scales and auto-fits.
-4. Recommended: turn **off** "Shutdown source when not visible" and "Refresh browser when scene
-   becomes active". This is optional: stats live on the server, so a refresh or scene change never
-   resets them.
+- the web app needs long-lived SSE connections and one persistent Postgres `LISTEN` connection
+  per instance;
+- the worker is a persistent process;
+- connect through a direct or session-mode connection (not a transaction pooler) with TLS.
 
-The background is fully transparent. Design changes saved in the builder apply live without
-touching OBS. **Regenerate URL** in the builder invalidates a leaked URL immediately.
+Requirements and the env matrix:
+[docs/security-audit.md §7](docs/security-audit.md#7-requisitos-de-producción-vercel--render--supabase).
 
-## Deployment
+## Known limitations
 
-The app needs **long-lived SSE connections**, a **persistent background worker** and **one
-persistent `LISTEN` connection** per web instance. A platform with persistent processes fits that
-best.
+- The companion supports **Chromium-based browsers only**. Firefox and Safari are not supported
+  yet.
+- It needs a valid **Buckler session** in that browser, and the browser must be **open** while
+  you play.
+- Detection takes up to about **30 s** after Buckler shows a match: MV3 `chrome.alarms` cannot
+  fire more often.
+- There is no email verification, password reset or account deletion yet.
+- The closed beta has not started. Expect rough edges.
 
-### Recommended: Railway (Fly.io and Render work the same way)
-
-Create one project with three parts:
-
-| Service    | Build command                       | Start command          | Notes                                                     |
-| ---------- | ----------------------------------- | ---------------------- | --------------------------------------------------------- |
-| PostgreSQL | managed plugin                      | —                      | provides `DATABASE_URL`                                   |
-| `web`      | `pnpm install && pnpm build`        | `pnpm start`           | pre-deploy: `pnpm db:migrate` · healthcheck `/api/health` |
-| `worker`   | `pnpm install && pnpm build:worker` | `node dist/worker.mjs` | no public port; 1+ replicas are safe (DB leases)          |
-
-Set on both services: `DATABASE_URL`, `APP_URL=https://<your-domain>`, `BETTER_AUTH_SECRET`,
-`TRUST_PROXY=true`, `SF6_PROVIDER=capcom`, `NODE_ENV=production`. Keep `ENABLE_DEV_TOOLS` unset.
-
-On Fly.io, use one app with two process groups:
-`[processes] web = "pnpm start"`, `worker = "node dist/worker.mjs"`.
-
-### Why not plain Vercel?
-
-Serverless functions have a maximum duration, so SSE overlays would be cut and reconnect
-constantly. A `setInterval` tracker dies with the instance, and there is no persistent `LISTEN`.
-You could host the web app on Vercel and the worker elsewhere, but you would then need a different
-fan-out mechanism (e.g. Redis pub/sub) for realtime. That adds infrastructure without a real
-benefit for this product.
-
-### Scaling notes
-
-- **Web** scales horizontally. Each instance holds one `LISTEN` connection and fans out to its own
-  SSE clients.
-- **Worker** scales horizontally. Players are distributed through `FOR UPDATE SKIP LOCKED` leases.
-- Rate limits are in-memory per instance. If you need global limits, swap in a Postgres- or
-  Redis-backed limiter; the call sites use a single `rateLimit()` function.
-
-## Project structure
+## Repository structure
 
 ```
-src/
-  domain/            pure logic, no IO: Session Engine, rating rules, polling policy, overlay config
-  server/
-    sf6/             SF6DataProvider, ResilientProvider, mock + Capcom providers
-    ingestion/       validate → dedupe → persist → assign session → publish
-    sessions/        start/end session, live snapshots, history
-    tracking/        lease claiming + poll cycle (used by the worker)
-    realtime/        pg LISTEN/NOTIFY events, SSE hub, SSE helper
-    overlays/        overlay CRUD, public token lookup, presence
-    auth/ db/ security/ dashboard/ env.ts logger.ts
-  worker/            persistent tracking worker entrypoint
-  components/overlay OverlayView (pure renderer, 3 themes), LiveOverlay (OBS client), CEF-safe CSS
-  app/(app)/         landing, auth, onboarding, dashboard, overlay builder, session recap
-  app/(overlay)/     transparent root layout + /overlay/[token]
-  app/api/           auth, overlay state + SSE stream, dashboard stream, health
-scripts/             migrate, seed, provider-check
-tests/integration/   pipeline tests against Postgres
+src/app/                    Next.js routes: landing, auth, onboarding, dashboard, overlay, API
+src/domain/                 pure logic: Session Engine, rating rules, overlay config/state
+src/server/                 auth, db (schema), ingestion, sessions, tracking, realtime (SSE),
+                            overlays, companion API, security, SF6 providers
+src/worker/                 persistent tracking worker
+src/components/overlay/     OBS overlay renderer (CEF-safe CSS)
+packages/sf6-capcom-core/   pure Buckler parsers/normalizers + companion contract (shared)
+apps/companion-extension/   SF6 Session Companion (Chromium MV3)
+drizzle/                    SQL migrations
+tests/                      integration tests (Postgres) and sanitized Buckler fixtures
+e2e/                        Playwright end-to-end tests
+scripts/                    migrate, seed, provider check, dev utilities, research tools
+docs/                       architecture, companion, security audit, research
 ```
 
-## Internationalization (es / en)
+## Documentation
 
-Built with **next-intl**. The locale is not part of the URL, so overlay URLs never change.
+- [docs/architecture.md](docs/architecture.md): system design, data model, ingestion, realtime,
+  overlays.
+- [docs/companion.md](docs/companion.md): the SF6 Session Companion (transports, permissions,
+  polling, recovery, limits, validation).
+- [docs/security-audit.md](docs/security-audit.md): pre-production security audit, accepted risks
+  and production requirements.
+- [docs/capcom-provider.md](docs/capcom-provider.md): Buckler data mapping and the server-side
+  prototype.
+- [docs/research/2026-10-03-cfn-network-research.md](docs/research/2026-10-03-cfn-network-research.md):
+  why Buckler is read in the browser.
+- [docs/audit/2026-10-03-technical-audit.md](docs/audit/2026-10-03-technical-audit.md): earlier
+  technical audit (multi-character model).
 
-- **Languages:** Spanish (`es`, the default) and English (`en`).
-- **Catalogs:**
-  - `src/i18n/messages/{es,en}.json` holds the dashboard, auth and onboarding strings.
-  - `src/i18n/messages/overlay.{es,en}.json` holds the OBS overlay strings. They are kept tiny so
-    every language ships with the overlay client.
-  - Missing keys fall back to English. A test enforces identical key sets.
-- **User language:** chosen with the ES | EN selector in the navbar and auth pages.
-  - It is stored in a 1-year `NEXT_LOCALE` cookie and, when signed in, in `auth_user.locale`.
-  - Resolution order: account → cookie → `es`.
-  - There is no browser-language detection, so an explicit choice is never overridden.
-- **Overlay language:** `overlay.config.locale` is independent from the dashboard language.
-  - New overlays inherit the user's language.
-  - Changing it in the builder updates the open Browser Source live through the existing realtime
-    channel. Token, session, stats and tracker are untouched.
-- **Formatting:** numbers, percentages, dates and relative times use `Intl` with the active locale
-  (`66,7 %` · `18.430` in Spanish; `66.7%` · `18,430` in English).
-- **Not translated:** official terms (Street Fighter 6, CFN, MR, LP, Ranked, OBS) and rank names
-  as reported by CFN.
-- **Adding a string:** add the key to both catalogs and use `useTranslations` (client) or
-  `getTranslations` (server).
+## Contributing
 
-- Zod validation on every input boundary: actions, env, provider output, overlay config and
-  realtime events.
-- Every mutation re-resolves the player from the authenticated user, and overlay/session ids are
-  ownership-checked (IDOR).
-- Server actions and better-auth enforce Origin checks (CSRF).
-- Overlay tokens are 192-bit random values, format-checked before any DB hit, rate-limited per IP
-  and rotatable. Overlay responses send `no-store`, `noindex` and `Referrer-Policy: no-referrer`.
-- Public overlay payloads contain display data only: no CFN id and no internal ids.
-- Logs are structured JSON. Keys matching token/secret/password/cookie/authorization are redacted.
-- **Data stored from CFN:** CFN id, display name, main character, rank, LP and MR. For each match:
-  id, time, mode, result, both characters and the opponent's display name. Opponent CFN ids and raw
-  payloads are not stored.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Never commit secrets, `.env` files, HAR captures or
+browser profiles.
 
-## Roadmap (architecture already prepared)
+## License
 
-Per-character and matchup stats, MR graph, session sharing cards, Twitch / StreamElements /
-Discord integrations, tournament mode, public profiles, session pause, and custom CSS (see
-`docs/architecture.md` §10 for the safe approach).
-
-## Known limitations (MVP)
-
-- Detection latency is the poll interval (~20 s by default), bounded by how often CFN can be
-  queried.
-- No email verification or password reset yet. better-auth supports both once an email provider
-  is configured.
-- One CFN player per account.
-
----
-
-Not affiliated with or endorsed by Capcom. Street Fighter is a trademark of Capcom Co., Ltd.
+**No license has been chosen yet.** Until one is added, all rights are reserved by the author.
