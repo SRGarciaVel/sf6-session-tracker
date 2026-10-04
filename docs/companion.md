@@ -84,8 +84,10 @@ Session Tracker
   - máximo 100 partidas por petición y 256 KB de body (413).
 - **Rate limit por dispositivo:** 1 sync cada 5 s y 20 `state` por minuto. Con la cadencia
   normal de 30 s nunca salta.
-- **CORS** de `/api/companion/*`: `*` sin credenciales. Es seguro porque la autenticación es por
-  Bearer y nunca por cookie.
+- **Orígenes del tracker cerrados:** la extensión solo habla con los orígenes de su compilación
+  (§4); el popup no admite URLs arbitrarias. `/api/companion/*` responde además CORS `*` sin
+  credenciales (la autenticación es por Bearer, nunca por cookie), como defensa adicional; la vía
+  de acceso de la extensión es su `host_permission`, no CORS.
 - **Logs:**
   - eventos: `companion_paired`, `companion_sync`, `companion_sync_rejected`,
     `companion_device_revoked`, `companion_buckler_error`, `companion_buckler_test`;
@@ -95,15 +97,32 @@ Session Tracker
 
 ## 4. Permisos de la extensión
 
-| Permiso                                                       | Motivo                                                                                                                                     |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `host_permissions: https://www.streetfighter.com/6/buckler/*` | `fetch` a Buckler con la sesión del navegador, inyectar en pestañas de Buckler y encontrarlas (`tabs.query` por URL sin el permiso `tabs`) |
-| `storage`                                                     | `chrome.storage.local`: device token, estado y caché de IDs                                                                                |
-| `alarms`                                                      | Despertar el service worker cada 30 s, sin trucos de keep-alive                                                                            |
-| `scripting`                                                   | Transportes `isolated_tab` y `main_tab` (`chrome.scripting.executeScript`)                                                                 |
+| Permiso                                                               | Motivo                                                                                                                                                  |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `host_permissions: https://www.streetfighter.com/6/buckler/*`         | `fetch` a Buckler con la sesión del navegador, inyectar en pestañas de Buckler y encontrarlas (`tabs.query` por URL sin el permiso `tabs`)              |
+| `host_permissions: <origen del tracker>/*` (uno por origen permitido) | `fetch` del service worker a `/api/companion/*`. Desarrollo: `http://localhost:3000/*` y `http://127.0.0.1:3000/*`; producción: solo tus orígenes https |
+| `storage`                                                             | `chrome.storage.local`: device token, estado y caché de IDs                                                                                             |
+| `alarms`                                                              | Despertar el service worker cada 30 s, sin trucos de keep-alive                                                                                         |
+| `scripting`                                                           | Transportes `isolated_tab` y `main_tab` (`chrome.scripting.executeScript`)                                                                              |
 
 - **Sin permisos de** `cookies`, `tabs`, `webRequest` ni `<all_urls>`.
-- **Tracker:** no hace falta permiso de host (se usa CORS).
+- **Tracker — corrección:** la versión anterior de este documento decía que el tracker no
+  necesitaba permiso de host. En MV3 el service worker solo tiene garantizado el acceso a los
+  orígenes para los que tiene `host_permissions`; sin ellos todo depende de CORS y de políticas
+  del navegador (p. ej. Local Network Access con `localhost`). Ahora cada origen del tracker es un
+  permiso de host exacto.
+- **Lista cerrada, decidida al compilar** (`src/lib/tracker-origins.ts`):
+  - `pnpm companion:build` (desarrollo): `http://localhost:3000` y `http://127.0.0.1:3000`, más los
+    que añada `COMPANION_TRACKER_ORIGINS`;
+  - `COMPANION_TRACKER_ORIGINS=https://tracker.example.com pnpm companion:build:prod`
+    (producción): **solo** esos orígenes, que deben ser https; sin la variable, la compilación
+    falla;
+  - se rechazan comodines, rutas, credenciales en la URL y http fuera de loopback;
+  - el popup muestra un selector con esos orígenes y el service worker rechaza cualquier otro
+    (`tracker_origin_not_allowed`).
+- **Descartado:** `optional_host_permissions` + `chrome.permissions.request`. Exigiría declarar un
+  patrón amplio (`https://*/*`) solo para poder pedir el origen en tiempo de ejecución; la lista
+  cerrada es más simple y más segura para un tracker con dominio conocido.
 - **CSP:** `script-src 'self'`; todo va empaquetado. Zod usa `jitless`, así que no hay `eval` ni
   `new Function` (verificado en el bundle).
 
@@ -111,7 +130,8 @@ Session Tracker
 
 1. Dashboard → consola → **SF6 Session Companion** → **Conectar Companion**. Aparece
    `XXXX-XXXX`, válido 10 minutos y un solo uso.
-2. Popup de la extensión: URL del tracker, código y nombre del dispositivo → **Conectar**.
+2. Popup de la extensión: elige el tracker (solo los orígenes de la compilación), introduce el
+   código y el nombre del dispositivo → **Conectar**.
 3. `POST /api/companion/pair` → `{ deviceId, deviceToken, state }`. El token se guarda en
    `chrome.storage.local`.
 4. Revocación:
@@ -229,6 +249,12 @@ pnpm companion:build
    **Cargar descomprimida** → `apps/companion-extension/dist`.
 2. Para desarrollo: `pnpm companion:dev` (recompila al guardar) y luego "Recargar" en la página de
    extensiones.
+3. **Tras cada recompilación, recarga la extensión** (botón ⟳ en `chrome://extensions`): Chrome no
+   relee `manifest.json` ni el service worker hasta entonces. Si cambian los permisos de host,
+   puede pedir confirmación.
+4. Producción: `COMPANION_TRACKER_ORIGINS=https://tu-tracker.example.com pnpm companion:build:prod`.
+   Un pairing hecho contra un origen que ya no está en la lista queda en error
+   (`tracker_origin_not_allowed`) y hay que volver a vincular.
 
 ## 11. Probar la conexión con Buckler
 
@@ -253,6 +279,12 @@ pnpm companion:build
    Buckler, la partida llega al dashboard y al overlay por SSE.
 
 ## 13. Limitaciones actuales
+
+- **Bug corregido (pairing → "Error: network"):** el cliente del tracker llamaba a `fetch` como
+  método (`this.fetchImpl(...)`). En el navegador eso lanza `Illegal invocation`; en Node no, por
+  eso los tests no lo vieron. Ahora un test emula la regla del navegador. Ese error se mostraba
+  como `network`; ahora el popup indica el origen inalcanzable y el service worker registra el
+  detalle (`companion_tracker_unreachable`, sin datos sensibles).
 
 - **Acceso desde extensión no validado en un navegador real.** No sabemos qué contexto
   (service worker, ISOLATED o MAIN) acepta Buckler: lo decide el test manual del punto 11.

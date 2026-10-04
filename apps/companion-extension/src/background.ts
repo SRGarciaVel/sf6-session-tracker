@@ -11,6 +11,7 @@ import { cfnUserIdSchema, COMPANION_POLLING } from "@sf6/capcom-core";
 import { CompanionBucklerClient } from "./lib/buckler-client";
 import { transportFor } from "./lib/buckler-transport";
 import { runConnectionTest } from "./lib/connection-test";
+import { allowedTrackerOrigin } from "./lib/tracker-origins";
 import { toPublicStatus, type CompanionRequest, type CompanionResponse } from "./lib/messages";
 import { CompanionStorage, type KeyValueArea } from "./lib/storage";
 import { runCycle, type CycleOutcome } from "./lib/sync";
@@ -46,6 +47,11 @@ async function cycle(manual: boolean): Promise<CycleOutcome> {
   if (inflight) return inflight; // one cycle at a time
   inflight = (async () => {
     const store = await storage.load();
+    if (store.deviceToken && !allowedTrackerOrigin(store.trackerUrl)) {
+      // Paired with an origin this build no longer allows (e.g. dev → prod rebuild).
+      await storage.patch({ trackerStatus: "error", lastError: "tracker_origin_not_allowed" });
+      return "tracker_unreachable";
+    }
     return runCycle(
       {
         storage,
@@ -83,13 +89,9 @@ async function handle(msg: CompanionRequest): Promise<CompanionResponse> {
       return { ok: true, status: toPublicStatus(await storage.load()) };
 
     case "pair": {
-      let url: URL;
-      try {
-        url = new URL(msg.trackerUrl);
-      } catch {
-        return { ok: false, error: "invalid_tracker_url" };
-      }
-      const trackerUrl = url.origin;
+      // Only origins this build holds a host permission for (closed allowlist).
+      const trackerUrl = allowedTrackerOrigin(msg.trackerUrl);
+      if (!trackerUrl) return { ok: false, error: "tracker_origin_not_allowed" };
       try {
         const res = await new TrackerClient(trackerUrl, null).pair(msg.code, msg.deviceName);
         await storage.patch({
@@ -105,6 +107,11 @@ async function handle(msg: CompanionRequest): Promise<CompanionResponse> {
         const outcome = await cycle(true);
         return { ok: true, status: toPublicStatus(await storage.load()), outcome };
       } catch (err) {
+        if (err instanceof TrackerError && err.code === "network") {
+          // Diagnosable, without secrets: which origin and what the browser said.
+          log("companion_tracker_unreachable", { origin: trackerUrl, detail: err.message });
+          return { ok: false, error: `tracker_unreachable:${trackerUrl}` };
+        }
         return { ok: false, error: err instanceof TrackerError ? err.code : "pair_failed" };
       }
     }

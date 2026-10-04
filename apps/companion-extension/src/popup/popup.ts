@@ -1,6 +1,6 @@
 /** Minimal popup: status + pairing + test/sync/disconnect. All work happens in the worker. */
 import type { CompanionRequest, CompanionResponse, PublicStatus } from "../lib/messages";
-import { DEFAULT_TRACKER_URL } from "../lib/storage";
+import { TRACKER_ORIGINS } from "../lib/tracker-origins";
 
 const t = (key: string, subs?: string[]) => chrome.i18n.getMessage(key, subs) || key;
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -58,9 +58,8 @@ function render(s: PublicStatus) {
   $("pairSection").hidden = s.paired;
   $("actions").hidden = !s.paired;
   $("cfnSection").hidden = !s.paired || Boolean(s.lastState?.cfnUserId);
-  if (!$<HTMLInputElement>("trackerUrl").value) {
-    $<HTMLInputElement>("trackerUrl").value = s.trackerUrl || DEFAULT_TRACKER_URL;
-  }
+  const select = $<HTMLSelectElement>("trackerUrl");
+  if (TRACKER_ORIGINS.includes(s.trackerUrl)) select.value = s.trackerUrl;
   $("message").textContent = s.lastError ? t("lastError", [s.lastError]) : "";
   if (s.lastTest) {
     $("testResult").hidden = false;
@@ -77,22 +76,45 @@ function render(s: PublicStatus) {
   }
 }
 
+/** Error codes from the worker → readable text (unknown codes shown raw). */
+function describeError(code: string): string {
+  if (code.startsWith("tracker_unreachable:")) {
+    return t("errTrackerUnreachable", [code.slice("tracker_unreachable:".length)]);
+  }
+  const known: Record<string, string> = {
+    tracker_origin_not_allowed: "errOriginNotAllowed",
+    invalid_or_expired_code: "errInvalidCode",
+    invalid_request: "errInvalidCode",
+    rate_limited: "errRateLimited",
+    cfn_required: "errCfnRequired",
+    invalid_cfn: "errInvalidCfn",
+  };
+  const key = known[code];
+  return key ? t(key) : t("error", [code]);
+}
+
 async function run(button: HTMLButtonElement, msg: CompanionRequest) {
   button.disabled = true;
   try {
     const res = await send(msg);
     if (res.status) render(res.status);
-    if (!res.ok) $("message").textContent = t("error", [res.error]);
+    if (!res.ok) $("message").textContent = describeError(res.error);
   } finally {
     button.disabled = false;
   }
 }
 
+for (const origin of TRACKER_ORIGINS) {
+  const option = document.createElement("option");
+  option.value = origin;
+  option.textContent = origin;
+  $<HTMLSelectElement>("trackerUrl").append(option);
+}
 $<HTMLInputElement>("deviceName").value = t("defaultDeviceName");
 $("pair").addEventListener("click", () =>
   run($("pair"), {
     type: "pair",
-    trackerUrl: $<HTMLInputElement>("trackerUrl").value,
+    trackerUrl: $<HTMLSelectElement>("trackerUrl").value,
     code: $<HTMLInputElement>("code").value,
     deviceName: $<HTMLInputElement>("deviceName").value,
   }),

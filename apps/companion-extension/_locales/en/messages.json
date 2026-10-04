@@ -21,7 +21,7 @@
     "message": "Connect to your Session Tracker"
   },
   "trackerUrl": {
-    "message": "Tracker URL"
+    "message": "Tracker"
   },
   "pairingCode": {
     "message": "Pairing code (Dashboard → Connect Companion)"
@@ -143,5 +143,28 @@
   },
   "defaultDeviceName": {
     "message": "Browser companion"
+  },
+  "errTrackerUnreachable": {
+    "message": "Cannot reach the tracker at $VALUE$. Is the server running and is this exact URL open in the browser? (Reload the extension after rebuilding it.)",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "errOriginNotAllowed": {
+    "message": "This tracker URL is not allowed by this build of the extension."
+  },
+  "errInvalidCode": {
+    "message": "Invalid or expired pairing code. Generate a new one in the dashboard."
+  },
+  "errRateLimited": {
+    "message": "Too many attempts — wait a minute."
+  },
+  "errCfnRequired": {
+    "message": "Enter your CFN ID first (or register it in the tracker)."
+  },
+  "errInvalidCfn": {
+    "message": "A CFN ID is a 6–12 digit number."
   }
 }

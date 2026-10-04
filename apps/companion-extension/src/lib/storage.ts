@@ -4,7 +4,10 @@
  */
 import type { CompanionState, CompanionTransportKind, BucklerFailure } from "@sf6/capcom-core";
 
-export const DEFAULT_TRACKER_URL = "http://localhost:3000";
+import { TRACKER_ORIGINS } from "./tracker-origins";
+
+/** First allowed tracker origin of this build (dev: http://localhost:3000). */
+export const DEFAULT_TRACKER_URL = TRACKER_ORIGINS[0] ?? "http://localhost:3000";
 
 export type BucklerStatus = "unknown" | "ok" | "no_tab" | BucklerFailure;
 export type TrackerStatus = "unpaired" | "connected" | "disconnected" | "revoked" | "error";

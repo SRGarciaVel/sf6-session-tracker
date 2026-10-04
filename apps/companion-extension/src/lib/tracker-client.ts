@@ -48,7 +48,10 @@ export class TrackerClient {
     if (this.deviceToken) headers.authorization = `Bearer ${this.deviceToken}`;
     let res: Response;
     try {
-      res = await this.fetchImpl(`${this.baseUrl.replace(/\/+$/, "")}${path}`, {
+      // Never call it as this.fetchImpl(...): browsers throw "Illegal invocation" when fetch
+      // runs with a `this` other than the global scope (Node does not — tests would not see it).
+      const fetchFn = this.fetchImpl;
+      res = await fetchFn(`${this.baseUrl.replace(/\/+$/, "")}${path}`, {
         method: init.method,
         headers,
         body: init.body === undefined ? undefined : JSON.stringify(init.body),

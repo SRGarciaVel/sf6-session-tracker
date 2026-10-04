@@ -14,7 +14,11 @@
     "default_title": "SF6 Session Companion"
   },
   "permissions": ["storage", "alarms", "scripting"],
-  "host_permissions": ["https://www.streetfighter.com/6/buckler/*"],
+  "host_permissions": [
+    "https://www.streetfighter.com/6/buckler/*",
+    "http://localhost:3000/*",
+    "http://127.0.0.1:3000/*"
+  ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   }
