@@ -55,7 +55,7 @@ All variables are validated at startup by `src/server/env.ts`. Defaults are in `
 | `APP_URL`                                            | `http://localhost:3000` | Public base URL, used for overlay URLs and auth origin checks                                          |
 | `BETTER_AUTH_SECRET`                                 | —                       | ≥ 32 random chars (**required**, keep secret)                                                          |
 | `TRUST_PROXY`                                        | `false`                 | Trust `X-Forwarded-For` for rate limiting. **Set `true` on Railway/Fly/Render.**                       |
-| `SF6_PROVIDER`                                       | `mock`                  | `mock` or `capcom` (your extractor)                                                                    |
+| `SF6_PROVIDER`                                       | `mock`                  | `mock` (simulated), `companion` (real data via the browser extension) or `capcom` (server prototype)   |
 | `PROVIDER_TIMEOUT_MS`                                | `10000`                 | Per-request timeout for the provider                                                                   |
 | `PROVIDER_CACHE_TTL_MS`                              | `5000`                  | Profile lookup cache (match lists are never cached)                                                    |
 | `ENABLE_DEV_TOOLS`                                   | `false`                 | Mock-match tools in the dashboard. Only active when `NODE_ENV≠production` **and** `SF6_PROVIDER=mock`. |
@@ -186,10 +186,18 @@ single-flight, a short profile cache and Zod validation (invalid matches are dro
 From there the data flows **FETCH → NORMALIZE → VALIDATE → DEDUPLICATE → PERSIST → UPDATE SESSION
 → PUBLISH**.
 
-## How to replace `MockSF6DataProvider`
+## Real CFN data: SF6 Session Companion
 
-1. Implement the two methods in **`src/server/sf6/providers/capcom.ts`**. Its header lists exactly
-   which CFN fields map to which contract fields.
+Buckler's Boot Camp cannot be read from a server (CloudFront 403, login verification fails under
+automation). Real data comes from the **SF6 Session Companion**, a Manifest V3 extension
+(Chrome/Edge/Brave) that reads Buckler with the user's normal browser session and sends only
+normalized data. Set `SF6_PROVIDER=companion`, build it with `pnpm companion:build` and see
+**[docs/companion.md](docs/companion.md)** (install, pairing, security model, limits).
+
+## Implementing a server-side provider
+
+1. Implement the two methods of `SF6DataProvider` (see **`src/server/sf6/providers/capcom/`**,
+   the HAR-based prototype, and **[docs/capcom-provider.md](docs/capcom-provider.md)**).
 2. Keep credentials in server env vars and never log them. Set `SF6_PROVIDER=capcom`.
 3. Run **`pnpm provider:check <cfnId>`** (for example `1733837998`). It calls the provider _raw_
    (without the wrapper that silently drops bad entries) and prints:
