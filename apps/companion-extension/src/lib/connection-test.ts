@@ -38,6 +38,7 @@ export async function runConnectionTest(
       requestLocale: null,
       signature: null,
       notes: [],
+      request: null,
     };
     results.push(r);
     if (rateLimited) {
@@ -65,6 +66,7 @@ export async function runConnectionTest(
       r.battlelog = "PASS";
       r.replays = page.replays.length;
       r.requestLocale = client.effectiveLocale;
+      r.request = client.lastRequest;
     } catch (err) {
       r[step] = "FAIL";
       if (err instanceof BucklerError) {
@@ -72,6 +74,7 @@ export async function runConnectionTest(
         r.status = err.status;
         r.signature = err.signature;
         r.requestLocale = err.locale;
+        r.request = err.request;
         if (err.kind === "rate_limited") rateLimited = true;
       } else {
         r.failure = err instanceof Error ? err.name : "error";

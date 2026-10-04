@@ -148,6 +148,15 @@ export interface BucklerResponseSignature {
   pagePropsSizes: Record<string, number>;
   /** Key NAMES inside object-valued pageProps entries (e.g. play, fighter_banner_info). */
   nestedKeys: Record<string, string[]>;
+  /**
+   * Buckler's own server-side verdict in pageProps.common (numbers/booleans only):
+   * statusCode (200 ok, 400/404 error page), isError, loginUser.flg (session seen as logged in).
+   */
+  common: {
+    statusCode: number | null;
+    isError: boolean | null;
+    loginUserFlg: boolean | null;
+  } | null;
   /** Numeric/boolean values of code-like keys (…code, …status, …result, error…) at depth ≤ 2. */
   codes: Record<string, number | boolean>;
   /** Path of a Next.js gSSP redirect (`pageProps.__N_REDIRECT`), query stripped. */
@@ -174,6 +183,7 @@ export function describeBucklerResponse(
     pagePropsSizes: {},
     nestedKeys: {},
     codes: {},
+    common: null,
     redirectPath: null,
     hasNextData: false,
     nextPage: null,
@@ -199,6 +209,16 @@ export function describeBucklerResponse(
           }
         }
         collectCodes(p, "pageProps", 0, sig.codes);
+        const common = p.common;
+        if (common && typeof common === "object" && !Array.isArray(common)) {
+          const c = common as Record<string, unknown>;
+          const login = c.loginUser as Record<string, unknown> | undefined;
+          sig.common = {
+            statusCode: typeof c.statusCode === "number" ? c.statusCode : null,
+            isError: typeof c.isError === "boolean" ? c.isError : null,
+            loginUserFlg: login && typeof login.flg === "boolean" ? login.flg : null,
+          };
+        }
       }
     }
   } catch {

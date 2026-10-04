@@ -75,6 +75,9 @@ function render(s: PublicStatus) {
           (r.pageLocale
             ? ` · locale ${r.pageLocale}${r.requestLocale && r.requestLocale !== r.pageLocale ? `→${r.requestLocale}` : ""}`
             : "") +
+          (r.request
+            ? `\n    ↳ req ${r.request.method} ${r.request.path} [${r.request.transport}] x-nextjs-data=${String(r.request.xNextjsData)} credentials=${r.request.credentials ?? "?"} cache=${r.request.cache ?? "?"} referer=${r.request.refererPath ?? "n/a"} browser=${r.request.brands.join("/") || "?"}`
+            : "") +
           (r.signature
             ? `\n    ↳ ${r.signature.contentType ?? "?"} ${r.signature.bytes}B` +
               (r.signature.json
@@ -92,6 +95,9 @@ function render(s: PublicStatus) {
                 ? `\n    ↳ codes ${Object.entries(r.signature.codes)
                     .map(([k, v]) => `${k}=${String(v)}`)
                     .join(" ")}`
+                : "") +
+              (r.signature.common
+                ? `\n    ↳ common statusCode=${String(r.signature.common.statusCode)} isError=${String(r.signature.common.isError)} loginUser.flg=${String(r.signature.common.loginUserFlg)}`
                 : "") +
               (r.signature.redirectPath ? ` redirect ${r.signature.redirectPath}` : "") +
               (r.signature.hasNextData ? ` app-page ${r.signature.nextPage ?? ""}` : "") +

@@ -28,6 +28,22 @@ import {
 } from "@sf6/capcom-core";
 import { NoBucklerTabError, type BucklerTransport } from "./buckler-transport";
 
+/** Safe description of the REQUEST the companion sent (no cookie/token values). */
+export interface CompanionRequestMeta {
+  method: "GET";
+  /** pathname + query exactly as requested. */
+  path: string;
+  transport: string;
+  locale: string;
+  xNextjsData: boolean;
+  credentials: string | null;
+  cache: string | null;
+  /** Page path the browser sends as Referer (tab transports); null if not observable. */
+  refererPath: string | null;
+  /** Browser running the extension (navigator.userAgentData brands). */
+  brands: string[];
+}
+
 export class BucklerError extends Error {
   override readonly name = "BucklerError";
   constructor(
@@ -37,6 +53,7 @@ export class BucklerError extends Error {
     /** Safe description of the failing answer (no body, no values). */
     readonly signature: BucklerResponseSignature | null = null,
     readonly locale: string | null = null,
+    readonly request: CompanionRequestMeta | null = null,
   ) {
     super(message);
   }
@@ -48,6 +65,8 @@ export class CompanionBucklerClient {
   readonly meta: TtlCache<BucklerPageMeta>;
   /** Locale that last answered successfully (diagnostics). */
   effectiveLocale: string | null = null;
+  /** Metadata of the last _next/data request sent (diagnostics). */
+  lastRequest: CompanionRequestMeta | null = null;
 
   constructor(
     readonly transport: BucklerTransport,
@@ -119,9 +138,20 @@ export class CompanionBucklerClient {
     for (;;) {
       const meta = await this.getPageMeta(cfnId);
       const locale: string = localeOverride ?? meta.locale;
-      const res = await this.fetchText(pathFor(meta.buildId, locale), {
-        ...NEXT_DATA_REQUEST_HEADERS,
-      });
+      const path = pathFor(meta.buildId, locale);
+      const headers = { ...NEXT_DATA_REQUEST_HEADERS };
+      const res = await this.fetchText(path, headers);
+      this.lastRequest = {
+        method: "GET",
+        path,
+        transport: this.transport.kind,
+        locale,
+        xNextjsData: (res.sent?.headerNames ?? Object.keys(headers)).includes("x-nextjs-data"),
+        credentials: res.sent?.credentials ?? null,
+        cache: res.sent?.cache ?? null,
+        refererPath: res.sent?.refererPath ?? null,
+        brands: res.sent?.brands ?? [],
+      };
       const sig = describeBucklerResponse(res.status, res.contentType, res.text);
 
       if ((res.status === 200 || res.status === 400) && sig.json && sig.redirectPath === null) {
@@ -145,6 +175,7 @@ export class CompanionBucklerClient {
             `${endpoint}: 200 but the payload does not match the schema`,
             sig,
             locale,
+            this.lastRequest,
           );
         }
       }
@@ -172,6 +203,7 @@ export class CompanionBucklerClient {
         `Buckler answered HTTP ${res.status} (${failure})`,
         sig,
         locale,
+        this.lastRequest,
       );
     }
   }

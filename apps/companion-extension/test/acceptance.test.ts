@@ -164,3 +164,57 @@ describe("safe diagnostics signature", () => {
     for (const leak of ["secret-ish", "Comunismo", "must log in"]) expect(text).not.toContain(leak);
   });
 });
+
+describe("request/response instrumentation (safe metadata only)", () => {
+  it("records what was sent: method, path+query, transport, locale, header presence, modes", async () => {
+    const t: BucklerTransport = {
+      kind: "main_tab",
+      async fetchText(_path, headers = {}) {
+        return {
+          ...json(400, shellWithEmptyPlay),
+          sent: {
+            credentials: "same-origin",
+            cache: "no-store",
+            headerNames: Object.keys(headers),
+            refererPath: `/6/buckler/es-es/profile/${CFN}`,
+            brands: ["Chromium", "Google Chrome"],
+          },
+        };
+      },
+      readPageMeta: async () => pageMeta("es-es"),
+    };
+    const err = (await new CompanionBucklerClient(t)
+      .getPlay(CFN)
+      .catch((e: unknown) => e)) as BucklerError;
+    expect(err.request).toEqual({
+      method: "GET",
+      path: `/6/buckler/_next/data/${BUILD_ID}/es-es/profile/${CFN}/play.json?sid=${CFN}`,
+      transport: "main_tab",
+      locale: "es-es",
+      xNextjsData: true,
+      credentials: "same-origin",
+      cache: "no-store",
+      refererPath: `/6/buckler/es-es/profile/${CFN}`,
+      brands: ["Chromium", "Google Chrome"],
+    });
+    expect(JSON.stringify(err.request)).not.toMatch(/cookie|token|session/i);
+  });
+
+  it("extracts Buckler's server verdict from pageProps.common (numbers/booleans only)", async () => {
+    const { describeBucklerResponse } = await import("@sf6/capcom-core");
+    const failing = JSON.stringify({
+      pageProps: {
+        play: {},
+        common: {
+          statusCode: 400,
+          isError: true,
+          loginUser: { flg: false, fighterId: "Someone", shortId: 1 },
+          appEnv: "prd",
+        },
+      },
+    });
+    const sig = describeBucklerResponse(400, "application/json", failing);
+    expect(sig.common).toEqual({ statusCode: 400, isError: true, loginUserFlg: false });
+    expect(JSON.stringify(sig)).not.toContain("Someone");
+  });
+});

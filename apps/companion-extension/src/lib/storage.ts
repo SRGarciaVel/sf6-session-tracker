@@ -8,6 +8,7 @@ import type {
   CompanionState,
   CompanionTransportKind,
 } from "@sf6/capcom-core";
+import type { CompanionRequestMeta } from "./buckler-client";
 
 import { TRACKER_ORIGINS } from "./tracker-origins";
 
@@ -32,6 +33,8 @@ export interface TransportTestResult {
   requestLocale: string | null;
   /** Safe description of the failing answer: status, content type, key NAMES — never values. */
   signature: BucklerResponseSignature | null;
+  /** Safe metadata of the last request sent in this transport's test (no secrets). */
+  request: CompanionRequestMeta | null;
   /** Safe warnings during the test (e.g. buckler_non_200_valid_payload:play:400). */
   notes: string[];
 }

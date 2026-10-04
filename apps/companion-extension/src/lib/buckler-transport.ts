@@ -13,10 +13,22 @@ import { BUCKLER_ORIGIN, type CompanionTransportKind } from "@sf6/capcom-core";
 
 export const BUCKLER_TAB_PATTERN = `${BUCKLER_ORIGIN}/6/buckler/*`;
 
+/** What was actually sent — safe metadata only (no cookie/token values, ever). */
+export interface SentRequestMeta {
+  credentials: RequestCredentials;
+  cache: RequestCache;
+  headerNames: string[];
+  /** Page path the browser uses as Referer (tab transports); null in the service worker. */
+  refererPath: string | null;
+  /** navigator.userAgentData brands (e.g. "Brave", "Google Chrome") — which browser/session. */
+  brands: string[];
+}
+
 export interface RawResponse {
   status: number;
   contentType: string | null;
   text: string;
+  sent?: SentRequestMeta;
 }
 
 export interface PageMetaRaw {
@@ -56,9 +68,24 @@ export function serviceWorkerTransport(fetchImpl: typeof fetch = fetch): Buckler
         status: res.status,
         contentType: res.headers.get("content-type"),
         text: await res.text(),
+        sent: {
+          credentials: "include",
+          cache: "no-store",
+          headerNames: Object.keys(headers),
+          refererPath: null,
+          brands: workerBrands(),
+        },
       };
     },
   };
+}
+
+function workerBrands(): string[] {
+  const uaData = (
+    globalThis.navigator as
+      (Navigator & { userAgentData?: { brands?: { brand: string }[] } }) | undefined
+  )?.userAgentData;
+  return (uaData?.brands ?? []).map((b) => b.brand).filter((b) => !/not.?a.?brand/i.test(b));
 }
 
 /* Injected functions: serialized by chrome.scripting, so they must be self-contained. They
@@ -66,10 +93,19 @@ export function serviceWorkerTransport(fetchImpl: typeof fetch = fetch): Buckler
 
 async function pageFetchText(path: string, headers: Record<string, string>): Promise<RawResponse> {
   const res = await fetch(path, { headers, credentials: "same-origin", cache: "no-store" });
+  const uaData = (navigator as Navigator & { userAgentData?: { brands?: { brand: string }[] } })
+    .userAgentData;
   return {
     status: res.status,
     contentType: res.headers.get("content-type"),
     text: await res.text(),
+    sent: {
+      credentials: "same-origin",
+      cache: "no-store",
+      headerNames: Object.keys(headers),
+      refererPath: location.pathname,
+      brands: (uaData?.brands ?? []).map((b) => b.brand).filter((b) => !/not.?a.?brand/i.test(b)),
+    },
   };
 }
 
