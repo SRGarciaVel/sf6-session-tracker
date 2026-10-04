@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "dist/**",
     "drizzle/**",
+    "scripts/research/.venv/**",
+    "debug_output/**",
   ]),
 ]);
 
