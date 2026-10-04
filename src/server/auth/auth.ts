@@ -6,7 +6,13 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { getDb } from "@/server/db/client";
-import { authAccount, authSession, authUser, authVerification } from "@/server/db/schema";
+import {
+  authAccount,
+  authRateLimit,
+  authSession,
+  authUser,
+  authVerification,
+} from "@/server/db/schema";
 import { getEnv } from "@/server/env";
 
 function createAuth() {
@@ -23,6 +29,7 @@ function createAuth() {
         session: authSession,
         account: authAccount,
         verification: authVerification,
+        rateLimit: authRateLimit,
       },
     }),
     user: {
@@ -45,9 +52,14 @@ function createAuth() {
       enabled: true,
       window: 60,
       max: 30,
+      // Shared by all instances in production (SEC-002); per-process memory in dev/tests.
+      storage: env.RATE_LIMIT_STORE === "postgres" ? "database" : "memory",
+      modelName: "rateLimit",
     },
     advanced: {
       useSecureCookies: env.APP_URL.startsWith("https://"),
+      // Behind the deployment proxy, read the client IP from the header IT sets (SEC-013).
+      ...(env.TRUST_PROXY ? { ipAddress: { ipAddressHeaders: [env.CLIENT_IP_HEADER] } } : {}),
     },
     // Must be last: lets server actions set auth cookies.
     plugins: [nextCookies()],

@@ -28,7 +28,7 @@ const log = logger.child({ component: "sse" });
  * `state` event is also a full replacement, never a delta.
  */
 export async function GET(request: Request, ctx: RouteContext<"/api/overlay/[token]/stream">) {
-  const limit = limitOverlayRequest(getClientIp(request.headers), "stream");
+  const limit = await limitOverlayRequest(getClientIp(request.headers), "stream");
   if (!limit.ok) {
     return new Response("rate limited", {
       status: 429,

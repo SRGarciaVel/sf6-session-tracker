@@ -9,7 +9,7 @@ export const OPTIONS = preflight;
 export async function GET(request: Request) {
   const auth = await requireDevice(request);
   if (!auth.ok) return auth.response;
-  const limit = limitDevice(auth.device.id, "state");
+  const limit = await limitDevice(auth.device.id, "state");
   if (!limit.ok) return tooMany(limit.retryAfterSeconds);
   return json(await buildCompanionState(getDb(), auth.device.userId));
 }

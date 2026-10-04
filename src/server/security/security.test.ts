@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parseEvent } from "@/server/realtime/events";
 import { cfnUserIdSchema } from "@/server/sf6/provider";
-import { rateLimit, resetRateLimits } from "./rate-limit";
+import { memoryStore, rateLimit, resetRateLimits, setRateLimitStore } from "./rate-limit";
 import { generateOverlayToken, isValidOverlayTokenFormat } from "./tokens";
 
 describe("overlay tokens", () => {
@@ -32,18 +32,29 @@ describe("rateLimit", () => {
     vi.useRealTimers();
   });
 
-  it("allows up to the limit within the window, then blocks", () => {
-    const results = Array.from({ length: 4 }, () => rateLimit("k", 3, 60_000));
+  beforeEach(() => setRateLimitStore(memoryStore));
+
+  it("allows up to the limit within the window, then blocks", async () => {
+    const results: Awaited<ReturnType<typeof rateLimit>>[] = [];
+    for (let i = 0; i < 4; i++) results.push(await rateLimit("k", 3, 60_000));
     expect(results.map((r) => r.ok)).toEqual([true, true, true, false]);
     expect(results[3]?.retryAfterSeconds).toBeGreaterThan(0);
   });
 
-  it("resets after the window", () => {
+  it("resets after the window", async () => {
     vi.useFakeTimers();
-    for (let i = 0; i < 3; i++) rateLimit("k2", 3, 1_000);
-    expect(rateLimit("k2", 3, 1_000).ok).toBe(false);
+    for (let i = 0; i < 3; i++) await rateLimit("k2", 3, 1_000);
+    expect((await rateLimit("k2", 3, 1_000)).ok).toBe(false);
     vi.advanceTimersByTime(1_001);
-    expect(rateLimit("k2", 3, 1_000).ok).toBe(true);
+    expect((await rateLimit("k2", 3, 1_000)).ok).toBe(true);
+  });
+
+  it("store failure: fail-open by default, fail-closed when requested", async () => {
+    setRateLimitStore({
+      consume: () => Promise.reject(new Error("db down")),
+    });
+    expect((await rateLimit("x", 1, 1_000)).ok).toBe(true);
+    expect((await rateLimit("x", 1, 1_000, { failClosed: true })).ok).toBe(false);
   });
 });
 

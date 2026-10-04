@@ -10,7 +10,9 @@ export const OPTIONS = preflight;
 
 /** Exchange a one-time pairing code (from the dashboard) for a companion device token. */
 export async function POST(request: Request) {
-  const limit = rateLimit(`companion-pair:${getClientIp(request.headers)}`, 10, 60_000);
+  const limit = await rateLimit(`companion-pair:${getClientIp(request.headers)}`, 10, 60_000, {
+    failClosed: true, // brute-force target
+  });
   if (!limit.ok) return tooMany(limit.retryAfterSeconds);
 
   const body = await readJson(request);

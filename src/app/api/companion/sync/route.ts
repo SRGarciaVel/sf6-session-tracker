@@ -24,7 +24,7 @@ const STATUS = {
 export async function POST(request: Request) {
   const auth = await requireDevice(request);
   if (!auth.ok) return auth.response;
-  const limit = limitDevice(auth.device.id, "sync");
+  const limit = await limitDevice(auth.device.id, "sync");
   if (!limit.ok) return tooMany(limit.retryAfterSeconds);
 
   const body = await readJson(request);

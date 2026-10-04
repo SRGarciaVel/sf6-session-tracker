@@ -6,7 +6,10 @@ import { rateLimit, type RateLimitResult } from "@/server/security/rate-limit";
 import { getOverlayByToken, type OverlayView } from "./service";
 
 /** Generous: OBS reconnects + several scenes. Stops token brute-forcing and abuse. */
-export function limitOverlayRequest(ip: string, kind: "state" | "stream"): RateLimitResult {
+export function limitOverlayRequest(
+  ip: string,
+  kind: "state" | "stream",
+): Promise<RateLimitResult> {
   return kind === "stream"
     ? rateLimit(`overlay-stream:${ip}`, 60, 60_000)
     : rateLimit(`overlay-state:${ip}`, 240, 60_000);

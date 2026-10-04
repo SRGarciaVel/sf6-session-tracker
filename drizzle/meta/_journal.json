@@ -43,6 +43,13 @@
       "when": 1791143788022,
       "tag": "0005_companion_snapshot_per_user",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791143986634,
+      "tag": "0006_rate_limit_tables",
+      "breakpoints": true
     }
   ]
 }

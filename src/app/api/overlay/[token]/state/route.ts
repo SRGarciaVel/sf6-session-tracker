@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 /** Authoritative overlay state (used on reconnect and as the polling fallback). */
 export async function GET(request: Request, ctx: RouteContext<"/api/overlay/[token]/state">) {
-  const limit = limitOverlayRequest(getClientIp(request.headers), "state");
+  const limit = await limitOverlayRequest(getClientIp(request.headers), "state");
   if (!limit.ok) {
     return Response.json(
       { error: "rate_limited" },

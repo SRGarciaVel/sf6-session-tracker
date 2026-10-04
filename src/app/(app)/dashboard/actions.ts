@@ -53,7 +53,7 @@ export async function startSessionAction(): Promise<ActionResult> {
   const t = await getTranslations("Errors");
   const ctx = await authorizedPlayer();
   if (!ctx) return fail(t("sessionExpired"));
-  const limit = rateLimit(`session-start:${ctx.user.id}`, 6, 60_000);
+  const limit = await rateLimit(`session-start:${ctx.user.id}`, 6, 60_000);
   if (!limit.ok) return fail(t("slowDown", { seconds: limit.retryAfterSeconds }));
 
   try {
@@ -237,7 +237,7 @@ export async function createCompanionCodeAction(): Promise<
   const t = await getTranslations("Errors");
   const user = await getCurrentUser();
   if (!user) return fail(t("sessionExpired"));
-  const limit = rateLimit(`companion-code:${user.id}`, 5, 60_000);
+  const limit = await rateLimit(`companion-code:${user.id}`, 5, 60_000, { failClosed: true });
   if (!limit.ok) return fail(t("slowDown", { seconds: limit.retryAfterSeconds }));
   const db = getDb();
   await purgePairingCodes(db);

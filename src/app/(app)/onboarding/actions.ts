@@ -59,7 +59,7 @@ export async function lookupPlayerAction(rawId: string): Promise<ActionResult<Pl
   if (!parsed.success) return fail(t("cfnInvalid"));
 
   // Protects Capcom from lookup spam; each lookup may hit CFN.
-  const limit = rateLimit(`cfn-lookup:${user.id}`, 10, 60_000);
+  const limit = await rateLimit(`cfn-lookup:${user.id}`, 10, 60_000);
   if (!limit.ok) return fail(t("tooManyLookups", { seconds: limit.retryAfterSeconds }));
 
   try {

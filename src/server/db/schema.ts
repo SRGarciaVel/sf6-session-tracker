@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   index,
@@ -410,6 +411,23 @@ export const companionSnapshot = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.cfnUserId] })],
 );
+
+/* ───────────────────────── Rate limiting (distributed) ───────────────────────── */
+
+/** App rate-limit counters shared by every instance (RATE_LIMIT_STORE=postgres). */
+export const rateLimitBucket = pgTable("rate_limit_bucket", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  resetAt: tz("reset_at").notNull(),
+});
+
+/** Better Auth's own rate-limit storage (rateLimit.storage = "database"). */
+export const authRateLimit = pgTable("auth_rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});
 
 export type CompanionDeviceRow = typeof companionDevice.$inferSelect;
 export type CompanionSnapshotRow = typeof companionSnapshot.$inferSelect;

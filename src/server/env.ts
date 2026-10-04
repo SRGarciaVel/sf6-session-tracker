@@ -42,9 +42,29 @@ const envSchema = z.object({
   SESSION_START_GRACE_SECONDS: int(90),
 
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+
+  /**
+   * memory = per process (dev/tests). postgres = shared by all instances (production default:
+   * in-memory limits are N× looser and evadable across serverless instances — SEC-003).
+   */
+  RATE_LIMIT_STORE: z.enum(["memory", "postgres"]).optional(),
+  /**
+   * Header carrying the client IP set by YOUR proxy (only read when TRUST_PROXY=true).
+   * x-forwarded-for → its RIGHTMOST entry (the one appended by the nearest proxy).
+   * Vercel: x-real-ip or x-vercel-forwarded-for.
+   */
+  CLIENT_IP_HEADER: z.string().trim().toLowerCase().default("x-forwarded-for"),
 });
 
-export type Env = z.infer<typeof envSchema>;
+export type Env = Omit<z.infer<typeof envSchema>, "RATE_LIMIT_STORE"> & {
+  RATE_LIMIT_STORE: "memory" | "postgres";
+};
+
+/** Placeholder secrets that must never reach production (they are public in the repo). */
+const KNOWN_PLACEHOLDER_SECRETS = new Set([
+  "change-me-to-a-long-random-string-0123456789",
+  "test-secret-at-least-32-characters-long-xx",
+]);
 
 let cached: Env | null = null;
 
@@ -55,7 +75,23 @@ export function getEnv(): Env {
     const issues = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`);
     throw new Error(`Invalid environment configuration:\n${issues.join("\n")}`);
   }
-  cached = parsed.data;
+  const data = parsed.data;
+  if (data.NODE_ENV === "production") {
+    // SEC-006: a secret copied from .env.example is public — refuse to boot with it.
+    if (
+      KNOWN_PLACEHOLDER_SECRETS.has(data.BETTER_AUTH_SECRET) ||
+      /change-me/i.test(data.BETTER_AUTH_SECRET)
+    ) {
+      throw new Error(
+        "Invalid environment configuration:\n  - BETTER_AUTH_SECRET: placeholder value; generate one with `openssl rand -base64 32`",
+      );
+    }
+  }
+  cached = {
+    ...data,
+    RATE_LIMIT_STORE:
+      data.RATE_LIMIT_STORE ?? (data.NODE_ENV === "production" ? "postgres" : "memory"),
+  };
   return cached;
 }
 
