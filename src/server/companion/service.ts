@@ -43,6 +43,12 @@ const SNAPSHOT_MATCHES = 30;
 const EARLIEST_MATCH = Date.parse("2023-06-01T00:00:00Z");
 const FUTURE_TOLERANCE_MS = 5 * 60_000;
 const LAST_SEEN_THROTTLE_MS = 60_000;
+/**
+ * A device token unused for this long is revoked on its next use (SEC-010): a forgotten or
+ * stolen browser profile does not keep a working credential forever. Active companions sync
+ * every 30–120 s, so this never affects real use.
+ */
+export const DEVICE_INACTIVITY_REVOKE_MS = 90 * 86_400_000;
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
@@ -138,6 +144,19 @@ export async function authenticateDevice(
     .where(and(eq(companionDevice.tokenHash, sha256(token)), isNull(companionDevice.revokedAt)))
     .limit(1);
   if (!device) return null;
+  const lastUse = device.lastSeenAt ?? device.createdAt;
+  if (now.getTime() - lastUse.getTime() > DEVICE_INACTIVITY_REVOKE_MS) {
+    await db
+      .update(companionDevice)
+      .set({ revokedAt: now })
+      .where(eq(companionDevice.id, device.id));
+    log.info("companion_device_revoked", {
+      userId: device.userId,
+      deviceId: device.id,
+      reason: "inactive",
+    });
+    return null;
+  }
   if (!device.lastSeenAt || now.getTime() - device.lastSeenAt.getTime() > LAST_SEEN_THROTTLE_MS) {
     await db
       .update(companionDevice)

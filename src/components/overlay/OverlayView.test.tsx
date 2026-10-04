@@ -144,3 +144,44 @@ describe("OverlayView i18n", () => {
     expect(text).not.toContain("+96");
   });
 });
+
+describe("OverlayView XSS (SEC-016: external Buckler strings are rendered as text)", () => {
+  const PAYLOADS = [
+    "<script>alert(1)</script>",
+    '"><img src=x onerror=alert(1)>',
+    "</style><script>alert(1)</script>",
+    "javascript:alert(1)",
+  ];
+
+  /** Replace every name/rank/title-like string (the data that comes from Buckler/users). */
+  function poison<T>(value: T, payload: string): T {
+    if (Array.isArray(value)) return value.map((v) => poison(v, payload)) as T;
+    if (value && typeof value === "object") {
+      return Object.fromEntries(
+        Object.entries(value).map(([k, v]) => [
+          k,
+          typeof v === "string" && /name|rank|title|label|opponent/i.test(k)
+            ? payload
+            : poison(v, payload),
+        ]),
+      ) as T;
+    }
+    return value;
+  }
+
+  it.each(PAYLOADS)("never emits markup from %s", (payload) => {
+    const html = renderToStaticMarkup(
+      <OverlayView
+        config={{ ...cfg("fighter", "en"), title: payload.slice(0, 24), showTitle: true }}
+        live={poison(sampleLiveState(), payload)}
+        sizing={{ mode: "viewport" }}
+      />,
+    );
+    expect(html).not.toContain("<script");
+    expect(html).not.toContain("<img");
+    // Inside real TAGS only (escaped text like "&lt;img … onerror=…&gt;" is harmless).
+    expect(html).not.toMatch(/<[^>]*\son[a-z]+=/i); // no event-handler attributes
+    expect(html).not.toMatch(/<[^>]*(href|src)="javascript:/i);
+    expect(html).toContain(payload.includes("<") ? "&lt;" : payload.slice(0, 8)); // rendered as text
+  });
+});
