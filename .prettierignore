@@ -4,3 +4,5 @@ drizzle
 node_modules
 pnpm-lock.yaml
 next-env.d.ts
+tests/fixtures/
+apps/*/dist/

@@ -35,6 +35,8 @@ const personalInfoSchema = z.looseObject({
 /** `fighter_banner_info` — present on every profile page (play, battlelog). */
 export const fighterBannerSchema = z.looseObject({
   personal_info: personalInfoSchema,
+  /** true only when the logged-in viewer IS this CFN (observed on the user's own pages). */
+  is_my_data: z.boolean().optional(),
   favorite_character_tool_name: z.string().optional(),
   favorite_character_league_info: z
     .looseObject({

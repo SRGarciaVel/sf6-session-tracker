@@ -8,6 +8,7 @@
         "platform_name": "Steam",
         "platform_tool_name": "steam"
       },
+      "is_my_data": true,
       "favorite_character_id": 13,
       "favorite_character_name": "A.K.I.",
       "favorite_character_tool_name": "aki",
@@ -25,22 +26,7 @@
     },
     "play": {
       "current_season_id": 13,
-      "season_ids": [
-        13,
-        12,
-        11,
-        10,
-        9,
-        8,
-        7,
-        6,
-        5,
-        4,
-        3,
-        2,
-        1,
-        0
-      ],
+      "season_ids": [13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
       "character_league_infos": [
         {
           "character_id": 1,

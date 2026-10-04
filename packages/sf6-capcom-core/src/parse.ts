@@ -110,6 +110,8 @@ export interface NormalizedCapcomProfile {
   characters: CapcomCharacterDetail[];
   seasonId: number | null;
   seasonIds: number[];
+  /** fighter_banner_info.is_my_data: the browser session belongs to this CFN (null = absent). */
+  viewerOwnsProfile: boolean | null;
   warnings: string[];
 }
 
@@ -191,6 +193,7 @@ export function normalizeCapcomProfile(
     characters: details,
     seasonId,
     seasonIds: play.play.season_ids ?? [],
+    viewerOwnsProfile: play.fighter_banner_info.is_my_data ?? null,
     warnings,
   };
 }

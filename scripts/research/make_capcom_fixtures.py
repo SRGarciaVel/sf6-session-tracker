@@ -54,6 +54,7 @@ def banner(b: dict[str, Any]) -> dict[str, Any]:
     fav = b.get("favorite_character_league_info", {})
     return {
         "personal_info": pick(b["personal_info"], ["fighter_id", "short_id", "platform_name", "platform_tool_name"]),
+        **({"is_my_data": b["is_my_data"]} if "is_my_data" in b else {}),
         "favorite_character_id": b.get("favorite_character_id"),
         "favorite_character_name": b.get("favorite_character_name"),
         "favorite_character_tool_name": b.get("favorite_character_tool_name"),

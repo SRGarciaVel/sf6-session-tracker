@@ -7,7 +7,10 @@ const SRC = new URL("../src/", import.meta.url);
 describe("@sf6/capcom-core purity", () => {
   it("imports nothing but zod and its own modules (no node:, @/, next, db, env, chrome)", () => {
     for (const file of readdirSync(SRC).filter((f) => f.endsWith(".ts"))) {
-      const text = readFileSync(new URL(file, SRC), "utf8");
+      // Comments may mention chrome.alarms etc.; only code is checked.
+      const text = readFileSync(new URL(file, SRC), "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/^\s*\/\/.*$/gm, "");
       const specifiers = [...text.matchAll(/from\s+"([^"]+)"/g)].map((m) => m[1]);
       for (const spec of specifiers) {
         expect(spec === "zod" || spec?.startsWith("./"), `${file} imports ${spec}`).toBe(true);
