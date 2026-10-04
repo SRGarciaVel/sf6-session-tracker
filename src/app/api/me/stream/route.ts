@@ -3,6 +3,7 @@ import { buildDashboardLiveState } from "@/server/dashboard/state";
 import { getDb } from "@/server/db/client";
 import { findPlayerByUserId } from "@/server/players/service";
 import { getHub } from "@/server/realtime/hub";
+import { SSE_LIMITS, acquireSseSlots } from "@/server/realtime/connection-limits";
 import { sseResponse } from "@/server/realtime/sse";
 
 export const dynamic = "force-dynamic";
@@ -20,8 +21,23 @@ export async function GET(request: Request) {
   const player = await findPlayerByUserId(db, session.user.id);
   if (!player) return new Response("no player", { status: 404 });
 
+  const release = acquireSseSlots([[`user:${session.user.id}`, SSE_LIMITS.perUser]]);
+  if (!release) {
+    return new Response("too many open streams", {
+      status: 429,
+      headers: { "Cache-Control": "no-store", "Retry-After": "30" },
+    });
+  }
+
+  // Released when the stream ends, the client aborts, or setup fails (idempotent).
+  request.signal.addEventListener("abort", release, { once: true });
   const hub = getHub();
-  await hub.ensureListening();
+  try {
+    await hub.ensureListening();
+  } catch (err) {
+    release();
+    throw err;
+  }
 
   return sseResponse(request.signal, async (sse) => {
     const push = async (live?: Parameters<typeof buildDashboardLiveState>[2]) => {
@@ -38,6 +54,7 @@ export async function GET(request: Request) {
     const refresh = setInterval(() => void push(), REFRESH_MS);
 
     return () => {
+      release();
       clearInterval(ping);
       clearInterval(refresh);
       unsubscribe();

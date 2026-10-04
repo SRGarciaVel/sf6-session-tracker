@@ -15,6 +15,7 @@ import {
 } from "@/server/overlays/service";
 import { publishEvent } from "@/server/realtime/events";
 import { INSTANCE_ID, getHub } from "@/server/realtime/hub";
+import { SSE_LIMITS, acquireSseSlots } from "@/server/realtime/connection-limits";
 import { sseResponse } from "@/server/realtime/sse";
 import { getClientIp } from "@/server/security/client-ip";
 
@@ -40,9 +41,27 @@ export async function GET(request: Request, ctx: RouteContext<"/api/overlay/[tok
   const initial = await loadOverlayPayload(token);
   if (!initial) return new Response("not found", { status: 404, headers: NO_STORE_HEADERS });
 
+  const release = acquireSseSlots([
+    [`overlay:${initial.overlay.id}`, SSE_LIMITS.perOverlay],
+    [`ip:${getClientIp(request.headers)}`, SSE_LIMITS.perIp],
+  ]);
+  if (!release) {
+    return new Response("too many open streams", {
+      status: 429,
+      headers: { ...NO_STORE_HEADERS, "Retry-After": "30" },
+    });
+  }
+
   const db = getDb();
+  // Released when the stream ends, the client aborts, or setup fails (idempotent).
+  request.signal.addEventListener("abort", release, { once: true });
   const hub = getHub();
-  await hub.ensureListening();
+  try {
+    await hub.ensureListening();
+  } catch (err) {
+    release();
+    throw err;
+  }
   const { overlay } = initial;
 
   return sseResponse(request.signal, async (sse) => {
@@ -85,6 +104,7 @@ export async function GET(request: Request, ctx: RouteContext<"/api/overlay/[tok
     }, PING_MS);
 
     return async () => {
+      release();
       clearInterval(ping);
       unsubscribe();
       await removeConnection(db, connectionId).catch(() => undefined);
