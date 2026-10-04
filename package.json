@@ -20,6 +20,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
+    "dev:reassign-cfn": "tsx scripts/dev-reassign-cfn.ts",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
     "provider:check": "tsx scripts/provider-check.ts",
     "test:e2e": "playwright test",
