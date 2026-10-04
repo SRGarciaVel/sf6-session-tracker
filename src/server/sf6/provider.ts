@@ -9,6 +9,11 @@ import type { NormalizedPlayerProfile, NormalizedSF6Match } from "@/domain/sf6/t
 export interface ProviderCallOptions {
   /** Aborted on timeout; implementations should pass it to fetch(). */
   signal?: AbortSignal;
+  /**
+   * The account the data is read FOR. Providers whose data is pushed per account (companion)
+   * MUST only answer from that account's data (SEC-001); the others ignore it.
+   */
+  scope?: { userId: string };
 }
 
 export interface SF6DataProvider {

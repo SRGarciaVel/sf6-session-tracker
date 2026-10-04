@@ -63,7 +63,9 @@ export async function lookupPlayerAction(rawId: string): Promise<ActionResult<Pl
   if (!limit.ok) return fail(t("tooManyLookups", { seconds: limit.retryAfterSeconds }));
 
   try {
-    const profile = await getSF6DataProvider().getPlayerProfile(parsed.data);
+    const profile = await getSF6DataProvider().getPlayerProfile(parsed.data, {
+      scope: { userId: user.id },
+    });
     return ok(toPreview(profile));
   } catch (err) {
     logger.warn("onboarding.lookup_failed", { userId: user.id, error: err });
@@ -85,7 +87,9 @@ export async function confirmPlayerAction(rawId: string): Promise<ActionResult> 
     const locale = await getRequestLocale();
     // First explicit-or-default language becomes the account preference if none is stored yet.
     if (!user.locale) await setUserLocale(db, user.id, locale);
-    const profile = await getSF6DataProvider().getPlayerProfile(parsed.data);
+    const profile = await getSF6DataProvider().getPlayerProfile(parsed.data, {
+      scope: { userId: user.id },
+    });
     const tOnboarding = await getTranslations("Onboarding");
     await upsertPlayerForUser(db, user.id, profile, {
       name: tOnboarding("defaultOverlayName"),

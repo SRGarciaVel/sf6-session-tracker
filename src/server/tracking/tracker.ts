@@ -46,6 +46,8 @@ export function trackerConfigFromEnv(env: Env): TrackerConfig {
 
 export interface ClaimedPlayer {
   id: string;
+  /** Owning account: provider reads are scoped to it (companion data is per account). */
+  userId: string;
   cfnUserId: string;
   consecutiveFailures: number;
   lastSuccessAt: Date | null;
@@ -55,6 +57,7 @@ export interface ClaimedPlayer {
 
 interface ClaimedRow extends Record<string, unknown> {
   id: string;
+  user_id: string;
   cfn_user_id: string;
   consecutive_failures: number;
   last_success_at: Date | string | null;
@@ -88,11 +91,12 @@ export async function claimDuePlayers(
         limit ${limit}
         for update skip locked
      )
-    returning p.id, p.cfn_user_id, p.consecutive_failures, p.last_success_at,
+    returning p.id, p.user_id, p.cfn_user_id, p.consecutive_failures, p.last_success_at,
               p.profile_updated_at, p.profile_refresh_until
   `);
   return rows.map((r) => ({
     id: r.id,
+    userId: r.user_id,
     cfnUserId: r.cfn_user_id,
     consecutiveFailures: Number(r.consecutive_failures),
     lastSuccessAt: toDate(r.last_success_at),
@@ -142,7 +146,8 @@ export async function pollPlayer(
   const startedAt = Date.now();
   try {
     plog.debug("player.polling");
-    const matches = await provider.getRecentMatches(player.cfnUserId);
+    const scope = { scope: { userId: player.userId } };
+    const matches = await provider.getRecentMatches(player.cfnUserId, scope);
     const ingest = await ingestMatches(db, matches, {
       playerId: player.id,
       sessionId: session.id,
@@ -162,7 +167,7 @@ export async function pollPlayer(
       // Stamp the snapshot with the fetch START so a slower overlapping poll can never
       // overwrite a newer per-character rating (guarded upsert in updatePlayerProfile).
       const fetchedAt = new Date();
-      const profile = await provider.getPlayerProfile(player.cfnUserId);
+      const profile = await provider.getPlayerProfile(player.cfnUserId, scope);
       const changed = await updatePlayerProfile(db, player.id, profile, fetchedAt);
       profileRefreshed = true;
       if (changed) {

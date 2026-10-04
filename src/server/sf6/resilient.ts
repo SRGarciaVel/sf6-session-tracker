@@ -9,8 +9,12 @@ import {
   SF6ProviderError,
   normalizedMatchSchema,
   normalizedProfileSchema,
+  type ProviderCallOptions,
   type SF6DataProvider,
 } from "./provider";
+
+/** Scope part of cache / single-flight keys: data of one account is never served to another. */
+const scopeKey = (options: Pick<ProviderCallOptions, "scope">) => options.scope?.userId ?? "-";
 
 export interface ResilientOptions {
   timeoutMs: number;
@@ -35,9 +39,12 @@ export class ResilientProvider implements SF6DataProvider {
     this.name = inner.name;
   }
 
-  getPlayerProfile(cfnUserId: string): Promise<NormalizedPlayerProfile> {
-    return this.run(`profile:${cfnUserId}`, true, async (signal) => {
-      const raw = await this.inner.getPlayerProfile(cfnUserId, { signal });
+  getPlayerProfile(
+    cfnUserId: string,
+    options: Pick<ProviderCallOptions, "scope"> = {},
+  ): Promise<NormalizedPlayerProfile> {
+    return this.run(`profile:${scopeKey(options)}:${cfnUserId}`, true, async (signal) => {
+      const raw = await this.inner.getPlayerProfile(cfnUserId, { signal, scope: options.scope });
       const parsed = normalizedProfileSchema.safeParse(raw);
       if (!parsed.success) {
         throw new SF6ProviderError("invalid_response", "Provider returned an invalid profile", {
@@ -49,9 +56,12 @@ export class ResilientProvider implements SF6DataProvider {
   }
 
   /** Single-flight but never cached: match lists are the freshness-critical data. */
-  getRecentMatches(cfnUserId: string): Promise<NormalizedSF6Match[]> {
-    return this.run(`matches:${cfnUserId}`, false, async (signal) => {
-      const raw = await this.inner.getRecentMatches(cfnUserId, { signal });
+  getRecentMatches(
+    cfnUserId: string,
+    options: Pick<ProviderCallOptions, "scope"> = {},
+  ): Promise<NormalizedSF6Match[]> {
+    return this.run(`matches:${scopeKey(options)}:${cfnUserId}`, false, async (signal) => {
+      const raw = await this.inner.getRecentMatches(cfnUserId, { signal, scope: options.scope });
       if (!Array.isArray(raw)) {
         throw new SF6ProviderError("invalid_response", "Provider returned a non-array match list");
       }
@@ -65,9 +75,9 @@ export class ResilientProvider implements SF6DataProvider {
     });
   }
 
-  /** Drop the cached profile for a player. */
+  /** Drop the cached profiles of a CFN (every scope). */
   invalidate(cfnUserId: string): void {
-    this.cache.delete(`profile:${cfnUserId}`);
+    for (const key of this.cache.keys()) if (key.endsWith(`:${cfnUserId}`)) this.cache.delete(key);
   }
 
   private async run<T>(

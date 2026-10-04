@@ -6,6 +6,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -388,23 +389,27 @@ export const companionPairingCode = pgTable(
 );
 
 /**
- * Latest normalized observation pushed by a companion for a CFN (served by the "companion"
- * provider). One owner per CFN: only the owner's devices may overwrite it.
+ * Latest normalized observation pushed by an account's companion for a CFN (served by the
+ * "companion" provider). Strictly per account (SEC-001): never read for another account.
  */
-export const companionSnapshot = pgTable("companion_snapshot", {
-  cfnUserId: text("cfn_user_id").primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => authUser.id, { onDelete: "cascade" }),
-  deviceId: uuid("device_id").references(() => companionDevice.id, { onDelete: "set null" }),
-  /** NormalizedPlayerProfile (JSON). */
-  profile: jsonb("profile").$type<NormalizedPlayerProfile>(),
-  profileObservedAt: tz("profile_observed_at"),
-  /** Latest normalized matches (wire format: ISO playedAt), newest first, bounded. */
-  matches: jsonb("matches").$type<CompanionWireMatch[]>().notNull().default([]),
-  matchesObservedAt: tz("matches_observed_at"),
-  updatedAt: tz("updated_at").notNull().defaultNow(),
-});
+export const companionSnapshot = pgTable(
+  "companion_snapshot",
+  {
+    cfnUserId: text("cfn_user_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    deviceId: uuid("device_id").references(() => companionDevice.id, { onDelete: "set null" }),
+    /** NormalizedPlayerProfile (JSON). */
+    profile: jsonb("profile").$type<NormalizedPlayerProfile>(),
+    profileObservedAt: tz("profile_observed_at"),
+    /** Latest normalized matches (wire format: ISO playedAt), newest first, bounded. */
+    matches: jsonb("matches").$type<CompanionWireMatch[]>().notNull().default([]),
+    matchesObservedAt: tz("matches_observed_at"),
+    updatedAt: tz("updated_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.cfnUserId] })],
+);
 
 export type CompanionDeviceRow = typeof companionDevice.$inferSelect;
 export type CompanionSnapshotRow = typeof companionSnapshot.$inferSelect;

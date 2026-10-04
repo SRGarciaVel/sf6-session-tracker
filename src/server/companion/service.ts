@@ -42,8 +42,6 @@ const SNAPSHOT_MATCHES = 30;
 /** SF6 release; anything older is not a real SF6 replay. */
 const EARLIEST_MATCH = Date.parse("2023-06-01T00:00:00Z");
 const FUTURE_TOLERANCE_MS = 5 * 60_000;
-/** A CFN snapshot owned by someone else can only be taken over after this long without updates. */
-const SNAPSHOT_TAKEOVER_MS = 24 * 3600_000;
 const LAST_SEEN_THROTTLE_MS = 60_000;
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
@@ -221,8 +219,7 @@ export async function buildCompanionState(
 
 /* ───────── sync ───────── */
 
-export type SyncRejection =
-  "cfn_mismatch" | "profile_cfn_mismatch" | "invalid_timestamp" | "cfn_owned_by_other";
+export type SyncRejection = "cfn_mismatch" | "profile_cfn_mismatch" | "invalid_timestamp";
 
 export type SyncResult =
   | { ok: true; inserted: number; duplicates: number; state: CompanionState }
@@ -255,18 +252,20 @@ export async function applyCompanionSync(
   });
   if (badTime) return reject("invalid_timestamp");
 
-  /* Snapshot (one owner per CFN). */
+  /*
+   * Snapshot of THIS account only (SEC-001). Companion data is client-asserted: it must never
+   * be readable by, or block, another account that tracks the same CFN.
+   */
   const [existing] = await db
     .select()
     .from(companionSnapshot)
-    .where(eq(companionSnapshot.cfnUserId, payload.cfnUserId))
+    .where(
+      and(
+        eq(companionSnapshot.userId, device.userId),
+        eq(companionSnapshot.cfnUserId, payload.cfnUserId),
+      ),
+    )
     .limit(1);
-  if (existing && existing.userId !== device.userId) {
-    const stale = now.getTime() - existing.updatedAt.getTime() > SNAPSHOT_TAKEOVER_MS;
-    const ownerTracksIt =
-      (await findPlayerByUserId(db, existing.userId))?.cfnUserId === payload.cfnUserId;
-    if (ownerTracksIt || !stale) return reject("cfn_owned_by_other");
-  }
   const merged = new Map<string, CompanionWireMatch>();
   for (const m of [...payload.matches.map(toWire), ...(existing?.matches ?? [])]) {
     if (!merged.has(m.externalMatchId)) merged.set(m.externalMatchId, m);
@@ -286,7 +285,10 @@ export async function applyCompanionSync(
   await db
     .insert(companionSnapshot)
     .values(values)
-    .onConflictDoUpdate({ target: companionSnapshot.cfnUserId, set: values });
+    .onConflictDoUpdate({
+      target: [companionSnapshot.userId, companionSnapshot.cfnUserId],
+      set: values,
+    });
 
   /* Ingestion through the normal pipeline (only in companion mode, only for the owner's player). */
   let inserted = 0;

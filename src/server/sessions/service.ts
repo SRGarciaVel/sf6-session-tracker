@@ -236,8 +236,8 @@ export async function startSession(
   player: Sf6PlayerRow,
 ): Promise<GameSessionRow> {
   const [profile, recent] = await Promise.all([
-    provider.getPlayerProfile(player.cfnUserId),
-    provider.getRecentMatches(player.cfnUserId),
+    provider.getPlayerProfile(player.cfnUserId, { scope: { userId: player.userId } }),
+    provider.getRecentMatches(player.cfnUserId, { scope: { userId: player.userId } }),
   ]);
   const startGraceMs = getEnv().SESSION_START_GRACE_SECONDS * 1000;
   const observedAt = new Date();
@@ -364,8 +364,8 @@ export async function endSession(
     const player = await findPlayerById(db, playerId);
     if (player) {
       const [matches, profile] = await Promise.allSettled([
-        provider.getRecentMatches(player.cfnUserId),
-        provider.getPlayerProfile(player.cfnUserId),
+        provider.getRecentMatches(player.cfnUserId, { scope: { userId: player.userId } }),
+        provider.getPlayerProfile(player.cfnUserId, { scope: { userId: player.userId } }),
       ]);
       if (matches.status === "fulfilled") finalMatches = matches.value;
       if (profile.status === "fulfilled") finalProfile = profile.value;

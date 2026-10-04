@@ -36,6 +36,13 @@
       "when": 1791089841742,
       "tag": "0004_companion",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791143788022,
+      "tag": "0005_companion_snapshot_per_user",
+      "breakpoints": true
     }
   ]
 }

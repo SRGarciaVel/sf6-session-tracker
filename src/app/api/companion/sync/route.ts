@@ -16,7 +16,6 @@ export const OPTIONS = preflight;
 
 const STATUS = {
   cfn_mismatch: 409,
-  cfn_owned_by_other: 409,
   profile_cfn_mismatch: 422,
   invalid_timestamp: 422,
 } as const;

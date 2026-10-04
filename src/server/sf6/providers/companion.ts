@@ -5,12 +5,15 @@
  *
  * Fails with "unavailable" when there is no snapshot or it is older than
  * COMPANION_SNAPSHOT_MAX_AGE_MS: a session must never start on a stale baseline.
+ *
+ * Companion data is client-asserted, so it is strictly PER ACCOUNT: only the snapshot pushed by
+ * the account in `options.scope` is ever read (SEC-001 — no cross-account injection/squatting).
  */
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { NormalizedPlayerProfile, NormalizedSF6Match } from "@/domain/sf6/types";
 import type { DbExecutor } from "@/server/db/client";
 import { companionSnapshot } from "@/server/db/schema";
-import { SF6ProviderError, type SF6DataProvider } from "../provider";
+import { SF6ProviderError, type ProviderCallOptions, type SF6DataProvider } from "../provider";
 
 export class CompanionSF6DataProvider implements SF6DataProvider {
   readonly name = "companion";
@@ -21,11 +24,15 @@ export class CompanionSF6DataProvider implements SF6DataProvider {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  private async snapshot(cfnUserId: string) {
+  private async snapshot(cfnUserId: string, options?: ProviderCallOptions) {
+    const userId = options?.scope?.userId;
+    if (!userId) {
+      throw new SF6ProviderError("unavailable", "Companion data requires the requesting account");
+    }
     const [row] = await this.db
       .select()
       .from(companionSnapshot)
-      .where(eq(companionSnapshot.cfnUserId, cfnUserId))
+      .where(and(eq(companionSnapshot.userId, userId), eq(companionSnapshot.cfnUserId, cfnUserId)))
       .limit(1);
     if (!row) {
       throw new SF6ProviderError(
@@ -45,15 +52,21 @@ export class CompanionSF6DataProvider implements SF6DataProvider {
     }
   }
 
-  async getPlayerProfile(cfnUserId: string): Promise<NormalizedPlayerProfile> {
-    const row = await this.snapshot(cfnUserId);
+  async getPlayerProfile(
+    cfnUserId: string,
+    options?: ProviderCallOptions,
+  ): Promise<NormalizedPlayerProfile> {
+    const row = await this.snapshot(cfnUserId, options);
     this.assertFresh(row.profileObservedAt, "profile");
     if (!row.profile) throw new SF6ProviderError("unavailable", "Companion has not sent a profile");
     return row.profile;
   }
 
-  async getRecentMatches(cfnUserId: string): Promise<NormalizedSF6Match[]> {
-    const row = await this.snapshot(cfnUserId);
+  async getRecentMatches(
+    cfnUserId: string,
+    options?: ProviderCallOptions,
+  ): Promise<NormalizedSF6Match[]> {
+    const row = await this.snapshot(cfnUserId, options);
     this.assertFresh(row.matchesObservedAt, "battlelog");
     return row.matches.map((m) => ({ ...m, playedAt: new Date(m.playedAt) }));
   }

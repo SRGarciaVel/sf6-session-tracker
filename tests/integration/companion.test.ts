@@ -201,13 +201,35 @@ describe.skipIf(!TEST_DB)("companion backend (integration)", () => {
     expect(await res.json()).toEqual({ error: "cfn_mismatch" });
   });
 
-  it("snapshot has one owner: another account cannot overwrite a tracked CFN", async () => {
-    const owner = await pair();
-    expect((await sync(owner.deviceToken, companionPayload())).status).toBe(200);
-    const intruder = await pair(await newUser());
-    const res = await sync(intruder.deviceToken, companionPayload());
-    expect(res.status).toBe(409);
-    expect(await res.json()).toEqual({ error: "cfn_owned_by_other" });
+  it("SEC-001: another account's companion data never reaches my session (no CFN squatting)", async () => {
+    // Attacker: own account, pairs a device and pushes FABRICATED data for the victim's CFN
+    // (no Buckler needed — the payload is client-asserted), then "tracks" that CFN.
+    const attackerId = await newUser();
+    const attacker = await pair(attackerId);
+    const fake = companionPayload();
+    fake.profile = { ...fake.profile, displayName: "<script>alert(1)</script> OWNED" };
+    expect((await sync(attacker.deviceToken, fake)).status).toBe(200);
+    await upsertPlayerForUser(db, attackerId, { cfnUserId: CFN, displayName: "x", characters: [] });
+
+    // Victim (userId): the data provider must not hand them the attacker's snapshot …
+    const provider = new CompanionSF6DataProvider(db, 300_000);
+    await expect(provider.getPlayerProfile(CFN, { scope: { userId } })).rejects.toMatchObject({
+      code: "unavailable",
+    });
+
+    // … and the victim's own companion is not locked out of their CFN.
+    const victim = await pair(userId);
+    expect((await sync(victim.deviceToken, companionPayload())).status).toBe(200);
+    const mine = await provider.getPlayerProfile(CFN, { scope: { userId } });
+    expect(mine.displayName).toBe("TDF | Comunismo");
+    // The attacker still only sees their own data.
+    const theirs = await provider.getPlayerProfile(CFN, { scope: { userId: attackerId } });
+    expect(theirs.displayName).toContain("OWNED");
+  });
+
+  it("companion provider refuses to answer without a user scope", async () => {
+    const provider = new CompanionSF6DataProvider(db, 300_000);
+    await expect(provider.getPlayerProfile(CFN)).rejects.toMatchObject({ code: "unavailable" });
   });
 
   it("rate limit: at most 1 sync per 5 s per device", async () => {
@@ -230,7 +252,7 @@ describe.skipIf(!TEST_DB)("companion backend (integration)", () => {
 
     // 1. Before registration the snapshot is stored; the provider can then serve the CFN lookup.
     expect((await sync(deviceToken, companionPayload({ matches: [] }))).status).toBe(200);
-    const profile = await provider.getPlayerProfile(CFN);
+    const profile = await provider.getPlayerProfile(CFN, { scope: { userId } });
     expect(profile.characters).toHaveLength(32);
     const player = await upsertPlayerForUser(db, userId, profile);
 
@@ -264,11 +286,13 @@ describe.skipIf(!TEST_DB)("companion backend (integration)", () => {
 
   it("companion provider refuses stale or missing snapshots", async () => {
     const provider = new CompanionSF6DataProvider(db, 60_000);
-    await expect(provider.getPlayerProfile("999999999")).rejects.toMatchObject({
+    const scope = { scope: { userId } };
+    await expect(provider.getPlayerProfile("999999999", scope)).rejects.toMatchObject({
       code: "unavailable",
     });
     const { deviceToken } = await pair();
     await sync(deviceToken, companionPayload());
+    await expect(provider.getPlayerProfile(CFN, scope)).resolves.toBeTruthy(); // fresh: served
     await db
       .update(companionSnapshot)
       .set({
@@ -276,8 +300,12 @@ describe.skipIf(!TEST_DB)("companion backend (integration)", () => {
         matchesObservedAt: new Date(Date.now() - 120_000),
       })
       .where(eq(companionSnapshot.cfnUserId, CFN));
-    await expect(provider.getPlayerProfile(CFN)).rejects.toMatchObject({ code: "unavailable" });
-    await expect(provider.getRecentMatches(CFN)).rejects.toMatchObject({ code: "unavailable" });
+    await expect(provider.getPlayerProfile(CFN, scope)).rejects.toMatchObject({
+      code: "unavailable",
+    });
+    await expect(provider.getRecentMatches(CFN, scope)).rejects.toMatchObject({
+      code: "unavailable",
+    });
   });
 
   it("CORS preflight is answered without credentials", async () => {
