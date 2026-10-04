@@ -167,7 +167,7 @@ export function toWireProfile(p: NormalizedPlayerProfile) {
 
 /** Key names that must never appear in anything the companion sends to the tracker. */
 export const FORBIDDEN_PAYLOAD_KEY =
-  /cookie|authorization|set-cookie|session[-_]?token|sessiontoken|csrf|xsrf|password|passwd|bearer|secret|access[-_]?token|refresh[-_]?token|id[-_]?token|buckler_id|buckler_r_id/i;
+  /cookie|authorization|set-cookie|session[-_ ]?(token|id)|csrf|xsrf|password|passwd|bearer|secret|access[-_ ]?token|refresh[-_ ]?token|id[-_ ]?token|api[-_ ]?key|buckler[-_ ]?r?[-_ ]?id/i;
 
 /** Paths of forbidden keys anywhere in `value` (empty = clean). */
 export function findForbiddenKeys(value: unknown, path = "$"): string[] {

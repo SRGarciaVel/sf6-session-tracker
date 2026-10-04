@@ -287,3 +287,24 @@ describe.skipIf(!TEST_DB)("companion backend (integration)", () => {
     expect(res.headers.get("access-control-allow-credentials")).toBeNull();
   });
 });
+
+describe.skipIf(!TEST_DB)("companion body cap (streamed)", () => {
+  it("rejects an oversized body even without Content-Length, before parsing", async () => {
+    const { readJson } = await import("@/server/companion/http");
+    const big = new Uint8Array(300 * 1024).fill(32);
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (let i = 0; i < big.length; i += 16 * 1024)
+          controller.enqueue(big.slice(i, i + 16 * 1024));
+        controller.close();
+      },
+    });
+    // Node (undici) requires `duplex: "half"` for streamed request bodies.
+    const init: RequestInit & { duplex: "half" } = { method: "POST", body: stream, duplex: "half" };
+    const request = new Request("http://tracker.test/api/companion/sync", init);
+    expect(request.headers.get("content-length")).toBeNull();
+    const result = await readJson(request);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.response.status).toBe(413);
+  });
+});

@@ -15,15 +15,12 @@ try {
   // optional
 }
 
-const DEMO_EMAIL = "demo@sf6.local";
-const DEMO_PASSWORD = "demo-password-123";
-const DEMO_CFN = "1122334455";
-
 async function main() {
   if (process.env.NODE_ENV === "production") throw new Error("Refusing to seed in production");
   if ((process.env.SF6_PROVIDER ?? "mock") !== "mock")
     throw new Error("Seed requires SF6_PROVIDER=mock");
 
+  const { DEMO_CFN, DEMO_EMAIL, DEMO_PASSWORD } = await import("@/server/dev/demo");
   const { getAuth } = await import("@/server/auth/auth");
   const { closeDb, getDb } = await import("@/server/db/client");
   const { authUser, gameSession, match, sessionCharacterBaseline } =
@@ -137,10 +134,11 @@ async function main() {
   const appUrl = getEnv().APP_URL.replace(/\/$/, "");
   console.log("\n  Seed complete");
   console.log(`  Login:    ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
-  console.log(`  Player:   ${player.displayName} (CFN ${DEMO_CFN})`);
+  console.log(`  Player:   ${player.displayName} (CFN ${DEMO_CFN} — FAKE mock id, demo data only)`);
   if (overlay) console.log(`  Overlay:  ${appUrl}/overlay/${overlay.publicToken}`);
+  console.log("  Next:     pnpm dev → log in → Start session → use Dev tools to simulate matches");
   console.log(
-    "  Next:     pnpm dev → log in → Start session → use Dev tools to simulate matches\n",
+    "  Real CFN: pnpm dev:reassign-cfn --email <account> --cfn <your CFN>  (before using the companion)\n",
   );
   await closeDb();
 }

@@ -27,18 +27,33 @@ export function tooMany(retryAfterSeconds: number): Response {
   return json({ error: "rate_limited" }, 429, { "Retry-After": String(retryAfterSeconds) });
 }
 
-/** Read a JSON body with a hard size cap (before parsing). */
+/**
+ * Read a JSON body with a hard size cap enforced WHILE reading (a missing or lying
+ * Content-Length cannot make the server buffer an unbounded body).
+ */
 export async function readJson(
   request: Request,
 ): Promise<{ ok: true; body: unknown } | { ok: false; response: Response }> {
-  const declared = Number(request.headers.get("content-length") ?? "0");
-  if (declared > COMPANION_LIMITS.maxBodyBytes) {
-    return { ok: false, response: json({ error: "payload_too_large" }, 413) };
+  const max = COMPANION_LIMITS.maxBodyBytes;
+  const tooLarge = { ok: false as const, response: json({ error: "payload_too_large" }, 413) };
+  if (Number(request.headers.get("content-length") ?? "0") > max) return tooLarge;
+
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  if (request.body) {
+    const reader = request.body.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > max) {
+        await reader.cancel();
+        return tooLarge;
+      }
+      chunks.push(value);
+    }
   }
-  const text = await request.text();
-  if (Buffer.byteLength(text) > COMPANION_LIMITS.maxBodyBytes) {
-    return { ok: false, response: json({ error: "payload_too_large" }, 413) };
-  }
+  const text = new TextDecoder().decode(Buffer.concat(chunks));
   try {
     return { ok: true, body: JSON.parse(text) as unknown };
   } catch {

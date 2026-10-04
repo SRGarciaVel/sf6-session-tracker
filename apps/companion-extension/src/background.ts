@@ -11,6 +11,7 @@ import { cfnUserIdSchema, COMPANION_POLLING } from "@sf6/capcom-core";
 import { CompanionBucklerClient } from "./lib/buckler-client";
 import { transportFor } from "./lib/buckler-transport";
 import { runConnectionTest } from "./lib/connection-test";
+import { COMPANION_DEBUG } from "./lib/debug";
 import { allowedTrackerOrigin } from "./lib/tracker-origins";
 import { toPublicStatus, type CompanionRequest, type CompanionResponse } from "./lib/messages";
 import { CompanionStorage, type KeyValueArea } from "./lib/storage";
@@ -125,7 +126,7 @@ async function handle(msg: CompanionRequest): Promise<CompanionResponse> {
       const store = await storage.load();
       const cfn = store.lastState?.cfnUserId ?? store.manualCfnUserId;
       if (!cfn) return { ok: false, error: "cfn_required", status: toPublicStatus(store) };
-      const test = await runConnectionTest(cfn, transportFor);
+      const test = await runConnectionTest(cfn, transportFor, { exhaustive: COMPANION_DEBUG });
       log("companion_buckler_test", {
         verdict: test.verdict,
         preferred: test.preferred,

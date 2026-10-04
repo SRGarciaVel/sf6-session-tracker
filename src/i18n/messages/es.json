@@ -248,6 +248,11 @@
       "neverSeen": "sin actividad",
       "revoke": "Revocar",
       "privacy": "El companion nunca envía tus cookies ni credenciales de Capcom: solo datos normalizados (CFN, personajes, LP/MR y partidas)."
+    },
+    "demo": {
+      "badge": "DEMO DATA",
+      "mock_provider": "Proveedor simulado (SF6_PROVIDER=mock): estas partidas y ratings no son reales.",
+      "demo_cfn": "Esta cuenta usa el CFN de la demo (1122334455), que es falso. Para datos reales: pnpm dev:reassign-cfn --email <tu cuenta> --cfn <tu CFN>."
     }
   },
   "Recap": {

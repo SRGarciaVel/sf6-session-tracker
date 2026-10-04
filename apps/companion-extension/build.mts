@@ -23,6 +23,8 @@ const root = dirname(fileURLToPath(import.meta.url));
 const out = join(root, "dist");
 const watch = process.argv.includes("--watch");
 const production = process.argv.includes("--production");
+// Debug popup + exhaustive transport test: dev watch builds, or COMPANION_DEBUG=1 explicitly.
+const debug = !production && (watch || process.env.COMPANION_DEBUG === "1");
 
 const extra = parseTrackerOrigins(process.env.COMPANION_TRACKER_ORIGINS);
 const trackerOrigins = production ? extra : [...new Set([...DEV_TRACKER_ORIGINS, ...extra])];
@@ -61,7 +63,10 @@ const options: esbuild.BuildOptions = {
   target: "chrome120",
   platform: "browser",
   tsconfig: join(root, "tsconfig.json"),
-  define: { __SF6_TRACKER_ORIGINS__: JSON.stringify(trackerOrigins) },
+  define: {
+    __SF6_TRACKER_ORIGINS__: JSON.stringify(trackerOrigins),
+    __SF6_COMPANION_DEBUG__: JSON.stringify(debug),
+  },
   // MV3: everything is bundled locally; no remote code, no eval.
   minify: !watch,
   sourcemap: watch ? "inline" : false,
@@ -78,4 +83,5 @@ if (watch) {
   await esbuild.build(options);
   console.log(`built → ${out}`);
   console.log(`tracker origins (host_permissions): ${trackerOrigins.join(", ")}`);
+  console.log(`debug diagnostics: ${debug ? "ON" : "off"}`);
 }

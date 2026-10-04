@@ -11,6 +11,7 @@ import { listSessionHistory } from "@/server/sessions/service";
 import { companionIngestEnabled, listDevices, toDeviceSummary } from "@/server/companion/service";
 import { CompanionPanel } from "./_components/CompanionPanel";
 import { DevTools } from "./_components/DevTools";
+import { demoDataReason } from "@/server/dev/demo";
 import { LiveDashboardProvider } from "./_components/LiveDashboard";
 import { ObsGuide, OverlaysPanel } from "./_components/OverlaysPanel";
 import { PlayerHeader, SessionPanel, StatusBar } from "./_components/SessionPanel";
@@ -42,11 +43,25 @@ export default async function DashboardPage() {
   const firstPreset = OVERLAY_PRESETS[overlays[0]?.config.preset ?? "standard"];
 
   const tConsole = await getTranslations("Dashboard.console");
+  const tDemo = await getTranslations("Dashboard.demo");
+  const demoReason =
+    getEnv().NODE_ENV === "production"
+      ? null
+      : demoDataReason(getEnv().SF6_PROVIDER, player.cfnUserId);
 
   return (
     <LiveDashboardProvider initial={live}>
       <div className="grid items-start gap-5 hud:grid-cols-[minmax(0,1fr)_400px]">
         <div className="min-w-0 space-y-5">
+          {demoReason && (
+            <div
+              role="status"
+              className="flex flex-wrap items-center gap-3 border-l-2 border-warn bg-surface-2/60 px-4 py-2 text-sm"
+            >
+              <span className="hud-tag bg-warn/20 text-warn">{tDemo("badge")}</span>
+              <span className="text-muted">{tDemo(demoReason)}</span>
+            </div>
+          )}
           <PlayerHeader />
           <SessionPanel />
           <SessionHistory items={history} />

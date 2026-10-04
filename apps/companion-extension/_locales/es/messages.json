@@ -138,9 +138,6 @@
       }
     }
   },
-  "testVerdict": {
-    "message": "Prueba Buckler"
-  },
   "defaultDeviceName": {
     "message": "Companion del navegador"
   },
@@ -169,5 +166,58 @@
   },
   "buckler_locale_mismatch": {
     "message": "Idioma (locale) no coincide"
+  },
+  "testPass": {
+    "message": "Prueba Buckler: PASS"
+  },
+  "testFail": {
+    "message": "Prueba Buckler: FAIL"
+  },
+  "testMode": {
+    "message": "Modo: $VALUE$",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "testCharacters": {
+    "message": "Personajes: $VALUE$",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "testReplays": {
+    "message": "Partidas recientes: $VALUE$",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "testLocale": {
+    "message": "Idioma: $VALUE$",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "testReasonLogin": {
+    "message": "Inicia sesión en Buckler's Boot Camp en este navegador y vuelve a probar."
+  },
+  "testReasonUnavailable": {
+    "message": "Buckler no está disponible ahora mismo."
+  },
+  "testReasonRateLimited": {
+    "message": "Buckler limitó las peticiones (429) — espera unos minutos."
+  },
+  "testReasonInvalid": {
+    "message": "Respuesta inválida de Buckler."
+  },
+  "testReasonTab": {
+    "message": "Abre una pestaña de Buckler's Boot Camp y vuelve a probar."
   }
 }

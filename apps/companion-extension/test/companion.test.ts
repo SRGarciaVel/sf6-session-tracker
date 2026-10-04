@@ -126,8 +126,10 @@ describe("Buckler access from the companion (fixtures, offline)", () => {
     const blockedSw = fixtureTransport("service_worker", {
       [`/profile/${CFN}`]: { status: 403, contentType: "text/html", text: "Request blocked" },
     });
-    const report = await runConnectionTest(CFN, (kind) =>
-      kind === "service_worker" ? blockedSw : fixtureTransport(kind),
+    const report = await runConnectionTest(
+      CFN,
+      (kind) => (kind === "service_worker" ? blockedSw : fixtureTransport(kind)),
+      { exhaustive: true }, // debug builds document every context
     );
     expect(report.results.map((r) => [r.transport, r.failure])).toEqual([
       ["service_worker", "blocked"],
@@ -342,5 +344,67 @@ describe("companion sync cycle", () => {
         .client()
         .sync({ ...buildSyncPayload(leaky), ...({ cookies: "x" } as object) } as never),
     ).rejects.toBeInstanceOf(TrackerError);
+  });
+});
+
+describe("privacy: credential-like keys can never be sent", () => {
+  it("rejects every forbidden key name from the closure checklist (any case, -, _ or space)", () => {
+    const forbidden = [
+      "cookie",
+      "Cookie",
+      "cookies",
+      "authorization",
+      "Authorization",
+      "set-cookie",
+      "Set-Cookie",
+      "sessionToken",
+      "session_token",
+      "session-token",
+      "session token",
+      "sessionId",
+      "csrf",
+      "csrfToken",
+      "xsrf",
+      "X-XSRF-TOKEN",
+      "buckler_id",
+      "buckler_r_id",
+      "bucklerId",
+      "password",
+      "passwd",
+      "refresh_token",
+      "refreshToken",
+      "refresh token",
+      "access_token",
+      "accessToken",
+      "access token",
+      "id_token",
+      "bearer",
+      "secret",
+      "apiKey",
+    ];
+    for (const key of forbidden) {
+      expect(findForbiddenKeys({ nested: [{ [key]: "x" }] }), key).toEqual([`$.nested[0].${key}`]);
+    }
+  });
+
+  it("does not flag the real contract fields", () => {
+    const payload = buildSyncPayload({
+      cfnUserId: CFN,
+      observedAt: NOW,
+      profile: null,
+      matches: [],
+      gapSuspected: false,
+      transport: "service_worker",
+    });
+    expect(findForbiddenKeys(payload)).toEqual([]);
+    expect(
+      findForbiddenKeys({
+        externalMatchId: 1,
+        characterKey: 1,
+        displayName: 1,
+        playerControlType: 1,
+        opponent: { name: 1 },
+      }),
+    ).toEqual([]);
   });
 });

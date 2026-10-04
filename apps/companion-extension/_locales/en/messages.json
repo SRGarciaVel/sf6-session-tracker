@@ -138,9 +138,6 @@
       }
     }
   },
-  "testVerdict": {
-    "message": "Buckler test"
-  },
   "defaultDeviceName": {
     "message": "Browser companion"
   },
@@ -169,5 +166,58 @@
   },
   "buckler_locale_mismatch": {
     "message": "Locale mismatch"
+  },
+  "testPass": {
+    "message": "Buckler test: PASS"
+  },
+  "testFail": {
+    "message": "Buckler test: FAIL"
+  },
+  "testMode": {
+    "message": "Mode: $VALUE$",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "testCharacters": {
+    "message": "Characters: $VALUE$",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "testReplays": {
+    "message": "Recent matches: $VALUE$",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "testLocale": {
+    "message": "Language: $VALUE$",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "testReasonLogin": {
+    "message": "Log in to Buckler's Boot Camp in this browser and try again."
+  },
+  "testReasonUnavailable": {
+    "message": "Buckler is not available right now."
+  },
+  "testReasonRateLimited": {
+    "message": "Rate limited by Buckler (429) — wait a few minutes."
+  },
+  "testReasonInvalid": {
+    "message": "Unexpected answer from Buckler."
+  },
+  "testReasonTab": {
+    "message": "Open a Buckler's Boot Camp tab and try again."
   }
 }

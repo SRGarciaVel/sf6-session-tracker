@@ -1,6 +1,7 @@
 /**
- * "Test Buckler connection": for each transport (least invasive first) try buildId → play.json →
- * battlelog.json page 1 ONCE. A transport stops at its first failure; a 429 stops the whole test.
+ * "Test Buckler connection": for each transport (least invasive first: service worker, isolated
+ * tab, main tab) try buildId → play.json → battlelog.json page 1 ONCE, stopping at the first
+ * transport that passes (debug builds test all of them). A transport stops at its first failure; a 429 stops the whole test.
  * Only PASS/FAIL + counts are kept — never bodies.
  */
 import {
@@ -17,7 +18,12 @@ import type { ConnectionTestReport, TransportTestResult } from "./storage";
 export async function runConnectionTest(
   cfnUserId: string,
   makeTransport: (kind: CompanionTransportKind) => BucklerTransport,
-  options: { order?: readonly CompanionTransportKind[]; now?: () => Date } = {},
+  options: {
+    order?: readonly CompanionTransportKind[];
+    now?: () => Date;
+    /** Test every transport (debug). Default: stop at the first one that fully passes. */
+    exhaustive?: boolean;
+  } = {},
 ): Promise<ConnectionTestReport> {
   const order = options.order ?? COMPANION_TRANSPORTS;
   const results: TransportTestResult[] = [];
@@ -44,6 +50,13 @@ export async function runConnectionTest(
     if (rateLimited) {
       r.failure = "skipped_after_rate_limit";
       continue;
+    }
+    const alreadyPassed = results.some(
+      (x) => x !== r && x.buildId === "PASS" && x.play === "PASS" && x.battlelog === "PASS",
+    );
+    if (alreadyPassed && !options.exhaustive) {
+      results.pop(); // not attempted: fewer Buckler requests in normal use
+      break;
     }
     const client = new CompanionBucklerClient(makeTransport(kind), {
       onWarning: (event, fields) =>

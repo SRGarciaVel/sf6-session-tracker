@@ -1,5 +1,7 @@
 /** Minimal popup: status + pairing + test/sync/disconnect. All work happens in the worker. */
 import type { CompanionRequest, CompanionResponse, PublicStatus } from "../lib/messages";
+import { COMPANION_DEBUG } from "../lib/debug";
+import { summarizeConnectionTest } from "../lib/test-summary";
 import { TRACKER_ORIGINS } from "../lib/tracker-origins";
 
 const t = (key: string, subs?: string[]) => chrome.i18n.getMessage(key, subs) || key;
@@ -60,51 +62,13 @@ function render(s: PublicStatus) {
   $("cfnSection").hidden = !s.paired || Boolean(s.lastState?.cfnUserId);
   const select = $<HTMLSelectElement>("trackerUrl");
   if (TRACKER_ORIGINS.includes(s.trackerUrl)) select.value = s.trackerUrl;
-  $("message").textContent = s.lastError ? t("lastError", [s.lastError]) : "";
+  // Raw error codes are technical: status dots already say it; codes only in debug builds.
+  $("message").textContent = COMPANION_DEBUG && s.lastError ? t("lastError", [s.lastError]) : "";
   if (s.lastTest) {
     $("testResult").hidden = false;
-    $("testResult").textContent = [
-      `${t("testVerdict")}: ${s.lastTest.verdict}${s.lastTest.preferred ? ` (${s.lastTest.preferred})` : ""}`,
-      ...s.lastTest.results.map(
-        (r) =>
-          `${r.transport}: buildId ${r.buildId} · play ${r.play} · battlelog ${r.battlelog}` +
-          (r.failure ? ` — ${r.failure}${r.status ? ` ${r.status}` : ""}` : "") +
-          (r.characters !== null ? ` · ${r.characters} chars` : "") +
-          (r.replays !== null ? ` · ${r.replays} replays` : "") +
-          (r.notes?.length ? ` · ${r.notes.join(" ")}` : "") +
-          (r.pageLocale
-            ? ` · locale ${r.pageLocale}${r.requestLocale && r.requestLocale !== r.pageLocale ? `→${r.requestLocale}` : ""}`
-            : "") +
-          (r.request
-            ? `\n    ↳ req ${r.request.method} ${r.request.path} [${r.request.transport}] x-nextjs-data=${String(r.request.xNextjsData)} credentials=${r.request.credentials ?? "?"} cache=${r.request.cache ?? "?"} referer=${r.request.refererPath ?? "n/a"} browser=${r.request.brands.join("/") || "?"}`
-            : "") +
-          (r.signature
-            ? `\n    ↳ ${r.signature.contentType ?? "?"} ${r.signature.bytes}B` +
-              (r.signature.json
-                ? ` keys[${r.signature.keys.join(",")}] pageProps[${r.signature.pagePropsKeys.join(",")}]`
-                : "") +
-              (Object.keys(r.signature.pagePropsSizes ?? {}).length
-                ? `\n    ↳ sizes ${Object.entries(r.signature.pagePropsSizes)
-                    .map(([k, v]) => `${k}=${v}`)
-                    .join(" ")}`
-                : "") +
-              (r.signature.nestedKeys?.play
-                ? `\n    ↳ play[${r.signature.nestedKeys.play.join(",")}]`
-                : "") +
-              (Object.keys(r.signature.codes ?? {}).length
-                ? `\n    ↳ codes ${Object.entries(r.signature.codes)
-                    .map(([k, v]) => `${k}=${String(v)}`)
-                    .join(" ")}`
-                : "") +
-              (r.signature.common
-                ? `\n    ↳ common statusCode=${String(r.signature.common.statusCode)} isError=${String(r.signature.common.isError)} loginUser.flg=${String(r.signature.common.loginUserFlg)}`
-                : "") +
-              (r.signature.redirectPath ? ` redirect ${r.signature.redirectPath}` : "") +
-              (r.signature.hasNextData ? ` app-page ${r.signature.nextPage ?? ""}` : "") +
-              (r.signature.title ? ` "${r.signature.title}"` : "")
-            : ""),
-      ),
-    ].join("\n");
+    $("testResult").textContent = summarizeConnectionTest(s.lastTest, t, COMPANION_DEBUG).join(
+      "\n",
+    );
   }
 }
 
