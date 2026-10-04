@@ -4,7 +4,9 @@ import Link from "next/link";
 import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 import { Logo } from "@/components/ui/Logo";
 import { getDb } from "@/server/db/client";
-import { devToolsEnabled } from "@/server/env";
+import { devToolsEnabled, getEnv } from "@/server/env";
+import { listDevices, toDeviceSummary } from "@/server/companion/service";
+import { CompanionPanel } from "../dashboard/_components/CompanionPanel";
 import { findPlayerByUserId } from "@/server/players/service";
 import { requireUser } from "@/server/auth/session";
 import { OnboardingFlow } from "./OnboardingFlow";
@@ -16,7 +18,12 @@ export const dynamic = "force-dynamic";
 
 export default async function OnboardingPage() {
   const user = await requireUser();
-  const existing = await findPlayerByUserId(getDb(), user.id);
+  const db = getDb();
+  const existing = await findPlayerByUserId(db, user.id);
+  // Companion mode: CFN lookups are served from data the browser companion pushed, so the
+  // companion must be paired BEFORE the CFN can be registered.
+  const companionMode = getEnv().SF6_PROVIDER === "companion";
+  const devices = companionMode ? await listDevices(db, user.id) : [];
   const t = await getTranslations("Onboarding");
 
   return (
@@ -38,6 +45,11 @@ export default async function OnboardingPage() {
             ? t("introChange", { name: existing.displayName, cfnId: existing.cfnUserId })
             : t("introNew")}
         </p>
+        {companionMode && (
+          <div className="-mx-5 mb-6 border-y border-line">
+            <CompanionPanel devices={devices.map(toDeviceSummary)} ingestEnabled />
+          </div>
+        )}
         <OnboardingFlow devHint={devToolsEnabled()} />
         {existing && (
           <Link

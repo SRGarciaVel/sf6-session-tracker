@@ -12,7 +12,16 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import type { SessionFilter } from "@/domain/session/engine";
-import type { MatchMode, MatchResult, RatingSystem } from "@/domain/sf6/types";
+import type {
+  MatchMode,
+  MatchResult,
+  NormalizedPlayerProfile,
+  NormalizedSF6Match,
+  RatingSystem,
+} from "@/domain/sf6/types";
+
+/** A NormalizedSF6Match as stored in JSON (playedAt serialized to ISO). */
+export type CompanionWireMatch = Omit<NormalizedSF6Match, "playedAt"> & { playedAt: string };
 
 const tz = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
 const createdAt = () => tz("created_at").notNull().defaultNow();
@@ -333,6 +342,72 @@ export const mockCfnCharacter = pgTable(
   },
   (t) => [uniqueIndex("mock_cfn_character_uq").on(t.cfnUserId, t.characterKey)],
 );
+
+/* ───────────────────────── SF6 Session Companion ───────────────────────── */
+
+/**
+ * A browser companion paired to a user. Only the SHA-256 of its random device token is stored.
+ * Scoped to /api/companion/* — it is not a web session.
+ */
+export const companionDevice = pgTable(
+  "companion_device",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    createdAt: createdAt(),
+    lastSeenAt: tz("last_seen_at"),
+    revokedAt: tz("revoked_at"),
+  },
+  (t) => [
+    uniqueIndex("companion_device_token_hash_uq").on(t.tokenHash),
+    index("companion_device_user_idx").on(t.userId),
+  ],
+);
+
+/** One-time, short-lived pairing code (hash only). */
+export const companionPairingCode = pgTable(
+  "companion_pairing_code",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    codeHash: text("code_hash").notNull(),
+    expiresAt: tz("expires_at").notNull(),
+    usedAt: tz("used_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("companion_pairing_code_hash_uq").on(t.codeHash),
+    index("companion_pairing_code_user_idx").on(t.userId),
+  ],
+);
+
+/**
+ * Latest normalized observation pushed by a companion for a CFN (served by the "companion"
+ * provider). One owner per CFN: only the owner's devices may overwrite it.
+ */
+export const companionSnapshot = pgTable("companion_snapshot", {
+  cfnUserId: text("cfn_user_id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => authUser.id, { onDelete: "cascade" }),
+  deviceId: uuid("device_id").references(() => companionDevice.id, { onDelete: "set null" }),
+  /** NormalizedPlayerProfile (JSON). */
+  profile: jsonb("profile").$type<NormalizedPlayerProfile>(),
+  profileObservedAt: tz("profile_observed_at"),
+  /** Latest normalized matches (wire format: ISO playedAt), newest first, bounded. */
+  matches: jsonb("matches").$type<CompanionWireMatch[]>().notNull().default([]),
+  matchesObservedAt: tz("matches_observed_at"),
+  updatedAt: tz("updated_at").notNull().defaultNow(),
+});
+
+export type CompanionDeviceRow = typeof companionDevice.$inferSelect;
+export type CompanionSnapshotRow = typeof companionSnapshot.$inferSelect;
 
 export type Sf6PlayerRow = typeof sf6Player.$inferSelect;
 export type GameSessionRow = typeof gameSession.$inferSelect;

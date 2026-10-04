@@ -18,7 +18,7 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
   TRUST_PROXY: bool,
 
-  SF6_PROVIDER: z.enum(["mock", "capcom"]).default("mock"),
+  SF6_PROVIDER: z.enum(["mock", "capcom", "companion"]).default("mock"),
   PROVIDER_TIMEOUT_MS: int(10_000, 1_000),
   PROVIDER_CACHE_TTL_MS: int(5_000),
   ENABLE_DEV_TOOLS: bool,
@@ -28,6 +28,8 @@ const envSchema = z.object({
   CAPCOM_SESSION_FILE: z.string().trim().min(1).optional(),
   CAPCOM_MAX_BATTLELOG_PAGES: int(3, 1),
   CAPCOM_BUILD_ID_TTL_MS: int(1_800_000, 60_000),
+  // Browser companion (SF6_PROVIDER=companion): max age of the pushed snapshot for start/end.
+  COMPANION_SNAPSHOT_MAX_AGE_MS: int(300_000, 30_000),
 
   TRACKER_POLL_INTERVAL_MS: int(20_000, 5_000),
   TRACKER_POLL_JITTER_MS: int(3_000),

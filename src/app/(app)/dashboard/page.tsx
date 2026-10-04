@@ -8,6 +8,8 @@ import { getDb } from "@/server/db/client";
 import { devToolsEnabled, getEnv } from "@/server/env";
 import { listOverlays } from "@/server/overlays/service";
 import { listSessionHistory } from "@/server/sessions/service";
+import { companionIngestEnabled, listDevices, toDeviceSummary } from "@/server/companion/service";
+import { CompanionPanel } from "./_components/CompanionPanel";
 import { DevTools } from "./_components/DevTools";
 import { LiveDashboardProvider } from "./_components/LiveDashboard";
 import { ObsGuide, OverlaysPanel } from "./_components/OverlaysPanel";
@@ -20,12 +22,13 @@ export async function generateMetadata(): Promise<Metadata> {
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const { player } = await requirePlayer();
+  const { user, player } = await requirePlayer();
   const db = getDb();
-  const [live, overlays, history] = await Promise.all([
+  const [live, overlays, history, devices] = await Promise.all([
     buildDashboardLiveState(db, player.id),
     listOverlays(db, player.id),
     listSessionHistory(db, player, 10),
+    listDevices(db, user.id),
   ]);
   if (!live) notFound();
 
@@ -64,6 +67,10 @@ export default async function DashboardPage() {
             </div>
             <div className="divide-y divide-line">
               <ObsGuide width={firstPreset.width} height={firstPreset.height} />
+              <CompanionPanel
+                devices={devices.map(toDeviceSummary)}
+                ingestEnabled={companionIngestEnabled()}
+              />
               {devToolsEnabled() && <DevTools />}
             </div>
           </div>

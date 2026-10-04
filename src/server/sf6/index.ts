@@ -8,6 +8,7 @@ import { logger } from "@/server/logger";
 import type { SF6DataProvider } from "./provider";
 import { CapcomSF6DataProvider } from "./providers/capcom";
 import { loadCapcomSession } from "./providers/capcom/session";
+import { CompanionSF6DataProvider } from "./providers/companion";
 import { MockSF6DataProvider } from "./providers/mock";
 import { ResilientProvider } from "./resilient";
 
@@ -21,6 +22,8 @@ function createInnerProvider(): SF6DataProvider {
   switch (env.SF6_PROVIDER) {
     case "capcom":
       return createCapcomProvider();
+    case "companion":
+      return new CompanionSF6DataProvider(getDb(), env.COMPANION_SNAPSHOT_MAX_AGE_MS);
     case "mock":
       return new MockSF6DataProvider(getDb());
   }

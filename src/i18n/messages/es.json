@@ -117,7 +117,8 @@
       "unavailable": "Capcom / CFN no está disponible ahora mismo. Inténtalo de nuevo en un momento.",
       "invalidResponse": "CFN devolvió datos inesperados. Inténtalo más tarde.",
       "generic": "Algo salió mal al contactar con CFN."
-    }
+    },
+    "companionDeviceNotFound": "Ese dispositivo no existe o ya fue revocado."
   },
   "Dashboard": {
     "eyebrow": "Street Fighter 6",
@@ -235,7 +236,19 @@
       "linkDown": "Reconectando…",
       "obs": "Fuentes OBS"
     },
-    "noCharacter": "Sin personaje todavía"
+    "noCharacter": "Sin personaje todavía",
+    "companion": {
+      "title": "SF6 Session Companion",
+      "intro": "Extensión de navegador que lee tus partidas de Buckler's Boot Camp en tu propio navegador (con tu sesión normal) y las envía aquí.",
+      "ingestDisabled": "El servidor no está en modo companion (SF6_PROVIDER=companion): los datos se guardan pero no alimentan tus sesiones.",
+      "connect": "Conectar Companion",
+      "codeHelp": "Introduce este código en la extensión. Caduca en 10 minutos y solo sirve una vez.",
+      "codeExpired": "El código caducó. Genera otro.",
+      "noDevices": "Ningún dispositivo conectado.",
+      "neverSeen": "sin actividad",
+      "revoke": "Revocar",
+      "privacy": "El companion nunca envía tus cookies ni credenciales de Capcom: solo datos normalizados (CFN, personajes, LP/MR y partidas)."
+    }
   },
   "Recap": {
     "complete": "Sesión completada",

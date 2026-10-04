@@ -117,7 +117,8 @@
       "unavailable": "Capcom / CFN is unavailable right now. Try again in a moment.",
       "invalidResponse": "CFN returned unexpected data. Try again later.",
       "generic": "Something went wrong while contacting CFN."
-    }
+    },
+    "companionDeviceNotFound": "That device does not exist or was already revoked."
   },
   "Dashboard": {
     "eyebrow": "Street Fighter 6",
@@ -235,7 +236,19 @@
       "linkDown": "Reconnecting…",
       "obs": "OBS sources"
     },
-    "noCharacter": "No character yet"
+    "noCharacter": "No character yet",
+    "companion": {
+      "title": "SF6 Session Companion",
+      "intro": "Browser extension that reads your matches from Buckler's Boot Camp in your own browser (with your normal login) and sends them here.",
+      "ingestDisabled": "The server is not in companion mode (SF6_PROVIDER=companion): data is stored but does not feed your sessions.",
+      "connect": "Connect Companion",
+      "codeHelp": "Enter this code in the extension. It expires in 10 minutes and works once.",
+      "codeExpired": "The code expired. Generate a new one.",
+      "noDevices": "No connected devices.",
+      "neverSeen": "no activity",
+      "revoke": "Revoke",
+      "privacy": "The companion never sends your Capcom cookies or credentials: only normalized data (CFN, characters, LP/MR and matches)."
+    }
   },
   "Recap": {
     "complete": "Session complete",

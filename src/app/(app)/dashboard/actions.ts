@@ -18,6 +18,7 @@ import {
 import { MATCH_MODES, MATCH_RESULTS } from "@/domain/sf6/types";
 import { fail, ok, type ActionResult } from "@/lib/action-result";
 import { getCurrentUser } from "@/server/auth/session";
+import { createPairingCode, purgePairingCodes, revokeDevice } from "@/server/companion/service";
 import { getDb } from "@/server/db/client";
 import { sf6Player } from "@/server/db/schema";
 import { devToolsEnabled } from "@/server/env";
@@ -225,4 +226,32 @@ async function nudgeTracker(playerId: string) {
     .set({ nextPollAt: sql`now()` })
     .where(eq(sf6Player.id, playerId));
   await publishEvent(db, { kind: "player", playerId });
+}
+
+/* ───────────────────────── Companion ───────────────────────── */
+
+/** One-time pairing code (10 min) for the SF6 Session Companion browser extension. */
+export async function createCompanionCodeAction(): Promise<
+  ActionResult<{ code: string; expiresAt: string }>
+> {
+  const t = await getTranslations("Errors");
+  const user = await getCurrentUser();
+  if (!user) return fail(t("sessionExpired"));
+  const limit = rateLimit(`companion-code:${user.id}`, 5, 60_000);
+  if (!limit.ok) return fail(t("slowDown", { seconds: limit.retryAfterSeconds }));
+  const db = getDb();
+  await purgePairingCodes(db);
+  const { code, expiresAt } = await createPairingCode(db, user.id);
+  return ok({ code, expiresAt: expiresAt.toISOString() });
+}
+
+export async function revokeCompanionDeviceAction(deviceId: string): Promise<ActionResult> {
+  const t = await getTranslations("Errors");
+  const user = await getCurrentUser();
+  if (!user) return fail(t("sessionExpired"));
+  if (!uuid.safeParse(deviceId).success) return fail(t("companionDeviceNotFound"));
+  const revoked = await revokeDevice(getDb(), user.id, deviceId);
+  if (!revoked) return fail(t("companionDeviceNotFound"));
+  revalidatePath("/dashboard");
+  return ok(undefined);
 }
