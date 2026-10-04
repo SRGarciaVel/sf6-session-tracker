@@ -6,7 +6,8 @@ decision changes.
 ## 1. Shape of the system
 
 ```
- Capcom / CFN  (Buckler _next/data; prototype in providers/capcom/, see docs/capcom-provider.md)
+ Capcom / CFN  (Buckler _next/data, read in the user's browser by the SF6 Session Companion —
+               docs/companion.md; server prototype in providers/capcom/, docs/capcom-provider.md)
         │
         ▼
  SF6DataProvider  ── src/server/sf6/          (fetch + normalize; nothing else)
