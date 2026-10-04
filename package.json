@@ -21,6 +21,7 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
     "dev:reassign-cfn": "tsx scripts/dev-reassign-cfn.ts",
+    "dev:cleanup-test-accounts": "tsx scripts/dev-cleanup-test-accounts.ts",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
     "provider:check": "tsx scripts/provider-check.ts",
     "test:e2e": "playwright test",

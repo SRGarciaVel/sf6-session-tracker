@@ -128,6 +128,18 @@ pnpm test:e2e    # Playwright, against the dev stack (needs `pnpm db:seed`; star
   - Global 2W, separate deltas, and the overlay follows Kimberly.
   - Refreshing the overlay keeps the state.
 
+E2E runs use the **dev** database and leave throwaway `<x>@test.local` accounts (some with active
+sessions) behind. Remove them, and only them, with:
+
+```bash
+pnpm dev:cleanup-test-accounts                 # dry run: lists accounts and row counts
+pnpm dev:cleanup-test-accounts --confirm <N>   # N = accounts shown by the dry run
+```
+
+It refuses `NODE_ENV=production` and non-local `DATABASE_URL`/`APP_URL`, never touches other
+domains (the seeded `demo@sf6.local` included), and deletes in one transaction through the
+`ON DELETE CASCADE` foreign keys.
+
 ## How `SF6DataProvider` works
 
 ```ts
