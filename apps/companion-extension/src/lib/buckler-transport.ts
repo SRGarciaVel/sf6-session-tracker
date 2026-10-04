@@ -19,12 +19,21 @@ export interface RawResponse {
   text: string;
 }
 
+export interface PageMetaRaw {
+  /** JSON of {buildId, locale, defaultLocale, locales} only. */
+  nextData: string | null;
+  pathname: string;
+}
+
 export interface BucklerTransport {
   readonly kind: CompanionTransportKind;
   /** GET a same-origin Buckler path ("/6/buckler/..."). */
   fetchText(path: string): Promise<RawResponse>;
-  /** buildId without a request when a Buckler page is already open (tab transports). */
-  readBuildIdFromPage?(): Promise<string | null>;
+  /**
+   * Next.js metadata of the OPEN Buckler page, without a request (tab transports): only
+   * {buildId, locale, defaultLocale, locales} + location.pathname — never the full __NEXT_DATA__.
+   */
+  readPageMeta?(): Promise<PageMetaRaw | null>;
 }
 
 export class NoBucklerTabError extends Error {
@@ -63,15 +72,23 @@ async function pageFetchText(path: string): Promise<RawResponse> {
   };
 }
 
-function pageReadBuildId(): string | null {
+function pageReadMeta(): PageMetaRaw {
   const el = document.getElementById("__NEXT_DATA__");
-  if (!el?.textContent) return null;
-  try {
-    const data = JSON.parse(el.textContent) as { buildId?: unknown };
-    return typeof data.buildId === "string" ? data.buildId : null;
-  } catch {
-    return null;
+  let nextData: string | null = null;
+  if (el?.textContent) {
+    try {
+      const d = JSON.parse(el.textContent) as Record<string, unknown>;
+      nextData = JSON.stringify({
+        buildId: d.buildId,
+        locale: d.locale,
+        defaultLocale: d.defaultLocale,
+        locales: d.locales,
+      });
+    } catch {
+      nextData = null;
+    }
   }
+  return { nextData, pathname: location.pathname };
 }
 
 /** The subset of chrome.* the tab transports use (injectable for tests). */
@@ -114,8 +131,8 @@ export function tabTransport(
       if (!result) throw new Error("injected fetch returned nothing");
       return result;
     },
-    async readBuildIdFromPage() {
-      return (await api.execute(await tabId(), world, pageReadBuildId, [])) ?? null;
+    async readPageMeta() {
+      return (await api.execute(await tabId(), world, pageReadMeta, [])) ?? null;
     },
   };
 }

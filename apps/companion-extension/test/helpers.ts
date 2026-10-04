@@ -1,3 +1,11 @@
+/** Page metadata as a tab transport returns it (only the 4 fields + pathname). */
+export function pageMeta(locale: string, buildId = BUILD_ID) {
+  return {
+    nextData: JSON.stringify({ buildId, locale, defaultLocale: "en", locales: ["en", "es-es"] }),
+    pathname: locale === "en" ? `/6/buckler/profile/${CFN}` : `/6/buckler/${locale}/profile/${CFN}`,
+  };
+}
+
 /** Offline doubles for companion tests: Buckler fixtures transport + in-memory tracker. */
 import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -18,11 +26,39 @@ const read = (name: string) => readFileSync(`${DIR}${name}`, "utf8");
 export const fixtureJson = (name: string): unknown => JSON.parse(read(name));
 export const BUILD_ID = extractBuildId(read(`profile-${CFN}.html`))!;
 
-/** Serves the sanitized HAR fixtures at the real Buckler paths. Records every path. */
+/**
+ * A 400 like the one seen live for a locale the user's Buckler session is not on. The body
+ * deliberately contains Buckler's translated "must log in" string (present in every page),
+ * which the OLD classifier mistook for a login wall.
+ */
+export const LOCALE_REFUSED_400: RawResponse = {
+  status: 400,
+  contentType: "application/json",
+  text: JSON.stringify({
+    pageProps: {
+      __namespaces: {
+        common: {
+          "[t]not_registered_register": "To use this service, you must log in or sign up.",
+        },
+      },
+    },
+  }),
+};
+
+/**
+ * Serves the sanitized HAR fixtures at the real Buckler paths. Records every path.
+ * `pageLocale` = locale of the profile page the server returns (en = real capture, es-es =
+ * derived fixture); `_next/data` answers only for `servedLocales` and 400 otherwise.
+ */
 export function fixtureTransport(
   kind: BucklerTransport["kind"] = "service_worker",
   overrides: Record<string, RawResponse> = {},
+  options: { pageLocale?: "en" | "es-es"; servedLocales?: string[] } = {},
 ): BucklerTransport & { paths: string[] } {
+  const pageLocale = options.pageLocale ?? "en";
+  const served = options.servedLocales ?? [pageLocale];
+  const profileFile =
+    pageLocale === "en" ? `profile-${CFN}.html` : `profile-${CFN}-${pageLocale}.html`;
   const paths: string[] = [];
   return {
     kind,
@@ -38,13 +74,16 @@ export function fixtureTransport(
         contentType: type,
         text,
       });
-      if (p === `/6/buckler/profile/${CFN}`) return ok(read(`profile-${CFN}.html`), "text/html");
-      const m = /\/_next\/data\/([^/]+)\/en\/profile\/(\d+)\/(play|battlelog)\.json$/.exec(p);
+      if (p === `/6/buckler/profile/${CFN}`) return ok(read(profileFile), "text/html");
+      const m = /\/_next\/data\/([^/]+)\/([a-z-]+)\/profile\/(\d+)\/(play|battlelog)\.json$/.exec(
+        p,
+      );
       if (m && m[1] === BUILD_ID) {
+        if (!served.includes(m[2]!)) return LOCALE_REFUSED_400;
         const file =
-          m[3] === "play"
-            ? `play-${m[2]}.json`
-            : `battlelog-${m[2]}-page-${url.searchParams.get("page") ?? "1"}.json`;
+          m[4] === "play"
+            ? `play-${m[3]}.json`
+            : `battlelog-${m[3]}-page-${url.searchParams.get("page") ?? "1"}.json`;
         if (existsSync(`${DIR}${file}`)) return ok(read(file));
       }
       return { status: 404, contentType: "text/html", text: "Not Found" };

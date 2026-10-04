@@ -2,7 +2,12 @@
  * Extension-local persistent state (chrome.storage.local — never page localStorage).
  * Holds the TRACKER device token; it never holds anything from Capcom (no cookies, no tokens).
  */
-import type { CompanionState, CompanionTransportKind, BucklerFailure } from "@sf6/capcom-core";
+import type {
+  BucklerFailure,
+  BucklerResponseSignature,
+  CompanionState,
+  CompanionTransportKind,
+} from "@sf6/capcom-core";
 
 import { TRACKER_ORIGINS } from "./tracker-origins";
 
@@ -22,6 +27,11 @@ export interface TransportTestResult {
   characters: number | null;
   replays: number | null;
   viewerOwnsProfile: boolean | null;
+  /** Locale of the Buckler page (drives _next/data URLs) and the one that actually answered. */
+  pageLocale: string | null;
+  requestLocale: string | null;
+  /** Safe description of the failing answer: status, content type, key NAMES — never values. */
+  signature: BucklerResponseSignature | null;
 }
 
 export interface ConnectionTestReport {

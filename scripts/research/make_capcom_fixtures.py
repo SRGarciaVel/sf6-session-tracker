@@ -112,7 +112,11 @@ def profile_html(html: str) -> str:
     if not m:
         raise SystemExit("profile HTML has no __NEXT_DATA__")
     nd = json.loads(m.group(1))
-    slim = {k: nd[k] for k in ("page", "query", "buildId", "assetPrefix", "isFallback", "gssp", "locale") if k in nd}
+    slim = {
+        k: nd[k]
+        for k in ("page", "query", "buildId", "assetPrefix", "isFallback", "gssp", "locale", "locales", "defaultLocale")
+        if k in nd
+    }
     slim["props"] = {"pageProps": {}}
     manifests = sorted(set(re.findall(r'src="(/6/buckler/_next/static/[^"]+/_buildManifest\.js)"', html)))
     scripts = "".join(f'<script src="{s}" defer=""></script>' for s in manifests)
@@ -161,8 +165,18 @@ def main() -> int:
     dump(f"play-{CFN}.json", play(json.loads(bodies["play"])))
     dump(f"battlelog-{CFN}-page-1.json", battlelog(json.loads(bodies["battlelog-1"])))
     dump(f"battlelog-{CFN}-page-2.json", battlelog(json.loads(bodies["battlelog-2"])))
-    (OUT / f"profile-{CFN}.html").write_text(profile_html(bodies["html"]))
+    html = profile_html(bodies["html"])
+    (OUT / f"profile-{CFN}.html").write_text(html)
     print("wrote", OUT / f"profile-{CFN}.html")
+    # DERIVED (not captured): the same page as a user browsing /6/buckler/es-es/ would get it.
+    # Only __NEXT_DATA__.locale changes; used to test locale handling of _next/data URLs.
+    derived = html.replace('"locale":"en"', '"locale":"es-es"', 1).replace(
+        "<!DOCTYPE html>",
+        "<!DOCTYPE html><!-- DERIVED from the en capture: only __NEXT_DATA__.locale changed. -->",
+        1,
+    )
+    (OUT / f"profile-{CFN}-es-es.html").write_text(derived)
+    print("wrote", OUT / f"profile-{CFN}-es-es.html (derived)")
     return 0
 
 

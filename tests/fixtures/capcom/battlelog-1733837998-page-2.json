@@ -49,7 +49,10 @@
           "playing_character_tool_name": "aki",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [1, 1],
+          "round_results": [
+            1,
+            1
+          ],
           "league_point": 19415,
           "league_rank": 31,
           "master_league": 0,
@@ -70,7 +73,10 @@
           "playing_character_tool_name": "ken",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [0, 0],
+          "round_results": [
+            0,
+            0
+          ],
           "league_point": 18920,
           "league_rank": 30,
           "master_league": 0,
@@ -100,7 +106,10 @@
           "playing_character_tool_name": "aki",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [1, 1],
+          "round_results": [
+            1,
+            1
+          ],
           "league_point": 19360,
           "league_rank": 31,
           "master_league": 0,
@@ -121,7 +130,10 @@
           "playing_character_tool_name": "ken",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [0, 0],
+          "round_results": [
+            0,
+            0
+          ],
           "league_point": 18960,
           "league_rank": 30,
           "master_league": 0,
@@ -151,7 +163,11 @@
           "playing_character_tool_name": "aki",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [0, 1, 1],
+          "round_results": [
+            0,
+            1,
+            1
+          ],
           "league_point": 19288,
           "league_rank": 31,
           "master_league": 0,
@@ -172,7 +188,11 @@
           "playing_character_tool_name": "chunli",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [1, 0, 0],
+          "round_results": [
+            1,
+            0,
+            0
+          ],
           "league_point": 21063,
           "league_rank": 32,
           "master_league": 0,
@@ -202,7 +222,10 @@
           "playing_character_tool_name": "aki",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [1, 1],
+          "round_results": [
+            1,
+            1
+          ],
           "league_point": 19215,
           "league_rank": 31,
           "master_league": 0,
@@ -223,7 +246,10 @@
           "playing_character_tool_name": "chunli",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [0, 0],
+          "round_results": [
+            0,
+            0
+          ],
           "league_point": 21103,
           "league_rank": 32,
           "master_league": 0,
@@ -253,7 +279,10 @@
           "playing_character_tool_name": "aki",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [0, 0],
+          "round_results": [
+            0,
+            0
+          ],
           "league_point": 19255,
           "league_rank": 31,
           "master_league": 0,
@@ -274,7 +303,10 @@
           "playing_character_tool_name": "chunli",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [5, 5],
+          "round_results": [
+            5,
+            5
+          ],
           "league_point": 21053,
           "league_rank": 32,
           "master_league": 0,
@@ -304,7 +336,10 @@
           "playing_character_tool_name": "aki",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [1, 1],
+          "round_results": [
+            1,
+            1
+          ],
           "league_point": 19180,
           "league_rank": 31,
           "master_league": 0,
@@ -325,7 +360,10 @@
           "playing_character_tool_name": "ed",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [0, 0],
+          "round_results": [
+            0,
+            0
+          ],
           "league_point": 21240,
           "league_rank": 32,
           "master_league": 0,
@@ -355,7 +393,11 @@
           "playing_character_tool_name": "vega",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [0, 6, 0],
+          "round_results": [
+            0,
+            6,
+            0
+          ],
           "league_point": 18818,
           "league_rank": 30,
           "master_league": 0,
@@ -376,7 +418,11 @@
           "playing_character_tool_name": "aki",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [1, 0, 1],
+          "round_results": [
+            1,
+            0,
+            1
+          ],
           "league_point": 19125,
           "league_rank": 31,
           "master_league": 0,
@@ -406,7 +452,11 @@
           "playing_character_tool_name": "vega",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [0, 1, 0],
+          "round_results": [
+            0,
+            1,
+            0
+          ],
           "league_point": 18858,
           "league_rank": 30,
           "master_league": 0,
@@ -427,7 +477,11 @@
           "playing_character_tool_name": "aki",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [1, 0, 1],
+          "round_results": [
+            1,
+            0,
+            1
+          ],
           "league_point": 19070,
           "league_rank": 31,
           "master_league": 0,
@@ -457,7 +511,10 @@
           "playing_character_tool_name": "aki",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [1, 1],
+          "round_results": [
+            1,
+            1
+          ],
           "league_point": 19000,
           "league_rank": 31,
           "master_league": 0,
@@ -478,7 +535,10 @@
           "playing_character_tool_name": "ed",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [0, 0],
+          "round_results": [
+            0,
+            0
+          ],
           "league_point": 20562,
           "league_rank": 32,
           "master_league": 0,
@@ -508,7 +568,10 @@
           "playing_character_tool_name": "aki",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [1, 6],
+          "round_results": [
+            1,
+            6
+          ],
           "league_point": -1,
           "league_rank": 39,
           "master_league": 0,
@@ -529,7 +592,10 @@
           "playing_character_tool_name": "ed",
           "battle_input_type": 0,
           "battle_input_type_name": "[t]クラシック",
-          "round_results": [0, 0],
+          "round_results": [
+            0,
+            0
+          ],
           "league_point": 20602,
           "league_rank": 32,
           "master_league": 0,

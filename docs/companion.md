@@ -256,6 +256,39 @@ pnpm companion:build
    Un pairing hecho contra un origen que ya no está en la lista queda en error
    (`tracker_origin_not_allowed`) y hay que volver a vincular.
 
+## 10b. Idioma (locale) de Buckler
+
+- **Contexto:** Buckler es Next.js con i18n. Los `_next/data` llevan el locale de la página:
+  `/_next/data/{buildId}/{locale}/profile/{cfn}/play.json?sid={cfn}`.
+  - El HAR se capturó en inglés (`locale: "en"`, que es el valor por defecto), de ahí el `/en/`
+    original.
+  - Locales declarados por la página: en, ja-jp, fr, de, it, es-es, ru, pl, pt-br, ko-kr,
+    zh-hant, zh-hans, ar, es-us.
+- **Cómo se obtiene el locale:** siempre de la propia página, nunca se adivina.
+  - **Transportes de pestaña:** `__NEXT_DATA__.locale` de la pestaña abierta, o el segmento de
+    `location.pathname` (`/6/buckler/es-es/…`). El script inyectado devuelve solo
+    `{buildId, locale, defaultLocale, locales}` y la ruta, nunca el `__NEXT_DATA__` completo.
+  - **Service worker:** el `__NEXT_DATA__.locale` del HTML del perfil, pedido sin prefijo para que
+    el servidor responda en el idioma del usuario.
+- **Fallback:** como máximo el locale de la página y después `en` (el idioma por defecto de
+  Buckler), y solo ante una señal explícita de desajuste. Nunca se recorre una lista de idiomas.
+- **Clasificación de errores, solo por estructura:**
+  - el texto "must log in" **no** sirve: es una traducción (`[t]not_registered_register`)
+    presente en todas las páginas y JSON de Buckler, incluso con sesión iniciada; por eso antes
+    todo error salía como `login_required`;
+  - `__N_REDIRECT` hacia auth/login → `login_required`;
+  - `__N_REDIRECT` hacia otro locale → `locale_mismatch`;
+  - 403 con la página de la app (`__NEXT_DATA__`) → `login_required`;
+  - 403 sin ella (CloudFront) → `blocked`;
+  - 429 → `rate_limited`;
+  - 400 pidiendo un locale distinto del de la página → `locale_mismatch`;
+  - cualquier otro caso → `invalid_response`.
+- **Diagnóstico del test:** muestra el locale de la página, el locale pedido y una firma segura de
+  la respuesta fallida: estado, content-type, bytes, **nombres** de claves JSON y de `pageProps`,
+  ruta de redirect sin query y título HTML. Nunca valores, cuerpos ni cookies.
+- **Fixtures:** `profile-1733837998-es-es.html` es **derivado** de la captura en inglés (solo
+  cambia `__NEXT_DATA__.locale`), no es una captura real.
+
 ## 11. Probar la conexión con Buckler
 
 1. Inicia sesión en Buckler's Boot Camp **a mano** en ese mismo navegador.

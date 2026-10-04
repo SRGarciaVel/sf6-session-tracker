@@ -34,6 +34,9 @@ export async function runConnectionTest(
       characters: null,
       replays: null,
       viewerOwnsProfile: null,
+      pageLocale: null,
+      requestLocale: null,
+      signature: null,
     };
     results.push(r);
     if (rateLimited) {
@@ -43,8 +46,9 @@ export async function runConnectionTest(
     const client = new CompanionBucklerClient(makeTransport(kind));
     let step: "buildId" | "play" | "battlelog" = "buildId";
     try {
-      await client.getBuildId(cfnUserId);
+      const meta = await client.getPageMeta(cfnUserId);
       r.buildId = "PASS";
+      r.pageLocale = meta.locale;
       step = "play";
       const play = normalizeCapcomProfile(parseCapcomPlayPayload(await client.getPlay(cfnUserId)), {
         cfnUserId,
@@ -56,11 +60,14 @@ export async function runConnectionTest(
       const page = parseCapcomBattlelogPayload(await client.getBattlelogPage(cfnUserId, 1));
       r.battlelog = "PASS";
       r.replays = page.replays.length;
+      r.requestLocale = client.effectiveLocale;
     } catch (err) {
       r[step] = "FAIL";
       if (err instanceof BucklerError) {
         r.failure = err.kind;
         r.status = err.status;
+        r.signature = err.signature;
+        r.requestLocale = err.locale;
         if (err.kind === "rate_limited") rateLimited = true;
       } else {
         r.failure = err instanceof Error ? err.name : "error";

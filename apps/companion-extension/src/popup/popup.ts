@@ -70,7 +70,19 @@ function render(s: PublicStatus) {
           `${r.transport}: buildId ${r.buildId} · play ${r.play} · battlelog ${r.battlelog}` +
           (r.failure ? ` — ${r.failure}${r.status ? ` ${r.status}` : ""}` : "") +
           (r.characters !== null ? ` · ${r.characters} chars` : "") +
-          (r.replays !== null ? ` · ${r.replays} replays` : ""),
+          (r.replays !== null ? ` · ${r.replays} replays` : "") +
+          (r.pageLocale
+            ? ` · locale ${r.pageLocale}${r.requestLocale && r.requestLocale !== r.pageLocale ? `→${r.requestLocale}` : ""}`
+            : "") +
+          (r.signature
+            ? `\n    ↳ ${r.signature.contentType ?? "?"} ${r.signature.bytes}B` +
+              (r.signature.json
+                ? ` keys[${r.signature.keys.join(",")}] pageProps[${r.signature.pagePropsKeys.join(",")}]`
+                : "") +
+              (r.signature.redirectPath ? ` redirect ${r.signature.redirectPath}` : "") +
+              (r.signature.hasNextData ? ` app-page ${r.signature.nextPage ?? ""}` : "") +
+              (r.signature.title ? ` "${r.signature.title}"` : "")
+            : ""),
       ),
     ].join("\n");
   }

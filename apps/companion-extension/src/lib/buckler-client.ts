@@ -1,14 +1,24 @@
 /**
- * Buckler data access over any transport, with the same buildId strategy as the server client:
- * read it from the page (tab) or the profile HTML, cache it, and on a _next/data 404 invalidate,
- * rediscover and retry exactly ONCE. No other retries: 403 / 429 / login-required stop here.
+ * Buckler data access over any transport.
+ *
+ * Page metadata (buildId + LOCALE) comes from the open Buckler page (tab transports) or from the
+ * profile HTML (service worker); it is cached, and on a _next/data 404 invalidated, rediscovered
+ * and retried exactly ONCE. `_next/data` URLs use the page's locale (e.g. es-es) — the HAR's
+ * "/en/" was only the locale of that capture. If the page locale is refused as a locale
+ * mismatch, `en` (Buckler's default locale) is tried once; nothing else. 403 / 429 /
+ * login-required stop immediately.
  */
 import {
-  BuildIdCache,
+  BUCKLER_DEFAULT_LOCALE,
+  TtlCache,
   bucklerPaths,
   classifyBucklerFailure,
-  extractBuildId,
+  describeBucklerResponse,
+  extractPageMeta,
+  pageMetaFromNextData,
   type BucklerFailure,
+  type BucklerPageMeta,
+  type BucklerResponseSignature,
 } from "@sf6/capcom-core";
 import { NoBucklerTabError, type BucklerTransport } from "./buckler-transport";
 
@@ -18,21 +28,26 @@ export class BucklerError extends Error {
     readonly kind: BucklerFailure | "no_tab",
     readonly status: number | null,
     message: string,
+    /** Safe description of the failing answer (no body, no values). */
+    readonly signature: BucklerResponseSignature | null = null,
+    readonly locale: string | null = null,
   ) {
     super(message);
   }
 }
 
-const BUILD_ID_TTL_MS = 30 * 60_000;
+const META_TTL_MS = 30 * 60_000;
 
 export class CompanionBucklerClient {
-  readonly buildIds: BuildIdCache;
+  readonly meta: TtlCache<BucklerPageMeta>;
+  /** Locale that last answered successfully (diagnostics). */
+  effectiveLocale: string | null = null;
 
   constructor(
     readonly transport: BucklerTransport,
-    options: { now?: () => number; buildIds?: BuildIdCache } = {},
+    options: { now?: () => number; meta?: TtlCache<BucklerPageMeta> } = {},
   ) {
-    this.buildIds = options.buildIds ?? new BuildIdCache(BUILD_ID_TTL_MS, options.now);
+    this.meta = options.meta ?? new TtlCache<BucklerPageMeta>(META_TTL_MS, options.now);
   }
 
   private async fetchText(path: string) {
@@ -44,57 +59,81 @@ export class CompanionBucklerClient {
     }
   }
 
-  getBuildId(cfnId: string): Promise<string> {
-    return this.buildIds.get(async () => {
-      const fromPage = await this.transport.readBuildIdFromPage?.().catch((err: unknown) => {
+  getPageMeta(cfnId: string): Promise<BucklerPageMeta> {
+    return this.meta.get(async () => {
+      const raw = await this.transport.readPageMeta?.().catch((err: unknown) => {
         if (err instanceof NoBucklerTabError) throw new BucklerError("no_tab", null, err.message);
         return null;
       });
+      const fromPage = raw?.nextData ? pageMetaFromNextData(raw.nextData, raw.pathname) : null;
       if (fromPage) return fromPage;
+      // Service worker: the profile page without locale prefix; the server answers in the
+      // user's locale (its __NEXT_DATA__.locale tells which).
       const res = await this.fetchText(bucklerPaths.profile(cfnId));
-      // A logged-out profile page is a 403 that still carries Buckler's __NEXT_DATA__.buildId;
-      // a WAF block has none.
-      const id = extractBuildId(res.text);
-      if (id) return id;
+      const meta = extractPageMeta(res.text);
+      if (meta) return meta;
+      const sig = describeBucklerResponse(res.status, res.contentType, res.text);
       throw new BucklerError(
-        classifyBucklerFailure(res.status, res.text),
+        classifyBucklerFailure(sig),
         res.status,
-        `buildId not found (HTTP ${res.status})`,
+        `page metadata not found (HTTP ${res.status})`,
+        sig,
       );
     });
   }
 
-  private async nextData(cfnId: string, pathFor: (buildId: string) => string): Promise<unknown> {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const buildId = await this.getBuildId(cfnId);
-      const res = await this.fetchText(pathFor(buildId));
-      if (res.status === 200) {
-        let data: unknown;
-        try {
-          data = JSON.parse(res.text);
-        } catch {
-          throw new BucklerError(classifyBucklerFailure(200, res.text), 200, "non-JSON answer");
-        }
-        if (res.text.includes("__N_REDIRECT")) {
-          throw new BucklerError("login_required", 200, "Buckler redirected (login required)");
-        }
-        return data;
+  /** Kept for callers/tests that only need the buildId. */
+  async getBuildId(cfnId: string): Promise<string> {
+    return (await this.getPageMeta(cfnId)).buildId;
+  }
+
+  private async nextData(
+    cfnId: string,
+    pathFor: (buildId: string, locale: string) => string,
+  ): Promise<unknown> {
+    let staleRetried = false;
+    let localeOverride: string | null = null;
+    for (;;) {
+      const meta = await this.getPageMeta(cfnId);
+      const locale: string = localeOverride ?? meta.locale;
+      const res = await this.fetchText(pathFor(meta.buildId, locale));
+      const sig = describeBucklerResponse(res.status, res.contentType, res.text);
+      if (res.status === 200 && sig.json && sig.redirectPath === null) {
+        this.effectiveLocale = locale;
+        return JSON.parse(res.text) as unknown;
       }
-      const failure = classifyBucklerFailure(res.status, res.text);
-      if (failure === "not_found" && attempt === 0) {
-        this.buildIds.invalidate(); // stale buildId after a Capcom deploy
+      const failure = classifyBucklerFailure(sig, {
+        requestedLocale: locale,
+        pageLocale: meta.locale,
+      });
+      if (failure === "not_found" && !staleRetried) {
+        staleRetried = true;
+        this.meta.invalidate(); // stale buildId after a Capcom deploy
         continue;
       }
-      throw new BucklerError(failure, res.status, `Buckler answered HTTP ${res.status}`);
+      if (
+        failure === "locale_mismatch" &&
+        localeOverride === null &&
+        locale !== BUCKLER_DEFAULT_LOCALE
+      ) {
+        localeOverride = BUCKLER_DEFAULT_LOCALE; // single documented fallback: Buckler's default
+        continue;
+      }
+      throw new BucklerError(
+        failure,
+        res.status,
+        `Buckler answered HTTP ${res.status} (${failure})`,
+        sig,
+        locale,
+      );
     }
-    throw new BucklerError("not_found", 404, "Buckler data not found");
   }
 
   getPlay(cfnId: string): Promise<unknown> {
-    return this.nextData(cfnId, (b) => bucklerPaths.play(b, cfnId));
+    return this.nextData(cfnId, (b, l) => bucklerPaths.play(b, cfnId, l));
   }
 
   getBattlelogPage(cfnId: string, page: number): Promise<unknown> {
-    return this.nextData(cfnId, (b) => bucklerPaths.battlelog(b, cfnId, page));
+    return this.nextData(cfnId, (b, l) => bucklerPaths.battlelog(b, cfnId, page, l));
   }
 }

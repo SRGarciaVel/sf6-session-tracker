@@ -29,22 +29,22 @@ export function extractBuildId(html: string): string | null {
 }
 
 /** TTL cache with single-flight discovery. */
-export class BuildIdCache {
-  private value: { id: string; expiresAt: number } | null = null;
-  private inflight: Promise<string> | null = null;
+export class TtlCache<T> {
+  private value: { item: T; expiresAt: number } | null = null;
+  private inflight: Promise<T> | null = null;
 
   constructor(
     private readonly ttlMs: number,
     private readonly now: () => number = Date.now,
   ) {}
 
-  async get(discover: () => Promise<string>): Promise<string> {
-    if (this.value && this.value.expiresAt > this.now()) return this.value.id;
+  async get(discover: () => Promise<T>): Promise<T> {
+    if (this.value && this.value.expiresAt > this.now()) return this.value.item;
     if (!this.inflight) {
       this.inflight = discover()
-        .then((id) => {
-          this.value = { id, expiresAt: this.now() + this.ttlMs };
-          return id;
+        .then((item) => {
+          this.value = { item, expiresAt: this.now() + this.ttlMs };
+          return item;
         })
         .finally(() => {
           this.inflight = null;
@@ -53,12 +53,15 @@ export class BuildIdCache {
     return this.inflight;
   }
 
-  /** Drop the cached id (e.g. after a `_next/data` 404 caused by a new Capcom deploy). */
+  /** Drop the cached value (e.g. after a `_next/data` 404 caused by a new Capcom deploy). */
   invalidate(): void {
     this.value = null;
   }
 
-  peek(): string | null {
-    return this.value?.id ?? null;
+  peek(): T | null {
+    return this.value?.item ?? null;
   }
 }
+
+/** The server client's buildId cache. */
+export class BuildIdCache extends TtlCache<string> {}

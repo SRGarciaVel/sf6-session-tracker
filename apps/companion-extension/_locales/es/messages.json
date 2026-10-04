@@ -166,5 +166,8 @@
   },
   "errInvalidCfn": {
     "message": "Un CFN ID es un número de 6 a 12 dígitos."
+  },
+  "buckler_locale_mismatch": {
+    "message": "Idioma (locale) no coincide"
   }
 }

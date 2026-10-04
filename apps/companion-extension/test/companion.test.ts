@@ -12,7 +12,15 @@ import { toPublicStatus } from "../src/lib/messages";
 import { CompanionStorage, DEFAULT_STORE, memoryArea } from "../src/lib/storage";
 import { buildSyncPayload, computeDueWork, runCycle } from "../src/lib/sync";
 import { TrackerError } from "../src/lib/tracker-client";
-import { BUILD_ID, CFN, fakeTracker, fixtureJson, fixtureTransport, makeState } from "./helpers";
+import {
+  BUILD_ID,
+  CFN,
+  fakeTracker,
+  fixtureJson,
+  fixtureTransport,
+  makeState,
+  pageMeta,
+} from "./helpers";
 
 const NOW = new Date("2026-10-03T03:00:00Z");
 
@@ -51,7 +59,7 @@ describe("Buckler access from the companion (fixtures, offline)", () => {
   it("tab transports read the buildId from the open page without a request", async () => {
     const transport = {
       ...fixtureTransport("main_tab"),
-      readBuildIdFromPage: async () => BUILD_ID,
+      readPageMeta: async () => pageMeta("en"),
     };
     const client = new CompanionBucklerClient(transport);
     await client.getPlay(CFN);
@@ -62,7 +70,7 @@ describe("Buckler access from the companion (fixtures, offline)", () => {
     let n = 0;
     const transport = {
       ...fixtureTransport(),
-      readBuildIdFromPage: async () => (n++ === 0 ? "OLDBUILD01" : BUILD_ID),
+      readPageMeta: async () => pageMeta("en", n++ === 0 ? "OLDBUILD01" : BUILD_ID),
     };
     const client = new CompanionBucklerClient(transport);
     await expect(client.getPlay(CFN)).resolves.toBeTruthy();
