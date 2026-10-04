@@ -1,5 +1,9 @@
 # Investigación de red — Buckler's Boot Camp / CFN (2026-10-03)
 
+> **Actualización:** las fases 3–9 se resolvieron después con un HAR capturado a mano desde el
+> navegador. Ver `docs/capcom-provider.md`. Lo que sigue documenta el bloqueo de las pruebas
+> automatizadas, que sigue vigente.
+
 > **Estado: BLOQUEADA en la fase 2.** Toda petición al sitio desde este entorno recibe
 > `403` de CloudFront antes de llegar a la aplicación. No se ha observado ningún payload
 > real. Nada de este documento describe endpoints internos verificados: lo que no se ha
@@ -18,12 +22,12 @@
 
 ## Herramientas (`scripts/research/`, separadas del provider de producción)
 
-| Archivo                  | Función                                                                                                                                                                                                       |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cfn_session.py`         | Carga la sesión como `cfn_scraper.py` (mapeo `sameSite`). Informe solo con nombres y caducidad. Redacción de cabeceras y JSON.                                                                                 |
-| `inspect_cfn_network.py` | Visita profile → battlelog → `/en/.../play`. Registra document, fetch, XHR, JSON y `_next/data`. Extrae `__NEXT_DATA__` y detecta RSC (`self.__next_f`). Escribe en `debug_output/network/` ya saneado.        |
-| `test_cfn_http.py`       | Reproduce las páginas por HTTP plano. Detecta `buildId` y `__NEXT_DATA__`. Admite `--runs N` y `--no-cookies`.                                                                                                |
-| `benchmark.py`           | Playwright frente a HTTP, N ejecuciones con 3 s entre peticiones. Se detiene ante 403/429.                                                                                                                    |
+| Archivo                  | Función                                                                                                                                                                                                 |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cfn_session.py`         | Carga la sesión como `cfn_scraper.py` (mapeo `sameSite`). Informe solo con nombres y caducidad. Redacción de cabeceras y JSON.                                                                          |
+| `inspect_cfn_network.py` | Visita profile → battlelog → `/en/.../play`. Registra document, fetch, XHR, JSON y `_next/data`. Extrae `__NEXT_DATA__` y detecta RSC (`self.__next_f`). Escribe en `debug_output/network/` ya saneado. |
+| `test_cfn_http.py`       | Reproduce las páginas por HTTP plano. Detecta `buildId` y `__NEXT_DATA__`. Admite `--runs N` y `--no-cookies`.                                                                                          |
+| `benchmark.py`           | Playwright frente a HTTP, N ejecuciones con 3 s entre peticiones. Se detiene ante 403/429.                                                                                                              |
 
 Configuración:
 
@@ -36,8 +40,8 @@ scripts/research/.venv/bin/pip install playwright httpx
 
 ### 1. Sesión existente: caducada
 
-| Cookie         | httpOnly | Caducidad    |
-| -------------- | -------- | ------------ |
+| Cookie         | httpOnly | Caducidad     |
+| -------------- | -------- | ------------- |
 | `buckler_r_id` | no       | hace 8,3 días |
 | `buckler_id`   | sí       | hace 8,3 días |
 
@@ -46,10 +50,10 @@ una exportación nueva hecha a mano.
 
 ### 2. Bloqueo en el borde (CloudFront), antes de autenticar
 
-| Cliente                                            | URL                     | Resultado                               |
-| -------------------------------------------------- | ----------------------- | --------------------------------------- |
-| Chromium headless (sin cookies, `--no-cookies`)    | `/profile/1733837998`   | `403`, 919 B, `x-cache: Error from cloudfront`, POP `MIA50-P9` |
-| `httpx` por defecto (sin cookies)                  | `/profile/1733837998`   | `403`, 919 B, misma firma               |
+| Cliente                                         | URL                   | Resultado                                                      |
+| ----------------------------------------------- | --------------------- | -------------------------------------------------------------- |
+| Chromium headless (sin cookies, `--no-cookies`) | `/profile/1733837998` | `403`, 919 B, `x-cache: Error from cloudfront`, POP `MIA50-P9` |
+| `httpx` por defecto (sin cookies)               | `/profile/1733837998` | `403`, 919 B, misma firma                                      |
 
 - La respuesta la genera CloudFront (`server: CloudFront`, `x-cache: Error from cloudfront`).
   No es la aplicación Next.js: no llega HTML de Buckler, ni `__NEXT_DATA__`, ni `buildId`.
@@ -66,47 +70,47 @@ una exportación nueva hecha a mano.
 
 Ninguna está verificada; todas dependen de pasar el borde con tráfico legítimo.
 
-| Fase | Pregunta                    | Estado                                                                                                                                                                                                                       |
-| ---- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 3    | ID real de partida          | NO VERIFICADO. El scraper actual no encontró ninguno en el DOM y deduplica por `(cfn, played_at, rival)`, que no distingue rematches del mismo minuto.                                                                       |
-| 4    | Perfil por personaje        | El DOM tiene nombre de personaje y LP/MR por bloque (`character_name__`, `character_point__`). Fuente: scraper. Se desconoce si existe un ID numérico.                                                                       |
-| 5    | Mecanismo Next.js           | NO VERIFICADO. Las clases `*__hash` sugieren CSS Modules de Next, sin distinguir entre Pages Router (`__NEXT_DATA__`) y App Router (RSC).                                                                                    |
-| 6    | Paginación del battlelog    | NO VERIFICADO. El scraper solo lee la primera página.                                                                                                                                                                        |
-| 7    | Timestamps                  | DOM: `MM/DD/YYYY HH:MM` sin zona horaria. El scraper supone UTC−4 por observación empírica. Sin segundos, así que dos partidas del mismo minuto colisionan.                                                                  |
-| 8    | Modo                        | NO VERIFICADO como enum. El battlelog tiene pestañas por modo en el DOM.                                                                                                                                                     |
-| 9    | Rating antes/después        | No en el DOM conocido. El scraper no lo extrae.                                                                                                                                                                              |
-| 10   | Reproducción HTTP           | Bloqueada en el borde (403) con cliente no-navegador.                                                                                                                                                                        |
-| 11   | Benchmark                   | No ejecutable (403). Script listo.                                                                                                                                                                                           |
+| Fase | Pregunta                 | Estado                                                                                                                                                      |
+| ---- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3    | ID real de partida       | NO VERIFICADO. El scraper actual no encontró ninguno en el DOM y deduplica por `(cfn, played_at, rival)`, que no distingue rematches del mismo minuto.      |
+| 4    | Perfil por personaje     | El DOM tiene nombre de personaje y LP/MR por bloque (`character_name__`, `character_point__`). Fuente: scraper. Se desconoce si existe un ID numérico.      |
+| 5    | Mecanismo Next.js        | NO VERIFICADO. Las clases `*__hash` sugieren CSS Modules de Next, sin distinguir entre Pages Router (`__NEXT_DATA__`) y App Router (RSC).                   |
+| 6    | Paginación del battlelog | NO VERIFICADO. El scraper solo lee la primera página.                                                                                                       |
+| 7    | Timestamps               | DOM: `MM/DD/YYYY HH:MM` sin zona horaria. El scraper supone UTC−4 por observación empírica. Sin segundos, así que dos partidas del mismo minuto colisionan. |
+| 8    | Modo                     | NO VERIFICADO como enum. El battlelog tiene pestañas por modo en el DOM.                                                                                    |
+| 9    | Rating antes/después     | No en el DOM conocido. El scraper no lo extrae.                                                                                                             |
+| 10   | Reproducción HTTP        | Bloqueada en el borde (403) con cliente no-navegador.                                                                                                       |
+| 11   | Benchmark                | No ejecutable (403). Script listo.                                                                                                                          |
 
 ## Mapeo de campos (provisional, solo con evidencia del scraper existente)
 
-| Campo del tracker               | Fuente encontrada                                                   | Fiabilidad                      |
-| ------------------------------- | ------------------------------------------------------------------- | ------------------------------- |
-| `cfnUserId`                     | URL `/profile/{id}`                                                 | Alta                            |
-| `displayName`                   | DOM del perfil                                                      | Media (selector con hash)       |
-| `characters[].characterName`    | `[class*=character_name__] span`                                    | Media                           |
-| `characters[].characterKey`     | Derivable del nombre (slug)                                         | Media; sin ID oficial           |
-| `leaguePoints` / `masterRate`   | `character_point__` + `master_league__`/`normal_league__`; texto "X MR" | Media                       |
-| `rank` / `rankTier`             | Imagen; no se extrae                                                | Baja; derivable de LP por umbrales |
-| `externalMatchId`               | —                                                                   | **Ninguna**                     |
-| `playedAt`                      | Texto de fecha, al minuto, zona supuesta                            | Baja                            |
-| `mode`                          | Pestaña del battlelog                                               | Media                           |
-| `result`                        | Clase `battle_data_win__`/`lose__`                                  | Media                           |
-| `characterKey` de la partida    | `alt` de la imagen                                                  | Media                           |
-| `opponent.name`                 | DOM; CFN del rival vía modal                                        | Media                           |
-| `ratingBefore` / `ratingAfter`  | —                                                                   | **Ninguna**                     |
+| Campo del tracker              | Fuente encontrada                                                       | Fiabilidad                         |
+| ------------------------------ | ----------------------------------------------------------------------- | ---------------------------------- |
+| `cfnUserId`                    | URL `/profile/{id}`                                                     | Alta                               |
+| `displayName`                  | DOM del perfil                                                          | Media (selector con hash)          |
+| `characters[].characterName`   | `[class*=character_name__] span`                                        | Media                              |
+| `characters[].characterKey`    | Derivable del nombre (slug)                                             | Media; sin ID oficial              |
+| `leaguePoints` / `masterRate`  | `character_point__` + `master_league__`/`normal_league__`; texto "X MR" | Media                              |
+| `rank` / `rankTier`            | Imagen; no se extrae                                                    | Baja; derivable de LP por umbrales |
+| `externalMatchId`              | —                                                                       | **Ninguna**                        |
+| `playedAt`                     | Texto de fecha, al minuto, zona supuesta                                | Baja                               |
+| `mode`                         | Pestaña del battlelog                                                   | Media                              |
+| `result`                       | Clase `battle_data_win__`/`lose__`                                      | Media                              |
+| `characterKey` de la partida   | `alt` de la imagen                                                      | Media                              |
+| `opponent.name`                | DOM; CFN del rival vía modal                                            | Media                              |
+| `ratingBefore` / `ratingAfter` | —                                                                       | **Ninguna**                        |
 
 ## Huecos
 
-| Hueco                                  | Clase                                                                                              |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Acceso al sitio (403 de borde)         | **BLOQUEANTE**                                                                                     |
-| Sesión caducada                        | **BLOQUEANTE** (requiere paso humano)                                                              |
-| `externalMatchId` estable              | BLOQUEANTE para la deduplicación robusta. NEEDS FALLBACK: hash `(cfn, playedAt, rival, personajes, resultado, índice dentro del minuto)` |
-| `ratingBefore`/`After` por partida     | NO BLOQUEANTE / CAN DERIVE: el tracker ya funciona con snapshots de perfil por personaje           |
-| `rankTier`                             | CAN DERIVE desde LP                                                                                |
-| Paginación                             | NO BLOQUEANTE para sesiones en vivo (la primera página basta con polling frecuente). NEEDS FALLBACK para backfill |
-| Zona horaria / segundos                | NEEDS FALLBACK: membresía por IDs, `playedAt` solo como secundario (ya implementado, gracia de 90 s) |
+| Hueco                              | Clase                                                                                                                                    |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Acceso al sitio (403 de borde)     | **BLOQUEANTE**                                                                                                                           |
+| Sesión caducada                    | **BLOQUEANTE** (requiere paso humano)                                                                                                    |
+| `externalMatchId` estable          | BLOQUEANTE para la deduplicación robusta. NEEDS FALLBACK: hash `(cfn, playedAt, rival, personajes, resultado, índice dentro del minuto)` |
+| `ratingBefore`/`After` por partida | NO BLOQUEANTE / CAN DERIVE: el tracker ya funciona con snapshots de perfil por personaje                                                 |
+| `rankTier`                         | CAN DERIVE desde LP                                                                                                                      |
+| Paginación                         | NO BLOQUEANTE para sesiones en vivo (la primera página basta con polling frecuente). NEEDS FALLBACK para backfill                        |
+| Zona horaria / segundos            | NEEDS FALLBACK: membresía por IDs, `playedAt` solo como secundario (ya implementado, gracia de 90 s)                                     |
 
 ## Arquitectura recomendada (provisional)
 

@@ -6,7 +6,7 @@ decision changes.
 ## 1. Shape of the system
 
 ```
- Capcom / CFN  (your extractor)
+ Capcom / CFN  (Buckler _next/data; prototype in providers/capcom/, see docs/capcom-provider.md)
         │
         ▼
  SF6DataProvider  ── src/server/sf6/          (fetch + normalize; nothing else)
