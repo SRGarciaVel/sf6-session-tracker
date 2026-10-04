@@ -1,0 +1,147 @@
+{
+  "extName": {
+    "message": "SF6 Session Companion"
+  },
+  "extDescription": {
+    "message": "Envía tus propias partidas de Street Fighter 6 desde Buckler's Boot Camp a tu SF6 Session Tracker. Nunca envía tus cookies ni credenciales de Capcom."
+  },
+  "tracker": {
+    "message": "Tracker"
+  },
+  "session": {
+    "message": "Sesión"
+  },
+  "lastMatch": {
+    "message": "Última partida"
+  },
+  "lastSync": {
+    "message": "Última sync"
+  },
+  "connectTitle": {
+    "message": "Conectar con tu Session Tracker"
+  },
+  "trackerUrl": {
+    "message": "URL del tracker"
+  },
+  "pairingCode": {
+    "message": "Código de vinculación (Dashboard → Conectar Companion)"
+  },
+  "deviceName": {
+    "message": "Nombre del dispositivo"
+  },
+  "connect": {
+    "message": "Conectar"
+  },
+  "cfnManual": {
+    "message": "Tu CFN ID (solo si el tracker aún no tiene uno)"
+  },
+  "save": {
+    "message": "Guardar"
+  },
+  "testBuckler": {
+    "message": "Probar conexión con Buckler"
+  },
+  "syncNow": {
+    "message": "Sincronizar ahora"
+  },
+  "disconnect": {
+    "message": "Desconectar"
+  },
+  "privacy": {
+    "message": "El companion nunca envía tus cookies o credenciales de Capcom al Session Tracker. Solo envía tu CFN ID, nombre de luchador, personajes, rango/LP/MR y tus partidas (ID de replay, hora, modo, resultado, nombre y personaje del rival)."
+  },
+  "connected": {
+    "message": "Conectado"
+  },
+  "notPaired": {
+    "message": "Sin conectar"
+  },
+  "revoked": {
+    "message": "Dispositivo revocado — vuelve a conectar"
+  },
+  "trackerDisconnected": {
+    "message": "Tracker desconectado"
+  },
+  "loggedIn": {
+    "message": "Sesión iniciada"
+  },
+  "loginRequired": {
+    "message": "Inicia sesión en Buckler"
+  },
+  "openBucklerTab": {
+    "message": "Abre una pestaña de Buckler's Boot Camp"
+  },
+  "unknown": {
+    "message": "Desconocido"
+  },
+  "runTest": {
+    "message": "Pulsa «Probar conexión con Buckler»"
+  },
+  "buckler_blocked": {
+    "message": "Acceso rechazado (403)"
+  },
+  "buckler_rate_limited": {
+    "message": "Límite de peticiones (429) — en pausa"
+  },
+  "buckler_not_found": {
+    "message": "No encontrado"
+  },
+  "buckler_unavailable": {
+    "message": "No disponible"
+  },
+  "buckler_invalid_response": {
+    "message": "Respuesta inesperada"
+  },
+  "active": {
+    "message": "Activa"
+  },
+  "noActiveSession": {
+    "message": "Sin sesión activa"
+  },
+  "secondsAgo": {
+    "message": "hace $VALUE$ s",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "minutesAgo": {
+    "message": "hace $VALUE$ min",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "hoursAgo": {
+    "message": "hace $VALUE$ h",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "lastError": {
+    "message": "Último error: $VALUE$",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "error": {
+    "message": "Error: $VALUE$",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "testVerdict": {
+    "message": "Prueba Buckler"
+  },
+  "defaultDeviceName": {
+    "message": "Companion del navegador"
+  }
+}

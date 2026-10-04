@@ -16,6 +16,7 @@ const eslintConfig = defineConfig([
     "drizzle/**",
     "scripts/research/.venv/**",
     "debug_output/**",
+    "apps/*/dist/**",
   ]),
 ]);
 

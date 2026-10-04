@@ -55,3 +55,6 @@ __pycache__/
 *.pyc
 # Dedicated research browser profile (normally ~/.sf6-buckler-browser-profile, outside the repo)
 .sf6-buckler-browser-profile/
+
+# Built unpacked extension
+/apps/companion-extension/dist

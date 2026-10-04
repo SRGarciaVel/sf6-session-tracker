@@ -1,0 +1,147 @@
+{
+  "extName": {
+    "message": "SF6 Session Companion"
+  },
+  "extDescription": {
+    "message": "Sends your own Street Fighter 6 matches from Buckler's Boot Camp to your SF6 Session Tracker. Never sends your Capcom cookies or credentials."
+  },
+  "tracker": {
+    "message": "Tracker"
+  },
+  "session": {
+    "message": "Session"
+  },
+  "lastMatch": {
+    "message": "Last match"
+  },
+  "lastSync": {
+    "message": "Last sync"
+  },
+  "connectTitle": {
+    "message": "Connect to your Session Tracker"
+  },
+  "trackerUrl": {
+    "message": "Tracker URL"
+  },
+  "pairingCode": {
+    "message": "Pairing code (Dashboard → Connect Companion)"
+  },
+  "deviceName": {
+    "message": "Device name"
+  },
+  "connect": {
+    "message": "Connect"
+  },
+  "cfnManual": {
+    "message": "Your CFN ID (only if the tracker has none yet)"
+  },
+  "save": {
+    "message": "Save"
+  },
+  "testBuckler": {
+    "message": "Test Buckler connection"
+  },
+  "syncNow": {
+    "message": "Sync now"
+  },
+  "disconnect": {
+    "message": "Disconnect"
+  },
+  "privacy": {
+    "message": "The companion never sends your Capcom cookies or credentials to the Session Tracker. It only sends your CFN ID, fighter name, characters, rank/LP/MR and your matches (replay ID, time, mode, result, rival name and character)."
+  },
+  "connected": {
+    "message": "Connected"
+  },
+  "notPaired": {
+    "message": "Not connected"
+  },
+  "revoked": {
+    "message": "Device revoked — connect again"
+  },
+  "trackerDisconnected": {
+    "message": "Tracker disconnected"
+  },
+  "loggedIn": {
+    "message": "Logged in"
+  },
+  "loginRequired": {
+    "message": "Buckler login required"
+  },
+  "openBucklerTab": {
+    "message": "Open a Buckler's Boot Camp tab"
+  },
+  "unknown": {
+    "message": "Unknown"
+  },
+  "runTest": {
+    "message": "Run “Test Buckler connection”"
+  },
+  "buckler_blocked": {
+    "message": "Access refused (403)"
+  },
+  "buckler_rate_limited": {
+    "message": "Rate limited (429) — paused"
+  },
+  "buckler_not_found": {
+    "message": "Not found"
+  },
+  "buckler_unavailable": {
+    "message": "Unavailable"
+  },
+  "buckler_invalid_response": {
+    "message": "Unexpected answer"
+  },
+  "active": {
+    "message": "Active"
+  },
+  "noActiveSession": {
+    "message": "No active session"
+  },
+  "secondsAgo": {
+    "message": "$VALUE$ s ago",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "minutesAgo": {
+    "message": "$VALUE$ min ago",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "hoursAgo": {
+    "message": "$VALUE$ h ago",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "lastError": {
+    "message": "Last error: $VALUE$",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "error": {
+    "message": "Error: $VALUE$",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "testVerdict": {
+    "message": "Buckler test"
+  },
+  "defaultDeviceName": {
+    "message": "Browser companion"
+  }
+}

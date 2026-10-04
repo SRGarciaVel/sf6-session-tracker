@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SF6 Session Companion</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <h1>SF6 Session Companion</h1>
+
+    <dl class="status">
+      <dt data-i18n="tracker"></dt>
+      <dd id="tracker"></dd>
+      <dt>Buckler</dt>
+      <dd id="buckler"></dd>
+      <dt>CFN</dt>
+      <dd id="cfn"></dd>
+      <dt data-i18n="session"></dt>
+      <dd id="session"></dd>
+      <dt data-i18n="lastMatch"></dt>
+      <dd id="lastMatch"></dd>
+      <dt data-i18n="lastSync"></dt>
+      <dd id="lastSync"></dd>
+    </dl>
+
+    <section id="pairSection" hidden>
+      <h2 data-i18n="connectTitle"></h2>
+      <label><span data-i18n="trackerUrl"></span><input id="trackerUrl" type="url" /></label>
+      <label
+        ><span data-i18n="pairingCode"></span
+        ><input id="code" autocomplete="off" placeholder="XXXX-XXXX"
+      /></label>
+      <label><span data-i18n="deviceName"></span><input id="deviceName" maxlength="60" /></label>
+      <button id="pair" data-i18n="connect"></button>
+    </section>
+
+    <section id="cfnSection" hidden>
+      <label><span data-i18n="cfnManual"></span><input id="cfnInput" inputmode="numeric" /></label>
+      <button id="saveCfn" data-i18n="save"></button>
+    </section>
+
+    <section id="actions" hidden>
+      <button id="test" data-i18n="testBuckler"></button>
+      <button id="sync" data-i18n="syncNow"></button>
+      <button id="disconnect" class="ghost" data-i18n="disconnect"></button>
+    </section>
+
+    <pre id="testResult" hidden></pre>
+    <p id="message" role="status"></p>
+    <p class="privacy" data-i18n="privacy"></p>
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

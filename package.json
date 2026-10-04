@@ -10,7 +10,7 @@
     "build:worker": "esbuild src/worker/index.ts --bundle --platform=node --target=node22 --format=esm --packages=external --tsconfig=tsconfig.json --outfile=dist/worker.mjs",
     "start": "next start",
     "start:worker": "node dist/worker.mjs",
-    "typecheck": "next typegen && tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit && tsc -p apps/companion-extension",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -23,7 +23,9 @@
     "check": "pnpm typecheck && pnpm lint && pnpm test",
     "provider:check": "tsx scripts/provider-check.ts",
     "test:e2e": "playwright test",
-    "research:cfn-browser": "tsx scripts/research/test_persistent_browser.ts"
+    "research:cfn-browser": "tsx scripts/research/test_persistent_browser.ts",
+    "companion:build": "tsx apps/companion-extension/build.mts",
+    "companion:dev": "tsx apps/companion-extension/build.mts --watch"
   },
   "dependencies": {
     "better-auth": "^1.7.7",
@@ -38,6 +40,7 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
+    "@types/chrome": "^0.3.4",
     "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
