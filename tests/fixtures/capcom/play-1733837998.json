@@ -1,0 +1,529 @@
+{
+  "pageProps": {
+    "sid": 1733837998,
+    "fighter_banner_info": {
+      "personal_info": {
+        "fighter_id": "TDF | Comunismo",
+        "short_id": 1733837998,
+        "platform_name": "Steam",
+        "platform_tool_name": "steam"
+      },
+      "favorite_character_id": 13,
+      "favorite_character_name": "A.K.I.",
+      "favorite_character_tool_name": "aki",
+      "favorite_character_league_info": {
+        "league_point": 19704,
+        "league_rank": 31,
+        "master_league": 0,
+        "master_rating": 0,
+        "master_rating_ranking": 0,
+        "league_rank_info": {
+          "league_rank_name": "Diamond 1",
+          "league_rank_number": 1
+        }
+      }
+    },
+    "play": {
+      "current_season_id": 13,
+      "season_ids": [
+        13,
+        12,
+        11,
+        10,
+        9,
+        8,
+        7,
+        6,
+        5,
+        4,
+        3,
+        2,
+        1,
+        0
+      ],
+      "character_league_infos": [
+        {
+          "character_id": 1,
+          "character_name": "Ryu",
+          "character_alpha": "RYU",
+          "character_tool_name": "ryu",
+          "character_sort": 12,
+          "is_played": true,
+          "league_info": {
+            "league_point": 32762,
+            "league_rank": 36,
+            "master_league": 36,
+            "master_rating": 1341,
+            "master_rating_ranking": 677769
+          }
+        },
+        {
+          "character_id": 2,
+          "character_name": "Luke",
+          "character_alpha": "LUKE",
+          "character_tool_name": "luke",
+          "character_sort": 2,
+          "is_played": true,
+          "league_info": {
+            "league_point": 23840,
+            "league_rank": 35,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 3,
+          "character_name": "Kimberly",
+          "character_alpha": "KIMBERLY",
+          "character_tool_name": "kimberly",
+          "character_sort": 5,
+          "is_played": true,
+          "league_info": {
+            "league_point": 26321,
+            "league_rank": 36,
+            "master_league": 36,
+            "master_rating": 1479,
+            "master_rating_ranking": 446782
+          }
+        },
+        {
+          "character_id": 4,
+          "character_name": "Chun-Li",
+          "character_alpha": "CHUN-LI",
+          "character_tool_name": "chunli",
+          "character_sort": 17,
+          "is_played": true,
+          "league_info": {
+            "league_point": 25234,
+            "league_rank": 36,
+            "master_league": 36,
+            "master_rating": 1411,
+            "master_rating_ranking": 603349
+          }
+        },
+        {
+          "character_id": 5,
+          "character_name": "Manon",
+          "character_alpha": "MANON",
+          "character_tool_name": "manon",
+          "character_sort": 4,
+          "is_played": true,
+          "league_info": {
+            "league_point": -1,
+            "league_rank": 39,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 6,
+          "character_name": "Zangief",
+          "character_alpha": "ZANGIEF",
+          "character_tool_name": "zangief",
+          "character_sort": 18,
+          "is_played": true,
+          "league_info": {
+            "league_point": 15819,
+            "league_rank": 28,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 7,
+          "character_name": "JP",
+          "character_alpha": "JP",
+          "character_tool_name": "jp",
+          "character_sort": 8,
+          "is_played": true,
+          "league_info": {
+            "league_point": -1,
+            "league_rank": 39,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 8,
+          "character_name": "Dhalsim",
+          "character_alpha": "DHALSIM",
+          "character_tool_name": "dhalsim",
+          "character_sort": 19,
+          "is_played": true,
+          "league_info": {
+            "league_point": -1,
+            "league_rank": 39,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 9,
+          "character_name": "Cammy",
+          "character_alpha": "CAMMY",
+          "character_tool_name": "cammy",
+          "character_sort": 11,
+          "is_played": true,
+          "league_info": {
+            "league_point": 22312,
+            "league_rank": 33,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 10,
+          "character_name": "Ken",
+          "character_alpha": "KEN",
+          "character_tool_name": "ken",
+          "character_sort": 16,
+          "is_played": true,
+          "league_info": {
+            "league_point": 24672,
+            "league_rank": 35,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 11,
+          "character_name": "Dee Jay",
+          "character_alpha": "DEE JAY",
+          "character_tool_name": "deejay",
+          "character_sort": 10,
+          "is_played": true,
+          "league_info": {
+            "league_point": -1,
+            "league_rank": 39,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 12,
+          "character_name": "Lily",
+          "character_alpha": "LILY",
+          "character_tool_name": "lily",
+          "character_sort": 7,
+          "is_played": true,
+          "league_info": {
+            "league_point": -1,
+            "league_rank": 39,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 13,
+          "character_name": "A.K.I.",
+          "character_alpha": "A.K.I.",
+          "character_tool_name": "aki",
+          "character_sort": 21,
+          "is_played": true,
+          "league_info": {
+            "league_point": 19704,
+            "league_rank": 31,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 14,
+          "character_name": "Rashid",
+          "character_alpha": "RASHID",
+          "character_tool_name": "rashid",
+          "character_sort": 20,
+          "is_played": true,
+          "league_info": {
+            "league_point": -1,
+            "league_rank": 39,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 15,
+          "character_name": "Blanka",
+          "character_alpha": "BLANKA",
+          "character_tool_name": "blanka",
+          "character_sort": 14,
+          "is_played": true,
+          "league_info": {
+            "league_point": -1,
+            "league_rank": 39,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 16,
+          "character_name": "Juri",
+          "character_alpha": "JURI",
+          "character_tool_name": "juri",
+          "character_sort": 9,
+          "is_played": true,
+          "league_info": {
+            "league_point": -1,
+            "league_rank": 39,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 17,
+          "character_name": "Marisa",
+          "character_alpha": "MARISA",
+          "character_tool_name": "marisa",
+          "character_sort": 6,
+          "is_played": true,
+          "league_info": {
+            "league_point": -1,
+            "league_rank": 39,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 18,
+          "character_name": "Guile",
+          "character_alpha": "GUILE",
+          "character_tool_name": "guile",
+          "character_sort": 15,
+          "is_played": true,
+          "league_info": {
+            "league_point": -1,
+            "league_rank": 39,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 19,
+          "character_name": "Ed",
+          "character_alpha": "ED",
+          "character_tool_name": "ed",
+          "character_sort": 22,
+          "is_played": true,
+          "league_info": {
+            "league_point": -1,
+            "league_rank": 39,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 20,
+          "character_name": "Edmond Honda",
+          "character_alpha": "E. HONDA",
+          "character_tool_name": "honda",
+          "character_sort": 13,
+          "is_played": true,
+          "league_info": {
+            "league_point": 25194,
+            "league_rank": 36,
+            "master_league": 36,
+            "master_rating": 1500,
+            "master_rating_ranking": 294274
+          }
+        },
+        {
+          "character_id": 21,
+          "character_name": "Jamie",
+          "character_alpha": "JAMIE",
+          "character_tool_name": "jamie",
+          "character_sort": 3,
+          "is_played": true,
+          "league_info": {
+            "league_point": 23006,
+            "league_rank": 34,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 22,
+          "character_name": "Akuma",
+          "character_alpha": "AKUMA",
+          "character_tool_name": "gouki",
+          "character_sort": 23,
+          "is_played": true,
+          "league_info": {
+            "league_point": 26531,
+            "league_rank": 36,
+            "master_league": 36,
+            "master_rating": 1398,
+            "master_rating_ranking": 624351
+          }
+        },
+        {
+          "character_id": 25,
+          "character_name": "Sagat",
+          "character_alpha": "SAGAT",
+          "character_tool_name": "sagat",
+          "character_sort": 28,
+          "is_played": true,
+          "league_info": {
+            "league_point": 28126,
+            "league_rank": 36,
+            "master_league": 36,
+            "master_rating": 1471,
+            "master_rating_ranking": 470918
+          }
+        },
+        {
+          "character_id": 26,
+          "character_name": "M. Bison",
+          "character_alpha": "M. BISON",
+          "character_tool_name": "vega",
+          "character_sort": 24,
+          "is_played": true,
+          "league_info": {
+            "league_point": 27449,
+            "league_rank": 36,
+            "master_league": 36,
+            "master_rating": 1430,
+            "master_rating_ranking": 570044
+          }
+        },
+        {
+          "character_id": 27,
+          "character_name": "Terry",
+          "character_alpha": "TERRY",
+          "character_tool_name": "terry",
+          "character_sort": 25,
+          "is_played": true,
+          "league_info": {
+            "league_point": 23431,
+            "league_rank": 34,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 28,
+          "character_name": "Mai",
+          "character_alpha": "MAI",
+          "character_tool_name": "mai",
+          "character_sort": 26,
+          "is_played": true,
+          "league_info": {
+            "league_point": 25090,
+            "league_rank": 36,
+            "master_league": 36,
+            "master_rating": 1476,
+            "master_rating_ranking": 456100
+          }
+        },
+        {
+          "character_id": 29,
+          "character_name": "Elena",
+          "character_alpha": "ELENA",
+          "character_tool_name": "elena",
+          "character_sort": 27,
+          "is_played": true,
+          "league_info": {
+            "league_point": -1,
+            "league_rank": 39,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 30,
+          "character_name": "C. Viper",
+          "character_alpha": "C. VIPER",
+          "character_tool_name": "cviper",
+          "character_sort": 29,
+          "is_played": true,
+          "league_info": {
+            "league_point": 23150,
+            "league_rank": 34,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 31,
+          "character_name": "Alex",
+          "character_alpha": "ALEX",
+          "character_tool_name": "alex",
+          "character_sort": 30,
+          "is_played": true,
+          "league_info": {
+            "league_point": 19489,
+            "league_rank": 31,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 254,
+          "character_name": "Random",
+          "character_alpha": "RANDOM",
+          "character_tool_name": "random",
+          "character_sort": 254,
+          "is_played": true,
+          "league_info": {
+            "league_point": -1,
+            "league_rank": 39,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 32,
+          "character_name": "Ingrid",
+          "character_alpha": "INGRID",
+          "character_tool_name": "ingrid",
+          "character_sort": 31,
+          "is_played": true,
+          "league_info": {
+            "league_point": 21844,
+            "league_rank": 33,
+            "master_league": 0,
+            "master_rating": 0,
+            "master_rating_ranking": 0
+          }
+        },
+        {
+          "character_id": 33,
+          "character_name": "Yasmine",
+          "character_alpha": "YASMINE",
+          "character_tool_name": "yasmine",
+          "character_sort": 32,
+          "is_played": true,
+          "league_info": {
+            "league_point": 34381,
+            "league_rank": 36,
+            "master_league": 36,
+            "master_rating": 1352,
+            "master_rating_ranking": 669462
+          }
+        }
+      ]
+    }
+  },
+  "__N_SSP": true
+}

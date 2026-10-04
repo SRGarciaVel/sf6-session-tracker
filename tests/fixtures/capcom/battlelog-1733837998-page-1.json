@@ -1,0 +1,610 @@
+{
+  "pageProps": {
+    "sid": 1733837998,
+    "current_page": 1,
+    "total_page": 10,
+    "fighter_banner_info": {
+      "personal_info": {
+        "fighter_id": "TDF | Comunismo",
+        "short_id": 1733837998,
+        "platform_name": "Steam",
+        "platform_tool_name": "steam"
+      },
+      "favorite_character_id": 13,
+      "favorite_character_name": "A.K.I.",
+      "favorite_character_tool_name": "aki",
+      "favorite_character_league_info": {
+        "league_point": 19704,
+        "league_rank": 31,
+        "master_league": 0,
+        "master_rating": 0,
+        "master_rating_ranking": 0,
+        "league_rank_info": {
+          "league_rank_name": "Diamond 1",
+          "league_rank_number": 1
+        }
+      }
+    },
+    "replay_list": [
+      {
+        "replay_id": "VGPTB9UCN",
+        "uploaded_at": 1790996001,
+        "replay_battle_type": 1,
+        "replay_battle_type_name": "Ranked Match",
+        "replay_battle_sub_type": 1,
+        "replay_battle_sub_type_name": "[t]サブタイプなし",
+        "battle_version": 20004000,
+        "player1_info": {
+          "player": {
+            "fighter_id": "TDF | Comunismo",
+            "short_id": 1733837998,
+            "platform_name": "Steam"
+          },
+          "character_id": 13,
+          "character_name": "A.K.I.",
+          "character_tool_name": "aki",
+          "playing_character_id": 13,
+          "playing_character_name": "A.K.I.",
+          "playing_character_tool_name": "aki",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            1,
+            0,
+            1
+          ],
+          "league_point": 19633,
+          "league_rank": 31,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        },
+        "player2_info": {
+          "player": {
+            "fighter_id": "Lukanight",
+            "short_id": 3313481240,
+            "platform_name": "Steam"
+          },
+          "character_id": 4,
+          "character_name": "Chun-Li",
+          "character_tool_name": "chunli",
+          "playing_character_id": 4,
+          "playing_character_name": "Chun-Li",
+          "playing_character_tool_name": "chunli",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            0,
+            1,
+            0
+          ],
+          "league_point": 21236,
+          "league_rank": 32,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        }
+      },
+      {
+        "replay_id": "XGSCNHR6N",
+        "uploaded_at": 1790995831,
+        "replay_battle_type": 1,
+        "replay_battle_type_name": "Ranked Match",
+        "replay_battle_sub_type": 1,
+        "replay_battle_sub_type_name": "[t]サブタイプなし",
+        "battle_version": 20004000,
+        "player1_info": {
+          "player": {
+            "fighter_id": "TDF | Comunismo",
+            "short_id": 1733837998,
+            "platform_name": "Steam"
+          },
+          "character_id": 13,
+          "character_name": "A.K.I.",
+          "character_tool_name": "aki",
+          "playing_character_id": 13,
+          "playing_character_name": "A.K.I.",
+          "playing_character_tool_name": "aki",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            5,
+            6
+          ],
+          "league_point": 19561,
+          "league_rank": 31,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        },
+        "player2_info": {
+          "player": {
+            "fighter_id": "Lukanight",
+            "short_id": 3313481240,
+            "platform_name": "Steam"
+          },
+          "character_id": 4,
+          "character_name": "Chun-Li",
+          "character_tool_name": "chunli",
+          "playing_character_id": 4,
+          "playing_character_name": "Chun-Li",
+          "playing_character_tool_name": "chunli",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            0,
+            0
+          ],
+          "league_point": 21276,
+          "league_rank": 32,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        }
+      },
+      {
+        "replay_id": "38QUQTRTT",
+        "uploaded_at": 1790995678,
+        "replay_battle_type": 1,
+        "replay_battle_type_name": "Ranked Match",
+        "replay_battle_sub_type": 1,
+        "replay_battle_sub_type_name": "[t]サブタイプなし",
+        "battle_version": 20004000,
+        "player1_info": {
+          "player": {
+            "fighter_id": "TDF | Comunismo",
+            "short_id": 1733837998,
+            "platform_name": "Steam"
+          },
+          "character_id": 13,
+          "character_name": "A.K.I.",
+          "character_tool_name": "aki",
+          "playing_character_id": 13,
+          "playing_character_name": "A.K.I.",
+          "playing_character_tool_name": "aki",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            1,
+            1
+          ],
+          "league_point": 19491,
+          "league_rank": 31,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        },
+        "player2_info": {
+          "player": {
+            "fighter_id": "SoSieDaD",
+            "short_id": 2092861074,
+            "platform_name": "Steam"
+          },
+          "character_id": 31,
+          "character_name": "Alex",
+          "character_tool_name": "alex",
+          "playing_character_id": 31,
+          "playing_character_name": "Alex",
+          "playing_character_tool_name": "alex",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            0,
+            0
+          ],
+          "league_point": 21047,
+          "league_rank": 32,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        }
+      },
+      {
+        "replay_id": "NEA6CEFPU",
+        "uploaded_at": 1790995585,
+        "replay_battle_type": 1,
+        "replay_battle_type_name": "Ranked Match",
+        "replay_battle_sub_type": 1,
+        "replay_battle_sub_type_name": "[t]サブタイプなし",
+        "battle_version": 20004000,
+        "player1_info": {
+          "player": {
+            "fighter_id": "TDF | Comunismo",
+            "short_id": 1733837998,
+            "platform_name": "Steam"
+          },
+          "character_id": 13,
+          "character_name": "A.K.I.",
+          "character_tool_name": "aki",
+          "playing_character_id": 13,
+          "playing_character_name": "A.K.I.",
+          "playing_character_tool_name": "aki",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            1,
+            1
+          ],
+          "league_point": 19420,
+          "league_rank": 31,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        },
+        "player2_info": {
+          "player": {
+            "fighter_id": "SoSieDaD",
+            "short_id": 2092861074,
+            "platform_name": "Steam"
+          },
+          "character_id": 31,
+          "character_name": "Alex",
+          "character_tool_name": "alex",
+          "playing_character_id": 31,
+          "playing_character_name": "Alex",
+          "playing_character_tool_name": "alex",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            0,
+            0
+          ],
+          "league_point": 21087,
+          "league_rank": 32,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        }
+      },
+      {
+        "replay_id": "Y5BPN463L",
+        "uploaded_at": 1790995366,
+        "replay_battle_type": 1,
+        "replay_battle_type_name": "Ranked Match",
+        "replay_battle_sub_type": 1,
+        "replay_battle_sub_type_name": "[t]サブタイプなし",
+        "battle_version": 20004000,
+        "player1_info": {
+          "player": {
+            "fighter_id": "TDF | Comunismo",
+            "short_id": 1733837998,
+            "platform_name": "Steam"
+          },
+          "character_id": 13,
+          "character_name": "A.K.I.",
+          "character_tool_name": "aki",
+          "playing_character_id": 13,
+          "playing_character_name": "A.K.I.",
+          "playing_character_tool_name": "aki",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            0,
+            1,
+            0
+          ],
+          "league_point": 19460,
+          "league_rank": 31,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        },
+        "player2_info": {
+          "player": {
+            "fighter_id": "R4F I TimoTe0",
+            "short_id": 1220249539,
+            "platform_name": "Steam"
+          },
+          "character_id": 26,
+          "character_name": "M. Bison",
+          "character_tool_name": "vega",
+          "playing_character_id": 26,
+          "playing_character_name": "M. Bison",
+          "playing_character_tool_name": "vega",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            1,
+            0,
+            5
+          ],
+          "league_point": 20902,
+          "league_rank": 32,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        }
+      },
+      {
+        "replay_id": "5RGTMSFGM",
+        "uploaded_at": 1790995173,
+        "replay_battle_type": 1,
+        "replay_battle_type_name": "Ranked Match",
+        "replay_battle_sub_type": 1,
+        "replay_battle_sub_type_name": "[t]サブタイプなし",
+        "battle_version": 20004000,
+        "player1_info": {
+          "player": {
+            "fighter_id": "TDF | Comunismo",
+            "short_id": 1733837998,
+            "platform_name": "Steam"
+          },
+          "character_id": 13,
+          "character_name": "A.K.I.",
+          "character_tool_name": "aki",
+          "playing_character_id": 13,
+          "playing_character_name": "A.K.I.",
+          "playing_character_tool_name": "aki",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            0,
+            0
+          ],
+          "league_point": 19500,
+          "league_rank": 31,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        },
+        "player2_info": {
+          "player": {
+            "fighter_id": "R4F I TimoTe0",
+            "short_id": 1220249539,
+            "platform_name": "Steam"
+          },
+          "character_id": 26,
+          "character_name": "M. Bison",
+          "character_tool_name": "vega",
+          "playing_character_id": 26,
+          "playing_character_name": "M. Bison",
+          "playing_character_tool_name": "vega",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            1,
+            5
+          ],
+          "league_point": 20847,
+          "league_rank": 32,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        }
+      },
+      {
+        "replay_id": "5JQJCXWML",
+        "uploaded_at": 1790994925,
+        "replay_battle_type": 1,
+        "replay_battle_type_name": "Ranked Match",
+        "replay_battle_sub_type": 1,
+        "replay_battle_sub_type_name": "[t]サブタイプなし",
+        "battle_version": 20004000,
+        "player1_info": {
+          "player": {
+            "fighter_id": "TDF | Comunismo",
+            "short_id": 1733837998,
+            "platform_name": "Steam"
+          },
+          "character_id": 13,
+          "character_name": "A.K.I.",
+          "character_tool_name": "aki",
+          "playing_character_id": 13,
+          "playing_character_name": "A.K.I.",
+          "playing_character_tool_name": "aki",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            1,
+            1
+          ],
+          "league_point": 19445,
+          "league_rank": 31,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        },
+        "player2_info": {
+          "player": {
+            "fighter_id": "ussuii",
+            "short_id": 4183261791,
+            "platform_name": "Steam"
+          },
+          "character_id": 9,
+          "character_name": "Cammy",
+          "character_tool_name": "cammy",
+          "playing_character_id": 9,
+          "playing_character_name": "Cammy",
+          "playing_character_tool_name": "cammy",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            0,
+            0
+          ],
+          "league_point": 17890,
+          "league_rank": 30,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        }
+      },
+      {
+        "replay_id": "87KAHLBF5",
+        "uploaded_at": 1790994839,
+        "replay_battle_type": 1,
+        "replay_battle_type_name": "Ranked Match",
+        "replay_battle_sub_type": 1,
+        "replay_battle_sub_type_name": "[t]サブタイプなし",
+        "battle_version": 20004000,
+        "player1_info": {
+          "player": {
+            "fighter_id": "TDF | Comunismo",
+            "short_id": 1733837998,
+            "platform_name": "Steam"
+          },
+          "character_id": 13,
+          "character_name": "A.K.I.",
+          "character_tool_name": "aki",
+          "playing_character_id": 13,
+          "playing_character_name": "A.K.I.",
+          "playing_character_tool_name": "aki",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            0,
+            6,
+            1
+          ],
+          "league_point": 19390,
+          "league_rank": 31,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        },
+        "player2_info": {
+          "player": {
+            "fighter_id": "ussuii",
+            "short_id": 4183261791,
+            "platform_name": "Steam"
+          },
+          "character_id": 9,
+          "character_name": "Cammy",
+          "character_tool_name": "cammy",
+          "playing_character_id": 9,
+          "playing_character_name": "Cammy",
+          "playing_character_tool_name": "cammy",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            1,
+            0,
+            0
+          ],
+          "league_point": 17930,
+          "league_rank": 30,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        }
+      },
+      {
+        "replay_id": "PETQJDUP5",
+        "uploaded_at": 1790994521,
+        "replay_battle_type": 1,
+        "replay_battle_type_name": "Ranked Match",
+        "replay_battle_sub_type": 1,
+        "replay_battle_sub_type_name": "[t]サブタイプなし",
+        "battle_version": 20004000,
+        "player1_info": {
+          "player": {
+            "fighter_id": "TDF | Comunismo",
+            "short_id": 1733837998,
+            "platform_name": "Steam"
+          },
+          "character_id": 13,
+          "character_name": "A.K.I.",
+          "character_tool_name": "aki",
+          "playing_character_id": 13,
+          "playing_character_name": "A.K.I.",
+          "playing_character_tool_name": "aki",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            0,
+            0
+          ],
+          "league_point": 19430,
+          "league_rank": 31,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        },
+        "player2_info": {
+          "player": {
+            "fighter_id": "R4F I TimoTe0",
+            "short_id": 1220249539,
+            "platform_name": "Steam"
+          },
+          "character_id": 26,
+          "character_name": "M. Bison",
+          "character_tool_name": "vega",
+          "playing_character_id": 26,
+          "playing_character_name": "M. Bison",
+          "playing_character_tool_name": "vega",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            1,
+            1
+          ],
+          "league_point": 20729,
+          "league_rank": 32,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        }
+      },
+      {
+        "replay_id": "PPPRSXKY6",
+        "uploaded_at": 1790994405,
+        "replay_battle_type": 1,
+        "replay_battle_type_name": "Ranked Match",
+        "replay_battle_sub_type": 1,
+        "replay_battle_sub_type_name": "[t]サブタイプなし",
+        "battle_version": 20004000,
+        "player1_info": {
+          "player": {
+            "fighter_id": "TDF | Comunismo",
+            "short_id": 1733837998,
+            "platform_name": "Steam"
+          },
+          "character_id": 13,
+          "character_name": "A.K.I.",
+          "character_tool_name": "aki",
+          "playing_character_id": 13,
+          "playing_character_name": "A.K.I.",
+          "playing_character_tool_name": "aki",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            0,
+            1,
+            0
+          ],
+          "league_point": 19470,
+          "league_rank": 31,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        },
+        "player2_info": {
+          "player": {
+            "fighter_id": "R4F I TimoTe0",
+            "short_id": 1220249539,
+            "platform_name": "Steam"
+          },
+          "character_id": 26,
+          "character_name": "M. Bison",
+          "character_tool_name": "vega",
+          "playing_character_id": 26,
+          "playing_character_name": "M. Bison",
+          "playing_character_tool_name": "vega",
+          "battle_input_type": 0,
+          "battle_input_type_name": "[t]クラシック",
+          "round_results": [
+            1,
+            0,
+            6
+          ],
+          "league_point": 20674,
+          "league_rank": 32,
+          "master_league": 0,
+          "master_rating": 0,
+          "master_rating_ranking": 0
+        }
+      }
+    ]
+  },
+  "__N_SSP": true
+}

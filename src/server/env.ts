@@ -22,6 +22,12 @@ const envSchema = z.object({
   PROVIDER_TIMEOUT_MS: int(10_000, 1_000),
   PROVIDER_CACHE_TTL_MS: int(5_000),
   ENABLE_DEV_TOOLS: bool,
+  // Capcom provider (prototype; only read when SF6_PROVIDER=capcom)
+  CAPCOM_BASE_URL: z.string().url().default("https://www.streetfighter.com/6/buckler"),
+  /** Cookie-Editor JSON export of a HUMAN Buckler login, stored outside the repo. Optional. */
+  CAPCOM_SESSION_FILE: z.string().trim().min(1).optional(),
+  CAPCOM_MAX_BATTLELOG_PAGES: int(3, 1),
+  CAPCOM_BUILD_ID_TTL_MS: int(1_800_000, 60_000),
 
   TRACKER_POLL_INTERVAL_MS: int(20_000, 5_000),
   TRACKER_POLL_JITTER_MS: int(3_000),

@@ -40,6 +40,32 @@ export interface SF6DataProvider {
   getRecentMatches(cfnUserId: string, options?: ProviderCallOptions): Promise<NormalizedSF6Match[]>;
 }
 
+/** Result of an incremental battlelog read (optional provider capability). */
+export interface MatchesSince {
+  matches: NormalizedSF6Match[];
+  pagesFetched: number;
+  /** Known ids existed but none was reached: matches may be missing. Never silently ignored. */
+  gapSuspected: boolean;
+}
+
+/**
+ * Optional capability: read history back until a known match id is found (bounded).
+ * Not used by the worker yet; detect with `supportsMatchesSince`.
+ */
+export interface MatchHistoryCapable {
+  getMatchesSince(
+    cfnUserId: string,
+    knownMatchIds: ReadonlySet<string>,
+    options?: ProviderCallOptions,
+  ): Promise<MatchesSince>;
+}
+
+export function supportsMatchesSince(
+  provider: SF6DataProvider,
+): provider is SF6DataProvider & MatchHistoryCapable {
+  return typeof (provider as Partial<MatchHistoryCapable>).getMatchesSince === "function";
+}
+
 export type ProviderErrorCode =
   "not_found" | "rate_limited" | "unavailable" | "timeout" | "invalid_response";
 

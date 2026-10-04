@@ -4,8 +4,10 @@
  */
 import { getDb } from "@/server/db/client";
 import { getEnv } from "@/server/env";
+import { logger } from "@/server/logger";
 import type { SF6DataProvider } from "./provider";
 import { CapcomSF6DataProvider } from "./providers/capcom";
+import { loadCapcomSession } from "./providers/capcom/session";
 import { MockSF6DataProvider } from "./providers/mock";
 import { ResilientProvider } from "./resilient";
 
@@ -18,10 +20,35 @@ function createInnerProvider(): SF6DataProvider {
   const env = getEnv();
   switch (env.SF6_PROVIDER) {
     case "capcom":
-      return new CapcomSF6DataProvider();
+      return createCapcomProvider();
     case "mock":
       return new MockSF6DataProvider(getDb());
   }
+}
+
+/** Prototype — only reached with SF6_PROVIDER=capcom (never the default). */
+function createCapcomProvider(): CapcomSF6DataProvider {
+  const env = getEnv();
+  const log = logger.child({ provider: "capcom" });
+  let cookieHeader: string | null = null;
+  if (env.CAPCOM_SESSION_FILE) {
+    const session = loadCapcomSession(env.CAPCOM_SESSION_FILE);
+    cookieHeader = session.cookieHeader;
+    // Names only — values are secret.
+    log.info("capcom_session_loaded", {
+      cookieNames: session.summary.cookieNames,
+      expiredNames: session.summary.expiredNames,
+    });
+  }
+  return CapcomSF6DataProvider.withClientOptions(
+    {
+      baseUrl: env.CAPCOM_BASE_URL,
+      cookieHeader,
+      timeoutMs: env.PROVIDER_TIMEOUT_MS,
+      buildIdTtlMs: env.CAPCOM_BUILD_ID_TTL_MS,
+    },
+    { maxBattlelogPagesPerPoll: env.CAPCOM_MAX_BATTLELOG_PAGES, logger: log },
+  );
 }
 
 export function getSF6DataProvider(): ResilientProvider {
