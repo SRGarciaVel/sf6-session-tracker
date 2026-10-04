@@ -25,6 +25,8 @@ const { createPairingCode, exchangePairingCode, revokeDevice } =
 const { upsertPlayerForUser } = await import("@/server/players/service");
 const { startSession, buildPlayerLiveState } = await import("@/server/sessions/service");
 const { CompanionSF6DataProvider } = await import("@/server/sf6/providers/companion");
+const { claimDuePlayers } = await import("@/server/tracking/tracker");
+const { gameSession } = await import("@/server/db/schema");
 const { resetRateLimits } = await import("@/server/security/rate-limit");
 const pairRoute = await import("@/app/api/companion/pair/route");
 const stateRoute = await import("@/app/api/companion/state/route");
@@ -306,6 +308,54 @@ describe.skipIf(!TEST_DB)("companion backend (integration)", () => {
     await expect(provider.getRecentMatches(CFN, scope)).rejects.toMatchObject({
       code: "unavailable",
     });
+  });
+
+  it("worker (companion mode) only claims players whose account pushed companion data", async () => {
+    // Active session but no companion data (e.g. old dev/E2E accounts): nothing to read.
+    const idle = await upsertPlayerForUser(db, userId, {
+      cfnUserId: "2233445566",
+      displayName: "No companion",
+      characters: [],
+    });
+    await db.insert(gameSession).values({
+      playerId: idle.id,
+      status: "active",
+      ratingModel: "per_character",
+      filter: { modes: ["ranked"] },
+    });
+
+    const otherUser = await newUser();
+    const { deviceToken } = await pair(otherUser);
+    expect((await sync(deviceToken, companionPayload({ matches: [] }))).status).toBe(200);
+    const provider = new CompanionSF6DataProvider(db, 300_000);
+    const tracked = await upsertPlayerForUser(
+      db,
+      otherUser,
+      await provider.getPlayerProfile(CFN, { scope: { userId: otherUser } }),
+    );
+    await db.insert(gameSession).values({
+      playerId: tracked.id,
+      status: "active",
+      ratingModel: "per_character",
+      filter: { modes: ["ranked"] },
+    });
+    await db.execute(
+      sql`update sf6_player set next_poll_at = now(), lease_expires_at = null where id in (${idle.id}, ${tracked.id})`,
+    );
+
+    const ids = (claimed: { id: string }[]) => claimed.map((c) => c.id);
+    const companion = ids(
+      await claimDuePlayers(db, "w-companion", 50, 60_000, { requireCompanionData: true }),
+    );
+    expect(companion).toContain(tracked.id);
+    expect(companion).not.toContain(idle.id);
+
+    // Other providers (mock/capcom) keep the generic rule: every due player with an active session.
+    await db.execute(
+      sql`update sf6_player set lease_owner = null, lease_expires_at = null where id in (${idle.id}, ${tracked.id})`,
+    );
+    const generic = ids(await claimDuePlayers(db, "w-generic", 50, 60_000));
+    expect(generic).toEqual(expect.arrayContaining([idle.id, tracked.id]));
   });
 
   it("CORS preflight is answered without credentials", async () => {

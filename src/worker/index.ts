@@ -43,7 +43,9 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 async function tick(): Promise<void> {
   const capacity = env.WORKER_CONCURRENCY - inFlight.size;
   if (capacity <= 0) return;
-  const claimed = await claimDuePlayers(db, workerId, capacity, config.leaseMs);
+  const claimed = await claimDuePlayers(db, workerId, capacity, config.leaseMs, {
+    requireCompanionData: env.SF6_PROVIDER === "companion",
+  });
   for (const player of claimed) {
     const job: Promise<unknown> = pollPlayer(db, provider, player, config, workerId, log)
       .catch((err: unknown) =>

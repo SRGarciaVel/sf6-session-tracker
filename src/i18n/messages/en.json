@@ -247,7 +247,8 @@
       "noDevices": "No connected devices.",
       "neverSeen": "no activity",
       "revoke": "Revoke",
-      "privacy": "The companion never sends your Capcom cookies or credentials: only normalized data (CFN, characters, LP/MR and matches)."
+      "privacy": "The companion never sends your Capcom cookies or credentials: only normalized data (CFN, characters, LP/MR and matches).",
+      "justNow": "just now"
     },
     "demo": {
       "badge": "DEMO DATA",

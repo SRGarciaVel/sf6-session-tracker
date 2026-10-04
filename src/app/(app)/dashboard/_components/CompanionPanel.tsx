@@ -2,9 +2,9 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Button, Dot, ErrorText } from "@/components/ui/primitives";
-import { formatTimeAgo } from "@/domain/format";
+import { timeAgo, useNow } from "./LiveDashboard";
 import { createCompanionCodeAction, revokeCompanionDeviceAction } from "../actions";
 import { ConsoleHeading } from "./OverlaysPanel";
 
@@ -28,14 +28,11 @@ export function CompanionPanel({
   const [pending, startTransition] = useTransition();
   const [code, setCode] = useState<{ code: string; expiresAt: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [now, setNow] = useState(() => Date.now());
+  // null during SSR and the first client render (deterministic markup → no hydration
+  // mismatch); the real clock starts after mount and ticks every 15 s.
+  const now = useNow(15_000);
 
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 15_000);
-    return () => clearInterval(id);
-  }, []);
-
-  const expired = code !== null && new Date(code.expiresAt).getTime() <= now;
+  const expired = code !== null && now !== null && new Date(code.expiresAt).getTime() <= now;
 
   const generate = () =>
     startTransition(async () => {
@@ -83,7 +80,7 @@ export function CompanionPanel({
             <Dot tone={d.lastSeenAt ? "win" : "neutral"} />
             <span className="flex-1 truncate">{d.name}</span>
             <span className="text-xs text-faint">
-              {d.lastSeenAt ? formatTimeAgo(d.lastSeenAt, now, locale).text : t("neverSeen")}
+              {timeAgo(d.lastSeenAt, now, locale, { never: t("neverSeen"), justNow: t("justNow") })}
             </span>
             <Button variant="ghost" size="sm" onClick={() => revoke(d.id)} disabled={pending}>
               {t("revoke")}

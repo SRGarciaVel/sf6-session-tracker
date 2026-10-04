@@ -67,13 +67,30 @@ interface ClaimedRow extends Record<string, unknown> {
 
 const toDate = (v: Date | string | null): Date | null => (v === null ? null : new Date(v));
 
+export interface ClaimOptions {
+  /**
+   * SF6_PROVIDER=companion: only players whose OWN account has pushed companion data for their
+   * CFN. Without it there is nothing to read (the provider can only answer "no data yet"), so
+   * claiming them just produced a failing poll + WARN per player on every backoff cycle. They
+   * become eligible automatically on their companion's first sync (next_poll_at is already due).
+   */
+  requireCompanionData?: boolean;
+}
+
 export async function claimDuePlayers(
   db: Database,
   workerId: string,
   limit: number,
   leaseMs: number,
+  options: ClaimOptions = {},
 ): Promise<ClaimedPlayer[]> {
   if (limit <= 0) return [];
+  const companionFilter = options.requireCompanionData
+    ? sql`and exists (
+            select 1 from companion_snapshot cs
+             where cs.user_id = c.user_id and cs.cfn_user_id = c.cfn_user_id
+          )`
+    : sql``;
   const rows = await db.execute<ClaimedRow>(sql`
     update sf6_player p
        set lease_owner = ${workerId},
@@ -87,6 +104,7 @@ export async function claimDuePlayers(
           and exists (
             select 1 from game_session s where s.player_id = c.id and s.status = 'active'
           )
+          ${companionFilter}
         order by c.next_poll_at
         limit ${limit}
         for update skip locked

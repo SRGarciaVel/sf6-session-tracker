@@ -75,7 +75,8 @@ describe.skipIf(!TEST_DB)("tracking pipeline (integration)", () => {
 
   async function pollOnce(workerId = "test-worker") {
     await forceDue();
-    const claimed = await claimDuePlayers(db, workerId, 10, config.leaseMs);
+    // Large limit: other players created by earlier tests are due too; ours must be claimed.
+    const claimed = await claimDuePlayers(db, workerId, 1000, config.leaseMs);
     const mine = claimed.filter((c) => c.id === playerId);
     for (const c of mine) await pollPlayer(db, provider, c, config, workerId, silent);
     return mine.length;
