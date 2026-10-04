@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -22,9 +23,20 @@
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
+*.key
 
-# debug
+# editors
+.idea/
+*.swp
+*.swo
+.vscode/*
+!.vscode/extensions.json
+
+# debug / logs
+*.log
+logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -47,6 +59,10 @@ next-env.d.ts
 # playwright
 /test-results
 /playwright-report
+/blob-report
+/playwright/.cache
+# E2E auth state if ever persisted (contains session cookies)
+/e2e/.auth
 
 # CFN research (python venv, network dumps, never commit)
 /scripts/research/.venv
@@ -58,3 +74,15 @@ __pycache__/
 
 # Built unpacked extension
 /apps/companion-extension/dist
+
+# Network captures and browser profiles (may contain Capcom/Buckler session cookies)
+*.har
+*-browser-profile/
+.chromium-profile/
+chrome-profile/
+
+# Database dumps
+*.dump
+*.sql.dump
+*.sql.gz
+*.backup
