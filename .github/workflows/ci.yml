@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: sf6
+          POSTGRES_PASSWORD: sf6
+          POSTGRES_DB: sf6_tracker_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sf6 -d sf6_tracker_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    # Throwaway CI-only values for a disposable database. Not secrets; no production secrets
+    # are needed (no Buckler, no Capcom login, no real browser).
+    env:
+      DATABASE_URL: postgres://sf6:sf6@localhost:5432/sf6_tracker_test
+      TEST_DATABASE_URL: postgres://sf6:sf6@localhost:5432/sf6_tracker_test
+      BETTER_AUTH_SECRET: ci-only-throwaway-value-not-a-secret-000000
+      APP_URL: http://localhost:3000
+      SF6_PROVIDER: mock
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm companion:build
