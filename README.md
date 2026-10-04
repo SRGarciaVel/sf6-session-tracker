@@ -22,8 +22,23 @@ reach the server.
 
 ---
 
+## Screenshots
+
+Real captures of the running app, with demo data generated through the actual pipeline (mock
+provider, a fake CFN). URLs and tokens are not shown.
+
+**Dashboard**: live session, active character, rank, LP change, W/L, win rate and streaks.
+
+![SF6 Session Tracker dashboard](docs/assets/dashboard.png)
+
+**OBS overlay**: the Browser Source (Competitive theme), shown here over a dark backdrop. In OBS
+it is transparent.
+
+![SF6 Session Tracker OBS overlay](docs/assets/overlay.png)
+
 ## Contents
 
+- [Screenshots](#screenshots)
 - [Features](#features)
 - [Architecture](#architecture)
 - [Privacy](#privacy)
