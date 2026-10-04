@@ -24,8 +24,9 @@ reach the server.
 
 ## Screenshots
 
-Real captures of the running app, with demo data generated through the actual pipeline (mock
-provider, a fake CFN). URLs and tokens are not shown.
+Real captures of the running app. The dashboard and overlay use demo data generated through the
+actual pipeline (mock provider, a fake CFN). The companion capture comes from a real browser
+session. URLs and tokens are not shown.
 
 **Dashboard**: live session, active character, rank, LP change, W/L, win rate and streaks.
 
@@ -35,6 +36,10 @@ provider, a fake CFN). URLs and tokens are not shown.
 it is transparent.
 
 ![SF6 Session Tracker OBS overlay](docs/assets/overlay.png)
+
+**SF6 Session Companion**: browser companion connected to Buckler and ready to sync.
+
+![SF6 Session Companion](docs/assets/companion.png)
 
 ## Contents
 
