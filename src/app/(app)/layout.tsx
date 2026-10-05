@@ -7,8 +7,13 @@ import "./globals.css";
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Meta");
   return {
+    // Absolute URLs for the social preview (opengraph-image.png). Read directly, not via
+    // getEnv(): prerendered pages must build without the full server environment.
+    metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
     title: { default: "SF6 Session Tracker", template: "%s · SF6 Session Tracker" },
     description: t("description"),
+    openGraph: { siteName: "SF6 Session Tracker", type: "website" },
+    twitter: { card: "summary_large_image" },
   };
 }
 

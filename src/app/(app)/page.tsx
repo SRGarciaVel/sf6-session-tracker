@@ -25,7 +25,7 @@ export default async function LandingPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 sm:px-6">
       <nav className="flex items-center justify-between py-6">
-        <Logo />
+        <Logo size="lg" />
         <div className="flex items-center gap-2">
           <LocaleSwitcher />
           {user ? (
