@@ -42,6 +42,14 @@ export default async function DashboardPage() {
   }));
   const firstPreset = OVERLAY_PRESETS[overlays[0]?.config.preset ?? "standard"];
 
+  // Not paired yet in companion mode: pairing is the first thing to do, so it leads the console.
+  const companionFirst = companionIngestEnabled() && devices.length === 0;
+  const companionPanel = (
+    <CompanionPanel
+      devices={devices.map(toDeviceSummary)}
+      ingestEnabled={companionIngestEnabled()}
+    />
+  );
   const tConsole = await getTranslations("Dashboard.console");
   const tDemo = await getTranslations("Dashboard.demo");
   const demoReason =
@@ -76,16 +84,14 @@ export default async function DashboardPage() {
               className="h-px flex-1 bg-gradient-to-r from-line-strong to-transparent"
             />
           </div>
+          {companionFirst && <div className="border-b border-line">{companionPanel}</div>}
           <div className="divide-y divide-line md:grid md:grid-cols-2 md:divide-y-0 hud:block hud:divide-y">
             <div className="md:border-r md:border-line hud:border-r-0">
               <OverlaysPanel overlays={overlaySummaries} />
             </div>
             <div className="divide-y divide-line">
               <ObsGuide width={firstPreset.width} height={firstPreset.height} />
-              <CompanionPanel
-                devices={devices.map(toDeviceSummary)}
-                ingestEnabled={companionIngestEnabled()}
-              />
+              {!companionFirst && companionPanel}
               {devToolsEnabled() && <DevTools />}
             </div>
           </div>

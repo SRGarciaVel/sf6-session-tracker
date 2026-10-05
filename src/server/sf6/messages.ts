@@ -1,3 +1,4 @@
+import { getEnv } from "@/server/env";
 import { SF6ProviderError } from "./provider";
 
 export type ProviderErrorKey =
@@ -20,4 +21,12 @@ export function providerErrorKey(err: unknown): ProviderErrorKey {
     }
   }
   return "generic";
+}
+
+/**
+ * Companion mode: "unavailable" means the browser companion's data is missing or stale (not a
+ * Capcom outage), so callers show a "open the Companion and sync" message instead.
+ */
+export function isMissingCompanionData(err: unknown): boolean {
+  return providerErrorKey(err) === "unavailable" && getEnv().SF6_PROVIDER === "companion";
 }

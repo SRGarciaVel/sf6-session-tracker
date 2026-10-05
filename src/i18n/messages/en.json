@@ -1,7 +1,7 @@
 {
   "Common": {
     "copy": "Copy",
-    "copied": "Copied!",
+    "copied": "Copied",
     "cancel": "Cancel",
     "oneMoment": "One moment…",
     "working": "Working…",
@@ -14,7 +14,12 @@
     "signOut": "Sign out",
     "notAffiliated": "Not affiliated with or endorsed by Capcom. Street Fighter is a trademark of Capcom Co., Ltd.",
     "justNow": "just now",
-    "never": "never"
+    "never": "never",
+    "copyFailed": "Couldn't copy",
+    "copiedAnnounce": "Copied to clipboard",
+    "copyFailedHint": "Couldn't copy. Select the text and copy it manually.",
+    "slowServer": "Starting Session Tracker… This can take a few seconds on the free beta.",
+    "loadingDashboard": "Loading your dashboard…"
   },
   "Meta": {
     "description": "Automatic Street Fighter 6 session stats for your OBS stream.",
@@ -24,7 +29,8 @@
     "dashboard": "Dashboard",
     "overlayBuilder": "Configure overlay",
     "sessionRecap": "Session recap",
-    "notFound": "Not found"
+    "notFound": "Not found",
+    "helpCompanion": "Install the Companion"
   },
   "Nav": {
     "dashboard": "Dashboard",
@@ -93,7 +99,11 @@
     "settingUp": "Setting up…",
     "backToDashboard": "← Back to dashboard",
     "defaultOverlayName": "Gameplay Overlay",
-    "charactersFound": "{count, plural, =0 {No ranked characters yet} one {# character with ranked data} other {# characters with ranked data}}"
+    "charactersFound": "{count, plural, =0 {No ranked characters yet} one {# character with ranked data} other {# characters with ranked data}}",
+    "companionStepsTitle": "How to start",
+    "companionStep1": "Install the Companion and pair it with the code below.",
+    "companionStep2": "In the Companion, enter your CFN ID and press “Save”.",
+    "companionStep3": "Search for your CFN ID here and confirm it."
   },
   "Errors": {
     "sessionExpired": "Your session expired. Please log in again.",
@@ -118,7 +128,9 @@
       "invalidResponse": "CFN returned unexpected data. Try again later.",
       "generic": "Something went wrong while contacting CFN."
     },
-    "companionDeviceNotFound": "That device does not exist or was already revoked."
+    "companionDeviceNotFound": "That device does not exist or was already revoked.",
+    "companionNoData": "We haven't received recent data from the Companion. Open it in your browser, check that you are logged in to Buckler and press “Sync now”.",
+    "companionNoDataCfn": "We haven't received data for that CFN from the Companion yet. In the Companion, enter your CFN ID, press “Save” and search again in a few seconds."
   },
   "Dashboard": {
     "eyebrow": "Street Fighter 6",
@@ -154,14 +166,21 @@
       "activeCharacter": "Active character",
       "characters": "Characters this session",
       "noBaseline": "Starting rating unknown for this character — no delta is shown rather than a guessed one.",
-      "legacyNote": "Session recorded before per-character ratings: rating changes are not available."
+      "legacyNote": "Session recorded before per-character ratings: rating changes are not available.",
+      "starting": "Starting…",
+      "ending": "Ending…",
+      "trackingTitle": "Tracking active",
+      "trackingBody": "You can play now. Your Ranked matches will show up on their own within about 30 s.",
+      "lastSync": "Last sync: {ago}",
+      "trackingQuiet": "No data from the Companion since {ago}. Open the browser where you installed it to keep recording matches."
     },
     "tracker": {
       "idle": "Tracking paused — start a session to track matches",
       "degraded": "CFN not responding ({count, plural, one {# failed check} other {# failed checks}}) — retrying automatically. Your stats are safe.",
       "starting": "Tracking started — first check in progress",
       "ok": "Tracking · last check {ago}",
-      "reconnecting": "· reconnecting live view…"
+      "reconnecting": "· reconnecting live view…",
+      "degradedCompanion": "Waiting for Companion data: open it in your browser. Retrying automatically; your stats are safe."
     },
     "overlays": {
       "title": "OBS overlays",
@@ -175,7 +194,9 @@
       "status": "Status",
       "canvas": "Canvas",
       "url": "URL",
-      "language": "Language"
+      "language": "Language",
+      "empty": "You don't have any overlays yet.",
+      "emptyAction": "Create one to add it to OBS."
     },
     "obs": {
       "title": "Add to OBS",
@@ -190,13 +211,14 @@
     },
     "history": {
       "title": "Session history",
-      "empty": "Your sessions will show up here.",
+      "empty": "You haven't played any sessions yet.",
       "live": "LIVE",
       "games": "{count, plural, one {# game} other {# games}}",
       "colSession": "Session",
       "colRecord": "Record",
       "colWinRate": "Win rate",
-      "colRating": "MR / LP"
+      "colRating": "MR / LP",
+      "emptyAction": "When you're ready, press “Start game session” above."
     },
     "dev": {
       "title": "Dev tools · mock CFN",
@@ -239,21 +261,63 @@
     "noCharacter": "No character yet",
     "companion": {
       "title": "SF6 Session Companion",
-      "intro": "Browser extension that reads your matches from Buckler's Boot Camp in your own browser (with your normal login) and sends them here.",
+      "intro": "Browser extension: it reads your matches from Buckler and sends them here.",
       "ingestDisabled": "The server is not in companion mode (SF6_PROVIDER=companion): data is stored but does not feed your sessions.",
       "connect": "Connect Companion",
-      "codeHelp": "Enter this code in the extension. It expires in 10 minutes and works once.",
-      "codeExpired": "The code expired. Generate a new one.",
-      "noDevices": "No connected devices.",
+      "codeHelp": "Open the Companion (the extension icon), paste the code and press “Connect”. It works once.",
+      "codeExpired": "Code expired",
+      "noDevices": "You haven't connected the Companion yet.",
       "neverSeen": "no activity",
       "revoke": "Revoke",
       "privacy": "The companion never sends your Capcom cookies or credentials: only normalized data (CFN, characters, LP/MR and matches).",
-      "justNow": "just now"
+      "justNow": "just now",
+      "connectAnother": "Pair another browser",
+      "generating": "Generating code…",
+      "codeLabel": "Pairing code",
+      "copyCode": "Copy code",
+      "copyCodeAria": "Copy pairing code",
+      "expiresIn": "Expires in {minutes, plural, one {# minute} other {# minutes}}",
+      "expiresSoon": "Expires in less than a minute",
+      "newCode": "Generate a new code",
+      "paired": "✓ Companion paired.",
+      "checkPairing": "I paired it",
+      "devicesTitle": "Paired browsers",
+      "revokeAsk": "Unpair “{name}”? You'll need to pair it again.",
+      "revokeConfirm": "Yes, revoke",
+      "installLink": "Don't have the Companion? See how to install it",
+      "status": {
+        "companion": "Companion",
+        "buckler": "Buckler",
+        "connected": "Connected",
+        "notPaired": "Companion not connected",
+        "quiet": "No recent data from the Companion",
+        "bucklerOk": "Logged in",
+        "bucklerNever": "Log in to Buckler",
+        "bucklerStale": "Waiting for a recent sync"
+      }
     },
     "demo": {
       "badge": "DEMO DATA",
       "mock_provider": "Simulated provider (SF6_PROVIDER=mock): these matches and ratings are not real.",
       "demo_cfn": "This account uses the demo CFN (1122334455), which is fake. For real data: pnpm dev:reassign-cfn --email <your account> --cfn <your CFN>."
+    },
+    "readiness": {
+      "title": "Before you play",
+      "companion": "Companion connected",
+      "buckler": "Buckler connected",
+      "profile": "Profile synced",
+      "character": "Character detected",
+      "characterOptional": "No characters with Ranked data yet (you can still play).",
+      "done": "done",
+      "missing": "pending",
+      "ready": "All set. Go play!",
+      "steps": {
+        "pairCompanion": "Pair the Companion: press “Connect Companion” in the console and enter the code in the extension.",
+        "openCompanionBrowser": "We haven't heard from the Companion recently. Open the browser where you installed it.",
+        "loginBuckler": "Log in to Buckler in that browser and press “Test Buckler connection” in the Companion.",
+        "syncNow": "Waiting for a recent sync: open the Companion and press “Sync now”."
+      },
+      "goToCompanion": "Go to the Companion ↓"
     }
   },
   "Recap": {
@@ -274,7 +338,9 @@
     "resultLoss": "L",
     "resultDraw": "D",
     "backToDashboard": "Back to dashboard",
-    "characters": "Characters"
+    "characters": "Characters",
+    "endedConfirm": "✓ Session ended and saved.",
+    "newSession": "Get ready for a new session"
   },
   "Builder": {
     "title": "Configure overlay",
@@ -377,5 +443,32 @@
     "title": "Page not found",
     "body": "This page doesn't exist or you don't have access to it.",
     "back": "Back to dashboard"
+  },
+  "Help": {
+    "eyebrow": "Closed beta",
+    "title": "Install SF6 Session Companion",
+    "intro": "The Companion is an extension for Chrome, Brave or Edge (on PC) that reads your matches from Buckler in your own browser and sends them to your Session Tracker. It takes about 5 minutes.",
+    "betaNote": "During the beta the extension is installed by hand, in “developer mode”. It's temporary: a simpler installation will come later.",
+    "download": "Download Companion (ZIP)",
+    "downloadMissing": "Ask the beta organizer for the Companion ZIP file.",
+    "stepsTitle": "Steps",
+    "step1": "Download the Companion ZIP.",
+    "step2": "Unzip it into a folder you won't delete (for example, Documents). You should see the manifest.json file inside.",
+    "step3": "Open the extensions page: copy your browser's address and paste it into the address bar.",
+    "step4": "Turn on “Developer mode” (top right; in Edge, in the left panel).",
+    "step5": "Press “Load unpacked” and choose the folder that contains manifest.json.",
+    "step6": "Pin the extension: puzzle icon 🧩, then the pin 📌 next to SF6 Session Companion.",
+    "step7": "In that same browser, log in to Buckler's Boot Camp.",
+    "step8": "Come back here and press “Connect Companion” to pair it with your account.",
+    "copyAddressAria": "Copy {address}",
+    "openBuckler": "Open Buckler ↗",
+    "goDashboard": "Go to dashboard",
+    "goSignup": "Create account",
+    "warningTitle": "Does the browser show a warning?",
+    "warningBody": "Chrome may warn that you have extensions in developer mode. That's normal during the beta and doesn't mean something is wrong: choose to keep the extension.",
+    "updateTitle": "Updating to a new version",
+    "updateBody": "Replace the contents of the same folder with the new ZIP, open the extensions page and press ⟳ Reload on SF6 Session Companion. If it shows “Not connected”, pair it again with a new code: your sessions are not lost.",
+    "privacyTitle": "Your privacy",
+    "privacyBody": "The Companion never sends your Capcom cookies or password, and it doesn't use the browser's cookies permission. It only sends your CFN, your characters with their rank/LP/MR, and your matches."
   }
 }

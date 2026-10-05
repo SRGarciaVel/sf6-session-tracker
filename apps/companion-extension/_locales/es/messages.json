@@ -142,7 +142,7 @@
     "message": "Companion del navegador"
   },
   "errTrackerUnreachable": {
-    "message": "No se puede conectar con el tracker en $VALUE$. ¿Está el servidor en marcha y esa URL abre en el navegador? (Recarga la extensión tras recompilarla.)",
+    "message": "No pudimos conectar con Session Tracker ($VALUE$). Si es la primera visita del día, el servidor de la beta puede tardar hasta un minuto en iniciarse: abre esa dirección en una pestaña, espera a que cargue y vuelve a intentarlo.",
     "placeholders": {
       "value": {
         "content": "$1"

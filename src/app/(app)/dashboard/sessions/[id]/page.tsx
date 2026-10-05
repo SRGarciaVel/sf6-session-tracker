@@ -25,8 +25,13 @@ const RESULT_STYLE = {
   draw: "bg-faint text-bg",
 } as const;
 
-export default async function SessionRecapPage({ params }: PageProps<"/dashboard/sessions/[id]">) {
+export default async function SessionRecapPage({
+  params,
+  searchParams,
+}: PageProps<"/dashboard/sessions/[id]">) {
   const { id } = await params;
+  // Set by the dashboard right after "End session": confirm it was saved.
+  const justEnded = (await searchParams).ended === "1";
   if (!z.string().uuid().safeParse(id).success) notFound();
   const { player } = await requirePlayer();
   const db = getDb();
@@ -60,6 +65,23 @@ export default async function SessionRecapPage({ params }: PageProps<"/dashboard
       <Link href="/dashboard" className="text-sm text-muted hover:text-text">
         {tc("backToDashboard")}
       </Link>
+
+      {justEnded && ended && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-3 border-l-2 border-win bg-win/8 px-4 py-3"
+        >
+          <p className="flex-1 font-display text-lg font-bold tracking-wide text-win uppercase">
+            {t("endedConfirm")}
+          </p>
+          <Link href="/dashboard" className={buttonClass("secondary", "sm")}>
+            {t("backToDashboard")}
+          </Link>
+          <Link href="/dashboard#session" className={buttonClass("primary", "sm")}>
+            {t("newSession")}
+          </Link>
+        </div>
+      )}
 
       <section className="hud-panel animate-panel-in overflow-hidden p-6 [--notch:20px] sm:p-10">
         <span
