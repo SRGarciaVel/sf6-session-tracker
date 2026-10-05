@@ -3,7 +3,7 @@ import { overlayFontVariables } from "@/components/overlay/fonts";
 import "./overlay-root.css";
 
 export const metadata: Metadata = {
-  title: "SF6 Overlay",
+  title: "SST Overlay",
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };

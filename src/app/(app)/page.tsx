@@ -56,6 +56,7 @@ export default async function LandingPage() {
             <span className="text-magenta">{t("titleLine2")}</span>
           </h1>
           <p className="mt-6 max-w-lg text-lg text-muted">{t("subtitle")}</p>
+          <p className="mt-3 max-w-lg text-sm font-semibold text-cyan">{t("supportedGame")}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href={user ? "/dashboard" : "/signup"} className={buttonClass("primary", "lg")}>
               {user ? t("goToDashboard") : t("createAccount")}

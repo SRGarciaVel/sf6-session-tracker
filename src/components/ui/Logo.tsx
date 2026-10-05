@@ -26,7 +26,7 @@ export function Logo({ size = "md" }: { size?: keyof typeof HEIGHT }) {
   return (
     <Link
       href="/"
-      aria-label="SF6 Session Tracker"
+      aria-label="SST — Session Stats Tracker"
       className="flex shrink-0 items-center transition-opacity hover:opacity-90"
     >
       <picture>

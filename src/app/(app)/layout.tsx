@@ -10,9 +10,9 @@ export async function generateMetadata(): Promise<Metadata> {
     // Absolute URLs for the social preview (opengraph-image.png). Read directly, not via
     // getEnv(): prerendered pages must build without the full server environment.
     metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
-    title: { default: "SF6 Session Tracker", template: "%s · SF6 Session Tracker" },
+    title: { default: "SST — Session Stats Tracker", template: "%s · SST" },
     description: t("description"),
-    openGraph: { siteName: "SF6 Session Tracker", type: "website" },
+    openGraph: { siteName: "SST — Session Stats Tracker", type: "website" },
     twitter: { card: "summary_large_image" },
   };
 }

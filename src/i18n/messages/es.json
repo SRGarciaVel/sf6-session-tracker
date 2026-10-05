@@ -12,17 +12,17 @@
       "en": "English"
     },
     "signOut": "Cerrar sesión",
-    "notAffiliated": "Sin afiliación ni respaldo de Capcom. Street Fighter es una marca registrada de Capcom Co., Ltd.",
+    "notAffiliated": "SST no está afiliado ni respaldado por Capcom. Street Fighter y Street Fighter 6 son marcas de Capcom Co., Ltd.",
     "justNow": "ahora mismo",
     "never": "nunca",
     "copyFailed": "No se pudo copiar",
     "copiedAnnounce": "Copiado al portapapeles",
     "copyFailedHint": "No se pudo copiar. Selecciona el texto y cópialo a mano.",
-    "slowServer": "Iniciando Session Tracker… Esto puede tardar unos segundos en la beta gratuita.",
+    "slowServer": "Iniciando SST… Esto puede tardar unos segundos en la beta gratuita.",
     "loadingDashboard": "Cargando tu panel…"
   },
   "Meta": {
-    "description": "Estadísticas automáticas de tu sesión de Street Fighter 6 para tu stream en OBS.",
+    "description": "Tracking de sesiones, estadísticas en tiempo real y overlays para OBS para juegos de pelea. Compatible actualmente con Street Fighter 6.",
     "login": "Iniciar sesión",
     "signup": "Crear cuenta",
     "onboarding": "Configura tu jugador",
@@ -38,7 +38,7 @@
     "switchLanguage": "Cambiar idioma"
   },
   "Landing": {
-    "eyebrow": "Street Fighter 6 · Overlay para OBS",
+    "eyebrow": "SST — Session Stats Tracker",
     "titleLine1": "Las estadísticas de tu sesión,",
     "titleLine2": "en directo en tu stream.",
     "subtitle": "Victorias, derrotas, porcentaje de victorias, MR y LP se actualizan solos después de cada partida Ranked. Sin atajos de teclado ni contadores manuales.",
@@ -47,12 +47,13 @@
     "getStarted": "Empezar",
     "goToDashboard": "Ir al panel",
     "createAccount": "Crear cuenta gratis",
-    "step1Title": "Introduce tu CFN User ID",
-    "step1Body": "Verificamos el jugador y leemos su rango, LP y MR.",
+    "step1Title": "Instala el Companion",
+    "step1Body": "El SST Companion para Street Fighter 6 lee tus partidas de Buckler's Boot Camp en tu propio navegador.",
     "step2Title": "Inicia una sesión",
     "step2Body": "Tu MR/LP actual y tu última partida se guardan como punto de partida.",
     "step3Title": "Añade una URL a OBS",
-    "step3Body": "Fuente de navegador → pegar → listo. Las estadísticas se actualizan solas."
+    "step3Body": "Fuente de navegador → pegar → listo. Las estadísticas se actualizan solas.",
+    "supportedGame": "Hecho para juegos de pelea. Juego compatible actualmente: Street Fighter 6."
   },
   "Auth": {
     "welcomeBack": "Bienvenido de nuevo",
@@ -260,7 +261,7 @@
     },
     "noCharacter": "Sin personaje todavía",
     "companion": {
-      "title": "SF6 Session Companion",
+      "title": "SST Companion para Street Fighter 6",
       "intro": "Extensión para tu navegador: lee tus partidas de Buckler y las envía aquí.",
       "ingestDisabled": "El servidor no está en modo companion (SF6_PROVIDER=companion): los datos se guardan pero no alimentan tus sesiones.",
       "connect": "Conectar Companion",
@@ -454,8 +455,8 @@
   },
   "Help": {
     "eyebrow": "Beta cerrada",
-    "title": "Instalar SF6 Session Companion",
-    "intro": "El Companion es una extensión para Chrome, Brave o Edge (en PC) que lee tus partidas de Buckler en tu propio navegador y las envía a tu Session Tracker. Tarda unos 5 minutos.",
+    "title": "Instalar SST Companion para Street Fighter 6",
+    "intro": "El SST Companion para Street Fighter 6 es una extensión para Chrome, Brave o Edge (en PC). Lee tus partidas de Buckler's Boot Camp en tu propio navegador y las envía a SST. Tarda unos 5 minutos.",
     "betaNote": "Durante la beta la extensión se instala a mano, en «modo desarrollador». Es temporal: más adelante habrá una instalación más simple.",
     "download": "↓ Descargar Companion",
     "downloadMissing": "Pide el archivo ZIP del Companion al organizador de la beta.",
@@ -464,7 +465,7 @@
     "step3": "Abre la página de extensiones: copia la dirección de tu navegador y pégala en la barra de direcciones.",
     "step4": "Activa «Modo desarrollador» (arriba a la derecha; en Edge, en el panel de la izquierda).",
     "step5": "Pulsa «Cargar descomprimida» y elige la carpeta que contiene manifest.json.",
-    "step6": "Fija la extensión: icono de puzle 🧩 y luego la chincheta 📌 junto a SF6 Session Companion.",
+    "step6": "Fija la extensión: icono de puzle 🧩 y luego la chincheta 📌 junto a SST Companion para Street Fighter 6.",
     "step7": "En ese mismo navegador, inicia sesión en Buckler's Boot Camp.",
     "step8": "Vuelve aquí y pulsa «Conectar Companion» para vincularlo con tu cuenta.",
     "copyAddressAria": "Copiar {address}",
@@ -486,7 +487,7 @@
     "updateStep2": "Descomprímelo.",
     "updateStep3": "Reemplaza el contenido de la carpeta que ya usabas por los archivos nuevos (misma carpeta, mismo sitio).",
     "updateStep4": "Abre la página de extensiones de tu navegador (chrome://extensions, brave://extensions o edge://extensions).",
-    "updateStep5": "En SF6 Session Companion, pulsa ⟳ Recargar.",
+    "updateStep5": "En SST Companion para Street Fighter 6, pulsa ⟳ Recargar.",
     "updateStep6": "Comprueba que la tarjeta muestra la versión nueva; en el panel verás «✓ Companion actualizado» tras la siguiente sincronización.",
     "updateStep7": "Si el Companion aparece «Sin conectar», genera un código nuevo en el panel y vuelve a vincularlo: tus sesiones no se pierden."
   }
