@@ -45,6 +45,19 @@ export default async function OnboardingPage() {
             ? t("introChange", { name: existing.displayName, cfnId: existing.cfnUserId })
             : t("introNew")}
         </p>
+        {companionMode && !existing && (
+          <ol className="mb-6 space-y-1 text-sm">
+            <li className="hud-label mb-2">{t("companionStepsTitle")}</li>
+            {(["companionStep1", "companionStep2", "companionStep3"] as const).map((step, i) => (
+              <li key={step} className="flex items-baseline gap-3">
+                <span className="w-4 font-display text-base font-bold text-cyan tabular">
+                  {i + 1}
+                </span>
+                <span>{t(step)}</span>
+              </li>
+            ))}
+          </ol>
+        )}
         {companionMode && (
           <div className="-mx-5 mb-6 border-y border-line">
             <CompanionPanel devices={devices.map(toDeviceSummary)} ingestEnabled />

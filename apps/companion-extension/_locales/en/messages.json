@@ -142,7 +142,7 @@
     "message": "Browser companion"
   },
   "errTrackerUnreachable": {
-    "message": "Cannot reach the tracker at $VALUE$. Is the server running and is this exact URL open in the browser? (Reload the extension after rebuilding it.)",
+    "message": "We couldn't reach Session Tracker ($VALUE$). On the first visit of the day the beta server can take up to a minute to start: open that address in a tab, wait for it to load and try again.",
     "placeholders": {
       "value": {
         "content": "$1"

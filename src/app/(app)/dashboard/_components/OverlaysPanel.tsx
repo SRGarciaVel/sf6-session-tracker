@@ -108,6 +108,12 @@ export function OverlaysPanel({ overlays }: { overlays: OverlaySummary[] }) {
         {t("title")}
       </ConsoleHeading>
 
+      {overlays.length === 0 && (
+        <div className="mt-3 text-sm">
+          <p className="text-text">{t("empty")}</p>
+          <p className="mt-1 text-muted">{t("emptyAction")}</p>
+        </div>
+      )}
       <ul className="mt-3 space-y-5">
         {overlays.map((o) => {
           const preset = OVERLAY_PRESETS[o.config.preset];

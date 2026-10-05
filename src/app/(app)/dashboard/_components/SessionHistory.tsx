@@ -20,7 +20,10 @@ export async function SessionHistory({
   return (
     <Panel title={t("title")} bodyClassName="px-0 pb-2 pt-3">
       {items.length === 0 ? (
-        <p className="px-5 pb-3 text-sm text-muted">{t("empty")}</p>
+        <div className="px-5 pb-3 text-sm">
+          <p className="text-text">{t("empty")}</p>
+          <p className="mt-1 text-muted">{t("emptyAction")}</p>
+        </div>
       ) : (
         <>
           <div className={cx(COLS, "hud-label border-b border-line px-5 pb-2 text-xs")} aria-hidden>

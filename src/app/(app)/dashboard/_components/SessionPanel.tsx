@@ -14,8 +14,10 @@ import {
 } from "@/domain/format";
 import type { MatchResult } from "@/domain/sf6/types";
 import { pickRatingCharacter, type LiveCharacterProgress } from "@/domain/overlay/state";
+import { useSlowFlag } from "@/lib/use-slow-flag";
 import { endSessionAction, startSessionAction } from "../actions";
 import { timeAgo, useLiveDashboard, useNow } from "./LiveDashboard";
+import { StartChecklist, StatusValue, useCompanionReadiness } from "./Readiness";
 
 type Tone = "win" | "loss" | "neutral";
 
@@ -259,8 +261,12 @@ export function SessionPanel() {
   const router = useRouter();
   const now = useNow(30_000);
   const [pending, startTransition] = useTransition();
+  const [action, setAction] = useState<"start" | "end" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const readiness = useCompanionReadiness();
+  const slow = useSlowFlag(pending);
+  const busy = (which: "start" | "end") => pending && action === which;
 
   const s = state.live.session;
   const featured = pickRatingCharacter(s);
@@ -277,6 +283,7 @@ export function SessionPanel() {
 
   const start = () => {
     setError(null);
+    setAction("start");
     startTransition(async () => {
       const res = await startSessionAction();
       if (!res.ok) setError(res.error);
@@ -285,12 +292,16 @@ export function SessionPanel() {
   const end = () => {
     setError(null);
     setConfirmEnd(false);
+    setAction("end");
     startTransition(async () => {
       const res = await endSessionAction();
       if (!res.ok) setError(res.error);
-      else if (res.data.sessionId) router.push(`/dashboard/sessions/${res.data.sessionId}`);
+      else if (res.data.sessionId) router.push(`/dashboard/sessions/${res.data.sessionId}?ended=1`);
     });
   };
+
+  // Before a session: the "ready to play?" checklist owns the start button (companion mode).
+  const showChecklist = !active && readiness !== null && readiness.required;
 
   const streak =
     s.currentWinStreak > 0
@@ -301,7 +312,8 @@ export function SessionPanel() {
 
   return (
     <section
-      className="hud-panel animate-panel-in"
+      id="session"
+      className="hud-panel animate-panel-in scroll-mt-4"
       style={
         active ? ({ "--frame": "var(--color-line-strong)" } as React.CSSProperties) : undefined
       }
@@ -326,6 +338,8 @@ export function SessionPanel() {
           <Badge>{t("none")}</Badge>
         )}
       </header>
+
+      {active && <TrackingBanner />}
 
       {/* Scoreline: P1-vs-P2 style — wins left, losses right, win rate in the middle. */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3 px-5 pt-5 sm:gap-6 sm:px-8">
@@ -475,26 +489,100 @@ export function SessionPanel() {
                 {tc("cancel")}
               </Button>
               <Button variant="danger" onClick={end} disabled={pending}>
-                {t("confirmEnd")}
+                {busy("end") ? t("ending") : t("confirmEnd")}
               </Button>
             </>
           )}
-          <Button
-            variant="primary"
-            onClick={start}
-            disabled={pending}
-            title={active ? t("startNewTooltip") : undefined}
-          >
-            {pending ? tc("working") : active ? t("startNewSession") : t("startSession")}
-          </Button>
+          {(active || !showChecklist) && (
+            <Button
+              variant="primary"
+              onClick={start}
+              disabled={pending || (readiness !== null && !readiness.canStart)}
+              title={active ? t("startNewTooltip") : undefined}
+            >
+              {busy("start") ? t("starting") : active ? t("startNewSession") : t("startSession")}
+            </Button>
+          )}
         </div>
       </footer>
-      {error && (
-        <div className="border-t border-line px-5 py-3">
+      {showChecklist && readiness && (
+        <StartChecklist
+          readiness={readiness}
+          onStart={start}
+          pending={busy("start")}
+          startLabel={t("startSession")}
+          pendingLabel={t("starting")}
+        />
+      )}
+      {(error || slow) && (
+        <div className="space-y-1 border-t border-line px-5 py-3">
+          {slow && <p className="text-xs text-muted">{tc("slowServer")}</p>}
           <ErrorText>{error}</ErrorText>
         </div>
       )}
     </section>
+  );
+}
+
+/** "Tracking active — you can play": visible confirmation, or a warning if data stops arriving. */
+function TrackingBanner() {
+  const t = useTranslations("Dashboard.session");
+  const tc = useTranslations("Common");
+  const ts = useTranslations("Dashboard.companion.status");
+  const locale = useLocale();
+  const { state } = useLiveDashboard();
+  const readiness = useCompanionReadiness();
+  const now = useNow(15_000);
+  const companionMode = readiness?.required ?? false;
+  const lastSync = companionMode ? state.companion.matchesObservedAt : state.tracker.lastSuccessAt;
+  const ago = timeAgo(lastSync, now, locale, { never: tc("never"), justNow: tc("justNow") });
+  const quiet = companionMode && readiness !== null && readiness.buckler !== "fresh";
+
+  return (
+    <div
+      role="status"
+      data-testid="tracking-banner"
+      className={cx(
+        "mx-5 mt-3 border-l-2 px-3 py-2 sm:mx-6",
+        quiet ? "border-warn bg-warn/8" : "border-win bg-win/8",
+      )}
+    >
+      <p
+        className={cx(
+          "font-display text-lg leading-tight font-bold tracking-wide uppercase",
+          quiet ? "text-warn" : "text-win",
+        )}
+      >
+        {quiet ? "⚠ " : "● "}
+        {t("trackingTitle")}
+      </p>
+      <p className="mt-0.5 text-sm text-text">
+        {quiet ? t("trackingQuiet", { ago }) : t("trackingBody")}
+      </p>
+      <p className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted">
+        <span>{t("lastSync", { ago })}</span>
+        {companionMode && readiness && (
+          <span>
+            {ts("companion")}:{" "}
+            <StatusValue
+              tone={
+                readiness.companion === "connected"
+                  ? "ok"
+                  : readiness.companion === "quiet"
+                    ? "warn"
+                    : "off"
+              }
+            >
+              {readiness.companion === "connected"
+                ? ts("connected")
+                : readiness.companion === "quiet"
+                  ? ts("quiet")
+                  : ts("notPaired")}
+            </StatusValue>
+          </span>
+        )}
+      </p>
+    </div>
   );
 }
 
@@ -531,7 +619,9 @@ export function StatusBar() {
     tracker.state === "idle"
       ? t("idle")
       : tracker.state === "degraded"
-        ? t("degraded", { count: tracker.consecutiveFailures })
+        ? state.companion.required
+          ? t("degradedCompanion")
+          : t("degraded", { count: tracker.consecutiveFailures })
         : tracker.state === "starting"
           ? t("starting")
           : t("ok", {
@@ -550,7 +640,7 @@ export function StatusBar() {
         <span
           className="flex min-w-0 items-center gap-2"
           title={
-            tracker.state === "degraded"
+            tracker.state === "degraded" && !state.companion.required
               ? tErrors(`provider.${trackerErrorKey(tracker.lastError)}`)
               : undefined
           }

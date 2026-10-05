@@ -22,6 +22,11 @@ interface LiveDashboardValue {
 
 const LiveDashboardContext = createContext<LiveDashboardValue | null>(null);
 
+/** Same as useLiveDashboard, but null outside the dashboard (e.g. onboarding). */
+export function useOptionalLiveDashboard(): LiveDashboardValue | null {
+  return useContext(LiveDashboardContext);
+}
+
 export function useLiveDashboard(): LiveDashboardValue {
   const value = useContext(LiveDashboardContext);
   if (!value) throw new Error("useLiveDashboard must be used inside <LiveDashboardProvider>");
