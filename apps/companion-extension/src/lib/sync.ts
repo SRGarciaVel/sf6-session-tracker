@@ -26,7 +26,10 @@ import { BucklerError, type CompanionBucklerClient } from "./buckler-client";
 import type { CompanionStorage, CompanionStore } from "./storage";
 import { TrackerError, type TrackerClient } from "./tracker-client";
 
-export const COMPANION_VERSION = "0.1.0";
+declare const __SF6_COMPANION_VERSION__: string | undefined;
+/** manifest.json "version", injected at build time (unbundled tests: "0.0.0"). */
+export const COMPANION_VERSION: string =
+  typeof __SF6_COMPANION_VERSION__ !== "undefined" ? __SF6_COMPANION_VERSION__ : "0.0.0";
 const SEEN_CACHE = 200;
 
 export interface DueWork {

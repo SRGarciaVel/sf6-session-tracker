@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   BETA_TRACKER_ORIGIN,
+  checkNewRelease,
   checksumLine,
   createZip,
   isValidChromeVersion,
   readZip,
   releaseName,
+  releaseTag,
+  STABLE_ASSET_BASENAME,
   sha256,
   validateBuild,
   type BuildFile,
@@ -164,5 +167,27 @@ describe("companion beta release", () => {
     bad[at] = (bad[at] ?? 0) ^ 0xff;
     expect(() => readZip(bad)).toThrow();
     expect(() => readZip(Buffer.from("not a zip"))).toThrow();
+  });
+
+  it("stable release asset name and companion tag", () => {
+    expect(STABLE_ASSET_BASENAME).toBe("sf6-session-companion-beta");
+    expect(releaseTag("0.1.1")).toBe("companion-v0.1.1");
+  });
+
+  it("release guard: first release, newer release", () => {
+    expect(checkNewRelease("0.1.0", [])).toEqual({ ok: true });
+    expect(checkNewRelease("0.1.10", ["companion-v0.1.9", "companion-v0.1.0"])).toEqual({
+      ok: true,
+    });
+  });
+
+  it("release guard: never re-release or go backwards", () => {
+    expect(checkNewRelease("0.1.0", ["companion-v0.1.0"])).toMatchObject({ ok: false });
+    expect(checkNewRelease("0.1.0", ["companion-v0.1.1"])).toMatchObject({ ok: false });
+    expect(checkNewRelease("0.1.0-beta", [])).toMatchObject({ ok: false });
+  });
+
+  it("release guard ignores unrelated tags", () => {
+    expect(checkNewRelease("0.1.0", ["v1.0.0", "companion-vfoo", "docs-1"])).toEqual({ ok: true });
   });
 });
