@@ -15,12 +15,25 @@ export const DEV_TRACKER_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3
 export const BUCKLER_HOST_PERMISSION = "https://www.streetfighter.com/6/buckler/*";
 
 declare const __SF6_TRACKER_ORIGINS__: readonly string[] | undefined;
+declare const __SF6_PRODUCTION__: boolean | undefined;
+
+/**
+ * Production build (esbuild `define`). esbuild folds it, so the dev/loopback branches below are
+ * removed from the production bundle: no localhost/127.0.0.1 literal ships to beta testers.
+ */
+const PRODUCTION = typeof __SF6_PRODUCTION__ !== "undefined" && __SF6_PRODUCTION__;
 
 /** Injected by the build (esbuild `define`); dev origins when running unbundled (tests). */
-export const TRACKER_ORIGINS: readonly string[] =
-  typeof __SF6_TRACKER_ORIGINS__ !== "undefined" ? __SF6_TRACKER_ORIGINS__ : DEV_TRACKER_ORIGINS;
+export const TRACKER_ORIGINS: readonly string[] = PRODUCTION
+  ? (__SF6_TRACKER_ORIGINS__ ?? [])
+  : typeof __SF6_TRACKER_ORIGINS__ !== "undefined"
+    ? __SF6_TRACKER_ORIGINS__
+    : DEV_TRACKER_ORIGINS;
 
-const LOOPBACK = new Set(["localhost", "127.0.0.1"]);
+const LOOPBACK = new Set<string>(PRODUCTION ? [] : ["localhost", "127.0.0.1"]);
+const SCHEME_ERROR = PRODUCTION
+  ? "must be https"
+  : "must be https (http only for localhost/127.0.0.1)";
 
 /**
  * Canonical origin ("https://tracker.example.com") or an error. https only, except loopback
@@ -42,7 +55,7 @@ export function validateTrackerOrigin(
   }
   const loopback = LOOPBACK.has(url.hostname);
   if (url.protocol !== "https:" && !(loopback && url.protocol === "http:")) {
-    return { ok: false, error: `must be https (http only for localhost/127.0.0.1): ${input}` };
+    return { ok: false, error: `${SCHEME_ERROR}: ${input}` };
   }
   return { ok: true, origin: url.origin };
 }

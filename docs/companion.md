@@ -250,6 +250,56 @@ pnpm companion:build
   pnpm dev:reassign-cfn --email demo@sf6.local --cfn <tu CFN>
   ```
 
+## 11b. Beta distribution
+
+Paquete para testers de la beta cerrada, desde la raíz del repo:
+
+```bash
+pnpm companion:package:beta
+pnpm companion:inspect:prod
+```
+
+Resultado (carpeta `artifacts/`, ignorada por git):
+
+```
+artifacts/sf6-session-companion-v<version>-beta.zip      ← manifest.json en la RAÍZ del ZIP
+artifacts/sf6-session-companion-v<version>-beta.sha256   ← formato `sha256sum -c`
+```
+
+| Build                                  | Orígenes del tracker (host_permissions)                         |
+| -------------------------------------- | --------------------------------------------------------------- |
+| **DEV** — `pnpm companion:build`       | `http://localhost:3000`, `http://127.0.0.1:3000`                |
+| **PRODUCCIÓN / BETA** — `package:beta` | **solo** `https://sf6-session-tracker-web.onrender.com` (HTTPS) |
+
+- **Origen de la beta:** está en un único sitio, `BETA_TRACKER_ORIGIN` en
+  `apps/companion-extension/release/release.ts`. El script fuerza
+  `COMPANION_TRACKER_ORIGINS` a ese valor y llama a `pnpm companion:build:prod`. En producción,
+  `__SF6_PRODUCTION__` elimina del bundle también los literales de desarrollo (localhost,
+  127.0.0.1).
+- **Versión:** la fuente de verdad es `version` en `apps/companion-extension/manifest.json`. El
+  nombre del ZIP se deriva de ella, y el sufijo `-beta` va solo en el nombre del archivo
+  (Chromium solo acepta versiones numéricas). Para cada entrega nueva, sube la versión.
+- **Validación antes de empaquetar** (si algo falla: no hay ZIP y exit ≠ 0):
+  - MV3 y versión válida;
+  - `manifest.json`, `background.js`, `popup.{html,js,css}` y `_locales/`;
+  - host permissions **exactamente** Buckler + el origen beta;
+  - sin `cookies`, `webRequest`, `<all_urls>` ni `content_scripts`;
+  - solo archivos esperados: nada de `.env`, `.map`, `.ts`, HAR ni carpetas extra;
+  - sin localhost/127.0.0.1, emails, tokens (`sf6c_…`, JWT, Bearer), cabeceras Cookie, claves
+    privadas ni `sourceMappingURL`.
+
+  El ZIP generado se vuelve a leer y a validar. Tests: `apps/companion-extension/test/release.test.ts`.
+
+- **ZIP determinista:** fechas fijas y entradas ordenadas, así que el mismo commit en la misma
+  máquina da el mismo SHA-256. Entre máquinas puede variar (versión de zlib). La referencia
+  para los testers es el `.sha256` que acompaña al ZIP que se entrega.
+- **CI manual:** el workflow **Build Companion Beta** (`workflow_dispatch`) genera el ZIP y el
+  `.sha256` como artifact de Actions. No crea Releases ni publica nada. GitHub entrega el
+  artifact dentro de otro ZIP: hay que extraer primero el ZIP de la beta.
+- **Guías:** para testers, [docs/beta/QUICKSTART.md](beta/QUICKSTART.md) y
+  [docs/beta/companion-installation.md](beta/companion-installation.md); pasos pendientes de
+  Chrome Web Store, [docs/beta/chrome-web-store.md](beta/chrome-web-store.md).
+
 ## 12. Validación manual real — 2026-10-04
 
 Navegador Brave/Chromium normal, sesión de Buckler iniciada a mano, tracker local

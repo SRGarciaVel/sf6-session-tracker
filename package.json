@@ -29,7 +29,9 @@
     "research:cfn-browser": "tsx scripts/research/test_persistent_browser.ts",
     "companion:build": "tsx apps/companion-extension/build.mts",
     "companion:build:prod": "tsx apps/companion-extension/build.mts --production",
-    "companion:dev": "tsx apps/companion-extension/build.mts --watch"
+    "companion:dev": "tsx apps/companion-extension/build.mts --watch",
+    "companion:package:beta": "tsx apps/companion-extension/release/package-beta.mts",
+    "companion:inspect:prod": "tsx apps/companion-extension/release/inspect.mts"
   },
   "dependencies": {
     "better-auth": "^1.7.7",

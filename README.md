@@ -51,6 +51,7 @@ it is transparent.
 - [Quick start](#quick-start)
 - [Environment variables](#environment-variables)
 - [SF6 Session Companion](#sf6-session-companion)
+- [Closed Beta](#closed-beta)
 - [OBS setup](#obs-setup)
 - [Development commands](#development-commands)
 - [Project status](#project-status)
@@ -246,6 +247,19 @@ COMPANION_TRACKER_ORIGINS=https://your-tracker.example pnpm companion:build:prod
 
 Permissions, polling, recovery and limits: [docs/companion.md](docs/companion.md).
 
+## Closed Beta
+
+The closed beta runs on **<https://sf6-session-tracker-web.onrender.com>**. Testers install the
+companion from a ZIP (Chrome, Brave or Edge, "Load unpacked") that only talks to that tracker:
+
+- **Testers:** [docs/beta/QUICKSTART.md](docs/beta/QUICKSTART.md) (one page) and
+  [docs/beta/companion-installation.md](docs/beta/companion-installation.md) (full guide, in
+  Spanish).
+- **Maintainers:** `pnpm companion:package:beta` builds, validates and zips the extension into
+  `artifacts/`, with a `.sha256`. `pnpm companion:inspect:prod` summarizes it. Details are in
+  [docs/companion.md §11b](docs/companion.md#11b-beta-distribution). Chrome Web Store
+  (Unlisted) steps still to do: [docs/beta/chrome-web-store.md](docs/beta/chrome-web-store.md).
+
 ## OBS setup
 
 1. In the dashboard, copy the overlay URL (`https://<your-domain>/overlay/<token>`).
@@ -266,6 +280,7 @@ private.** It works like a read-only secret link. If it leaks (for example, on s
 | `pnpm dev`                                                        | Next.js dev server **and** the tracking worker (auto-reload)              |
 | `pnpm dev:web` · `pnpm dev:worker`                                | Run them separately                                                       |
 | `pnpm build` · `pnpm start` · `pnpm start:worker`                 | Production build (Next.js + `dist/worker.mjs`) and start (split mode)     |
+| `pnpm companion:package:beta` · `pnpm companion:inspect:prod`     | Closed-beta companion ZIP + SHA-256 in `artifacts/`, and its summary      |
 | `pnpm typecheck` · `pnpm lint` · `pnpm test`                      | Types (app + extension), ESLint, Vitest (unit + integration)              |
 | `pnpm check`                                                      | typecheck + lint + test                                                   |
 | `pnpm format` · `pnpm format:check`                               | Prettier                                                                  |

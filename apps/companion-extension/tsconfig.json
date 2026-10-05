@@ -16,5 +16,5 @@
       "@sf6/capcom-core/*": ["../../packages/sf6-capcom-core/src/*"]
     }
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "build.mts"]
+  "include": ["src/**/*.ts", "test/**/*.ts", "build.mts", "release/**/*.ts", "release/**/*.mts"]
 }

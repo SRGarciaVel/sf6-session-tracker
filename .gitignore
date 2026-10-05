@@ -72,8 +72,9 @@ __pycache__/
 # Dedicated research browser profile (normally ~/.sf6-buckler-browser-profile, outside the repo)
 .sf6-buckler-browser-profile/
 
-# Built unpacked extension
+# Built unpacked extension and packaged releases (pnpm companion:package:beta)
 /apps/companion-extension/dist
+/artifacts
 
 # Network captures and browser profiles (may contain Capcom/Buckler session cookies)
 *.har

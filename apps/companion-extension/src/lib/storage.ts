@@ -12,8 +12,8 @@ import type { CompanionRequestMeta } from "./buckler-client";
 
 import { TRACKER_ORIGINS } from "./tracker-origins";
 
-/** First allowed tracker origin of this build (dev: http://localhost:3000). */
-export const DEFAULT_TRACKER_URL = TRACKER_ORIGINS[0] ?? "http://localhost:3000";
+/** First allowed tracker origin of this build (dev: http://localhost:3000). Builds always have one. */
+export const DEFAULT_TRACKER_URL = TRACKER_ORIGINS[0] ?? "";
 
 export type BucklerStatus = "unknown" | "ok" | "no_tab" | BucklerFailure;
 export type TrackerStatus = "unpaired" | "connected" | "disconnected" | "revoked" | "error";
