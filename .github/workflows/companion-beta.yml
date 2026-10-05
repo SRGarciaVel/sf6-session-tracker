@@ -1,0 +1,38 @@
+name: Build Companion Beta
+
+# Manual only: builds the closed-beta ZIP of the SF6 Session Companion as a workflow artifact.
+# It does NOT create a GitHub Release and does NOT publish to the Chrome Web Store.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec vitest run apps/companion-extension/test
+      # Builds with the beta tracker origin only, validates, zips (+ .sha256). Fails on any check.
+      - run: pnpm companion:package:beta
+      - run: pnpm companion:inspect:prod
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sf6-session-companion-beta
+          path: |
+            artifacts/*.zip
+            artifacts/*.sha256
+          if-no-files-found: error
+          retention-days: 30

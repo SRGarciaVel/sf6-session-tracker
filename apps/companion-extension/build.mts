@@ -66,6 +66,7 @@ const options: esbuild.BuildOptions = {
   define: {
     __SF6_TRACKER_ORIGINS__: JSON.stringify(trackerOrigins),
     __SF6_COMPANION_DEBUG__: JSON.stringify(debug),
+    __SF6_PRODUCTION__: JSON.stringify(production),
   },
   // MV3: everything is bundled locally; no remote code, no eval.
   minify: !watch,

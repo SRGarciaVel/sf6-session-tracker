@@ -3,6 +3,7 @@
   "name": "__MSG_extName__",
   "description": "__MSG_extDescription__",
   "version": "0.1.0",
+  "homepage_url": "https://github.com/SRGarciaVel/sf6-session-tracker",
   "default_locale": "en",
   "minimum_chrome_version": "120",
   "background": {
