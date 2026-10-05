@@ -6,7 +6,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-4169E1?logo=postgresql&logoColor=white)
-![Status](https://img.shields.io/badge/status-pre--beta-orange)
+![Status](https://img.shields.io/badge/status-closed--beta-orange)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 SF6 Session Tracker is for players and streamers. You start a session and play Ranked. Your wins,
@@ -251,16 +251,20 @@ Permissions, polling, recovery and limits: [docs/companion.md](docs/companion.md
 
 ## Closed Beta
 
-The closed beta runs on **<https://sf6-session-tracker-web.onrender.com>**. Testers install the
-companion from a ZIP (Chrome, Brave or Edge, "Load unpacked") that only talks to that tracker:
+The closed beta is **ready to start** (invite-only, not a public release). It runs on
+**<https://sf6-session-tracker-web.onrender.com>**. Testers install the companion from a ZIP
+(Chrome, Brave or Edge, "Load unpacked") that only talks to that tracker:
 
+- **Install guide in the app:** <https://sf6-session-tracker-web.onrender.com/help/companion>
+  (download button, first install and updates).
 - **Testers:** [docs/beta/QUICKSTART.md](docs/beta/QUICKSTART.md) (one page) and
   [docs/beta/companion-installation.md](docs/beta/companion-installation.md) (full guide, in
   Spanish).
 - **Download (always the newest beta):** https://github.com/SRGarciaVel/sf6-session-tracker/releases/latest/download/sf6-session-companion-beta.zip
   — the same link powers the download button on `/help/companion` (`COMPANION_DOWNLOAD_URL`).
-- **Updates:** the dashboard shows "⚡ New version available" when the installed companion is
-  older than `COMPANION_LATEST_VERSION`.
+- **Updates:** the dashboard shows the installed companion version and "⚡ New version
+  available" when it is older than `COMPANION_LATEST_VERSION`. Updating is manual: download the
+  new ZIP, replace the folder's contents and press Reload on the extensions page.
 - **Maintainers:** `pnpm companion:package:beta` builds, validates and zips the extension into
   `artifacts/`, with a `.sha256`. `pnpm companion:inspect:prod` summarizes it. Details are in
   [docs/companion.md §11b](docs/companion.md#11b-beta-distribution). Publishing a new beta (manual
@@ -316,15 +320,18 @@ Compose; run `DATABASE_URL=$TEST_DATABASE_URL pnpm db:migrate` once).
 
 ## Project status
 
-| Area                  | Status                                                                                  |
-| --------------------- | --------------------------------------------------------------------------------------- |
-| Companion MVP         | **Working.** Validated in a real browser with a real CFN                                |
-| Security audit        | **Ready with accepted risks** for a closed beta, subject to the production requirements |
-| Production deployment | **Not done yet**                                                                        |
-| Closed beta           | **Not started**                                                                         |
+| Area                   | Status                                                                                  |
+| ---------------------- | --------------------------------------------------------------------------------------- |
+| Companion MVP          | **Working.** Validated in a real browser with real Buckler data                         |
+| Security audit         | **Ready with accepted risks** for a closed beta, subject to the production requirements |
+| Production deployment  | **Live.** Render + Supabase, embedded free-beta mode                                    |
+| Companion distribution | **Live.** GitHub Releases, stable download link, installed-version and update checks    |
+| Closed beta            | **Ready to start** (invite-only)                                                        |
+| Ranked production E2E  | **Pending** final smoke test with a real Ranked match                                   |
 
-Before the beta: production deployment, a Ranked end-to-end smoke test in production, and closed
-beta feedback.
+Production is deployed and the closed beta is ready to start. Still to do: the final Ranked
+end-to-end smoke test in production (a real match counted live), then closed-beta feedback. This
+is a closed beta, not a stable release.
 
 **Deployment** ([docs/deploy-render.md](docs/deploy-render.md)):
 
@@ -352,7 +359,8 @@ Requirements and the env matrix:
 - There is no email verification, password reset or account deletion yet.
 - On a single free web service (embedded mode) the first visit after 15 idle minutes is a
   ~1 min cold start, and nothing is tracked while the service sleeps.
-- The closed beta has not started. Expect rough edges.
+- The project is entering a closed beta. Expect occasional rough edges, cold starts and manual
+  Companion updates.
 
 ## Repository structure
 
