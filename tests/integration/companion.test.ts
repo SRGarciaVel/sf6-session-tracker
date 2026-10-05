@@ -358,6 +358,35 @@ describe.skipIf(!TEST_DB)("companion backend (integration)", () => {
     expect(generic).toEqual(expect.arrayContaining([idle.id, tracked.id]));
   });
 
+  it("sync records the installed extension version per device (valid values only)", async () => {
+    const { deviceId, deviceToken } = await pair();
+    const version = async () =>
+      (
+        await db
+          .select({ v: companionDevice.clientVersion })
+          .from(companionDevice)
+          .where(eq(companionDevice.id, deviceId))
+      )[0]?.v;
+    expect(await version()).toBeNull(); // unknown until the first sync
+
+    await sync(
+      deviceToken,
+      companionPayload({ client: { version: "0.1.1", transport: "service_worker" } }),
+    );
+    expect(await version()).toBe("0.1.1");
+
+    // A non-Chromium version string is accepted by the protocol but never stored.
+    await sync(
+      deviceToken,
+      companionPayload({ client: { version: "0.2.0-dev", transport: "service_worker" } }),
+    );
+    expect(await version()).toBe("0.1.1");
+
+    const { loadCompanionSignals } = await import("@/server/companion/readiness");
+    const signals = await loadCompanionSignals(db, userId, CFN);
+    expect(signals.installedVersion).toBe("0.1.1");
+  });
+
   it("CORS preflight is answered without credentials", async () => {
     const res = syncRoute.OPTIONS();
     expect(res.status).toBe(204);

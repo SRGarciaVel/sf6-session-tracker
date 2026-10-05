@@ -294,6 +294,14 @@
         "bucklerOk": "Logged in",
         "bucklerNever": "Log in to Buckler",
         "bucklerStale": "Waiting for a recent sync"
+      },
+      "version": {
+        "installed": "Installed version: v{version}",
+        "unknown": "Installed version not available yet.",
+        "upToDate": "✓ Companion up to date",
+        "available": "⚡ New version available: v{version}",
+        "download": "↓ Download update",
+        "howTo": "See how to update"
       }
     },
     "demo": {
@@ -449,9 +457,8 @@
     "title": "Install SF6 Session Companion",
     "intro": "The Companion is an extension for Chrome, Brave or Edge (on PC) that reads your matches from Buckler in your own browser and sends them to your Session Tracker. It takes about 5 minutes.",
     "betaNote": "During the beta the extension is installed by hand, in “developer mode”. It's temporary: a simpler installation will come later.",
-    "download": "Download Companion (ZIP)",
+    "download": "↓ Download Companion",
     "downloadMissing": "Ask the beta organizer for the Companion ZIP file.",
-    "stepsTitle": "Steps",
     "step1": "Download the Companion ZIP.",
     "step2": "Unzip it into a folder you won't delete (for example, Documents). You should see the manifest.json file inside.",
     "step3": "Open the extensions page: copy your browser's address and paste it into the address bar.",
@@ -466,9 +473,21 @@
     "goSignup": "Create account",
     "warningTitle": "Does the browser show a warning?",
     "warningBody": "Chrome may warn that you have extensions in developer mode. That's normal during the beta and doesn't mean something is wrong: choose to keep the extension.",
-    "updateTitle": "Updating to a new version",
-    "updateBody": "Replace the contents of the same folder with the new ZIP, open the extensions page and press ⟳ Reload on SF6 Session Companion. If it shows “Not connected”, pair it again with a new code: your sessions are not lost.",
+    "updateTitle": "Update an existing installation",
     "privacyTitle": "Your privacy",
-    "privacyBody": "The Companion never sends your Capcom cookies or password, and it doesn't use the browser's cookies permission. It only sends your CFN, your characters with their rank/LP/MR, and your matches."
+    "privacyBody": "The Companion never sends your Capcom cookies or password, and it doesn't use the browser's cookies permission. It only sends your CFN, your characters with their rank/LP/MR, and your matches.",
+    "downloadUpdate": "↓ Download the latest version",
+    "availableVersion": "Available version: v{version}",
+    "checksum": "SHA-256",
+    "checksumAria": "Download the ZIP's SHA-256 checksum",
+    "installTitle": "First-time installation",
+    "updateIntro": "When the dashboard shows “⚡ New version available”, you don't need to reinstall:",
+    "updateStep1": "Download the new ZIP (the same download button always gives you the latest version).",
+    "updateStep2": "Unzip it.",
+    "updateStep3": "Replace the contents of the folder you were already using with the new files (same folder, same place).",
+    "updateStep4": "Open your browser's extensions page (chrome://extensions, brave://extensions or edge://extensions).",
+    "updateStep5": "On SF6 Session Companion, press ⟳ Reload.",
+    "updateStep6": "Check that the card shows the new version; the dashboard will show “✓ Companion up to date” after the next sync.",
+    "updateStep7": "If the Companion shows “Not connected”, generate a new code in the dashboard and pair it again: your sessions are not lost."
   }
 }

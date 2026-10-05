@@ -15,6 +15,7 @@ import {
   COMPANION_POLLING,
   PAIRING_CODE_ALPHABET,
   PAIRING_CODE_LENGTH,
+  isValidExtensionVersion,
   type CompanionState,
   type CompanionSyncParsed,
 } from "@sf6/capcom-core";
@@ -179,6 +180,7 @@ export const toDeviceSummary = (d: CompanionDeviceRow) => ({
   id: d.id,
   name: d.name,
   lastSeenAt: d.lastSeenAt?.toISOString() ?? null,
+  clientVersion: d.clientVersion,
 });
 
 /** Revoke one of the user's devices (IDOR-safe). Returns false if not found / not owned. */
@@ -260,6 +262,15 @@ export async function applyCompanionSync(
     return { ok: false, reason };
   };
 
+  // Installed extension version (dashboard update notice). Written only when it changes.
+  const version = payload.client.version;
+  if (isValidExtensionVersion(version) && version !== device.clientVersion) {
+    await db
+      .update(companionDevice)
+      .set({ clientVersion: version })
+      .where(eq(companionDevice.id, device.id));
+  }
+
   const player = await findPlayerByUserId(db, device.userId);
   if (player && player.cfnUserId !== payload.cfnUserId) return reject("cfn_mismatch");
   if (payload.profile && payload.profile.cfnUserId !== payload.cfnUserId) {
@@ -335,6 +346,7 @@ export async function applyCompanionSync(
     profile: payload.profile !== null,
     gapSuspected: payload.gapSuspected,
     transport: payload.client.transport,
+    version: isValidExtensionVersion(version) ? version : "invalid",
   });
   return {
     ok: true,

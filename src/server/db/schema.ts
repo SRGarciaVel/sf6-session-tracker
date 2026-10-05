@@ -363,6 +363,8 @@ export const companionDevice = pgTable(
     createdAt: createdAt(),
     lastSeenAt: tz("last_seen_at"),
     revokedAt: tz("revoked_at"),
+    /** Extension version reported in the last sync (client.version), for update notices. */
+    clientVersion: text("client_version"),
   },
   (t) => [
     uniqueIndex("companion_device_token_hash_uq").on(t.tokenHash),

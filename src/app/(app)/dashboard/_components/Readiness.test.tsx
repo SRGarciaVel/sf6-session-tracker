@@ -12,6 +12,7 @@ const base: CompanionSignals = {
   required: true,
   deviceCount: 1,
   lastSeenAt: ago(10_000),
+  installedVersion: "0.1.0",
   profileObservedAt: ago(20_000),
   matchesObservedAt: ago(20_000),
   hasProfile: true,

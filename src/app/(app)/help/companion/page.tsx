@@ -6,7 +6,8 @@ import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 import { Logo } from "@/components/ui/Logo";
 import { buttonClass } from "@/components/ui/primitives";
 import { getCurrentUser } from "@/server/auth/session";
-import { getEnv } from "@/server/env";
+import { getCompanionRelease } from "@/server/companion/release";
+import { CompanionDownload } from "./CompanionDownload";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations("Meta"))("helpCompanion") };
@@ -21,21 +22,31 @@ const EXTENSION_PAGES = [
   { browser: "Edge", address: "edge://extensions" },
 ] as const;
 
+const UPDATE_STEPS = [
+  "updateStep1",
+  "updateStep2",
+  "updateStep3",
+  "updateStep4",
+  "updateStep5",
+  "updateStep6",
+  "updateStep7",
+] as const;
+
 const STEPS = ["step1", "step2", "step3", "step4", "step5", "step6", "step7", "step8"] as const;
 
 /** Beta install guide for the companion: one page, plain language, no developer jargon. */
 export default async function CompanionHelpPage() {
   const t = await getTranslations("Help");
   const user = await getCurrentUser();
-  const downloadUrl = getEnv().COMPANION_DOWNLOAD_URL ?? null;
+  const { downloadUrl, checksumUrl, latestVersion } = getCompanionRelease();
 
   const extra: Partial<Record<(typeof STEPS)[number], React.ReactNode>> = {
-    step1: downloadUrl ? (
-      <a href={downloadUrl} className={buttonClass("primary", "sm")} download>
-        {t("download")}
-      </a>
-    ) : (
-      <p className="text-sm text-warn">{t("downloadMissing")}</p>
+    step1: (
+      <CompanionDownload
+        downloadUrl={downloadUrl}
+        checksumUrl={checksumUrl}
+        latestVersion={latestVersion}
+      />
     ),
     step3: (
       <ul className="space-y-2">
@@ -96,7 +107,7 @@ export default async function CompanionHelpPage() {
           {t("betaNote")}
         </p>
 
-        <h2 className="hud-heading mt-8">{t("stepsTitle")}</h2>
+        <h2 className="hud-heading mt-8">{t("installTitle")}</h2>
         <ol className="mt-3 divide-y divide-line/70">
           {STEPS.map((step, i) => (
             <li key={step} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-3 py-3">
@@ -112,11 +123,35 @@ export default async function CompanionHelpPage() {
         </ol>
       </section>
 
-      <section className="mt-5 grid gap-5 md:grid-cols-3">
+      {/* Separate, short block: updating is not a reinstall. Anchor used by the dashboard. */}
+      <section id="actualizar" className="hud-panel mt-5 scroll-mt-4 p-6 sm:p-8">
+        <span
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-warn to-transparent"
+        />
+        <h2 className="hud-heading">{t("updateTitle")}</h2>
+        <p className="mt-2 text-sm text-muted">{t("updateIntro")}</p>
+        <ol className="mt-3 space-y-2 text-sm">
+          {UPDATE_STEPS.map((step, i) => (
+            <li key={step} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-3">
+              <span className="font-display text-lg leading-none font-bold text-warn tabular">
+                {i + 1}
+              </span>
+              <span className="leading-relaxed">{t(step)}</span>
+            </li>
+          ))}
+        </ol>
+        {downloadUrl && (
+          <a href={downloadUrl} className={`${buttonClass("secondary", "sm")} mt-4`}>
+            {t("downloadUpdate")}
+          </a>
+        )}
+      </section>
+
+      <section className="mt-5 grid gap-5 md:grid-cols-2">
         {(
           [
             ["warningTitle", "warningBody"],
-            ["updateTitle", "updateBody"],
             ["privacyTitle", "privacyBody"],
           ] as const
         ).map(([title, body]) => (
