@@ -103,7 +103,7 @@ jobs:
           SHA256=$(cut -d' ' -f1 artifacts/sf6-session-companion-beta.sha256)
           {
             if [ -n "$NOTES" ]; then printf '%s\n\n' "$NOTES"; fi
-            printf 'SF6 Session Companion v%s — closed beta (Chrome, Brave, Edge: Load unpacked).\n\n' "$VERSION"
+            printf 'SST Companion for Street Fighter 6 v%s — closed beta (Chrome, Brave, Edge: Load unpacked).\n\n' "$VERSION"
             printf 'Install / update guide: https://sf6-session-tracker-web.onrender.com/help/companion\n\n'
             printf 'SHA-256 (sf6-session-companion-beta.zip): %s\n\n' "\`$SHA256\`"
             printf 'Stable download: https://github.com/%s/releases/latest/download/sf6-session-companion-beta.zip\n' "$REPO"
@@ -112,7 +112,7 @@ jobs:
             artifacts/sf6-session-companion-beta.zip \
             artifacts/sf6-session-companion-beta.sha256 \
             --target "$(git rev-parse HEAD)" \
-            --title "SF6 Session Companion v$VERSION (Beta)" \
+            --title "SST Companion for Street Fighter 6 v$VERSION (Beta)" \
             --notes-file release-notes.md \
             --latest
 

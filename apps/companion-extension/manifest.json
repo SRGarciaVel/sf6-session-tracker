@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "__MSG_extName__",
   "description": "__MSG_extDescription__",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "homepage_url": "https://github.com/SRGarciaVel/sf6-session-tracker",
   "default_locale": "en",
   "minimum_chrome_version": "120",
@@ -12,7 +12,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "SF6 Session Companion"
+    "default_title": "__MSG_extName__"
   },
   "permissions": ["storage", "alarms", "scripting"],
   "host_permissions": [
