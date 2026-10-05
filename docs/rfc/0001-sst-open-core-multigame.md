@@ -2,8 +2,8 @@
 
 | Field      | Value                                                                                       |
 | ---------- | ------------------------------------------------------------------------------------------- |
-| Status     | **Draft**                                                                                   |
-| Date       | 2026-10-05                                                                                  |
+| Status     | **Proposed for acceptance** (all product decisions resolved; becomes **Accepted** on merge) |
+| Date       | 2026-10-05 (product decisions incorporated the same day, §20)                               |
 | Scope      | Architecture, product boundaries, data model evolution. **No implementation.**              |
 | Applies to | `main` at `889385a` (closed beta live on Render + Supabase, embedded mode, Companion 0.1.0) |
 
@@ -42,23 +42,28 @@ audits the real repository and proposes how to get there without breaking the li
 
 **Recommendations**
 
-1. **Brand first, code later.** Rename the product surface (README, metadata, Companion display
-   name) to SST with "Supported game: Street Fighter 6". Keep technical names unless a rename
+1. **Brand now, before streamer invitations; code names later.** Rename the product surface
+   (README, metadata, product name in the app, Companion display name) to **SST — Session Stats
+   Tracker** with "Supported game: Street Fighter 6". Keep technical names unless a rename
    removes a real blocker.
 2. **Entitlements before multi-game.** Creator Beta is near-term and concrete; a second game is
-   not. Build a small server-side plan → entitlements resolver and Creator Keys (hashed,
-   one-time, atomic redeem) **in the public repo**. That code has no commercial value by itself;
-   the value is in premium features that don't exist yet.
-3. **Neutral contracts as a type-level move**, then additive DB changes (generic rating value,
-   then `game_id`) only when a second game is actually scheduled. No big-bang refactor and no
-   table renames.
-4. **Open core:**
-   - Public: everything that exists today, plus the entitlement interface.
-   - Private ("SST Cloud"): plan administration, billing, the premium overlay catalog, advanced
-     analytics and creator widgets, added as private modules **when they exist**.
-   - Recommended split: a private repository that composes the public core (Option B, §13).
-     No microservices.
-5. **Companion:** one shared framework, **one extension per game** by default, so host
+   not. Start with two plans, **`free` and `creator_beta`** (`plus` and `creator` come later).
+   Build a small server-side plan → entitlements resolver and Creator Keys (hashed, one-time,
+   atomic redeem) **in the public repo**. That code has no commercial value by itself; the value
+   is in Creator features, and the first of those is **advanced overlay customization**.
+3. **Free is a useful product, not a crippled demo.** Tracking, sessions, stats, rating, recap,
+   basic history, OBS, the Companion and at least one fully functional overlay stay free.
+   Creator monetizes customization, depth, presentation and scale.
+4. **Multi-game is deferred.** Neutral contracts (a type-level move), generic rating storage,
+   `game_id` and a protocol v2 wait for a confirmed game #2 with a viable data source. No
+   big-bang refactor and no table renames.
+5. **Open core:**
+   - Public: everything that exists today, plus the entitlement framework and Creator Key redeem.
+   - Private ("SST Cloud"): plan administration, billing, the premium overlay catalog and other
+     Creator modules, added **only when they exist**.
+   - No private repository yet. When the first commercially valuable private feature exists,
+     use a private repository that composes the public core (Option B, §13). No microservices.
+6. **Companion:** one shared framework, **one extension per game** by default, so host
    permissions stay minimal. Revisit a single multi-game extension only with real demand.
 
 ---
@@ -317,22 +322,22 @@ neutral and stay in core.
 recommended:** renaming tables holding live data costs downtime risk, FK and index churn, and
 breaks raw SQL and dashboards, for no functional gain.
 
-| Table                                        | Purpose                                       | SF6-specific?                                      | Change in future?                                                                                                                                                                                                                                | Priority              | Migration                    | Risk                                                                      |
-| -------------------------------------------- | --------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------- | ---------------------------- | ------------------------------------------------------------------------- |
-| `sf6_player`                                 | tracked player + tracker state                | name + `cfn_user_id`                               | add `game_id text not null default 'sf6'`; unique `(user_id, game_id)` replaces `(user_id)`. **Keep table name** (ugly but acceptable). Column `cfn_user_id` can stay (documented as external id) or be renamed in the same migration if desired | P2 (only for game #2) | additive + unique index swap | Medium: unique index swap on a live table                                 |
-| `game_session`                               | sessions + baseline                           | legacy LP/MR columns (frozen)                      | none                                                                                                                                                                                                                                             | —                     | none                         | —                                                                         |
-| `match`                                      | ingested matches                              | no (generic rating shape)                          | widen `rating_*_system` type in code only; optional `extras jsonb` for game mechanics                                                                                                                                                            | P3                    | none / additive              | Low                                                                       |
-| `player_character_rating`                    | latest rating per character                   | **yes**: `league_points`, `master_rate`            | add `rating_value` (R2), backfill, dual-write, later drop                                                                                                                                                                                        | P2                    | additive + backfill          | Medium: must keep the overlay/engine output identical (equivalence tests) |
-| `session_character_baseline`                 | per-character start/end ratings               | **yes**: `initial/final_league_points/master_rate` | `initial_rating_value`, `final_rating_value` (R2)                                                                                                                                                                                                | P2                    | additive + backfill          | Medium (same)                                                             |
-| `overlay`, `overlay_connection`              | OBS overlays                                  | no                                                 | entitlement checks in code only (theme, count)                                                                                                                                                                                                   | P1                    | none                         | Low                                                                       |
-| `companion_device`                           | paired browsers (token hash, version)         | no                                                 | optional `game_id` only if one device serves several games (§9, not recommended now)                                                                                                                                                             | —                     | none                         | —                                                                         |
-| `companion_pairing_code`                     | one-time pairing codes                        | no                                                 | none                                                                                                                                                                                                                                             | —                     | none                         | —                                                                         |
-| `companion_snapshot`                         | latest pushed profile/matches per (user, CFN) | PK uses `cfn_user_id`                              | add `game_id` to PK when game #2 has a companion                                                                                                                                                                                                 | P3                    | PK change (careful)          | Medium                                                                    |
-| `mock_cfn_*`                                 | dev mock data                                 | yes                                                | none (dev only)                                                                                                                                                                                                                                  | —                     | none                         | —                                                                         |
-| `auth_*`                                     | Better Auth                                   | no                                                 | none                                                                                                                                                                                                                                             | —                     | none                         | —                                                                         |
-| `rate_limit_bucket`, `auth_rate_limit`       | distributed rate limits                       | no                                                 | none                                                                                                                                                                                                                                             | —                     | none                         | —                                                                         |
-| **new** `account_plan` / `entitlement_grant` | plan + time-bound grants (§11)                | no                                                 | new                                                                                                                                                                                                                                              | P1                    | additive                     | Low                                                                       |
-| **new** `creator_key`                        | Creator Keys (§12)                            | no                                                 | new                                                                                                                                                                                                                                              | P1                    | additive                     | Low                                                                       |
+| Table                                        | Purpose                                       | SF6-specific?                                      | Change in future?                                                                                                                                                                                                                                | When          | Migration                    | Risk                                                                      |
+| -------------------------------------------- | --------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- | ---------------------------- | ------------------------------------------------------------------------- |
+| `sf6_player`                                 | tracked player + tracker state                | name + `cfn_user_id`                               | add `game_id text not null default 'sf6'`; unique `(user_id, game_id)` replaces `(user_id)`. **Keep table name** (ugly but acceptable). Column `cfn_user_id` can stay (documented as external id) or be renamed in the same migration if desired | Deferred (6+) | additive + unique index swap | Medium: unique index swap on a live table                                 |
+| `game_session`                               | sessions + baseline                           | legacy LP/MR columns (frozen)                      | none                                                                                                                                                                                                                                             | —             | none                         | —                                                                         |
+| `match`                                      | ingested matches                              | no (generic rating shape)                          | widen `rating_*_system` type in code only; optional `extras jsonb` for game mechanics                                                                                                                                                            | Deferred (6+) | none / additive              | Low                                                                       |
+| `player_character_rating`                    | latest rating per character                   | **yes**: `league_points`, `master_rate`            | add `rating_value` (R2), backfill, dual-write, later drop                                                                                                                                                                                        | Deferred (6+) | additive + backfill          | Medium: must keep the overlay/engine output identical (equivalence tests) |
+| `session_character_baseline`                 | per-character start/end ratings               | **yes**: `initial/final_league_points/master_rate` | `initial_rating_value`, `final_rating_value` (R2)                                                                                                                                                                                                | Deferred (6+) | additive + backfill          | Medium (same)                                                             |
+| `overlay`, `overlay_connection`              | OBS overlays                                  | no                                                 | entitlement checks in code only (theme, count)                                                                                                                                                                                                   | Phase 2–4     | none                         | Low                                                                       |
+| `companion_device`                           | paired browsers (token hash, version)         | no                                                 | optional `game_id` only if one device serves several games (§9, not recommended now)                                                                                                                                                             | —             | none                         | —                                                                         |
+| `companion_pairing_code`                     | one-time pairing codes                        | no                                                 | none                                                                                                                                                                                                                                             | —             | none                         | —                                                                         |
+| `companion_snapshot`                         | latest pushed profile/matches per (user, CFN) | PK uses `cfn_user_id`                              | add `game_id` to PK when game #2 has a companion                                                                                                                                                                                                 | Deferred (6+) | PK change (careful)          | Medium                                                                    |
+| `mock_cfn_*`                                 | dev mock data                                 | yes                                                | none (dev only)                                                                                                                                                                                                                                  | —             | none                         | —                                                                         |
+| `auth_*`                                     | Better Auth                                   | no                                                 | none                                                                                                                                                                                                                                             | —             | none                         | —                                                                         |
+| `rate_limit_bucket`, `auth_rate_limit`       | distributed rate limits                       | no                                                 | none                                                                                                                                                                                                                                             | —             | none                         | —                                                                         |
+| **new** `account_plan` / `entitlement_grant` | plan + time-bound grants (§11)                | no                                                 | new                                                                                                                                                                                                                                              | Phase 2       | additive                     | Low                                                                       |
+| **new** `creator_key`                        | Creator Keys (§12)                            | no                                                 | new                                                                                                                                                                                                                                              | Phase 3       | additive                     | Low                                                                       |
 
 **Acceptable but ugly:**
 
@@ -419,16 +424,54 @@ edition:     self-hosted | cloud    (deployment, not a user property)
 resolveEntitlements(account, edition) = defaults(edition) ⊕ plan(account) ⊕ active grants
 ```
 
-**Illustrative entitlement set.** Names to be finalized in the implementing PR.
+### 11.1 Plans (agreed)
 
-| Key                                               | Type    | free                                  | creator_beta | self-hosted default         |
-| ------------------------------------------------- | ------- | ------------------------------------- | ------------ | --------------------------- |
-| `overlays.max`                                    | number  | 10 (today's hardcoded limit)          | 25           | configurable                |
-| `overlays.premiumThemes`                          | boolean | false                                 | true         | false (catalog not in Core) |
-| `history.dashboardRows` / `history.retentionDays` | number  | 10 rows / unlimited (no purge exists) | more         | configurable                |
-| `stats.advanced`                                  | boolean | false                                 | true         | false                       |
-| `branding.customizable`                           | boolean | false                                 | true         | true for own instance       |
-| `features.experimental`                           | boolean | false                                 | true         | false                       |
+- **Initial implementation:** `free` and `creator_beta`.
+- **Later:** `free`, `plus`, `creator`. `plus` is explicitly **deferred** until there is real
+  usage data.
+
+### 11.2 Product policy: Free is a useful product, not a crippled demo (agreed)
+
+Free keeps the core value of the product:
+
+- automatic tracking and sessions;
+- W/L, win rate, streaks, rating and active fighter;
+- recap and basic history;
+- OBS, the Companion, and **at least one fully functional overlay**.
+
+Creator monetizes **customization, depth, presentation, scale and creator-specific value**, never
+the basic functioning of the product. Existing Core functionality is not removed to manufacture
+premium value.
+
+### 11.3 First Creator value: advanced overlay customization (direction, not a contract)
+
+The first Creator category is **advanced overlay customization**, not analytics. Initial
+direction, to be designed in Phase 4:
+
+- premium overlay themes;
+- multiple presets;
+- advanced colours;
+- channel branding;
+- in the future, the ability to remove SST branding;
+- more saved overlays;
+- experimental Creator features.
+
+### 11.4 Entitlement set (illustrative)
+
+Key names are finalized in the implementing PR. **Commercial limits are not decided here:** the
+final Free limits for overlay count, history rows and retention will be set **from beta usage
+data**. `creator_beta` can always receive higher limits through entitlements.
+
+| Key                                               | Type    | free                                                                                        | creator_beta                                     | self-hosted default         |
+| ------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------ | --------------------------- |
+| `overlays.max`                                    | number  | **policy TBD** (current technical cap: 10)                                                  | higher than free; exact beta value TBD           | configurable                |
+| `history.dashboardRows` / `history.retentionDays` | number  | **policy TBD**. Current behaviour: 10 rows on the dashboard, no purge (unlimited retention) | higher than free; TBD                            | configurable                |
+| `overlays.premiumThemes`                          | boolean | false                                                                                       | true                                             | false (catalog not in Core) |
+| `branding.customizable`                           | boolean | false                                                                                       | true                                             | true for own instance       |
+| `stats.advanced`                                  | boolean | false                                                                                       | not in the first Creator scope (analytics later) | false                       |
+| `features.experimental`                           | boolean | false                                                                                       | true                                             | false                       |
+
+The boolean rows are **illustrative and subject to Phase 4 product design**.
 
 **Rules**
 
@@ -437,7 +480,7 @@ resolveEntitlements(account, edition) = defaults(edition) ⊕ plan(account) ⊕ 
 - **Downgrades never delete data.** Over-limit items become read-only or hidden, not removed.
 - **The public overlay endpoint** checks the overlay owner's entitlements before rendering a
   premium theme, and falls back to a core theme.
-- **Storage** (P1): `account_plan(user_id PK, plan, updated_at)` plus
+- **Storage** (Phase 2): `account_plan(user_id PK, plan, updated_at)` plus
   `entitlement_grant(id, user_id, plan_or_entitlement, source, starts_at, expires_at, revoked_at)`.
   A missing row means `free`.
 - **Cache per request.** No new realtime events are needed: plan changes are rare; refresh on
@@ -460,8 +503,8 @@ resolveEntitlements(account, edition) = defaults(edition) ⊕ plan(account) ⊕ 
 | `key_hash` text unique                    | **HMAC-SHA-256(key, server pepper)** preferred over plain SHA-256: a DB leak alone can't confirm keys; at 100 bits plain SHA-256 is also acceptable |
 | `key_hint` text                           | last 4 chars, for support conversations. Never the full key                                                                                         |
 | `plan` text                               | `creator_beta`                                                                                                                                      |
-| `grant_days` int null                     | length of the grant once redeemed (null = until revoked)                                                                                            |
-| `expires_at` timestamptz null             | key must be redeemed before this                                                                                                                    |
+| `grant_days` int                          | length of the grant once redeemed: **90** for `creator_beta`                                                                                        |
+| `expires_at` timestamptz                  | key must be redeemed before this: **issued_at + 30 days**                                                                                           |
 | `status` text                             | `issued` → `redeemed` \| `revoked` \| `expired` (check constraint)                                                                                  |
 | `issued_by`, `issued_at`, `note`          | issuance audit (who/why: streamer name)                                                                                                             |
 | `redeemed_by` user id null, `redeemed_at` |                                                                                                                                                     |
@@ -497,9 +540,17 @@ resolveEntitlements(account, edition) = defaults(edition) ⊕ plan(account) ⊕ 
 | DB read access               | hashes only (HMAC with an env pepper); no plaintext keys stored or logged                                                |
 | Issuer abuse                 | issuance via an operator CLI (like `dev:cleanup-test-accounts`) with an audit trail; no public issuance endpoint in beta |
 
+**Creator Beta parameters (agreed)**
+
+- **Grant:** 90 days from redemption, **renewable manually** by an operator (extend the grant's
+  `expires_at` or issue a new grant; never automatic).
+- **Unredeemed keys expire 30 days** after issuance (`expires_at`).
+- **First batch:** 10–20 keys. **No mass issuance** during the beta.
+
 **Issuance in beta:**
 
-- a CLI `pnpm keys:issue --plan creator_beta --days 90 --note "<streamer>"`;
+- an operator CLI, e.g. `pnpm keys:issue --plan creator_beta --note "<streamer>"`, defaulting to
+  a 90-day grant and a 30-day redemption window;
 - it prints the key **once**;
 - no admin UI yet.
 
@@ -513,10 +564,15 @@ resolveEntitlements(account, edition) = defaults(edition) ⊕ plan(account) ⊕ 
 | **B — private repo composes public core** (recommended, when premium code exists) | `sst-cloud` (private) depends on the public core as a package or git submodule. It adds private modules (premium themes, analytics, billing) through explicit extension points (entitlement resolver, overlay theme registry, settings panels) and builds the **official** instance | one deploy (still embedded mode on Render); private code never touches the public repo; core stays fully usable | contract drift between repos (mitigate: versioned core releases + CI in the private repo against core `main`) | Medium                    | Medium      |
 | **C — partially private backend**                                                 | fork of the app kept private for the official instance                                                                                                                                                                                                                              | fastest to start                                                                                                | permanent merge debt; community fixes hard to bring in; drift guaranteed                                      | Low initially, high later | High        |
 
-**For the current beta:** no split yet. Implement the entitlement foundation and Creator Keys in
-the public repo (they protect nothing by secrecy). Choose **B** the day the first premium module
-is written. Prepare by keeping extension points (theme registry, entitlement resolver) explicit
-in core.
+**Decision for the current beta:** **do not create a private SST Cloud repository yet.** Create it
+only when the first feature with real commercial value that must stay private starts to exist;
+then use **B**. Until then:
+
+- the entitlement framework lives in the public repo;
+- Creator Key redeem lives in the public repo;
+- security **never** depends on hiding those checks.
+
+Prepare by keeping extension points (theme registry, entitlement resolver) explicit in core.
 
 ---
 
@@ -538,7 +594,7 @@ premium flags false because the premium modules aren't in the code.
 **Exclusive to the official service:**
 
 - managed hosting and persistence;
-- the premium catalog, advanced analytics and cloud presets;
+- future Creator modules (premium overlay catalog, cloud presets; analytics later);
 - Creator Beta perks and future billing;
 - official Companion releases pointing to the official tracker origin (self-hosters build their
   own with `COMPANION_TRACKER_ORIGINS`).
@@ -547,15 +603,16 @@ premium flags false because the premium modules aren't in the code.
 
 - A fork can raise its own limits. That's fine and expected under MIT.
 - A fork cannot get premium modules, because they never ship publicly.
-- A fork cannot use the SST name or logo for a competing official service (trademark, §16).
+- Forks should not present themselves as the official SST service or imply affiliation. Brand
+  and trademark enforcement requires a separate brand policy and legal review (§15, §16).
 
 ---
 
 ## 15. Licensing considerations (not legal advice)
 
 - **Already MIT.** The repository has been public under **MIT** since 2026-10-04 (`8cb8b47`,
-  public visibility the same day). Every published commit is MIT forever for whoever obtained
-  it; this cannot be revoked.
+  public visibility the same day). Code published under MIT is generally understood to remain
+  usable under MIT by whoever obtained it; plan on the assumption that it cannot be taken back.
 - **Future code.** The copyright holder can license **new** code differently: keep it
   proprietary in a private repo (Option B), or relicense future versions of the public repo.
   Relicensing public code later is socially costly and needs every contributor's agreement for
@@ -564,9 +621,11 @@ premium flags false because the premium modules aren't in the code.
   DCO plus an explicit inbound=outbound policy. **Legal review required** before accepting
   significant contributions if dual licensing is ever planned.
 - **Brand assets.** The logo files (`docs/brand/`, `public/brand/`) are in the MIT repo.
-  Whether MIT covers brand assets is ambiguous. Recommend adding a trademark/brand notice:
-  "SST name and logo are not licensed under MIT". **Legal review required** before
-  commercialization.
+  Whether and how MIT applies to brand assets is unclear. A brand notice (for example, stating
+  that the SST name and logo are not licensed under MIT) should be considered, with its wording
+  defined through **legal review**.
+- **Status of this section.** These are engineering notes, **not legal advice**. **Legal review
+  is required before paid commercialization.**
 - **Capcom terms.** The Companion reads the user's own Buckler data. Using Capcom names in a
   commercial product and the Buckler terms of service need **legal review before paid plans**.
 
@@ -574,69 +633,78 @@ premium flags false because the premium modules aren't in the code.
 
 ## 16. Branding / trademark migration
 
+**Timing (agreed):** the product rename happens **now**, in Phase 1, **before inviting streamers
+to the beta**.
+
 **Target:**
 
 - "**SST — Session Stats Tracker**", tagline "Session tracking & overlays for fighting games.";
 - "Supported game: Street Fighter 6";
 - disclaimer kept everywhere it appears today.
 
-| Item                                                                   | Current                 | Change                                                        | When                                                                                                                                      |
-| ---------------------------------------------------------------------- | ----------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| README title, tagline, intro                                           | "SF6 Session Tracker"   | SST + tagline + "Supported game: Street Fighter 6"            | **NOW** (next docs PR)                                                                                                                    |
-| App metadata (`title`, OG site name, logo `aria-label`, OG image text) | "SF6 Session Tracker"   | "SST" / "SST — Session Stats Tracker"                         | **NOW** (small UI PR; keep the disclaimer)                                                                                                |
-| Landing/auth copy, i18n strings mentioning the product                 | SF6-centric             | product = SST; game-specific copy stays where it is about SF6 | **LATER** (with i18n review)                                                                                                              |
-| Companion display name                                                 | "SF6 Session Companion" | "SST Companion for Street Fighter 6"                          | **LATER** (next Companion version; the unpacked extension ID doesn't change with the name)                                                |
-| Release asset names `sf6-session-companion-beta.*`                     |                         | keep. Renaming breaks the stable download URL                 | **NEVER / not necessary**                                                                                                                 |
-| GitHub repo name `sf6-session-tracker`                                 |                         | rename to `sst` or similar                                    | **LATER**: verify that GitHub's redirect also covers `releases/latest/download/…`, update `COMPANION_DOWNLOAD_URL`, docs and badges first |
-| Root package name `sf6-session-tracker`                                |                         | `sst`                                                         | **LATER** (cosmetic)                                                                                                                      |
-| `@sf6/capcom-core`                                                     |                         | none (accurately SF6)                                         | **NEVER**                                                                                                                                 |
-| Env `SF6_PROVIDER`, `CAPCOM_*`                                         |                         | none (select SF6 implementations)                             | **NEVER**                                                                                                                                 |
-| Routes                                                                 | no `sf6` in any route   | none                                                          | **NEVER**                                                                                                                                 |
-| DB names (`sf6_player`, `cfn_user_id`, `sf6_events`)                   |                         | none (§8)                                                     | **NEVER / not necessary**                                                                                                                 |
-| Internal globals (`__sf6*`), CSS `.sf6-overlay`, `demo@sf6.local`      |                         | none                                                          | **NEVER / not necessary**                                                                                                                 |
+| Item                                                                   | Current                 | Change                                              | When                                                                                                                                      |
+| ---------------------------------------------------------------------- | ----------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| README title, tagline, intro                                           | "SF6 Session Tracker"   | SST + tagline + "Supported game: Street Fighter 6"  | **NOW**: Phase 1, before streamer beta invitations                                                                                        |
+| App metadata (`title`, OG site name, logo `aria-label`, OG image text) | "SF6 Session Tracker"   | "SST" / "SST — Session Stats Tracker"               | **NOW**: Phase 1 (keep the disclaimer)                                                                                                    |
+| Product name in landing/auth/i18n copy                                 | "SF6 Session Tracker"   | SST; game-specific copy stays where it is about SF6 | **NOW**: Phase 1                                                                                                                          |
+| Broader game-neutral copy review                                       | SF6-centric wording     | neutral wording where the text isn't about SF6      | **LATER** (with i18n review)                                                                                                              |
+| Companion display name                                                 | "SF6 Session Companion" | "SST Companion for Street Fighter 6"                | **NOW**: Phase 1, shipped as a Companion release before invitations (the unpacked extension ID doesn't change with the name)              |
+| Release asset names `sf6-session-companion-beta.*`                     |                         | keep. Renaming breaks the stable download URL       | **NEVER / not necessary**                                                                                                                 |
+| GitHub repo name `sf6-session-tracker`                                 |                         | rename to `sst` or similar                          | **LATER**: verify that GitHub's redirect also covers `releases/latest/download/…`, update `COMPANION_DOWNLOAD_URL`, docs and badges first |
+| Root package name `sf6-session-tracker`                                |                         | `sst`                                               | **LATER** (cosmetic)                                                                                                                      |
+| `@sf6/capcom-core`                                                     |                         | none (accurately SF6)                               | **NEVER**                                                                                                                                 |
+| Env `SF6_PROVIDER`, `CAPCOM_*`                                         |                         | none (select SF6 implementations)                   | **NEVER**                                                                                                                                 |
+| Routes                                                                 | no `sf6` in any route   | none                                                | **NEVER**                                                                                                                                 |
+| DB names (`sf6_player`, `cfn_user_id`, `sf6_events`)                   |                         | none (§8)                                           | **NEVER / not necessary**                                                                                                                 |
+| Internal globals (`__sf6*`), CSS `.sf6-overlay`, `demo@sf6.local`      |                         | none                                                | **NEVER / not necessary**                                                                                                                 |
 
 ---
 
 ## 17. Incremental roadmap
 
-Ordered by value and risk. Business-relevant work (Creator Beta) comes before speculative work
-(game #2). Each phase is independently shippable and leaves SF6 behaviour unchanged.
+Ordered by value and risk, reflecting the agreed decisions (§20). Business-relevant work
+(rename, Creator Beta) comes first; multi-game work is deferred. Each phase is independently
+shippable and leaves SF6 behaviour unchanged.
 
-| Phase                                                 | Objective                                                                                               | Code affected                                                                                | Migrations                                               | Risk                   | Verify                                                                                               | Rollback                                                            |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| **0 — RFC**                                           | agree on boundaries                                                                                     | docs                                                                                         | none                                                     | none                   | review                                                                                               | —                                                                   |
-| **1 — Brand surface**                                 | SST name, tagline, "Supported game: SF6", disclaimer                                                    | README, metadata, OG text, logo label, brand notice                                          | none                                                     | Low                    | visual check, `pnpm build`                                                                           | revert PR                                                           |
-| **2 — Entitlement foundation**                        | plan → entitlements resolver; everyone `free`; existing limits (10 overlays, history rows) read from it | new `src/server/entitlements/*`, overlay actions, dashboard history, overlay payload builder | additive `account_plan`, `entitlement_grant`             | Low                    | tests: identical behaviour for `free`; limits come from the resolver                                 | drop usage; tables are inert                                        |
-| **3 — Creator Keys + `creator_beta`**                 | invite streamers                                                                                        | `creator_key` table, redeem server action and UI, issuance CLI, audit logs                   | additive `creator_key`                                   | Medium (security)      | unit tests on the atomic redeem (parallel redeem test), rate limits, generic errors; security review | revoke all keys; feature-flag the redeem UI                         |
-| **4 — First Creator features**                        | real premium value (e.g. a premium theme, extended history)                                             | theme registry extension point; resolver checks in the public overlay payload                | none                                                     | Medium                 | entitlement tests incl. downgrade; overlay falls back to a core theme                                | disable entitlement → core theme                                    |
-| **5 — Cloud split (Option B)**                        | move premium modules to the private repo                                                                | composition points; private CI against core                                                  | none                                                     | Medium                 | official build = core + private; core build still passes alone                                       | ship premium modules from core temporarily                          |
-| **6 — Neutral contracts (types only)**                | core types out of `domain/sf6`; `GameProvider` alias; game descriptor for SF6                           | `src/domain/*`, provider interface, overlay state units                                      | none                                                     | Low-medium             | type-level PR with **zero behaviour change**; full suite + equivalence tests                         | revert PR                                                           |
-| **7 — Generic rating storage (R2)**                   | `rating_value` columns; descriptor-driven units                                                         | rating tables, ingestion, sessions service                                                   | additive + backfill; drop old columns in a later release | Medium                 | backfill check (`rating_value` = LP/MR per system on every row); overlay/recap snapshots unchanged   | read path switch is a code revert; old columns kept until confirmed |
-| **8 — Game identity** (only with a scheduled game #2) | `game_id` on player/snapshot; one player per (user, game)                                               | players, onboarding, companion protocol v2, readiness naming                                 | additive column + unique index swap                      | Medium-high            | migration rehearsal on a prod copy; protocol v1 tests unchanged                                      | keep v1 paths; index swap is reversible while one game exists       |
-| **9 — Second game**                                   | real provider + companion adapter                                                                       | new game module; framework extraction                                                        | per §8                                                   | High (new data source) | research spike first (like the CFN research), contract checks, fixtures                              | feature-flag the game                                               |
+| Phase                          | Objective                                                                                                                                                                                                               | Code affected                                                                                                                   | Migrations                                   | Risk              | Verify                                                                                                  | Rollback                                               |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| **0 — RFC**                    | agree on boundaries and decisions                                                                                                                                                                                       | docs                                                                                                                            | none                                         | none              | review                                                                                                  | —                                                      |
+| **1 — Brand surface**          | **SST — Session Stats Tracker** + "Supported game: Street Fighter 6" + disclaimer, **before streamer invitations**                                                                                                      | README, metadata, OG text, logo label, product name in app copy, Companion display name (Companion release), brand notice draft | none                                         | Low               | visual check, `pnpm build`, Companion package validation                                                | revert PR / previous Companion release stays on GitHub |
+| **2 — Entitlement foundation** | plans `free` + `creator_beta`; **everyone starts on `free`**; server-side resolver; current limits (10 overlays, dashboard history rows) routed through entitlements where sensible, **with no visible behaviour loss** | new `src/server/entitlements/*`, overlay actions, dashboard history, overlay payload builder                                    | additive `account_plan`, `entitlement_grant` | Low               | tests: identical behaviour for `free`; limits come from the resolver; no client-side checks             | stop using the resolver; tables are inert              |
+| **3 — Creator Keys**           | invite 10–20 streamers: 90-day renewable grants, keys expire after 30 days unredeemed                                                                                                                                   | `creator_key` table, operator CLI, redeem server action + UI, audit logs, rate limits                                           | additive `creator_key`                       | Medium (security) | atomic redeem test (parallel redeems), expiry, revocation, rate limits, generic errors; security review | revoke keys and grants; hide the redeem UI             |
+| **4 — First Creator value**    | **advanced overlay customization** (direction in §11.3; exact set designed in this phase)                                                                                                                               | overlay theme registry / builder options gated by entitlements; public overlay payload checks the owner's entitlements          | none expected (overlay config is JSON)       | Medium            | entitlement tests incl. downgrade (falls back to a fully functional core overlay; nothing deleted)      | disable the entitlement → core theme                   |
+| **5 — Private Cloud split**    | Option B, **only when real private premium code exists**                                                                                                                                                                | composition points; private CI against core                                                                                     | none                                         | Medium            | official build = core + private; core build still passes alone                                          | ship the module from core temporarily                  |
 
-Phases 6–9 are **optional until a second game is chosen** with a confirmed data source. Phase 6
-can be pulled earlier if it makes the Phase 4 code cleaner, because it's type-only.
+### Phase 6+ — Multi-game architecture (deferred)
 
----
+Deferred until a game #2 is selected **with a viable data source**. The previously identified
+steps are kept here for reference only; they are not scheduled.
+
+| Step                                | Objective                                                                        | Notes                                                                             |
+| ----------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| 6a — Neutral contracts (types only) | core types out of `domain/sf6`; `GameProvider` alias; SF6 game descriptor        | zero behaviour change; could be pulled earlier only if it simplifies Phase 4 code |
+| 6b — Generic rating storage (R2)    | `rating_value` columns, descriptor-driven units                                  | additive + backfill; drop old columns in a later release (§6)                     |
+| 6c — Game identity                  | `game_id` on player/snapshot; one player per (user, game); Companion protocol v2 | rehearse on a production copy; v1 paths kept                                      |
+| 6d — Second game                    | provider + companion adapter; framework extraction                               | research spike first (like the CFN research); feature-flagged                     |
 
 ## 18. Risk register
 
-| Risk                                                         | Probability | Impact     | Mitigation                                                                                                                                     |
-| ------------------------------------------------------------ | ----------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Overengineering for imaginary games                          | High        | Medium     | §19; phases 6–9 gated on a confirmed game #2                                                                                                   |
-| Breaking the live SF6 beta                                   | Medium      | High       | additive migrations only; equivalence tests on engine/overlay output; staged dual-read/write; deploy outside play hours                        |
-| DB migration risk (backfill, index swap, PK change)          | Medium      | High       | rehearse on a copy of production; one change per migration; keep old columns until verified                                                    |
-| Naming churn (renames with no value)                         | Medium      | Low-medium | §16 NEVER list; renames only where they remove a blocker                                                                                       |
-| Entitlement bypass                                           | Medium      | High       | resolve server-side in every enforcement point (actions, routes, public overlay payload); tests per entitlement; client gets display data only |
-| Creator Key leak / brute force                               | Medium      | Medium     | 100-bit keys, HMAC hashes, fail-closed rate limits, generic errors, revocation                                                                 |
-| Public repo leakage of private code or secrets               | Low-medium  | High       | Option B (private repo); no private code in the public tree; secret scanning stays on                                                          |
-| Private/public contract drift                                | Medium      | Medium     | versioned core contracts; private CI against core `main`; extension points documented                                                          |
-| Provider instability (Buckler changes)                       | High        | High       | already mitigated by contract checks, fixtures, resilient provider and Companion updates; unaffected by this RFC                               |
-| Future games differ more than assumed                        | Medium      | Medium     | research spike before committing; `extras` escape hatch; no premature abstractions                                                             |
-| Trademark positioning (Capcom names in a commercial product) | Medium      | High       | game-neutral brand; "Supported game" wording; disclaimer; **legal review before paid plans**                                                   |
-| Operational complexity (two repos, more deploys)             | Medium      | Medium     | stay single-deploy (embedded) until load requires split mode; no extra services                                                                |
-| Free tier limits (Render/Supabase) with more users           | Medium      | Medium     | split mode already designed (`docs/deploy-render.md`); move when beta traffic justifies it                                                     |
+| Risk                                                              | Probability | Impact     | Mitigation                                                                                                                                     |
+| ----------------------------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Overengineering for imaginary games                               | High        | Medium     | §19; phases 6–9 gated on a confirmed game #2                                                                                                   |
+| Breaking the live SF6 beta                                        | Medium      | High       | additive migrations only; equivalence tests on engine/overlay output; staged dual-read/write; deploy outside play hours                        |
+| DB migration risk (backfill, index swap, PK change)               | Medium      | High       | rehearse on a copy of production; one change per migration; keep old columns until verified                                                    |
+| Naming churn (renames with no value)                              | Medium      | Low-medium | §16 NEVER list; renames only where they remove a blocker                                                                                       |
+| Entitlement bypass                                                | Medium      | High       | resolve server-side in every enforcement point (actions, routes, public overlay payload); tests per entitlement; client gets display data only |
+| Creator Key leak / brute force                                    | Medium      | Medium     | 100-bit keys, HMAC hashes, fail-closed rate limits, generic errors, revocation                                                                 |
+| Public repo leakage of private code or secrets                    | Low-medium  | High       | Option B (private repo); no private code in the public tree; secret scanning stays on                                                          |
+| Private/public contract drift                                     | Medium      | Medium     | versioned core contracts; private CI against core `main`; extension points documented                                                          |
+| Provider instability (Buckler changes)                            | High        | High       | already mitigated by contract checks, fixtures, resilient provider and Companion updates; unaffected by this RFC                               |
+| Future games differ more than assumed                             | Medium      | Medium     | research spike before committing; `extras` escape hatch; no premature abstractions                                                             |
+| Trademark positioning (Capcom names in a commercial product)      | Medium      | High       | game-neutral brand; "Supported game" wording; disclaimer; **legal review before paid plans**                                                   |
+| Operational complexity (two repos, more deploys)                  | Medium      | Medium     | stay single-deploy (embedded) until load requires split mode; no extra services                                                                |
+| Free perceived as a crippled demo (beta churn, bad word of mouth) | Medium      | High       | §11.2 policy: core value stays free; commercial limits decided from beta data; Creator sells customization and scale                           |
+| Free tier limits (Render/Supabase) with more users                | Medium      | Medium     | split mode already designed (`docs/deploy-render.md`); move when beta traffic justifies it                                                     |
 
 ---
 
@@ -657,35 +725,62 @@ can be pulled earlier if it makes the Phase 4 code cleaner, because it's type-on
   enough at this scale.
 - **Usage-based billing, seats, organizations/teams.** One account, one streamer.
 - **A generic plugin system for overlays.** Use an explicit theme registry instead.
+- **The `plus` plan** (pricing, features) before there is real usage data.
+- **Creator analytics** before advanced overlay customization ships.
 
 ---
 
 ## 20. Decisions (ADR summary)
 
-| #   | Decision                                                                                                                                            | Status                                            |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| 1   | **SST becomes the game-neutral product brand**; SF6 is presented as "Supported game: Street Fighter 6" with the Capcom disclaimer                   | **ACCEPT NOW**                                    |
-| 2   | **SF6 remains the first and only supported provider**; no multi-game claims until a second game works end to end                                    | **ACCEPT NOW**                                    |
-| 3   | **Core remains open source (MIT)**: engine, contracts, SF6 module, Companion, tracking, realtime, overlays incl. today's themes, auth, self-hosting | **ACCEPT NOW**                                    |
-| 4   | **Commercial value lives in official cloud services and new premium modules**, never by removing existing Core features                             | **ACCEPT NOW**                                    |
-| 5   | **Plans and entitlements are separate concepts**, resolved server-side; the client never unlocks features                                           | **ACCEPT NOW**                                    |
-| 6   | **Creator Keys**: hashed (HMAC), one-time, atomic conditional redeem, generic errors, fail-closed rate limits, operator CLI issuance                | **ACCEPT NOW** (design)                           |
-| 7   | **Roadmap order**: brand → entitlements → Creator Keys → creator features → cloud split; neutral contracts and multi-game later                     | **REVIEW**                                        |
-| 8   | **Cloud separation via a private repo composing public core (Option B)**, only when the first premium module exists                                 | **REVIEW**                                        |
-| 9   | **Rating model R2** (system id + nullable value + rank/tier + season, per character subject)                                                        | **REVIEW** (implement in Phase 7)                 |
-| 10  | **No table renames** (`sf6_player`, `cfn_user_id` stay); additive columns only                                                                      | **ACCEPT NOW**                                    |
-| 11  | **Companion: one extension per game over a shared framework (option B)**; protocol v1 kept for SF6                                                  | **REVIEW**                                        |
-| 12  | **Game identity (`game_id`, one player per user+game)**                                                                                             | **DEFER** (until game #2 is scheduled)            |
-| 13  | **Brand assets / CLA / Capcom-terms legal review**                                                                                                  | **DEFER** (required before paid plans)            |
-| 14  | **GitHub repository rename**                                                                                                                        | **DEFER** (after verifying release-URL redirects) |
+Product decisions agreed on 2026-10-05 are incorporated below. **ACCEPT NOW** = decided;
+**REVIEW** = direction agreed, details confirmed when the phase starts; **DEFER** = not now.
 
-### Human decisions needed before implementation
+### ACCEPT NOW
 
-1. **Plan names and limits** for `free` vs `creator_beta` (overlay count, history rows/retention,
-   which premium features exist first).
-2. **Creator Beta terms:** grant duration, whether keys expire unredeemed, how many keys are issued.
-3. **Which feature is the first "Creator" value** (premium theme? extended history? analytics?).
-   Without one, entitlements have nothing to gate.
-4. **Private repo timing** (Option B) and who has access.
-5. **Brand notice** for the logo and name, and when to involve legal review.
-6. **Product rename timing** in the app UI (Phase 1) versus waiting for the Ranked E2E smoke test.
+| #   | Decision                                                                                                                                                                                    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **SST becomes the game-neutral brand** ("SST — Session Stats Tracker", "Session tracking & overlays for fighting games") with the Capcom disclaimer                                         |
+| 2   | **SF6 remains the only currently supported game**, presented as "Supported game: Street Fighter 6"; no multi-game claims                                                                    |
+| 3   | **SST Core remains open source (MIT)**                                                                                                                                                      |
+| 4   | **Existing Core functionality is not removed to manufacture premium value**; Free is a useful product, not a crippled demo (§11.2)                                                          |
+| 5   | **Commercial value comes from new Cloud / Creator capabilities**                                                                                                                            |
+| 6   | **Plans and entitlements are separate concepts**                                                                                                                                            |
+| 7   | **Entitlements are enforced server-side**; the client never unlocks features                                                                                                                |
+| 8   | **Initial plans are `free` + `creator_beta`** (`plus`/`creator` later)                                                                                                                      |
+| 9   | **Creator Keys design** (§12): HMAC-hashed, one-time atomic conditional redeem, generic errors, fail-closed rate limits, revocation, operator CLI issuance, no key in logs                  |
+| 10  | **Creator Beta = 90-day grants, renewable manually**                                                                                                                                        |
+| 11  | **Unredeemed Creator Keys expire after 30 days**                                                                                                                                            |
+| 12  | **Initial issuance is 10–20 keys**; no mass issuance during the beta                                                                                                                        |
+| 13  | **The first Creator value focuses on advanced overlay customization** (direction, §11.3), not analytics                                                                                     |
+| 14  | **No table renames** (`sf6_player`, `cfn_user_id` stay); schema changes are additive                                                                                                        |
+| 15  | **The product rename happens before streamer beta invitations** (Phase 1)                                                                                                                   |
+| 16  | **No private SST Cloud repository until real private premium code exists**; entitlement framework and Creator Key redeem live in the public repo, and security never depends on hiding them |
+
+### REVIEW
+
+| #   | Item                                                                  | When                                         |
+| --- | --------------------------------------------------------------------- | -------------------------------------------- |
+| 17  | Exact Free commercial limits (overlay count, history rows, retention) | after beta usage data                        |
+| 18  | Cloud separation Option B (private repo composing the public core)    | when the first private premium module exists |
+| 19  | Rating model R2                                                       | when multi-game work begins                  |
+| 20  | One Companion per game over a shared framework                        | when game #2 becomes real                    |
+
+### DEFER
+
+| #   | Item                                                                                                      |
+| --- | --------------------------------------------------------------------------------------------------------- |
+| 21  | `plus` pricing and features                                                                               |
+| 22  | `game_id` and game identity                                                                               |
+| 23  | Generic rating storage implementation                                                                     |
+| 24  | Companion protocol v2                                                                                     |
+| 25  | Second game (provider + Companion)                                                                        |
+| 26  | GitHub repository rename (after verifying release-URL redirects)                                          |
+| 27  | Billing                                                                                                   |
+| 28  | Legal / brand formalization: brand policy, trademark, CLA, Capcom terms (**required before paid launch**) |
+
+### Remaining human decisions
+
+1. **Exact Free vs Creator limits**, after observing beta usage.
+2. **The exact first Creator overlay feature set** (Phase 4 design).
+3. **When the first private premium module is substantial enough** to create the private repository.
+4. **Legal / brand policy** before paid commercialization.
