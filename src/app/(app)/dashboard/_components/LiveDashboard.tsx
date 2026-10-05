@@ -12,6 +12,7 @@ import {
 } from "react";
 import { formatTimeAgo } from "@/domain/format";
 import { useEventStream, type StreamStatus } from "@/lib/use-event-stream";
+import { useSessionHeartbeat } from "@/lib/session-heartbeat";
 import type { DashboardLiveState } from "@/server/dashboard/state";
 
 interface LiveDashboardValue {
@@ -72,6 +73,8 @@ export function LiveDashboardProvider({
   }, []);
 
   const stream = useEventStream({ url: "/api/me/stream", handlers: { dashboard: apply } });
+  // Keeps a single-service deploy awake during an active session (see session-heartbeat.ts).
+  useSessionHeartbeat(status === "active" && sessionId ? sessionId : null);
 
   return (
     <LiveDashboardContext.Provider value={{ state, stream }}>

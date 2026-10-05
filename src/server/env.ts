@@ -39,6 +39,12 @@ const envSchema = z.object({
   TRACKER_LEASE_MS: int(60_000, 10_000),
   WORKER_TICK_MS: int(1_000, 100),
   WORKER_CONCURRENCY: int(10, 1),
+  /**
+   * Where the tracking scheduler runs. standalone = its own process (`pnpm start:worker`, split
+   * deploy; default). embedded = inside the Next.js server process (single free web service).
+   * Explicit on purpose: never derived from NODE_ENV.
+   */
+  TRACKER_RUNTIME_MODE: z.enum(["standalone", "embedded"]).default("standalone"),
   SESSION_START_GRACE_SECONDS: int(90),
 
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
