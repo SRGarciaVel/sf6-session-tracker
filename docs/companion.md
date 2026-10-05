@@ -1,9 +1,9 @@
-# SF6 Session Companion
+# SST Companion for Street Fighter 6
 
 **Estado: MVP funcionando** (validado en un navegador real el 2026-10-04).
 
 Extensión de navegador (Manifest V3) que lee **tus** datos de Buckler's Boot Camp en **tu
-navegador normal**, con tu sesión normal de Buckler. Los normaliza y envía al Session Tracker
+navegador normal**, con tu sesión normal de Buckler. Los normaliza y envía a SST
 solo datos normalizados.
 
 Es **únicamente una fuente de datos**. El backend sigue siendo la autoridad de:
@@ -34,13 +34,13 @@ Investigación: `docs/research/2026-10-03-cfn-network-research.md` y `docs/capco
 Navegador normal (Chrome / Edge / Brave / Chromium) — login manual en Buckler
    │
    ▼
-SF6 Session Companion (apps/companion-extension, MV3)
+SST Companion for Street Fighter 6 (apps/companion-extension, MV3)
    ├─ Transporte Buckler   service_worker (preferido) → isolated_tab → main_tab
    ├─ Normalización        @sf6/capcom-core  ← el MISMO código que el provider de servidor
    └─ Cliente del tracker  Bearer device token, credentials: "omit"
    │  POST /api/companion/sync  (solo datos normalizados)
    ▼
-Session Tracker (autoritativo)
+SST (autoritativo)
    ├─ validación estricta, ownership de CFN, límites, rate limit
    ├─ companion_snapshot ──► CompanionSF6DataProvider (SF6_PROVIDER=companion)
    ├─ ingestMatches (dedupe + asignación de sesión bajo lock), sin cambios
@@ -323,7 +323,7 @@ ZIP al organizador.
 2. Abre un PR con ese cambio (y lo que incluya la versión) y mergéalo en `main`.
 3. GitHub → Actions → **Release Companion Beta** → _Run workflow_ en `main`, escribe `publish`
    en `confirm` y, si quieres, notas.
-4. Comprueba la release `companion-v0.1.1`: título «SF6 Session Companion v0.1.1 (Beta)», assets
+4. Comprueba la release `companion-v0.1.1`: título «SST Companion for Street Fighter 6 v0.1.1 (Beta)», assets
    `sf6-session-companion-beta.zip` y `.sha256`, marcada **Latest**. El último paso del workflow
    ya verifica que la URL estable sirve esa versión.
 5. En Render (web service) → Environment: `COMPANION_LATEST_VERSION=0.1.1`. Primera vez también

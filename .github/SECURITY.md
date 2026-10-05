@@ -1,7 +1,8 @@
 # Security Policy
 
-SF6 Session Tracker is **pre-beta**. There is no production deployment yet, and no versions are
-supported for security fixes other than the `main` branch.
+SST (Session Stats Tracker) is in **closed beta**. The official instance runs from the `main`
+branch, and the SST Companion for Street Fighter 6 is distributed through GitHub Releases. Security
+fixes are made on `main` and in the latest Companion release only.
 
 ## Reporting a vulnerability
 

@@ -1,4 +1,4 @@
-# SF6 Session Tracker — Architecture
+# SST — Session Stats Tracker: Architecture
 
 Practical reference for how the system is put together and why. Keep it short; update it when a
 decision changes.
@@ -6,7 +6,7 @@ decision changes.
 ## 1. Shape of the system
 
 ```
- Capcom / CFN  (Buckler _next/data, read in the user's browser by the SF6 Session Companion —
+ Capcom / CFN  (Buckler _next/data, read in the user's browser by the SST Companion for Street Fighter 6 —
                docs/companion.md; server prototype in providers/capcom/, docs/capcom-provider.md)
         │
         ▼
