@@ -12,7 +12,7 @@ import { logger } from "@/server/logger";
 import { upsertPlayerForUser } from "@/server/players/service";
 import { rateLimit } from "@/server/security/rate-limit";
 import { cfnUserIdSchema, getSF6DataProvider } from "@/server/sf6";
-import { providerErrorKey } from "@/server/sf6/messages";
+import { isMissingCompanionData, providerErrorKey } from "@/server/sf6/messages";
 import { setUserLocale } from "@/server/users/locale";
 
 export interface PlayerPreview {
@@ -69,6 +69,7 @@ export async function lookupPlayerAction(rawId: string): Promise<ActionResult<Pl
     return ok(toPreview(profile));
   } catch (err) {
     logger.warn("onboarding.lookup_failed", { userId: user.id, error: err });
+    if (isMissingCompanionData(err)) return fail(t("companionNoDataCfn"));
     return fail(t(`provider.${providerErrorKey(err)}`));
   }
 }
@@ -98,6 +99,7 @@ export async function confirmPlayerAction(rawId: string): Promise<ActionResult> 
     logger.info("onboarding.player_registered", { userId: user.id });
   } catch (err) {
     logger.warn("onboarding.confirm_failed", { userId: user.id, error: err });
+    if (isMissingCompanionData(err)) return fail(t("companionNoDataCfn"));
     return fail(t(`provider.${providerErrorKey(err)}`));
   }
   redirect("/dashboard?welcome=1");

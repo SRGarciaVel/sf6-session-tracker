@@ -36,7 +36,7 @@ import { publishEvent } from "@/server/realtime/events";
 import { rateLimit } from "@/server/security/rate-limit";
 import { endSession, startSession } from "@/server/sessions/service";
 import { getMockProvider, getSF6DataProvider } from "@/server/sf6";
-import { providerErrorKey } from "@/server/sf6/messages";
+import { isMissingCompanionData, providerErrorKey } from "@/server/sf6/messages";
 
 async function authorizedPlayer() {
   const user = await getCurrentUser();
@@ -60,6 +60,7 @@ export async function startSessionAction(): Promise<ActionResult> {
     await startSession(getDb(), getSF6DataProvider(), ctx.player);
   } catch (err) {
     logger.warn("session.start_failed", { playerId: ctx.player.id, error: err });
+    if (isMissingCompanionData(err)) return fail(t("companionNoData"));
     return fail(t("startFailed", { reason: t(`provider.${providerErrorKey(err)}`) }));
   }
   revalidatePath("/dashboard");

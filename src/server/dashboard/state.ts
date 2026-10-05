@@ -1,5 +1,7 @@
 /** Private (authenticated) live state for the dashboard: overlay state + tracker health. */
+import type { CompanionSignals } from "@/domain/companion/readiness";
 import type { PlayerLiveState } from "@/domain/overlay/state";
+import { loadCompanionSignals } from "@/server/companion/readiness";
 import type { DbExecutor } from "@/server/db/client";
 import { countPlayerConnections } from "@/server/overlays/service";
 import { findPlayerById } from "@/server/players/service";
@@ -23,6 +25,8 @@ export interface DashboardLiveState {
   };
   tracker: TrackerStatus;
   overlayConnections: number;
+  /** "Ready to play?" inputs (assessed client-side with a ticking clock). */
+  companion: CompanionSignals;
 }
 
 export async function buildDashboardLiveState(
@@ -37,6 +41,7 @@ export async function buildDashboardLiveState(
     countPlayerConnections(db, playerId),
   ]);
   if (!player || !liveState) return null;
+  const companion = await loadCompanionSignals(db, player.userId, player.cfnUserId);
 
   let state: TrackerState = "idle";
   if (active) {
@@ -59,5 +64,6 @@ export async function buildDashboardLiveState(
       lastError: player.lastError,
     },
     overlayConnections: connections,
+    companion,
   };
 }
