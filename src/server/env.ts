@@ -30,6 +30,12 @@ const envSchema = z.object({
   CAPCOM_BUILD_ID_TTL_MS: int(1_800_000, 60_000),
   // Browser companion (SF6_PROVIDER=companion): max age of the pushed snapshot for start/end.
   COMPANION_SNAPSHOT_MAX_AGE_MS: int(300_000, 30_000),
+  /** Optional public download link for the beta companion ZIP, shown on /help/companion. */
+  COMPANION_DOWNLOAD_URL: z
+    .string()
+    .url()
+    .refine((u) => u.startsWith("https://"), "must be https")
+    .optional(),
 
   TRACKER_POLL_INTERVAL_MS: int(20_000, 5_000),
   TRACKER_POLL_JITTER_MS: int(3_000),
