@@ -8,6 +8,7 @@ const ready: CompanionSignals = {
   required: true,
   deviceCount: 1,
   lastSeenAt: ago(20_000),
+  installedVersion: "0.1.0",
   profileObservedAt: ago(40_000),
   matchesObservedAt: ago(30_000),
   hasProfile: true,

@@ -50,6 +50,13 @@
       "when": 1791143986634,
       "tag": "0006_rate_limit_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791170646724,
+      "tag": "0007_companion_client_version",
+      "breakpoints": true
     }
   ]
 }

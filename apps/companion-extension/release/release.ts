@@ -11,6 +11,7 @@ import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { crc32, deflateRawSync, inflateRawSync } from "node:zlib";
+import { compareExtensionVersions, isValidExtensionVersion } from "@sf6/capcom-core";
 import { BUCKLER_HOST_PERMISSION } from "../src/lib/tracker-origins";
 
 /** The only tracker the closed-beta build may talk to. */
@@ -33,20 +34,48 @@ const FORBIDDEN_PERMISSIONS = ["cookies", "webRequest", "webRequestBlocking", "<
 
 /* ───────── naming ───────── */
 
-/** Chromium accepts 1–4 dot-separated integers (0–65535), no suffixes. */
-export function isValidChromeVersion(version: string): boolean {
-  const parts = version.split(".");
-  return (
-    parts.length >= 1 &&
-    parts.length <= 4 &&
-    parts.every((p) => /^(0|[1-9]\d{0,4})$/.test(p) && Number(p) <= 65535)
-  );
-}
+/** Chromium accepts 1–4 dot-separated integers (0–65535), no suffixes (shared definition). */
+export const isValidChromeVersion = isValidExtensionVersion;
 
 /** manifest "0.1.0" → "sf6-session-companion-v0.1.0-beta" (suffix only in the file name). */
 export function releaseName(version: string): string {
   if (!isValidChromeVersion(version)) throw new Error(`invalid manifest version: ${version}`);
   return `${RELEASE_BASENAME}-v${version}-${RELEASE_CHANNEL}`;
+}
+
+/**
+ * Stable asset name published on every GitHub Release, so
+ * …/releases/latest/download/sf6-session-companion-beta.zip always serves the newest beta.
+ */
+export const STABLE_ASSET_BASENAME = `${RELEASE_BASENAME}-${RELEASE_CHANNEL}`;
+/** Git tag of a companion release (kept apart from any future web-app tags). */
+export const releaseTag = (version: string): string => `companion-v${version}`;
+
+/**
+ * A new release must be strictly newer than every published companion release: a re-run or a
+ * forgotten version bump fails instead of replacing or shadowing an existing release.
+ */
+export function checkNewRelease(
+  version: string,
+  existingTags: readonly string[],
+): { ok: true } | { ok: false; error: string } {
+  if (!isValidExtensionVersion(version)) {
+    return { ok: false, error: `manifest version ${version} is not a valid extension version` };
+  }
+  if (existingTags.includes(releaseTag(version))) {
+    return {
+      ok: false,
+      error: `${releaseTag(version)} already exists: bump "version" in apps/companion-extension/manifest.json first`,
+    };
+  }
+  for (const tag of existingTags) {
+    const published = tag.startsWith("companion-v") ? tag.slice("companion-v".length) : null;
+    if (published === null || !isValidExtensionVersion(published)) continue;
+    if (compareExtensionVersions(version, published) !== 1) {
+      return { ok: false, error: `version ${version} is not newer than published ${tag}` };
+    }
+  }
+  return { ok: true };
 }
 
 /* ───────── validation ───────── */

@@ -9,11 +9,11 @@ vi.mock("../actions", () => ({
   revokeCompanionDeviceAction: vi.fn(),
 }));
 
-const { CompanionPanel, PairingCodeBox } = await import("./CompanionPanel");
+const { CompanionPanel, CompanionVersionStatus, PairingCodeBox } = await import("./CompanionPanel");
 
 const devices = [
-  { id: "d1", name: "Brave", lastSeenAt: "2026-10-04T10:00:00.000Z" },
-  { id: "d2", name: "Edge", lastSeenAt: null },
+  { id: "d1", name: "Brave", lastSeenAt: "2026-10-04T10:00:00.000Z", clientVersion: "0.1.0" },
+  { id: "d2", name: "Edge", lastSeenAt: null, clientVersion: null },
 ];
 
 function render() {
@@ -75,5 +75,60 @@ describe("pairing code box", () => {
 
   it("before the clock starts it states the fixed 10-minute validity (no invented countdown)", () => {
     expect(box(5 * 60_000, null)).toContain("Caduca en 10 minutos");
+  });
+});
+
+describe("companion version / update notice", () => {
+  const DL = "https://github.com/o/r/releases/latest/download/sf6-session-companion-beta.zip";
+  const status = (
+    installed: string | null,
+    latestVersion: string | null,
+    downloadUrl: string | null = DL,
+  ) =>
+    renderToString(
+      <NextIntlClientProvider locale="es" messages={es} timeZone="UTC">
+        <CompanionVersionStatus installed={installed} release={{ latestVersion, downloadUrl }} />
+      </NextIntlClientProvider>,
+    );
+
+  it("up to date", () => {
+    const html = status("0.1.1", "0.1.1");
+    expect(html).toContain("Versión instalada: v0.1.1");
+    expect(html).toContain("✓ Companion actualizado");
+    expect(html).not.toContain("Nueva versión");
+  });
+
+  it("older installed ⇒ update CTA with the stable download URL and the how-to link", () => {
+    const html = status("0.1.9", "0.1.10");
+    expect(html).toContain("⚡ Nueva versión disponible: v0.1.10");
+    expect(html).toContain(`href="${DL}"`);
+    expect(html).toContain("↓ Descargar actualización");
+    expect(html).toContain('href="/help/companion#actualizar"');
+  });
+
+  it("no download URL ⇒ still explains how to update", () => {
+    const html = status("0.1.0", "0.1.1", null);
+    expect(html).toContain("Nueva versión disponible");
+    expect(html).not.toContain("Descargar actualización");
+    expect(html).toContain("Ver cómo actualizar");
+  });
+
+  it("newer installed, invalid or missing latest ⇒ no update CTA", () => {
+    for (const [installed, latest] of [
+      ["0.2.0", "0.1.9"],
+      ["0.1.0", "latest"],
+      ["0.1.0", null],
+    ] as const) {
+      const html = status(installed, latest);
+      expect(html, `${installed} vs ${latest}`).not.toContain("Nueva versión");
+      expect(html).toContain(`Versión instalada: v${installed}`);
+    }
+  });
+
+  it("unknown installed version is calm, not an error", () => {
+    const html = status(null, "0.1.1");
+    expect(html).toContain("Versión instalada no disponible todavía.");
+    expect(html).not.toContain('role="alert"');
+    expect(html).not.toContain("Nueva versión");
   });
 });

@@ -1,0 +1,132 @@
+name: Release Companion Beta
+
+# Manual only. Publishes the closed-beta companion as a GitHub Release from main:
+#   tag      companion-v<manifest.version>
+#   assets   sf6-session-companion-beta.zip + sf6-session-companion-beta.sha256 (stable names)
+# so https://github.com/<repo>/releases/latest/download/sf6-session-companion-beta.zip always
+# serves the newest beta. It is a NORMAL release marked latest: GitHub never treats prereleases
+# (or drafts) as "latest", which would break that stable URL.
+# Never replaces anything: an existing tag/release, or a version not newer than every published
+# companion release, fails the run.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "publish" to create a public release from main'
+        required: true
+        type: string
+      notes:
+        description: "Release notes (optional; checksum and install link are added automatically)"
+        required: false
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: companion-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # create the tag + release and upload its two assets (GITHUB_TOKEN only)
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CONFIRM: ${{ inputs.confirm }}
+      NOTES: ${{ inputs.notes }}
+      REF: ${{ github.ref }}
+    steps:
+      - name: Require confirmation and main
+        run: |
+          if [ "$CONFIRM" != "publish" ]; then
+            echo "::error::Type \"publish\" in the confirm input to create a public release."
+            exit 1
+          fi
+          if [ "$REF" != "refs/heads/main" ]; then
+            echo "::error::Run this workflow from main (got $REF)."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0 # tags, for the version guard
+
+      - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Tests (extension, shared core, packaging)
+        run: pnpm exec vitest run apps/companion-extension/test packages/sf6-capcom-core/test
+
+      - name: Version guard (new tag, strictly newer than published releases)
+        id: guard
+        run: |
+          VERSION=$(node -p 'require("./apps/companion-extension/manifest.json").version')
+          TAG=$(./node_modules/.bin/tsx apps/companion-extension/release/check-release.mts "$(git tag -l 'companion-v*')")
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::Release $TAG already exists. Bump the manifest version; nothing was replaced."
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "::error::Tag $TAG already exists on origin. Nothing was replaced."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Releasing $TAG"
+
+      # Builds with the beta tracker origin only, validates, zips (+ stable names). Fails on any check.
+      - run: pnpm companion:package:beta
+      - run: pnpm companion:inspect:prod
+
+      - name: Stable assets are the validated package
+        env:
+          VERSION: ${{ steps.guard.outputs.version }}
+        run: |
+          cmp "artifacts/sf6-session-companion-v${VERSION}-beta.zip" artifacts/sf6-session-companion-beta.zip
+          (cd artifacts && sha256sum -c sf6-session-companion-beta.sha256)
+
+      - name: Create release (normal release, marked latest)
+        env:
+          TAG: ${{ steps.guard.outputs.tag }}
+          VERSION: ${{ steps.guard.outputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          SHA256=$(cut -d' ' -f1 artifacts/sf6-session-companion-beta.sha256)
+          {
+            if [ -n "$NOTES" ]; then printf '%s\n\n' "$NOTES"; fi
+            printf 'SF6 Session Companion v%s — closed beta (Chrome, Brave, Edge: Load unpacked).\n\n' "$VERSION"
+            printf 'Install / update guide: https://sf6-session-tracker-web.onrender.com/help/companion\n\n'
+            printf 'SHA-256 (sf6-session-companion-beta.zip): %s\n\n' "\`$SHA256\`"
+            printf 'Stable download: https://github.com/%s/releases/latest/download/sf6-session-companion-beta.zip\n' "$REPO"
+          } > release-notes.md
+          gh release create "$TAG" \
+            artifacts/sf6-session-companion-beta.zip \
+            artifacts/sf6-session-companion-beta.sha256 \
+            --target "$(git rev-parse HEAD)" \
+            --title "SF6 Session Companion v$VERSION (Beta)" \
+            --notes-file release-notes.md \
+            --latest
+
+      - name: Stable URL serves this release
+        env:
+          VERSION: ${{ steps.guard.outputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          URL="https://github.com/$REPO/releases/latest/download/sf6-session-companion-beta.sha256"
+          for i in 1 2 3 4 5 6; do
+            if curl -fsSL -o latest.sha256 "$URL" && cmp -s latest.sha256 artifacts/sf6-session-companion-beta.sha256; then
+              echo "Stable URL OK"; break
+            fi
+            if [ "$i" = 6 ]; then echo "::error::$URL does not serve this release"; exit 1; fi
+            sleep 10
+          done
+          echo "Done. Set COMPANION_LATEST_VERSION=$VERSION on the web service and redeploy."

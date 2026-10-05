@@ -18,8 +18,12 @@ need Developer mode.
 - no source maps, `.env` files or TypeScript sources;
 - the only tracker origin is `https://sf6-session-tracker-web.onrender.com`.
 
-The same ZIP can be uploaded. Each new upload needs a **higher `version`** in
-`apps/companion-extension/manifest.json`.
+The same ZIP can be uploaded (the GitHub Release asset `sf6-session-companion-beta.zip` is that
+package). Each new upload needs a **higher `version`** in
+`apps/companion-extension/manifest.json`. Until then, betas are distributed through GitHub
+Releases with manual updates ([companion.md §11c](../companion.md#11c-publicar-una-nueva-beta-del-companion));
+a store install would update automatically and make the dashboard's update notice mostly
+informative.
 
 ## 2. Gaps to close before a real submission
 

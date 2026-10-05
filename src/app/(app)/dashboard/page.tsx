@@ -8,6 +8,7 @@ import { getDb } from "@/server/db/client";
 import { devToolsEnabled, getEnv } from "@/server/env";
 import { listOverlays } from "@/server/overlays/service";
 import { listSessionHistory } from "@/server/sessions/service";
+import { getCompanionRelease } from "@/server/companion/release";
 import { companionIngestEnabled, listDevices, toDeviceSummary } from "@/server/companion/service";
 import { CompanionPanel } from "./_components/CompanionPanel";
 import { DevTools } from "./_components/DevTools";
@@ -43,11 +44,14 @@ export default async function DashboardPage() {
   const firstPreset = OVERLAY_PRESETS[overlays[0]?.config.preset ?? "standard"];
 
   // Not paired yet in companion mode: pairing is the first thing to do, so it leads the console.
+  const { latestVersion, downloadUrl } = getCompanionRelease();
+  const release = { latestVersion, downloadUrl };
   const companionFirst = companionIngestEnabled() && devices.length === 0;
   const companionPanel = (
     <CompanionPanel
       devices={devices.map(toDeviceSummary)}
       ingestEnabled={companionIngestEnabled()}
+      release={release}
     />
   );
   const tConsole = await getTranslations("Dashboard.console");

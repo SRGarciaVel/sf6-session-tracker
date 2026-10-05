@@ -12,3 +12,4 @@ export * from "./pagination";
 export * from "./build-id";
 export * from "./buckler";
 export * from "./companion";
+export * from "./version";

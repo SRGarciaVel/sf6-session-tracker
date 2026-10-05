@@ -17,7 +17,10 @@ export async function loadCompanionSignals(
   const env = getEnv();
   const [devices, [snapshot]] = await Promise.all([
     db
-      .select({ lastSeenAt: companionDevice.lastSeenAt })
+      .select({
+        lastSeenAt: companionDevice.lastSeenAt,
+        clientVersion: companionDevice.clientVersion,
+      })
       .from(companionDevice)
       .where(and(eq(companionDevice.userId, userId), isNull(companionDevice.revokedAt)))
       .orderBy(desc(companionDevice.lastSeenAt)),
@@ -31,14 +34,16 @@ export async function loadCompanionSignals(
       .where(and(eq(companionSnapshot.userId, userId), eq(companionSnapshot.cfnUserId, cfnUserId)))
       .limit(1),
   ]);
-  const lastSeen = devices
-    .map((d) => d.lastSeenAt)
-    .filter((d): d is Date => d !== null)
-    .sort((a, b) => b.getTime() - a.getTime())[0];
+  // The most recently active device is "the" installed companion for update notices.
+  const latestDevice = devices
+    .filter((d): d is { lastSeenAt: Date; clientVersion: string | null } => d.lastSeenAt !== null)
+    .sort((a, b) => b.lastSeenAt.getTime() - a.lastSeenAt.getTime())[0];
+  const lastSeen = latestDevice?.lastSeenAt;
   return {
     required: env.SF6_PROVIDER === "companion",
     deviceCount: devices.length,
     lastSeenAt: lastSeen?.toISOString() ?? null,
+    installedVersion: latestDevice?.clientVersion ?? null,
     profileObservedAt: snapshot?.profileObservedAt?.toISOString() ?? null,
     matchesObservedAt: snapshot?.matchesObservedAt?.toISOString() ?? null,
     hasProfile: Boolean(snapshot?.profile),

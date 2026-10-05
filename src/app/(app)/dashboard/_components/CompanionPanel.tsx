@@ -5,8 +5,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
-import { Button, Dot, ErrorText } from "@/components/ui/primitives";
+import { Button, Dot, ErrorText, buttonClass } from "@/components/ui/primitives";
 import { pairingCodeStatus } from "@/domain/companion/pairing";
+import { companionUpdateStatus } from "@/domain/companion/update";
 import { useSlowFlag } from "@/lib/use-slow-flag";
 import { timeAgo, useNow, useOptionalLiveDashboard } from "./LiveDashboard";
 import { createCompanionCodeAction, revokeCompanionDeviceAction } from "../actions";
@@ -17,11 +18,58 @@ export interface CompanionDeviceSummary {
   id: string;
   name: string;
   lastSeenAt: string | null;
+  clientVersion: string | null;
 }
 
 export interface PairingCode {
   code: string;
   expiresAt: string;
+}
+
+/** Published release info (server config), see server/companion/release.ts. */
+export interface CompanionReleaseInfo {
+  latestVersion: string | null;
+  downloadUrl: string | null;
+}
+
+/** Installed version + "up to date" / "new version available" (never alarming when unknown). */
+export function CompanionVersionStatus({
+  installed,
+  release,
+}: {
+  installed: string | null;
+  release: CompanionReleaseInfo | null;
+}) {
+  const t = useTranslations("Dashboard.companion.version");
+  const status = companionUpdateStatus(installed, release?.latestVersion ?? null);
+  if (status.state === "unknown") {
+    return <p className="text-xs text-muted">{t("unknown")}</p>;
+  }
+  return (
+    <div className="space-y-1.5 text-sm" data-update-state={status.state}>
+      <p className="text-muted">{t("installed", { version: status.installed })}</p>
+      {status.state === "upToDate" && <p className="font-semibold text-win">{t("upToDate")}</p>}
+      {status.state === "updateAvailable" && (
+        <div
+          role="status"
+          className="space-y-2 border-l-2 border-warn bg-warn/8 px-3 py-2"
+          data-testid="companion-update"
+        >
+          <p className="font-semibold text-warn">{t("available", { version: status.latest })}</p>
+          <div className="flex flex-wrap gap-2">
+            {release?.downloadUrl && (
+              <a href={release.downloadUrl} className={buttonClass("primary", "sm")}>
+                {t("download")}
+              </a>
+            )}
+            <Link href="/help/companion#actualizar" className={buttonClass("secondary", "sm")}>
+              {t("howTo")}
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /** The one-time code: big, copyable, with its real remaining time (or an expired state). */
@@ -85,9 +133,11 @@ export function PairingCodeBox({
 export function CompanionPanel({
   devices,
   ingestEnabled,
+  release = null,
 }: {
   devices: CompanionDeviceSummary[];
   ingestEnabled: boolean;
+  release?: CompanionReleaseInfo | null;
 }) {
   const t = useTranslations("Dashboard.companion");
   const tc = useTranslations("Common");
@@ -147,8 +197,14 @@ export function CompanionPanel({
       {!ingestEnabled && <p className="mt-2 text-xs text-warn">{t("ingestDisabled")}</p>}
 
       {readiness?.required && (
-        <div className="mt-3">
+        <div className="mt-3 space-y-2">
           <CompanionStatusRows readiness={readiness} />
+          {readiness.companion !== "notPaired" && live && (
+            <CompanionVersionStatus
+              installed={live.state.companion.installedVersion}
+              release={release}
+            />
+          )}
         </div>
       )}
 
@@ -191,7 +247,12 @@ export function CompanionPanel({
             <li key={d.id} className="border-b border-line/70 py-1.5 last:border-b-0">
               <div className="flex flex-wrap items-center gap-2">
                 <Dot tone={d.lastSeenAt ? "win" : "neutral"} />
-                <span className="min-w-0 flex-1 truncate">{d.name}</span>
+                <span className="min-w-0 flex-1 truncate">
+                  {d.name}
+                  {d.clientVersion && (
+                    <span className="ml-2 text-xs text-faint tabular">v{d.clientVersion}</span>
+                  )}
+                </span>
                 <span className="text-xs text-faint">
                   {timeAgo(d.lastSeenAt, now, locale, {
                     never: t("neverSeen"),

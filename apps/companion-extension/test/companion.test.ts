@@ -10,7 +10,7 @@ import { BucklerError, CompanionBucklerClient } from "../src/lib/buckler-client"
 import { runConnectionTest } from "../src/lib/connection-test";
 import { toPublicStatus } from "../src/lib/messages";
 import { CompanionStorage, DEFAULT_STORE, memoryArea } from "../src/lib/storage";
-import { buildSyncPayload, computeDueWork, runCycle } from "../src/lib/sync";
+import { buildSyncPayload, computeDueWork, COMPANION_VERSION, runCycle } from "../src/lib/sync";
 import { TrackerError } from "../src/lib/tracker-client";
 import {
   BUILD_ID,
@@ -179,7 +179,10 @@ describe("companion sync cycle", () => {
       now: NOW,
     }).matches.map(toWireMatch);
     expect(tracker.sent[0]?.matches).toEqual(expected);
-    expect(tracker.sent[0]?.client).toEqual({ version: "0.1.0", transport: "service_worker" });
+    expect(tracker.sent[0]?.client).toEqual({
+      version: COMPANION_VERSION,
+      transport: "service_worker",
+    });
   });
 
   it("4+5. P1 and P2 replays are resolved from the tracked player's perspective", async () => {

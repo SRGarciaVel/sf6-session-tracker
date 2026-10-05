@@ -6,6 +6,7 @@
  *
  *   artifacts/sf6-session-companion-v<manifest.version>-beta.zip
  *   artifacts/sf6-session-companion-v<manifest.version>-beta.sha256   (sha256sum -c format)
+ *   artifacts/sf6-session-companion-beta.{zip,sha256}                  (stable names for Releases)
  *
  * Any failed check ⇒ no package and a non-zero exit code.
  */
@@ -20,6 +21,7 @@ import {
   readBuildDir,
   readZip,
   releaseName,
+  STABLE_ASSET_BASENAME,
   sha256,
   validateBuild,
 } from "./release";
@@ -44,8 +46,10 @@ const sourceVersion = (
 const name = releaseName(sourceVersion);
 const zipPath = join(artifactsDir, `${name}.zip`);
 const sumPath = join(artifactsDir, `${name}.sha256`);
-rmSync(zipPath, { force: true });
-rmSync(sumPath, { force: true });
+// Stable names for GitHub Releases (…/releases/latest/download/<stable>.zip): same bytes.
+const stableZipPath = join(artifactsDir, `${STABLE_ASSET_BASENAME}.zip`);
+const stableSumPath = join(artifactsDir, `${STABLE_ASSET_BASENAME}.sha256`);
+for (const p of [zipPath, sumPath, stableZipPath, stableSumPath]) rmSync(p, { force: true });
 rmSync(distDir, { recursive: true, force: true });
 const env: NodeJS.ProcessEnv = { ...process.env, COMPANION_TRACKER_ORIGINS: BETA_TRACKER_ORIGIN };
 delete env.COMPANION_DEBUG;
@@ -72,6 +76,8 @@ if (!roundTrip.ok) fail("packaged ZIP failed validation", roundTrip.errors);
 const hash = sha256(zip);
 writeFileSync(zipPath, zip);
 writeFileSync(sumPath, checksumLine(hash, `${name}.zip`));
+writeFileSync(stableZipPath, zip);
+writeFileSync(stableSumPath, checksumLine(hash, `${STABLE_ASSET_BASENAME}.zip`));
 
 console.log(`\n✓ SF6 Session Companion ${result.version} (beta) packaged`);
 console.log(`  tracker:  ${BETA_TRACKER_ORIGIN}`);
@@ -80,3 +86,6 @@ console.log(
 );
 console.log(`  sha256:   ${hash}`);
 console.log(`  checksum: ${relative(repoRoot, sumPath)}`);
+console.log(
+  `  release:  ${relative(repoRoot, stableZipPath)} + .sha256 (stable names, same bytes)`,
+);

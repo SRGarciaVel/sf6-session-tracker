@@ -1,0 +1,1 @@
+ALTER TABLE "companion_device" ADD COLUMN "client_version" text;

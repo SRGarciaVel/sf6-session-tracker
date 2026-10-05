@@ -40,6 +40,11 @@ if (production && trackerOrigins.some((o) => !o.startsWith("https://"))) {
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 
+/** Single source of truth for the version the companion reports to the tracker (client.version). */
+const manifestVersion = (
+  JSON.parse(readFileSync(join(root, "manifest.json"), "utf8")) as { version: string }
+).version;
+
 const copyStatic = () => {
   const manifest = JSON.parse(readFileSync(join(root, "manifest.json"), "utf8")) as Record<
     string,
@@ -67,6 +72,7 @@ const options: esbuild.BuildOptions = {
     __SF6_TRACKER_ORIGINS__: JSON.stringify(trackerOrigins),
     __SF6_COMPANION_DEBUG__: JSON.stringify(debug),
     __SF6_PRODUCTION__: JSON.stringify(production),
+    __SF6_COMPANION_VERSION__: JSON.stringify(manifestVersion),
   },
   // MV3: everything is bundled locally; no remote code, no eval.
   minify: !watch,

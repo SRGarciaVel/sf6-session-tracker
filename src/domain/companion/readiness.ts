@@ -13,6 +13,8 @@ export interface CompanionSignals {
   deviceCount: number;
   /** Most recent contact from any paired device (ISO). */
   lastSeenAt: string | null;
+  /** Extension version reported by that most recent device (null until its first sync). */
+  installedVersion: string | null;
   /** Latest snapshot for the player's CFN (ISO), pushed by the companion. */
   profileObservedAt: string | null;
   matchesObservedAt: string | null;

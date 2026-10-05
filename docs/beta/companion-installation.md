@@ -35,22 +35,23 @@ Detalle técnico completo: [docs/companion.md](../companion.md).
 
 ## 1. Descargar y comprobar el archivo
 
-1. Descarga el ZIP que te enviaron. Su nombre debe ser parecido a:
+1. Abre <https://sf6-session-tracker-web.onrender.com/help/companion> y pulsa
+   **↓ Descargar Companion**. Ese botón (y este enlace directo) dan **siempre la última versión**:
 
-   ```
-   sf6-session-companion-v0.1.0-beta.zip
-   ```
+   <https://github.com/SRGarciaVel/sf6-session-tracker/releases/latest/download/sf6-session-companion-beta.zip>
 
-   El número (`0.1.0`) cambia con cada versión. Si el nombre es muy distinto, o el archivo no
-   termina en `.zip`, **no lo instales** y pregunta al organizador.
+   El archivo se llama `sf6-session-companion-beta.zip` (los ZIP antiguos que te pasaron por
+   mensaje se llaman `sf6-session-companion-v0.1.0-beta.zip`; funcionan igual). Si el archivo
+   no termina en `.zip`, **no lo instales** y pregunta al organizador.
 
 2. _(Opcional, recomendado)_ Comprueba que el archivo es exactamente el original. El
-   organizador publica su **SHA-256**: un código de 64 letras y números. Calcula el del archivo
-   descargado y compáralo. Deben ser idénticos.
+   **SHA-256** está en la página de descarga (enlace «SHA-256») y en las notas de la release: un
+   código de 64 letras y números. Calcula el del archivo descargado y compáralo. Deben ser
+   idénticos.
    - **Windows** (PowerShell, en la carpeta de Descargas):
-     `Get-FileHash .\sf6-session-companion-v0.1.0-beta.zip -Algorithm SHA256`
-   - **macOS:** `shasum -a 256 sf6-session-companion-v0.1.0-beta.zip`
-   - **Linux:** `sha256sum sf6-session-companion-v0.1.0-beta.zip`
+     `Get-FileHash .\sf6-session-companion-beta.zip -Algorithm SHA256`
+   - **macOS:** `shasum -a 256 sf6-session-companion-beta.zip`
+   - **Linux:** `sha256sum sf6-session-companion-beta.zip`
 
    Mayúsculas y minúsculas no importan.
 
@@ -156,15 +157,19 @@ Detalle técnico completo: [docs/companion.md](../companion.md).
 
 ## Cómo actualizar la beta
 
-Cuando el organizador publique una versión nueva:
+Cuando haya una versión nueva, el panel del Session Tracker lo dice en el bloque del Companion:
+**⚡ Nueva versión disponible: vX.Y.Z**, con los botones **Descargar actualización** y **Ver
+cómo actualizar**. No hace falta que nadie te pase un enlace nuevo.
 
-1. Descarga el **ZIP nuevo** y comprueba su nombre (y, si quieres, su SHA-256).
+1. Pulsa **Descargar actualización** (es el mismo enlace de siempre: da la última versión).
 2. Descomprímelo y **reemplaza el contenido de la carpeta anterior**: misma carpeta, misma
    ubicación. Borra los archivos viejos de dentro y copia los nuevos, de modo que
    `manifest.json` siga directamente en esa carpeta.
 3. Abre `chrome://extensions` (o `brave://extensions` / `edge://extensions`).
 4. En la tarjeta de **SF6 Session Companion**, pulsa **Recargar** (el icono ⟳).
-5. Comprueba que se muestra la versión nueva y abre el Companion: debería seguir **Conectado**.
+5. Comprueba que la tarjeta muestra la versión nueva y abre el Companion: debería seguir
+   **Conectado**. Tras la siguiente sincronización, el panel mostrará **✓ Companion
+   actualizado**.
 
 **¿Se conserva la vinculación?**
 

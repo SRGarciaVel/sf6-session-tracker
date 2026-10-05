@@ -36,6 +36,11 @@ const envSchema = z.object({
     .url()
     .refine((u) => u.startsWith("https://"), "must be https")
     .optional(),
+  /**
+   * Newest published companion version (e.g. 0.1.1), set after each "Release Companion Beta".
+   * Drives the dashboard's update notice. Invalid values are ignored (logged), never fatal.
+   */
+  COMPANION_LATEST_VERSION: z.string().trim().min(1).optional(),
 
   TRACKER_POLL_INTERVAL_MS: int(20_000, 5_000),
   TRACKER_POLL_JITTER_MS: int(3_000),

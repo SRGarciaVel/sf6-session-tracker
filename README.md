@@ -202,21 +202,22 @@ defaults. Never commit real values.
 
 **Optional / configuration**
 
-| Variable                                                                                                                                                    | Purpose                                                                                |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `TEST_DATABASE_URL`                                                                                                                                         | Database for integration tests (skipped when unset)                                    |
-| `TRUST_PROXY`, `CLIENT_IP_HEADER`                                                                                                                           | Client IP from your proxy's header (rightmost entry); required behind a proxy          |
-| `RATE_LIMIT_STORE`                                                                                                                                          | `memory` (dev default) or `postgres` (production default, shared by instances)         |
-| `PROVIDER_TIMEOUT_MS`, `PROVIDER_CACHE_TTL_MS`                                                                                                              | Provider timeout and profile cache                                                     |
-| `COMPANION_SNAPSHOT_MAX_AGE_MS`                                                                                                                             | Maximum age of companion data to start or end a session                                |
-| `COMPANION_DOWNLOAD_URL`                                                                                                                                    | Optional https link to the beta companion ZIP (download button on `/help/companion`)   |
-| `TRACKER_POLL_INTERVAL_MS`, `TRACKER_POLL_JITTER_MS`, `TRACKER_BACKOFF_BASE_MS`, `TRACKER_BACKOFF_MAX_MS`, `TRACKER_PROFILE_REFRESH_MS`, `TRACKER_LEASE_MS` | Worker cadence, backoff and leases                                                     |
-| `WORKER_TICK_MS`, `WORKER_CONCURRENCY`                                                                                                                      | Worker scheduler                                                                       |
-| `TRACKER_RUNTIME_MODE`                                                                                                                                      | `standalone` (default: separate worker process) or `embedded` (tracker inside the web) |
-| `SESSION_START_GRACE_SECONDS`                                                                                                                               | Count matches finished up to N s before "Start session"                                |
-| `ENABLE_DEV_TOOLS`                                                                                                                                          | Mock-match tools (only with `SF6_PROVIDER=mock`, never in production)                  |
-| `LOG_LEVEL`                                                                                                                                                 | `debug` · `info` · `warn` · `error`                                                    |
-| `CAPCOM_*`                                                                                                                                                  | Server-side Capcom prototype only ([docs/capcom-provider.md](docs/capcom-provider.md)) |
+| Variable                                                                                                                                                    | Purpose                                                                                 |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `TEST_DATABASE_URL`                                                                                                                                         | Database for integration tests (skipped when unset)                                     |
+| `TRUST_PROXY`, `CLIENT_IP_HEADER`                                                                                                                           | Client IP from your proxy's header (rightmost entry); required behind a proxy           |
+| `RATE_LIMIT_STORE`                                                                                                                                          | `memory` (dev default) or `postgres` (production default, shared by instances)          |
+| `PROVIDER_TIMEOUT_MS`, `PROVIDER_CACHE_TTL_MS`                                                                                                              | Provider timeout and profile cache                                                      |
+| `COMPANION_SNAPSHOT_MAX_AGE_MS`                                                                                                                             | Maximum age of companion data to start or end a session                                 |
+| `COMPANION_DOWNLOAD_URL`                                                                                                                                    | Optional https link to the beta companion ZIP (download button on `/help/companion`)    |
+| `COMPANION_LATEST_VERSION`                                                                                                                                  | Newest released companion version (e.g. `0.1.1`); enables the dashboard's update notice |
+| `TRACKER_POLL_INTERVAL_MS`, `TRACKER_POLL_JITTER_MS`, `TRACKER_BACKOFF_BASE_MS`, `TRACKER_BACKOFF_MAX_MS`, `TRACKER_PROFILE_REFRESH_MS`, `TRACKER_LEASE_MS` | Worker cadence, backoff and leases                                                      |
+| `WORKER_TICK_MS`, `WORKER_CONCURRENCY`                                                                                                                      | Worker scheduler                                                                        |
+| `TRACKER_RUNTIME_MODE`                                                                                                                                      | `standalone` (default: separate worker process) or `embedded` (tracker inside the web)  |
+| `SESSION_START_GRACE_SECONDS`                                                                                                                               | Count matches finished up to N s before "Start session"                                 |
+| `ENABLE_DEV_TOOLS`                                                                                                                                          | Mock-match tools (only with `SF6_PROVIDER=mock`, never in production)                   |
+| `LOG_LEVEL`                                                                                                                                                 | `debug` · `info` · `warn` · `error`                                                     |
+| `CAPCOM_*`                                                                                                                                                  | Server-side Capcom prototype only ([docs/capcom-provider.md](docs/capcom-provider.md))  |
 
 Secrets are read on the server only. Nothing uses `NEXT_PUBLIC_*`. The extension build reads
 `COMPANION_TRACKER_ORIGINS`, a public list of allowed tracker origins.
@@ -256,9 +257,15 @@ companion from a ZIP (Chrome, Brave or Edge, "Load unpacked") that only talks to
 - **Testers:** [docs/beta/QUICKSTART.md](docs/beta/QUICKSTART.md) (one page) and
   [docs/beta/companion-installation.md](docs/beta/companion-installation.md) (full guide, in
   Spanish).
+- **Download (always the newest beta):** https://github.com/SRGarciaVel/sf6-session-tracker/releases/latest/download/sf6-session-companion-beta.zip
+  — the same link powers the download button on `/help/companion` (`COMPANION_DOWNLOAD_URL`).
+- **Updates:** the dashboard shows "⚡ New version available" when the installed companion is
+  older than `COMPANION_LATEST_VERSION`.
 - **Maintainers:** `pnpm companion:package:beta` builds, validates and zips the extension into
   `artifacts/`, with a `.sha256`. `pnpm companion:inspect:prod` summarizes it. Details are in
-  [docs/companion.md §11b](docs/companion.md#11b-beta-distribution). Chrome Web Store
+  [docs/companion.md §11b](docs/companion.md#11b-beta-distribution). Publishing a new beta (manual
+  "Release Companion Beta" workflow): [docs/companion.md §11c](docs/companion.md#11c-publicar-una-nueva-beta-del-companion).
+  Chrome Web Store
   (Unlisted) steps still to do: [docs/beta/chrome-web-store.md](docs/beta/chrome-web-store.md).
 
 ## OBS setup

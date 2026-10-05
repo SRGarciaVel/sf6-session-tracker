@@ -294,6 +294,14 @@
         "bucklerOk": "Sesión iniciada",
         "bucklerNever": "Inicia sesión en Buckler",
         "bucklerStale": "Esperando una sincronización reciente"
+      },
+      "version": {
+        "installed": "Versión instalada: v{version}",
+        "unknown": "Versión instalada no disponible todavía.",
+        "upToDate": "✓ Companion actualizado",
+        "available": "⚡ Nueva versión disponible: v{version}",
+        "download": "↓ Descargar actualización",
+        "howTo": "Ver cómo actualizar"
       }
     },
     "demo": {
@@ -449,9 +457,8 @@
     "title": "Instalar SF6 Session Companion",
     "intro": "El Companion es una extensión para Chrome, Brave o Edge (en PC) que lee tus partidas de Buckler en tu propio navegador y las envía a tu Session Tracker. Tarda unos 5 minutos.",
     "betaNote": "Durante la beta la extensión se instala a mano, en «modo desarrollador». Es temporal: más adelante habrá una instalación más simple.",
-    "download": "Descargar Companion (ZIP)",
+    "download": "↓ Descargar Companion",
     "downloadMissing": "Pide el archivo ZIP del Companion al organizador de la beta.",
-    "stepsTitle": "Pasos",
     "step1": "Descarga el ZIP del Companion.",
     "step2": "Descomprímelo en una carpeta que no vayas a borrar (por ejemplo, Documentos). Dentro debe verse el archivo manifest.json.",
     "step3": "Abre la página de extensiones: copia la dirección de tu navegador y pégala en la barra de direcciones.",
@@ -466,9 +473,21 @@
     "goSignup": "Crear cuenta",
     "warningTitle": "¿El navegador muestra un aviso?",
     "warningBody": "Chrome puede avisar de que tienes extensiones en modo desarrollador. Es normal durante la beta y no significa que haya un problema: elige mantener la extensión.",
-    "updateTitle": "Actualizar a una versión nueva",
-    "updateBody": "Reemplaza el contenido de la misma carpeta con el ZIP nuevo, abre la página de extensiones y pulsa ⟳ Recargar en SF6 Session Companion. Si aparece «Sin conectar», vuélvelo a vincular con un código nuevo: tus sesiones no se pierden.",
+    "updateTitle": "Actualizar una versión existente",
     "privacyTitle": "Tu privacidad",
-    "privacyBody": "El Companion nunca envía tus cookies ni tu contraseña de Capcom, y no usa el permiso de cookies del navegador. Solo envía tu CFN, tus personajes con su rango/LP/MR y tus partidas."
+    "privacyBody": "El Companion nunca envía tus cookies ni tu contraseña de Capcom, y no usa el permiso de cookies del navegador. Solo envía tu CFN, tus personajes con su rango/LP/MR y tus partidas.",
+    "downloadUpdate": "↓ Descargar la última versión",
+    "availableVersion": "Versión disponible: v{version}",
+    "checksum": "SHA-256",
+    "checksumAria": "Descargar la suma de verificación SHA-256 del ZIP",
+    "installTitle": "Instalar por primera vez",
+    "updateIntro": "Cuando el panel muestre «⚡ Nueva versión disponible», no hace falta reinstalar:",
+    "updateStep1": "Descarga el ZIP nuevo (el mismo botón de descarga siempre da la última versión).",
+    "updateStep2": "Descomprímelo.",
+    "updateStep3": "Reemplaza el contenido de la carpeta que ya usabas por los archivos nuevos (misma carpeta, mismo sitio).",
+    "updateStep4": "Abre la página de extensiones de tu navegador (chrome://extensions, brave://extensions o edge://extensions).",
+    "updateStep5": "En SF6 Session Companion, pulsa ⟳ Recargar.",
+    "updateStep6": "Comprueba que la tarjeta muestra la versión nueva; en el panel verás «✓ Companion actualizado» tras la siguiente sincronización.",
+    "updateStep7": "Si el Companion aparece «Sin conectar», genera un código nuevo en el panel y vuelve a vincularlo: tus sesiones no se pierden."
   }
 }
