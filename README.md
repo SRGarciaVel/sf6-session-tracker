@@ -385,7 +385,7 @@ docs/                       architecture, companion, security audit, research
 - [docs/architecture.md](docs/architecture.md): system design, data model, ingestion, realtime,
   overlays.
 - [docs/rfc/0001-sst-open-core-multigame.md](docs/rfc/0001-sst-open-core-multigame.md):
-  RFC (draft) for SST's open-core, cloud and multi-game direction.
+  RFC for SST's open-core, cloud and multi-game direction.
 - [docs/companion.md](docs/companion.md): the SF6 Session Companion (transports, permissions,
   polling, recovery, limits, validation).
 - [docs/security-audit.md](docs/security-audit.md): pre-production security audit, accepted risks

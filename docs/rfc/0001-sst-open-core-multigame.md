@@ -2,7 +2,7 @@
 
 | Field      | Value                                                                                       |
 | ---------- | ------------------------------------------------------------------------------------------- |
-| Status     | **Proposed for acceptance** (all product decisions resolved; becomes **Accepted** on merge) |
+| Status     | **Accepted** (decisions reviewed and approved, §20)                                         |
 | Date       | 2026-10-05 (product decisions incorporated the same day, §20)                               |
 | Scope      | Architecture, product boundaries, data model evolution. **No implementation.**              |
 | Applies to | `main` at `889385a` (closed beta live on Render + Supabase, embedded mode, Companion 0.1.0) |
