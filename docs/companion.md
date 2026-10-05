@@ -264,6 +264,7 @@ Resultado (carpeta `artifacts/`, ignorada por git):
 ```
 artifacts/sf6-session-companion-v<version>-beta.zip      ← manifest.json en la RAÍZ del ZIP
 artifacts/sf6-session-companion-v<version>-beta.sha256   ← formato `sha256sum -c`
+artifacts/sf6-session-companion-beta.{zip,sha256}         ← mismos bytes, nombre estable (Releases)
 ```
 
 | Build                                  | Orígenes del tracker (host_permissions)                         |
@@ -278,7 +279,9 @@ artifacts/sf6-session-companion-v<version>-beta.sha256   ← formato `sha256sum 
   127.0.0.1).
 - **Versión:** la fuente de verdad es `version` en `apps/companion-extension/manifest.json`. El
   nombre del ZIP se deriva de ella, y el sufijo `-beta` va solo en el nombre del archivo
-  (Chromium solo acepta versiones numéricas). Para cada entrega nueva, sube la versión.
+  (Chromium solo acepta versiones numéricas). La build inyecta esa misma versión en el bundle
+  (`__SF6_COMPANION_VERSION__`): es la que el Companion envía como `client.version` en cada
+  sync. Para cada entrega nueva, sube la versión.
 - **Validación antes de empaquetar** (si algo falla: no hay ZIP y exit ≠ 0):
   - MV3 y versión válida;
   - `manifest.json`, `background.js`, `popup.{html,js,css}` y `_locales/`;
@@ -299,6 +302,75 @@ artifacts/sf6-session-companion-v<version>-beta.sha256   ← formato `sha256sum 
 - **Guías:** para testers, [docs/beta/QUICKSTART.md](beta/QUICKSTART.md) y
   [docs/beta/companion-installation.md](beta/companion-installation.md); pasos pendientes de
   Chrome Web Store, [docs/beta/chrome-web-store.md](beta/chrome-web-store.md).
+
+## 11c. Publicar una nueva beta del Companion
+
+Distribución por **GitHub Releases**, sin infraestructura extra. URL estable (siempre la última
+beta), la que va en `COMPANION_DOWNLOAD_URL`:
+
+```
+https://github.com/SRGarciaVel/sf6-session-tracker/releases/latest/download/sf6-session-companion-beta.zip
+```
+
+Hasta la primera release (`companion-v0.1.0`), esa URL devuelve 404: no configures
+`COMPANION_DOWNLOAD_URL` en Render antes de publicarla. Sin la variable, `/help/companion`
+muestra el aviso de pedir el ZIP al organizador.
+
+**Pasos para publicar (por ejemplo, v0.1.1):**
+
+1. Sube `version` en `apps/companion-extension/manifest.json` (`0.1.0` → `0.1.1`; solo números).
+   Nunca se incrementa sola.
+2. Abre un PR con ese cambio (y lo que incluya la versión) y mergéalo en `main`.
+3. GitHub → Actions → **Release Companion Beta** → _Run workflow_ en `main`, escribe `publish`
+   en `confirm` y, si quieres, notas.
+4. Comprueba la release `companion-v0.1.1`: título «SF6 Session Companion v0.1.1 (Beta)», assets
+   `sf6-session-companion-beta.zip` y `.sha256`, marcada **Latest**. El último paso del workflow
+   ya verifica que la URL estable sirve esa versión.
+5. En Render (web service) → Environment: `COMPANION_LATEST_VERSION=0.1.1`. Primera vez también
+   `COMPANION_DOWNLOAD_URL` con la URL estable.
+6. Redeploy (Render lo hace al guardar variables). Desde ese momento el panel avisa a quien tenga
+   una versión anterior.
+
+**Qué hace el workflow** (`.github/workflows/companion-release.yml`, solo `workflow_dispatch`):
+
+- exige `confirm = publish` y ejecutarse desde `main`;
+- tests de la extensión, del core compartido y del empaquetado;
+- **guardia de versión:** falla si `companion-v<versión>` ya existe (tag o release) o si la
+  versión no es mayor que todas las publicadas. Nunca reemplaza assets;
+- `pnpm companion:package:beta` + `pnpm companion:inspect:prod`; comprueba que los assets
+  estables son el paquete validado;
+- `gh release create companion-vX.Y.Z … --latest`, con el SHA-256 y el enlace a la guía en las
+  notas;
+- comprueba la URL estable.
+
+Permisos: `contents: write` solo en ese job, con el `GITHUB_TOKEN` interno; sin otros secretos.
+
+**Por qué release normal (no prerelease):** GitHub define la release «latest» como la más
+reciente que no es prerelease ni borrador, y no permite marcar prereleases como latest
+(documentación de la API de Releases, `make_latest`). `releases/latest/download/…` solo
+funciona con releases normales, así que se publican como releases normales con «(Beta)» en el
+título.
+
+> **Aviso (monorepo):** si algún día se publica otra release en este repo (por ejemplo, de la
+> web), créala con `--latest=false` o marca «Set as latest» desactivado. Si no, la URL estable
+> apuntaría a esa release, que no tiene el ZIP (404). Si pasara, se arregla marcando de nuevo la
+> última `companion-v…` como _Latest_ en GitHub.
+
+**Versión instalada y avisos de actualización:**
+
+- El Companion envía `client.version` en cada sync. El servidor la guarda en
+  `companion_device.client_version` (migración `0007`), solo si es una versión Chromium válida y
+  ha cambiado.
+- El panel usa la del dispositivo con actividad más reciente. Compara numéricamente
+  (`compareExtensionVersions`, `@sf6/capcom-core`: `0.1.10 > 0.1.9`) con
+  `COMPANION_LATEST_VERSION`:
+  - instalada < última → «⚡ Nueva versión disponible» + «Descargar actualización»
+    (`COMPANION_DOWNLOAD_URL`) + «Ver cómo actualizar» (`/help/companion#actualizar`);
+  - igual → «✓ Companion actualizado»;
+  - mayor, desconocida o inválida → solo informa, sin avisos.
+- Una versión ≤ 0.1.0 instalada antes de este cambio también se detecta: ya enviaba `0.1.0`.
+- Mientras la extensión sea descomprimida, la actualización es **manual**: no hay `update_url`,
+  CRX propio ni descargas automáticas.
 
 ## 12. Validación manual real — 2026-10-04
 

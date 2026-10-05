@@ -3,8 +3,9 @@
 **Tracker de la beta:** <https://sf6-session-tracker-web.onrender.com>
 **Navegadores:** Chrome, Brave o Edge (en PC).
 
-1. **Descarga** `sf6-session-companion-vX.Y.Z-beta.zip` y **descomprímelo** en una carpeta que
-   no vayas a borrar. Dentro tiene que verse `manifest.json`.
+1. **Descarga** el Companion (siempre la última versión):
+   <https://github.com/SRGarciaVel/sf6-session-tracker/releases/latest/download/sf6-session-companion-beta.zip>
+   y **descomprímelo** en una carpeta que no vayas a borrar. Dentro tiene que verse `manifest.json`.
 2. Abre `chrome://extensions` (o `brave://extensions` / `edge://extensions`).
 3. Activa **Modo desarrollador**.
 4. Pulsa **Cargar descomprimida** y elige **la carpeta que contiene `manifest.json`**.
@@ -25,7 +26,8 @@
 contraseña de Capcom (no usa el permiso `cookies`). Solo envía tu CFN, tus personajes con su
 rango/LP/MR y tus partidas.
 
-**Actualizar:** reemplaza el contenido de la misma carpeta con el ZIP nuevo →
+**Actualizar:** cuando el panel diga **⚡ Nueva versión disponible**, pulsa **Descargar
+actualización**, reemplaza el contenido de la misma carpeta con el ZIP nuevo →
 `chrome://extensions` → **⟳ Recargar**. Si el Companion aparece «Sin conectar», vuelve a hacer
 el paso 8–9.
 
