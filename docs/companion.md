@@ -312,9 +312,9 @@ beta), la que va en `COMPANION_DOWNLOAD_URL`:
 https://github.com/SRGarciaVel/sf6-session-tracker/releases/latest/download/sf6-session-companion-beta.zip
 ```
 
-Hasta la primera release (`companion-v0.1.0`), esa URL devuelve 404: no configures
-`COMPANION_DOWNLOAD_URL` en Render antes de publicarla. Sin la variable, `/help/companion`
-muestra el aviso de pedir el ZIP al organizador.
+La primera release (`companion-v0.1.0`) ya está publicada y marcada _Latest_, así que la URL
+estable funciona. Sin `COMPANION_DOWNLOAD_URL`, `/help/companion` muestra el aviso de pedir el
+ZIP al organizador.
 
 **Pasos para publicar (por ejemplo, v0.1.1):**
 
