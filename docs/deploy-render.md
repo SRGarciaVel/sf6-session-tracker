@@ -6,6 +6,10 @@ Security requirements (DB role, TLS, Supabase lockdown, secrets) are in
 
 ## A. Closed beta: one Free web service (embedded tracker)
 
+**Current production setup:** the closed beta runs in this mode at
+<https://sf6-session-tracker-web.onrender.com> (Render + Supabase), with the embedded worker
+(`worker.started`, `mode=embedded`, `provider=companion` in the logs).
+
 | Setting       | Value                                              |
 | ------------- | -------------------------------------------------- |
 | Service type  | Web Service (Node 22)                              |
@@ -24,6 +28,9 @@ DATABASE_URL=<runtime role, direct/session connection, sslmode=require>
 APP_URL=https://sf6-session-tracker-web.onrender.com
 BETTER_AUTH_SECRET=<openssl rand -base64 32>
 TRUST_PROXY=true
+# Companion distribution (docs/companion.md §11c)
+COMPANION_DOWNLOAD_URL=https://github.com/SRGarciaVel/sf6-session-tracker/releases/latest/download/sf6-session-companion-beta.zip
+COMPANION_LATEST_VERSION=<latest released companion version, e.g. 0.1.0>
 ```
 
 Do **not** also create a Background Worker in this mode (it refuses to start with
