@@ -30,24 +30,26 @@ decision changes.
    └─ /overlay/<token>  (public, OBS Browser Source)
 ```
 
-Two deployables share one codebase: **web** (`next start`) and **worker** (`node dist/worker.mjs`).
+One codebase, two deployment modes (§12): **split** — **web** (`next start`) + **worker**
+(`node dist/worker.mjs`) — or **embedded**, where the same scheduler runs inside the web process
+(`TRACKER_RUNTIME_MODE=embedded`, single free web service for the closed beta).
 There's no Redis, queue or microservice. Postgres provides the leases (row locks) and the event bus
 (`LISTEN/NOTIFY`).
 
 ## 2. Key decisions
 
-| #   | Decision                                  | Why                                                                                                                                                                                                                                                                                                                                         |
-| --- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Drizzle ORM** (not Prisma)              | SQL-first and typed, with no query-engine binary. It runs the same in Next and in the worker. Partial unique indexes and `ON CONFLICT DO NOTHING` are first-class. Migrations are plain SQL in `drizzle/`.                                                                                                                                  |
-| 2   | **SSE** (not WebSocket)                   | Traffic is server→client only. SSE runs over plain HTTP, `EventSource` auto-reconnects, and it works in OBS CEF without libraries. Every SSE message carries the **full authoritative state**, never a delta.                                                                                                                               |
-| 3   | **Polling** in a worker, adaptive         | 20 s ± jitter while a session is active, exponential backoff on errors (30 → 60 → 120 → 300 s cap), and `Retry-After` is honoured. All values come from env (`src/server/env.ts`). The pure policy lives in `src/domain/tracking/polling.ts`.                                                                                               |
-| 4   | **Caching**                               | `ResilientProvider` wraps every provider with a timeout, single-flight (concurrent identical calls share one upstream request) and a short TTL cache for **profile lookups only**. Match lists are never cached because they are the freshness-critical data. Overlays and dashboards read Postgres, so N overlays never fan out to Capcom. |
-| 5   | **better-auth** (email + password)        | Maintained, built for Drizzle and Next, sessions stored in DB, httpOnly cookies, origin checks and rate limiting built in. Social logins (Twitch/Discord) can be added as providers later.                                                                                                                                                  |
-| 6   | **Hosting: Railway** (or Fly.io / Render) | Needs (a) long-lived SSE connections, (b) a process that runs without an HTTP request, and (c) one persistent `LISTEN` connection. Pure Vercel fits none of those well: functions have max durations and a `setInterval` dies with the instance. Deploy a `web` service, a `worker` service and managed Postgres.                           |
-| 7   | **Background worker**                     | `src/worker/index.ts`: a 1 s scheduler tick claims _due_ players, polls them with bounded concurrency and schedules the next poll in the DB. Shuts down gracefully on SIGTERM (stops claiming, finishes in-flight work, releases leases).                                                                                                   |
-| 8   | **No duplicate trackers**                 | Each player row holds a **lease**: `lease_owner` and `lease_expires_at`. Players are claimed with `UPDATE … WHERE id IN (SELECT … FOR UPDATE SKIP LOCKED)`. If a worker dies, the lease expires and another worker continues. Even if two workers overlap, ingestion is idempotent (see §4), so stats stay correct.                         |
-| 9   | **Persistent sessions**                   | The session baseline is written to Postgres when the session starts. Stats are **derived** from the session's matches by the pure Session Engine, so restarts of OBS, browsers, web or worker cannot lose or reset anything.                                                                                                                |
-| 10  | **Overlay tokens**                        | 192-bit random `base64url` (32 chars) in `overlays.public_token`. It is unrelated to internal ids, so it can't be enumerated. The format is validated before any DB hit, endpoints are rate-limited per IP, and the token can be rotated from the dashboard.                                                                                |
+| #   | Decision                                  | Why                                                                                                                                                                                                                                                                                                                                                     |
+| --- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Drizzle ORM** (not Prisma)              | SQL-first and typed, with no query-engine binary. It runs the same in Next and in the worker. Partial unique indexes and `ON CONFLICT DO NOTHING` are first-class. Migrations are plain SQL in `drizzle/`.                                                                                                                                              |
+| 2   | **SSE** (not WebSocket)                   | Traffic is server→client only. SSE runs over plain HTTP, `EventSource` auto-reconnects, and it works in OBS CEF without libraries. Every SSE message carries the **full authoritative state**, never a delta.                                                                                                                                           |
+| 3   | **Polling** in a worker, adaptive         | 20 s ± jitter while a session is active, exponential backoff on errors (30 → 60 → 120 → 300 s cap), and `Retry-After` is honoured. All values come from env (`src/server/env.ts`). The pure policy lives in `src/domain/tracking/polling.ts`.                                                                                                           |
+| 4   | **Caching**                               | `ResilientProvider` wraps every provider with a timeout, single-flight (concurrent identical calls share one upstream request) and a short TTL cache for **profile lookups only**. Match lists are never cached because they are the freshness-critical data. Overlays and dashboards read Postgres, so N overlays never fan out to Capcom.             |
+| 5   | **better-auth** (email + password)        | Maintained, built for Drizzle and Next, sessions stored in DB, httpOnly cookies, origin checks and rate limiting built in. Social logins (Twitch/Discord) can be added as providers later.                                                                                                                                                              |
+| 6   | **Hosting: Railway** (or Fly.io / Render) | Needs (a) long-lived SSE connections, (b) a process that runs without an HTTP request, and (c) one persistent `LISTEN` connection. Pure Vercel fits none of those well: functions have max durations and a `setInterval` dies with the instance. Deploy a `web` service, a `worker` service and managed Postgres.                                       |
+| 7   | **Background worker**                     | `TrackerRuntime` (`src/server/tracking/worker-runtime.ts`): a 1 s scheduler tick claims _due_ players, polls them with bounded concurrency and schedules the next poll in the DB. Stops gracefully (stops claiming, finishes in-flight work, releases leases). Hosted by `src/worker/index.ts` (split) or `src/instrumentation.ts` (embedded), see §12. |
+| 8   | **No duplicate trackers**                 | Each player row holds a **lease**: `lease_owner` and `lease_expires_at`. Players are claimed with `UPDATE … WHERE id IN (SELECT … FOR UPDATE SKIP LOCKED)`. If a worker dies, the lease expires and another worker continues. Even if two workers overlap, ingestion is idempotent (see §4), so stats stay correct.                                     |
+| 9   | **Persistent sessions**                   | The session baseline is written to Postgres when the session starts. Stats are **derived** from the session's matches by the pure Session Engine, so restarts of OBS, browsers, web or worker cannot lose or reset anything.                                                                                                                            |
+| 10  | **Overlay tokens**                        | 192-bit random `base64url` (32 chars) in `overlays.public_token`. It is unrelated to internal ids, so it can't be enumerated. The format is validated before any DB hit, endpoints are rate-limited per IP, and the token can be rotated from the dashboard.                                                                                            |
 
 ## 3. Data model (`src/server/db/schema.ts`)
 
@@ -258,3 +260,72 @@ are **not** stored.
 - Web server killed mid-stream: the overlay keeps the last state, reconnects, and resyncs matches
   played during the downtime.
 - Every theme, with all fields enabled, fits sizes from 300×300 to 1920×300 without overflow.
+
+## 12. Deployment modes
+
+The tracking scheduler is one class, `TrackerRuntime` (`src/server/tracking/worker-runtime.ts`):
+tick → claim leases → poll → ingest, error backoff, periodic maintenance, idempotent `stop()`
+(stop claiming, wait for in-flight polls, `releaseAllLeases`). It never closes the DB pool and
+never calls `process.exit`; its host process does. `TRACKER_RUNTIME_MODE` picks the host. It is
+explicit and never derived from `NODE_ENV`.
+
+### A. Embedded (`TRACKER_RUNTIME_MODE=embedded`) — closed beta / low traffic
+
+One web service runs Next.js **and** the scheduler (e.g. a single Render Free web service).
+
+- **Start:** `src/instrumentation.ts` `register()` (Next runs it once per server instance, never
+  during `next build`). It returns unless `NEXT_RUNTIME=nodejs`, not `phase-production-build`,
+  and the mode is `embedded`; then it dynamically imports `embedded-boot.ts`. Importing any
+  module starts nothing, and SSR never starts it.
+- **One per process:** `startEmbeddedTracker` keeps the runtime in a
+  `globalThis[Symbol.for("sf6.tracker.runtime")]` singleton (dev HMR / duplicate module copies
+  reuse it). DB leases remain the cross-process guarantee. The standalone worker **refuses to
+  start** in this mode (exit 1), so a misconfigured extra worker cannot double up. Locally use
+  `pnpm dev:web` alone in embedded mode; `pnpm dev` (both) is for the default standalone mode.
+- **Shutdown:** one `process.once` SIGTERM/SIGINT listener (registered inside the singleton
+  guard) calls `runtime.stop()`. Next keeps its own handler: it closes the HTTP server, then
+  `process.exit(143)`. That exit can come before our lease release finishes (measured: when the
+  server is idle it does). Nothing is corrupted (ingestion is transactional, and Postgres rolls
+  back an interrupted transaction), and the leases expire after `TRACKER_LEASE_MS` (60 s). Then
+  the next instance takes the players over.
+- **Sleeping host:** Render Free spins a web service down after 15 min without **inbound**
+  traffic, and an open SSE stream does not count. **While it sleeps nothing is processed.** On
+  wake-up (cold start, ~1 min behind Render's loading page), polling resumes and the tracker
+  catches up from the companion's latest snapshot. Inbound traffic during a session comes from:
+  - the companion extension: `/api/companion/state` every ~30 s plus syncs, while its browser is
+    open;
+  - the dashboard **session heartbeat**: `POST /api/session/heartbeat` every 4.5 min, only while
+    a session is active.
+
+  This is legitimate traffic from a user who is actively using the service.
+
+- **Heartbeat contract:**
+  - Same-origin only (403 otherwise) and authenticated (401).
+  - Rate limited per user: 6/min through the shared limiter (429).
+  - 204 if the account has an ACTIVE session, 409 `{"error":"no_active_session"}` otherwise.
+  - Read-only: one indexed select scoped by the account's user id. No session, match or stats
+    writes and no provider/Capcom calls. The only write is the user's rate-limit bucket row,
+    upserted and purged.
+  - The client (`src/lib/session-heartbeat.ts`) keeps a single interval per dashboard. It stops on
+    session end, unmount or 409, and fails silently.
+- **OBS overlay:** no heartbeat on purpose. It would be an unauthenticated public keepalive (token
+  in the URL), and the companion and dashboard already cover an active session. When SSE drops,
+  the overlay keeps its last state, reconnects or falls back to polling, and resyncs.
+- **Cold start UX:** no extra work. Render serves its own loading page; SSE clients reconnect, and
+  the companion retries on its next alarm.
+
+### B. Split (default, `standalone`) — production scaling
+
+- Web service: `pnpm run start`.
+- Background worker: `pnpm run start:worker` (`dist/worker.mjs`), one or more replicas.
+
+The web never runs the scheduler. Scale web and workers independently, with no sleep and graceful
+worker shutdown (`closeDb` + exit after lease release). **Recommended once beyond a small closed
+beta.**
+
+### Moving between modes
+
+Both modes coordinate through the same DB leases, so a switch is safe in either order: an
+overlap polls nothing twice (`FOR UPDATE SKIP LOCKED`, idempotent ingestion), and a gap lasts at
+most one lease expiry. To go from A to B, deploy the worker with `TRACKER_RUNTIME_MODE=standalone`
+(or unset) and change the web to standalone too. No migration is needed.

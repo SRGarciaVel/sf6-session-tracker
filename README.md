@@ -111,7 +111,8 @@ flowchart TD
 - **The backend is authoritative.** Ingestion deduplicates and assigns matches to sessions under
   a database lock. The pure **Session Engine** (`src/domain/session`) computes the stats.
 - **The worker** keeps tracking state and profile snapshots up to date. Multiple workers
-  coordinate through database leases.
+  coordinate through database leases. It runs as its own process (split deploy) or inside the
+  web server (`TRACKER_RUNTIME_MODE=embedded`, single-service closed beta).
 - **OBS never talks to Capcom** or to the extension. It reads the authoritative state from the
   server over SSE.
 
@@ -209,6 +210,7 @@ defaults. Never commit real values.
 | `COMPANION_SNAPSHOT_MAX_AGE_MS`                                                                                                                             | Maximum age of companion data to start or end a session                                |
 | `TRACKER_POLL_INTERVAL_MS`, `TRACKER_POLL_JITTER_MS`, `TRACKER_BACKOFF_BASE_MS`, `TRACKER_BACKOFF_MAX_MS`, `TRACKER_PROFILE_REFRESH_MS`, `TRACKER_LEASE_MS` | Worker cadence, backoff and leases                                                     |
 | `WORKER_TICK_MS`, `WORKER_CONCURRENCY`                                                                                                                      | Worker scheduler                                                                       |
+| `TRACKER_RUNTIME_MODE`                                                                                                                                      | `standalone` (default: separate worker process) or `embedded` (tracker inside the web) |
 | `SESSION_START_GRACE_SECONDS`                                                                                                                               | Count matches finished up to N s before "Start session"                                |
 | `ENABLE_DEV_TOOLS`                                                                                                                                          | Mock-match tools (only with `SF6_PROVIDER=mock`, never in production)                  |
 | `LOG_LEVEL`                                                                                                                                                 | `debug` · `info` · `warn` · `error`                                                    |
@@ -263,7 +265,7 @@ private.** It works like a read-only secret link. If it leaks (for example, on s
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | `pnpm dev`                                                        | Next.js dev server **and** the tracking worker (auto-reload)              |
 | `pnpm dev:web` · `pnpm dev:worker`                                | Run them separately                                                       |
-| `pnpm build` · `pnpm start` · `pnpm start:worker`                 | Production build (Next.js + `dist/worker.mjs`) and start                  |
+| `pnpm build` · `pnpm start` · `pnpm start:worker`                 | Production build (Next.js + `dist/worker.mjs`) and start (split mode)     |
 | `pnpm typecheck` · `pnpm lint` · `pnpm test`                      | Types (app + extension), ESLint, Vitest (unit + integration)              |
 | `pnpm check`                                                      | typecheck + lint + test                                                   |
 | `pnpm format` · `pnpm format:check`                               | Prettier                                                                  |
@@ -301,12 +303,17 @@ Compose; run `DATABASE_URL=$TEST_DATABASE_URL pnpm db:migrate` once).
 Before the beta: production deployment, a Ranked end-to-end smoke test in production, and closed
 beta feedback.
 
-**Deployment constraints** (a guide will follow):
+**Deployment** ([docs/deploy-render.md](docs/deploy-render.md)):
 
-- the web app needs long-lived SSE connections and one persistent Postgres `LISTEN` connection
-  per instance;
-- the worker is a persistent process;
-- connect through a direct or session-mode connection (not a transaction pooler) with TLS.
+- **A. Embedded (closed beta):** one web service runs Next.js and the tracker
+  (`TRACKER_RUNTIME_MODE=embedded`, `pnpm run start`). It fits Render Free. Cold starts happen,
+  and nothing is processed while the service sleeps. During an active session the companion and
+  the dashboard heartbeat send legitimate periodic requests.
+- **B. Split (recommended at scale):** a web service (`pnpm run start`) and a background worker
+  (`pnpm run start:worker`), both `standalone`. DB leases make switching between A and B safe.
+- In both modes the web app needs long-lived SSE connections and one persistent Postgres
+  `LISTEN` connection per instance.
+- Connect through a direct or session-mode connection (not a transaction pooler) with TLS.
 
 Requirements and the env matrix:
 [docs/security-audit.md §7](docs/security-audit.md#7-requisitos-de-producción-vercel--render--supabase).
@@ -320,6 +327,8 @@ Requirements and the env matrix:
 - Detection takes up to about **30 s** after Buckler shows a match: MV3 `chrome.alarms` cannot
   fire more often.
 - There is no email verification, password reset or account deletion yet.
+- On a single free web service (embedded mode) the first visit after 15 idle minutes is a
+  ~1 min cold start, and nothing is tracked while the service sleeps.
 - The closed beta has not started. Expect rough edges.
 
 ## Repository structure
@@ -329,7 +338,7 @@ src/app/                    Next.js routes: landing, auth, onboarding, dashboard
 src/domain/                 pure logic: Session Engine, rating rules, overlay config/state
 src/server/                 auth, db (schema), ingestion, sessions, tracking, realtime (SSE),
                             overlays, companion API, security, SF6 providers
-src/worker/                 persistent tracking worker
+src/worker/                 standalone tracking worker (wraps src/server/tracking/worker-runtime.ts)
 src/components/overlay/     OBS overlay renderer (CEF-safe CSS)
 packages/sf6-capcom-core/   pure Buckler parsers/normalizers + companion contract (shared)
 apps/companion-extension/   SF6 Session Companion (Chromium MV3)
@@ -348,6 +357,8 @@ docs/                       architecture, companion, security audit, research
   polling, recovery, limits, validation).
 - [docs/security-audit.md](docs/security-audit.md): pre-production security audit, accepted risks
   and production requirements.
+- [docs/deploy-render.md](docs/deploy-render.md): deploying on Render, embedded (free beta) vs
+  split (web + worker).
 - [docs/capcom-provider.md](docs/capcom-provider.md): Buckler data mapping and the server-side
   prototype.
 - [docs/research/2026-10-03-cfn-network-research.md](docs/research/2026-10-03-cfn-network-research.md):
