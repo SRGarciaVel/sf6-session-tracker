@@ -1,0 +1,186 @@
+# Instalar SF6 Session Companion (beta cerrada)
+
+Esta guía es para testers de la beta. No hace falta saber programar: solo descargar un archivo,
+descomprimirlo y hacer unos clics en el navegador. ¿Prefieres la versión corta? Mira
+[QUICKSTART.md](QUICKSTART.md).
+
+**Qué necesitas**
+
+- Un PC con **Google Chrome**, **Brave** o **Microsoft Edge** (otros navegadores, como Firefox o
+  Safari, no están soportados).
+- Tu cuenta de Capcom ID con acceso a **Buckler's Boot Camp**
+  (<https://www.streetfighter.com/6/buckler/>).
+- El archivo ZIP de la beta que te envió el organizador.
+
+**La beta usa este Session Tracker:** <https://sf6-session-tracker-web.onrender.com>
+
+La extensión ya viene configurada para esa dirección: no tienes que escribir ni cambiar ninguna
+URL.
+
+---
+
+## Qué hace el Companion con tus datos
+
+- Lee tus datos de Buckler **desde tu propio navegador**, con la sesión que tú abriste.
+- **No** envía tus cookies de Capcom.
+- **No** envía tu contraseña de Capcom (la extensión nunca la ve).
+- **No** usa el permiso `cookies` del navegador.
+- Al Session Tracker solo le envía lo necesario, ya normalizado: tu CFN ID, tu nombre de
+  luchador, tus personajes con su rango/LP/MR y tus partidas (ID de la repetición, hora, modo,
+  resultado, y nombre, personaje y rango del rival).
+
+Detalle técnico completo: [docs/companion.md](../companion.md).
+
+---
+
+## 1. Descargar y comprobar el archivo
+
+1. Descarga el ZIP que te enviaron. Su nombre debe ser parecido a:
+
+   ```
+   sf6-session-companion-v0.1.0-beta.zip
+   ```
+
+   El número (`0.1.0`) cambia con cada versión. Si el nombre es muy distinto, o el archivo no
+   termina en `.zip`, **no lo instales** y pregunta al organizador.
+
+2. _(Opcional, recomendado)_ Comprueba que el archivo es exactamente el original. El
+   organizador publica su **SHA-256**: un código de 64 letras y números. Calcula el del archivo
+   descargado y compáralo. Deben ser idénticos.
+   - **Windows** (PowerShell, en la carpeta de Descargas):
+     `Get-FileHash .\sf6-session-companion-v0.1.0-beta.zip -Algorithm SHA256`
+   - **macOS:** `shasum -a 256 sf6-session-companion-v0.1.0-beta.zip`
+   - **Linux:** `sha256sum sf6-session-companion-v0.1.0-beta.zip`
+
+   Mayúsculas y minúsculas no importan.
+
+## 2. Descomprimir en una carpeta permanente
+
+1. Descomprime el ZIP. En Windows: clic derecho → **Extraer todo…**
+2. Guarda la carpeta resultante en un sitio **donde vaya a quedarse**, por ejemplo
+   `Documentos\SF6 Session Companion`. **No la borres ni la muevas** después de instalar: el
+   navegador carga la extensión desde esa carpeta.
+3. Abre la carpeta y comprueba que dentro ves directamente el archivo **`manifest.json`**,
+   junto a `background.js`, `popup.html` y la carpeta `_locales`.
+
+> Si al abrir la carpeta ves **otra carpeta** dentro, entra en ella: la carpeta correcta es la
+> que contiene `manifest.json`.
+
+## 3. Instalar la extensión
+
+1. Abre la página de extensiones de tu navegador. Escribe esta dirección en la barra de
+   direcciones y pulsa Enter:
+
+   | Navegador | Dirección             |
+   | --------- | --------------------- |
+   | Chrome    | `chrome://extensions` |
+   | Brave     | `brave://extensions`  |
+   | Edge      | `edge://extensions`   |
+
+2. Activa el **Modo desarrollador** (_Developer mode_):
+   - **Chrome y Brave:** interruptor arriba a la derecha.
+   - **Edge:** interruptor en el panel de la izquierda (en una ventana estrecha puede estar
+     dentro del menú ☰).
+3. Pulsa **Cargar descomprimida** (_Load unpacked_). En Edge, **Cargar desempaquetada**.
+4. Selecciona **la carpeta que contiene `manifest.json`** (paso 2.3) y acepta.
+5. Aparece la tarjeta **SF6 Session Companion**, versión `0.1.0` o la que corresponda.
+6. **Fija la extensión** para tenerla a mano: pulsa el icono de la pieza de puzle 🧩, junto a la
+   barra de direcciones, y luego la chincheta 📌 al lado de _SF6 Session Companion_.
+
+> Es normal que el navegador avise de que tienes extensiones en «modo desarrollador» (Chrome
+> puede mostrarlo al arrancar). Es por cómo se instala la beta. Pulsa la opción para
+> **mantener** la extensión, no para desactivarla.
+
+## 4. Iniciar sesión en Buckler
+
+1. En **el mismo navegador**, abre <https://www.streetfighter.com/6/buckler/>.
+2. Inicia sesión **tú mismo**, con tu Capcom ID, como siempre. La extensión nunca inicia sesión
+   por ti ni ve tu contraseña.
+
+## 5. Crear tu cuenta en el Session Tracker
+
+1. Abre <https://sf6-session-tracker-web.onrender.com>.
+
+   > La primera visita del día puede tardar **hasta un minuto**: el servidor de la beta se
+   > «duerme» cuando nadie lo usa y tiene que despertar. Espera en la página de carga y no
+   > recargues sin parar.
+
+2. Pulsa **Crear cuenta** (o **Iniciar sesión** si ya tienes una).
+3. Si te lo pide, introduce tu **CFN User ID**: el número de tu perfil en Buckler.
+
+## 6. Vincular el Companion con tu cuenta
+
+1. En el dashboard del Session Tracker, busca el panel **SF6 Session Companion** y pulsa
+   **Conectar Companion**.
+2. Aparece un **código de vinculación**, con el formato `XXXX-XXXX`. Caduca en **10 minutos** y solo
+   sirve una vez. Si caduca, genera otro.
+3. Abre el Companion: pulsa su icono (el que fijaste en el paso 3.6).
+4. En **Tracker**, comprueba que está seleccionado:
+
+   ```
+   https://sf6-session-tracker-web.onrender.com
+   ```
+
+   Es la única opción de esta versión.
+
+5. Escribe el código en **Código de vinculación**. El nombre del dispositivo es opcional.
+6. Pulsa **Conectar**.
+
+## 7. Comprobar que todo funciona
+
+1. En el Companion debe aparecer:
+
+   ```
+   Tracker: Conectado
+   Buckler: Sesión iniciada
+   ```
+
+   Si Buckler dice **Inicia sesión en Buckler**, vuelve al paso 4. Si dice **Abre una pestaña de
+   Buckler's Boot Camp**, abre Buckler en una pestaña y déjala abierta.
+
+2. Pulsa **Probar conexión con Buckler**.
+3. Debe aparecer **Prueba Buckler: PASS**, junto con el número de personajes y de partidas
+   recientes. Si aparece **FAIL**, sigue la indicación que se muestra debajo. Si no se resuelve,
+   haz una captura **del popup** (nunca de tus cookies ni de la consola) y envíala al organizador.
+4. En el dashboard del Session Tracker deberías ver tu perfil.
+
+## 8. Jugar
+
+1. En el dashboard pulsa **Iniciar sesión de juego**.
+2. Juega normalmente. Mantén **abierto el navegador** donde está la extensión (no hace falta que
+   esté en primer plano). Cada partida nueva aparece en unos **30 segundos** después de que
+   Buckler la registre.
+3. Al terminar, pulsa **Finalizar sesión** en el dashboard.
+
+---
+
+## Cómo actualizar la beta
+
+Cuando el organizador publique una versión nueva:
+
+1. Descarga el **ZIP nuevo** y comprueba su nombre (y, si quieres, su SHA-256).
+2. Descomprímelo y **reemplaza el contenido de la carpeta anterior**: misma carpeta, misma
+   ubicación. Borra los archivos viejos de dentro y copia los nuevos, de modo que
+   `manifest.json` siga directamente en esa carpeta.
+3. Abre `chrome://extensions` (o `brave://extensions` / `edge://extensions`).
+4. En la tarjeta de **SF6 Session Companion**, pulsa **Recargar** (el icono ⟳).
+5. Comprueba que se muestra la versión nueva y abre el Companion: debería seguir **Conectado**.
+
+**¿Se conserva la vinculación?**
+
+- Si **reemplazas la carpeta en la misma ruta y pulsas Recargar**, lo normal es que la extensión
+  conserve su identificador y sus datos guardados (incluida la vinculación). Aun así, el
+  navegador **no garantiza** esto para extensiones descomprimidas.
+- Si **eliminas** la extensión y la vuelves a cargar, o la cargas **desde otra carpeta**, el
+  navegador la trata como una extensión nueva: se pierden sus datos y tendrás que **vincularla
+  otra vez**.
+
+Si pierdes la vinculación, repite el paso 6 con un código nuevo. No pierdes nada importante: tus
+sesiones y partidas están guardadas en el Session Tracker, no en la extensión. En el dashboard
+puedes **Revocar** el dispositivo antiguo.
+
+## Desinstalar
+
+1. En la página de extensiones, pulsa **Quitar** en _SF6 Session Companion_.
+2. Borra la carpeta.
+3. En el dashboard del Session Tracker, revoca el dispositivo.
