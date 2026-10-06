@@ -1,4 +1,4 @@
-import { getAuth } from "@/server/auth/auth";
+import { getVerifiedSession } from "@/server/auth/verified-session";
 import { buildDashboardLiveState } from "@/server/dashboard/state";
 import { getDb } from "@/server/db/client";
 import { findPlayerByUserId } from "@/server/players/service";
@@ -14,7 +14,7 @@ const REFRESH_MS = 30_000;
 
 /** Authenticated dashboard stream: session stats + tracker health + overlay connections. */
 export async function GET(request: Request) {
-  const session = await getAuth().api.getSession({ headers: request.headers });
+  const session = await getVerifiedSession(request.headers);
   if (!session) return new Response("unauthorized", { status: 401 });
 
   const db = getDb();

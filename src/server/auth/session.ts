@@ -8,7 +8,7 @@ import { cache } from "react";
 import { getDb } from "@/server/db/client";
 import type { Sf6PlayerRow } from "@/server/db/schema";
 import { findPlayerByUserId } from "@/server/players/service";
-import { getAuth } from "./auth";
+import { getVerifiedSession } from "./verified-session";
 
 export interface CurrentUser {
   id: string;
@@ -20,7 +20,8 @@ export interface CurrentUser {
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   // Read request headers first: this marks the route dynamic before any env/DB access.
   const requestHeaders = await headers();
-  const session = await getAuth().api.getSession({ headers: requestHeaders });
+  // Verified accounts only (unverified legacy sessions are ignored, see verified-session.ts).
+  const session = await getVerifiedSession(requestHeaders);
   if (!session) return null;
   return {
     id: session.user.id,

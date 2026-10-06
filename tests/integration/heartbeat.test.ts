@@ -50,8 +50,13 @@ describe.skipIf(!TEST_DB)("session heartbeat + tracking runtime (integration)", 
   /** Real Better Auth account + session; returns only the cookie header to replay. */
   async function signedInUser() {
     const email = `${randomUUID()}@test.local`;
-    const res = await getAuth().api.signUpEmail({
+    await getAuth().api.signUpEmail({
       body: { email, password: "heartbeat-test-pw-123", name: "HB" },
+    });
+    // Phase 4.6: no session before verification (the link is covered in auth-trust tests).
+    await db.update(authUser).set({ emailVerified: true }).where(eq(authUser.email, email));
+    const res = await getAuth().api.signInEmail({
+      body: { email, password: "heartbeat-test-pw-123" },
       asResponse: true,
     });
     const cookie = res.headers

@@ -1,0 +1,24 @@
+{
+  "common": {
+    "brand": "SST — Session Stats Tracker",
+    "fallbackLink": "If the button doesn't work, copy and paste this link into your browser:",
+    "expires": "This link expires in {minutes} minutes and can only be used for this account.",
+    "automated": "This is an automated message from SST. Replies to this address aren't monitored."
+  },
+  "verify": {
+    "subject": "Verify your email for SST",
+    "preheader": "Confirm your email to finish creating your SST account.",
+    "heading": "Verify your email",
+    "body": "Confirm that this email address belongs to you to finish creating your SST account.",
+    "cta": "Verify email",
+    "ignore": "If you didn't create an SST account, you can ignore this email. No account will be activated without this confirmation."
+  },
+  "reset": {
+    "subject": "Reset your SST password",
+    "preheader": "Choose a new password for your SST account.",
+    "heading": "Reset your password",
+    "body": "We received a request to reset the password of the SST account linked to this email.",
+    "cta": "Choose a new password",
+    "ignore": "If you didn't ask for this, ignore this email: your password stays the same. After a reset, every signed-in device is signed out."
+  }
+}

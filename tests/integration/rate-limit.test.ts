@@ -61,6 +61,7 @@ describe.skipIf(!TEST_DB)("distributed rate limiting (integration)", () => {
   it("Better Auth sign-in brute force is limited through the shared database store", async () => {
     const appUrl = getEnv().APP_URL;
     const email = `${randomUUID()}@test.local`;
+    const ip = `198.18.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
     const attempt = () =>
       getAuth().handler(
         new Request(`${appUrl}/api/auth/sign-in/email`, {
@@ -68,15 +69,16 @@ describe.skipIf(!TEST_DB)("distributed rate limiting (integration)", () => {
           headers: {
             "content-type": "application/json",
             origin: appUrl,
-            "x-forwarded-for": "203.0.113.7",
+            // Fresh IP per run: buckets persist in Postgres across runs.
+            "x-forwarded-for": ip,
           },
           body: JSON.stringify({ email, password: "wrong-password-123" }),
         }),
       );
     const statuses: number[] = [];
-    for (let i = 0; i < 5; i++) statuses.push((await attempt()).status);
-    expect(statuses.slice(0, 3).every((s) => s !== 429)).toBe(true);
-    expect(statuses.slice(3)).toEqual([429, 429]); // default sign-in rule: 3 per 10 s per IP
+    for (let i = 0; i < 12; i++) statuses.push((await attempt()).status);
+    expect(statuses.slice(0, 10).every((s) => s !== 429)).toBe(true);
+    expect(statuses.slice(10)).toEqual([429, 429]); // Phase 4.6 sign-in rule: 10 per 5 min per IP
     const rows = (await db.execute(
       sql`select count(*)::int as n from auth_rate_limit`,
     )) as unknown as Array<{

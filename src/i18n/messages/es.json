@@ -30,7 +30,10 @@
     "overlayBuilder": "Configurar overlay",
     "sessionRecap": "Resumen de sesión",
     "notFound": "No encontrado",
-    "helpCompanion": "Instalar el Companion"
+    "helpCompanion": "Instalar el Companion",
+    "verifyEmail": "Verifica tu correo",
+    "forgotPassword": "Contraseña olvidada",
+    "resetPassword": "Restablecer contraseña"
   },
   "Nav": {
     "dashboard": "Panel",
@@ -71,11 +74,53 @@
     "createAnAccount": "Crea una cuenta",
     "errors": {
       "invalidCredentials": "Correo o contraseña incorrectos.",
-      "userExists": "Ya existe una cuenta con este correo.",
       "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
       "invalidEmail": "Introduce un correo electrónico válido.",
       "tooManyRequests": "Demasiados intentos. Espera un minuto y vuelve a intentarlo.",
-      "generic": "Algo salió mal. Inténtalo de nuevo."
+      "generic": "Algo salió mal. Inténtalo de nuevo.",
+      "emailNotVerified": "Tu correo aún no está verificado. Revisa tu bandeja de entrada o solicita un nuevo enlace.",
+      "passwordTooLong": "La contraseña puede tener como máximo 128 caracteres."
+    },
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "verify": {
+      "pendingTitle": "Revisa tu correo",
+      "pendingBodyMasked": "Si <email></email> puede usarse para crear una cuenta, le hemos enviado un enlace de verificación. Ábrelo para activar tu cuenta de SST.",
+      "pendingBody": "Si esa dirección puede usarse para crear una cuenta, le hemos enviado un enlace de verificación. Ábrelo para activar tu cuenta de SST.",
+      "pendingExpires": "El enlace es válido durante 60 minutos.",
+      "pendingSpam": "¿No lo encuentras? Revisa la carpeta de spam o promociones.",
+      "notReceived": "¿No te ha llegado el correo?",
+      "resend": "Reenviar correo",
+      "resendIn": "Podrás reenviar en {seconds} s",
+      "resent": "Si hay una cuenta pendiente de verificar con esa dirección, le llegará un enlace nuevo.",
+      "backToLogin": "Volver a iniciar sesión",
+      "successTitle": "Correo verificado",
+      "successBody": "Tu correo está confirmado. Inicia sesión para seguir configurando SST.",
+      "successCta": "Iniciar sesión",
+      "expiredTitle": "Este enlace ha caducado",
+      "expiredBody": "Los enlaces de verificación son válidos durante 60 minutos. Solicita uno nuevo aquí abajo.",
+      "invalidTitle": "Este enlace no es válido",
+      "invalidBody": "El enlace está incompleto o no se puede usar. Solicita un nuevo correo de verificación aquí abajo."
+    },
+    "forgot": {
+      "title": "Restablece tu contraseña",
+      "subtitle": "Escribe el correo de tu cuenta. Te enviaremos un enlace para elegir una contraseña nueva.",
+      "submit": "Enviar enlace",
+      "generic": "Si existe una cuenta con ese correo, te enviaremos instrucciones para restablecer la contraseña.",
+      "checkSpam": "El enlace es válido durante 60 minutos. Revisa la carpeta de spam si no lo ves.",
+      "backToLogin": "Volver a iniciar sesión"
+    },
+    "reset": {
+      "title": "Elige una contraseña nueva",
+      "subtitle": "Tras el cambio se cerrará la sesión en todos tus dispositivos.",
+      "newPassword": "Contraseña nueva",
+      "confirmPassword": "Repite la contraseña nueva",
+      "hint": "Entre 8 y 128 caracteres. Cuanto más larga, mejor; una frase funciona bien.",
+      "mismatch": "Las contraseñas no coinciden.",
+      "submit": "Cambiar contraseña",
+      "successBody": "Tu contraseña se ha cambiado y se han cerrado todas las sesiones. Inicia sesión con la contraseña nueva.",
+      "successCta": "Iniciar sesión",
+      "invalidBody": "Este enlace de restablecimiento no es válido, ha caducado o ya se usó.",
+      "requestNew": "Solicitar un enlace nuevo"
     }
   },
   "Onboarding": {
