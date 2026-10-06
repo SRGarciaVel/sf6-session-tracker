@@ -9,7 +9,8 @@
  *
  * Values mirror today's behaviour; they are NOT the final commercial Free policy (decided later
  * from beta usage data). Creator value arrives as NEW entitlements (Phase 4:
- * overlays.advancedCustomization), never by lowering Free.
+ * overlays.advancedCustomization; Phase 4.5: premiumThemes, creatorPresets), never by lowering
+ * Free.
  *
  * Downgrade rule (all phases): losing a plan never deletes data. Over-limit resources stay
  * readable/usable, and only the creation of new ones is refused.
@@ -43,6 +44,14 @@ export interface Entitlements {
      * options only; every pre-Phase-4 overlay option stays available to all plans.
      */
     advancedCustomization: boolean;
+    /**
+     * Creator themes (Phase 4.5, domain/overlay/themes.ts: rank-card, broadcast, prestige). NEW
+     * themes only; minimal/competitive/fighter stay Free. Not entitled ⇒ the theme's Free
+     * fallback renders and the stored choice is kept.
+     */
+    premiumThemes: boolean;
+    /** Saved, reusable appearance presets (Phase 4.5, docs/creator-presets.md). */
+    creatorPresets: boolean;
   };
   history: {
     /**
@@ -69,12 +78,17 @@ function deepFreeze<T extends object>(value: T): DeepReadonly<T> {
 export const PLAN_ENTITLEMENTS: DeepReadonly<Record<PlanId, Entitlements>> = deepFreeze({
   // Free keeps everything it had; limits are today's behaviour, not a final commercial policy.
   free: {
-    overlays: { max: 10, advancedCustomization: false },
+    overlays: {
+      max: 10,
+      advancedCustomization: false,
+      premiumThemes: false,
+      creatorPresets: false,
+    },
     history: { retentionDays: null },
   },
-  // Phase 4: the first (and only) difference is advanced overlay customization.
+  // Phase 4/4.5: Creator differences are NEW overlay capabilities only (max stays the same).
   creator_beta: {
-    overlays: { max: 10, advancedCustomization: true },
+    overlays: { max: 10, advancedCustomization: true, premiumThemes: true, creatorPresets: true },
     history: { retentionDays: null },
   },
 });

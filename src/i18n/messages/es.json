@@ -132,7 +132,12 @@
     "companionDeviceNotFound": "Ese dispositivo no existe o ya fue revocado.",
     "companionNoData": "No hemos recibido datos recientes del Companion. Ábrelo en tu navegador, comprueba que Buckler tiene la sesión iniciada y pulsa «Sincronizar ahora».",
     "companionNoDataCfn": "Aún no hemos recibido datos de ese CFN desde el Companion. En el Companion, escribe tu CFN ID, pulsa «Guardar» y vuelve a buscar en unos segundos.",
-    "creatorKeyInvalid": "Esta Creator Key no es válida o no está disponible."
+    "creatorKeyInvalid": "Esta Creator Key no es válida o no está disponible.",
+    "presetNotFound": "Preset no encontrado.",
+    "presetNameInvalid": "El nombre del preset debe tener entre 1 y 40 caracteres.",
+    "presetsNotEntitled": "Los presets de Creator forman parte de Creator Beta.",
+    "presetLimit": "Puedes guardar hasta {max} presets.",
+    "presetTooLarge": "Este preset es demasiado grande para guardarlo."
   },
   "Dashboard": {
     "eyebrow": "Street Fighter 6",
@@ -439,6 +444,18 @@
       "fighter": {
         "name": "Street",
         "description": "Paneles en diagonal, energía cian/magenta y textura de tramado."
+      },
+      "rank-card": {
+        "name": "Rank Card",
+        "description": "Tu rango como protagonista: emblema, MR/LP y variación, con la sesión debajo."
+      },
+      "broadcast": {
+        "name": "Broadcast",
+        "description": "Rótulo inferior plano estilo TV, con pestaña de título y estadísticas etiquetadas."
+      },
+      "prestige": {
+        "name": "Prestige",
+        "description": "Enmarcado, simétrico y ornamental. Su color sigue a tu rango."
       }
     },
     "presets": {
@@ -480,6 +497,78 @@
       },
       "notInTheme": "Este tema no muestra este elemento.",
       "reset": "Restablecer personalización Creator"
+    },
+    "creatorThemesNote": "Rank Card, Broadcast y Prestige son temas de Creator Beta (solo con invitación).",
+    "themeSavedInactive": "Tu tema Creator «{theme}» está guardado. Renueva el acceso Creator para volver a usarlo; mientras tanto, la vista previa y OBS muestran {fallback}.",
+    "canvasLimited": "{theme} está diseñado para: {canvases}.",
+    "sampleRank": "Rango de ejemplo",
+    "zoomFit": "Ajustar",
+    "zoomActual": "100 %",
+    "variants": {
+      "title": "Variantes del tema",
+      "savedButInactive": "Tus variantes del tema están guardadas. Renueva el acceso Creator para volver a usarlas.",
+      "density": "Densidad",
+      "densityValues": {
+        "compact": "Compacta",
+        "normal": "Normal"
+      },
+      "badge": "Emblema de rango",
+      "badgeValues": {
+        "normal": "Normal",
+        "large": "Grande"
+      },
+      "glow": "Brillo",
+      "glowValues": {
+        "off": "No",
+        "subtle": "Sutil",
+        "normal": "Normal",
+        "strong": "Intenso"
+      },
+      "background": "Fondo",
+      "backgroundValues": {
+        "translucent": "Translúcido",
+        "solid": "Sólido"
+      },
+      "separators": "Separadores",
+      "separatorsValues": {
+        "subtle": "Sutiles",
+        "strong": "Marcados"
+      },
+      "accent": "Acento",
+      "accentValues": {
+        "line": "Línea",
+        "block": "Bloque"
+      },
+      "frame": "Marco",
+      "frameValues": {
+        "subtle": "Sutil",
+        "normal": "Normal"
+      },
+      "animatedAccent": "Acento animado (respeta movimiento reducido)"
+    },
+    "presetsCreator": {
+      "title": "Presets de Creator",
+      "summary": "Guarda el aspecto de este overlay (tema, lienzo, colores, fuentes, diseño, estadísticas visibles y opciones Creator) y aplícalo a cualquiera de tus overlays. Nunca incluye títulos, idioma ni datos.",
+      "savedButInactive": "Tus presets de Creator están guardados. Renueva el acceso Creator para volver a usarlos.",
+      "namePlaceholder": "Nombre del preset",
+      "saveCurrent": "Guardar aspecto actual",
+      "empty": "Aún no tienes presets.",
+      "broken": "No se puede aplicar (no válido)",
+      "apply": "Aplicar",
+      "applyConfirm": "¿Aplicar este aspecto al overlay y guardarlo?",
+      "applyConfirmDirty": "Aplicar guarda el preset en este overlay y descarta tus cambios sin guardar.",
+      "applied": "Preset aplicado y guardado. OBS se ha actualizado.",
+      "update": "Actualizar con el actual",
+      "updated": "Preset actualizado con el aspecto actual.",
+      "rename": "Renombrar",
+      "renamed": "Preset renombrado.",
+      "duplicate": "Duplicar",
+      "duplicated": "Preset duplicado.",
+      "copyName": "{name} (copia)",
+      "delete": "Eliminar",
+      "deleteConfirm": "¿Eliminar este preset definitivamente?",
+      "deleted": "Preset eliminado.",
+      "created": "Preset guardado."
     }
   },
   "NotFound": {

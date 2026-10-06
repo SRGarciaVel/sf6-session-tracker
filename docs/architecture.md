@@ -89,6 +89,8 @@ auth_user ─1:1─ sf6_player ─1:N─ player_character_rating   (current snap
   - W/L, win rate, streaks and deltas are **derived, not stored**.
 - **overlay**: `public_token` and `config`. The config is jsonb; `ratingCharacterKey` set to
   `null` means "active character".
+- **creator_overlay_preset** (migration `0010`, [creator-presets.md](creator-presets.md)): saved
+  overlay appearance per account (`user_id` FK ON DELETE CASCADE, name and config-size CHECKs).
 - **mock_cfn_player / mock_cfn_character / mock_cfn_match**: the fake CFN, used only by the mock
   provider.
 
@@ -195,8 +197,24 @@ close OBS mid-session and come back to correct stats. Each poll fetches recent m
   Every renderer uses the **effective** config, resolved with the overlay **owner's**
   entitlements on each payload or push. The stored config is never mutated by plan changes, and
   non-entitled owners render exactly as before.
-- **Custom CSS is deferred.** See §10 for how to add it safely. Creator customization
-  deliberately contains none.
+- **Themes** live in one typed registry (`src/domain/overlay/themes.ts`): id, tier
+  (`free`/`creator`), supported canvases, a deterministic **Free fallback** and `rankAware`.
+  Free themes (`minimal`, `competitive`, `fighter`) support every canvas and stay Free. Creator
+  themes (Phase 4.5: `rank-card`, `broadcast`, `prestige`) render only when the owner has
+  `overlays.premiumThemes`; otherwise `getEffectiveOverlayConfig()` swaps in the registered
+  fallback and drops the theme variants. That function is the **single stored → effective path**
+  used by the builder preview, the dashboard, the OBS page, `/state` and every SSE push.
+- **Rank-aware styling** reads only what SST already stores (the rank label and the MR/LP system
+  per character). `src/domain/sf6/rank-prestige.ts` maps it to a generic `{ family, level, color }`.
+  Themes consume the level and the fixed palette color through classes and `--ov-tier`, and the
+  emblem is SST-native CSS (no official artwork). Unknown ranks never invent a tier.
+- **Fit-to-box** shrinks the root font-size until the content fits. A convergence guard stops it
+  from ping-ponging at very small canvases, where borders and glyphs snap to whole pixels (after
+  a few adjustments in one frame, only shrinking is allowed).
+- **Creator presets** (`creator_overlay_preset`, [creator-presets.md](creator-presets.md)) store
+  appearance only and are applied through the normal save rules.
+- **Custom CSS is deferred.** See §10 for how to add it safely. Creator customization, Creator
+  themes and presets deliberately contain none.
 
 ## 9. Security
 

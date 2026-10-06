@@ -49,7 +49,7 @@ describe.skipIf(!TEST_DB)("plans & entitlements (integration)", () => {
     expect(await getPlanSummary(db, userId)).toEqual({ plan: "free", activeUntil: null });
   });
 
-  it("explicit free and creator_beta rows; only advancedCustomization differs (Phase 4)", async () => {
+  it("explicit free and creator_beta rows; only Creator overlay capabilities differ (Phase 4/4.5)", async () => {
     const free = await newUser();
     const beta = await newUser();
     await db.insert(accountPlan).values([
@@ -64,10 +64,14 @@ describe.skipIf(!TEST_DB)("plans & entitlements (integration)", () => {
     expect((await getEntitlements(db, beta)).overlays).toEqual({
       max: 10,
       advancedCustomization: true,
+      premiumThemes: true,
+      creatorPresets: true,
     });
     expect((await getEntitlements(db, free)).overlays).toEqual({
       max: 10,
       advancedCustomization: false,
+      premiumThemes: false,
+      creatorPresets: false,
     });
   });
 

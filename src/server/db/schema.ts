@@ -285,6 +285,32 @@ export const overlay = pgTable(
   (t) => [index("overlay_player_idx").on(t.playerId)],
 );
 
+/**
+ * Creator presets (Phase 4.5, docs/creator-presets.md): saved overlay APPEARANCE per account
+ * (domain/overlay/presets.ts). Kept on downgrade; usable only with overlays.creatorPresets.
+ */
+export const creatorOverlayPreset = pgTable(
+  "creator_overlay_preset",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    config: jsonb("config").notNull(),
+    createdAt: createdAt(),
+    updatedAt: tz("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("creator_overlay_preset_user_idx").on(t.userId, t.createdAt),
+    check("creator_overlay_preset_name_ck", sql`length(${t.name}) between 1 and 40`),
+    check(
+      "creator_overlay_preset_config_ck",
+      sql`jsonb_typeof(${t.config}) = 'object' and octet_length(${t.config}::text) <= 8192`,
+    ),
+  ],
+);
+
 /** One row per open SSE connection; heartbeated. Used for "Overlay connections: N". */
 export const overlayConnection = pgTable(
   "overlay_connection",

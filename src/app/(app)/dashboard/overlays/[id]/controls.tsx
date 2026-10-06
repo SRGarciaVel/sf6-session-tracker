@@ -20,20 +20,21 @@ export function Segmented<T extends string>({
   onChange,
 }: {
   value: T;
-  options: Array<{ value: T; label: string }>;
+  options: Array<{ value: T; label: string; disabled?: boolean }>;
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="inline-flex border-b border-line-strong" role="radiogroup">
+    <div className="inline-flex flex-wrap border-b border-line-strong" role="radiogroup">
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
           role="radio"
           aria-checked={value === o.value}
+          disabled={o.disabled}
           onClick={() => onChange(o.value)}
           className={cx(
-            "relative px-3 py-1.5 font-display text-sm font-semibold tracking-[0.05em] uppercase transition-colors",
+            "relative px-3 py-1.5 font-display text-sm font-semibold tracking-[0.05em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-40",
             "after:absolute after:inset-x-1 after:-bottom-px after:h-0.5 after:bg-cyan after:transition-transform after:duration-200",
             value === o.value
               ? "bg-cyan/8 text-text after:scale-x-100 after:shadow-[0_0_8px_var(--color-cyan)]"

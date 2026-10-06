@@ -1,11 +1,16 @@
-# Creator Beta — advanced overlay customization
+# Creator Beta — overlays
 
-RFC 0001 **Phase 4** ([§11.3](rfc/0001-sst-open-core-multigame.md#113-first-creator-value-advanced-overlay-customization-direction-not-a-contract)):
-the first capability exclusive to Creator Beta.
+- RFC 0001 **Phase 4** ([§11.3](rfc/0001-sst-open-core-multigame.md#113-first-creator-value-advanced-overlay-customization-direction-not-a-contract)):
+  advanced overlay customization.
+- **Phase 4.5 — Creator Overlay Suite:**
+  - premium themes;
+  - rank-aware styling;
+  - theme variants;
+  - reusable presets ([creator-presets.md](creator-presets.md)).
 
 **No existing Free overlay capability was moved behind Creator Beta.**
 
-## What stays Free (every option that existed before Phase 4)
+## What stays Free (every option that existed before Phase 4 and 4.5)
 
 | Area                     | Options                                                                                                       |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------- |
@@ -18,6 +23,9 @@ the first capability exclusive to Creator Beta.
 | Frame                    | border on/off, width 0–8, radius 0–40                                                                         |
 | Layout                   | scale 0.5–2×, spacing (tight/normal/relaxed), alignment, animations                                           |
 | Limits                   | up to 10 overlays (unchanged for every plan)                                                                  |
+
+Phase 4.5 changes none of these. The three Free themes keep every canvas, and the builder only
+adds a visual picker on top of them.
 
 ## Creator options (new; `config.creator`)
 
@@ -42,6 +50,94 @@ are visual elements. The schema is strict:
 There's no custom CSS, no `style`, no URLs, no fonts by URL and no HTML. Values reach the
 renderer only as validated CSS custom properties and `.ov-c-*` classes (CEF/OBS-safe).
 
+## Creator themes (Phase 4.5; `overlays.premiumThemes`)
+
+The registry lives in `src/domain/overlay/themes.ts` (typed, no plugin framework). Each entry
+declares:
+
+- id and tier;
+- supported canvases;
+- a deterministic Free fallback;
+- `rankAware`.
+
+Labels, descriptions and previews live in the ES/EN catalogs and the builder thumbnails.
+Variant schemas are in `variants.ts`, and renderers in `components/overlay/creator-themes.tsx`.
+
+| Theme       | Canvases                    | Free fallback | Rank-aware | Composition                                                                                                                                           |
+| ----------- | --------------------------- | ------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rank-card` | standard, detailed          | `competitive` | yes        | Rank-led card. Emblem column (tier color band and edge) next to a large MR/LP with delta, then a ruled stats row. Hierarchy: rank → rating → session. |
+| `broadcast` | compact, standard, detailed | `minimal`     | no         | Flat TV lower third. Title tab (line or block accent) followed by labelled segments split by rules. Square edges, no skew or glow.                    |
+| `prestige`  | standard, detailed          | `fighter`     | yes        | Symmetric, ornamental. Double frame with corner diamonds and a top rule, centered emblem and rank name, record and win rate on the flanks.            |
+
+The three differ in composition, hierarchy, frame, spacing, density, typography defaults and
+decoration. They aren't recolors of the Free themes. A Free `clean` theme was **not** added: it
+would have inflated scope without a clear gap in the Free set.
+
+**Canvases.** The builder only offers the canvases a theme declares. If a Creator theme is stored
+on another canvas (crafted request, or a Free canvas edit after a downgrade), the effective config
+uses the theme's first supported canvas. The result is always deterministic.
+
+### Theme variants (`config.variants`, per theme, kept when switching themes)
+
+| Theme       | Variant          | Values                   | Effect                                    |
+| ----------- | ---------------- | ------------------------ | ----------------------------------------- |
+| `rank-card` | `density`        | compact · normal         | padding and gaps                          |
+|             | `badge`          | normal · large           | emblem size                               |
+|             | `glow`           | off · subtle · strong    | emblem drop-shadow in the tier color      |
+|             | `background`     | translucent · solid      | user background with or without opacity   |
+| `broadcast` | `separators`     | subtle · strong          | segment rules                             |
+|             | `accent`         | line · block             | title tab style                           |
+|             | `density`        | compact · normal         | segment padding                           |
+| `prestige`  | `glow`           | subtle · normal · strong | emblem and rank glow                      |
+|             | `frame`          | subtle · normal          | frame color (neutral or tier)             |
+|             | `animatedAccent` | boolean                  | CSS sheen on the top rule (see OBS below) |
+
+Variants use enums and booleans only: `z.strictObject`, unknown keys and values rejected. A
+broken stored entry falls back to that theme's defaults. They reach the renderer only as fixed
+`ov-rc-*`, `ov-bc-*` and `ov-pr-*` classes.
+
+### Rank-aware styling
+
+- **Input:** only data SST already stores, i.e. the rank label Capcom returns for the shown
+  character (e.g. `Diamond 1`, `Master`) and the system (`mr` exists only at Master). Ratings
+  stay per character, and the rank is that character's rank.
+- `src/domain/sf6/rank-prestige.ts` (the game module) maps it to a generic
+  `{ family, level 0–6, color, division }`. The hierarchy follows SF6:
+  - Rookie/Iron/Bronze → 1;
+  - Silver/Gold → 2;
+  - Platinum → 3;
+  - Diamond → 4;
+  - Master → 5;
+  - High/Grand/Ultimate Master → 6, only if the label says so.
+- Unknown labels never invent a tier: they fall back to the system, else `unranked`.
+- The generic theme layer only sees `level` and a fixed `#rrggbb` color (`--ov-tier`, from a
+  constant table), never SF6 strings. Nothing from Capcom or the user becomes CSS (tested with
+  forged labels).
+- **Privacy of the rank:** with the Free `rank` field off, the emblem is a neutral accent gem.
+  Color and tier reveal nothing.
+- **Emblem:** SST-native CSS. A faceted hexagonal gem shows the division. Pips mark lower tiers,
+  a ring marks Master, and wings mark Master extensions.
+
+### Visual references policy
+
+The LoL/TFT overlays, LoL rank cards and the SF6 rank-pyramid images shared for this phase are
+**inspiration only** (hierarchy, density, how prestige is signalled).
+
+- No layout, artwork, icon, emblem, font or color set was copied, traced, scraped or downloaded.
+- SST ships **no official Capcom or Riot assets**.
+- Rank names appear only as the data Capcom returns for the player, like MR/LP.
+
+### OBS / CEF safety
+
+- Hand-written CSS: no Tailwind, `oklch()`, `color-mix()`, container queries or `:has()`.
+- No remote fonts or images, WebGL or JS animation loops.
+- The Prestige sheen:
+  - is one CSS `transform` keyframe on a pseudo-element, optional via `animatedAccent`;
+  - is off when overlay animations are off, and with `prefers-reduced-motion`.
+- Fit-to-box now has a convergence guard. At very small Browser Sources (≈ under 280 px wide),
+  pixel-snapped borders made Prestige ping-pong and crash; a regression check covers 140×32 to
+  1920×1080 for all six themes.
+
 ## Stored vs effective config
 
 ```
@@ -52,6 +148,9 @@ effective config  ── dashboard preview, overlay builder preview, OBS page, /
 ```
 
 - **Entitled** (`overlays.advancedCustomization`): the `creator` block applies.
+- **Creator theme without `overlays.premiumThemes`:** the registered Free fallback renders, with no
+  variants and nothing else changed. The renderer test proves the markup is **identical** to
+  that Free theme with the same config. The stored theme and variants are kept.
 - **Not entitled:** the block is ignored and the theme's own look renders. A test proves this
   render is **identical** to the same theme without customization, for all three themes; the OBS
   screenshots are byte-identical. The stored block is kept for when access returns.
@@ -66,6 +165,11 @@ effective config  ── dashboard preview, overlay builder preview, OBS page, /
     stored block is kept untouched.
   - So a Free account can edit language, theme or title after a downgrade **without losing** its
     Creator style, and a crafted request can't add or change Creator values.
+  - **Themes (4.5):** without `premiumThemes`, a Creator theme in the request is accepted only if
+    it is **already the stored theme** (the editor sending back what it loaded). A never-stored
+    one, or a different Creator theme, keeps the stored theme. Variants keep their stored values.
+    An explicit switch to a Free theme is a Free choice and is saved. Entitled saves normalize
+    the canvas to one the theme supports.
   - The editor's locked controls are only a convenience.
 - **Public render** (`resolveEffectiveOverlayConfig`): `overlay.player_id → sf6_player.user_id →
 getEntitlements(owner)`.
@@ -87,6 +191,17 @@ getEntitlements(owner)`.
 
 "Reset Creator customization" (entitled only) deletes the block on purpose.
 
+**Phase 4.5 lifecycle** (integration-tested and verified in the browser and OBS):
+
+1. A Creator saves `rank-card` with variants; OBS renders it.
+2. Expiry: OBS renders `competitive` on the next push and the DB is untouched.
+3. Free edits the title and saves: the stored `rank-card` and variants are kept.
+4. Renewal: `rank-card` and its variants return with the new title.
+
+A crafted Free save with a never-stored `prestige` doesn't install it. The builder marks the stored
+Creator theme with "Your Creator theme “…” is saved. Renew Creator access to use it again — until
+then the preview and OBS show {fallback}."
+
 ## Threat model
 
 | Threat                             | Mitigation                                                                                                                      |
@@ -99,37 +214,71 @@ getEntitlements(owner)`.
 | Cross-user editing                 | unchanged ownership check (`getOwnedOverlay`, IDOR tests)                                                                       |
 | Downgrade data loss                | stored config never mutated by plan changes; Free saves keep the block                                                          |
 | Stale entitlements                 | no cross-request cache; at most one SSE push or ~5 min                                                                          |
+| Free posting a premium theme       | save merge keeps the stored theme unless it already was that theme; effective config falls back; tested                         |
+| Fallback bypass                    | one function (`getEffectiveOverlayConfig`) for preview, dashboard, OBS, `/state`, SSE; renderers never see a non-entitled theme |
+| Malformed / arbitrary variants     | strict per-theme enums; unknown keys rejected; stored junk → theme defaults; tested                                             |
+| Forged rank style input            | rank → fixed palette table; labels rendered as escaped text only; tested with markup/CSS payloads                               |
+| Preset IDOR / Free apply / expiry  | see [creator-presets.md](creator-presets.md); all integration-tested                                                            |
+| Cross-user cache                   | shared plan definitions are deep-frozen; payloads built per request for the overlay's owner                                     |
 
 ## Open-core boundary
 
-| Core (public, MIT)                                           | Creator module candidate                                         |
-| ------------------------------------------------------------ | ---------------------------------------------------------------- |
-| Overlay model, the 3 themes, renderer, base validation       | `domain/overlay/creator.ts` (schema, effective rule, save merge) |
-| The optional `creator` slot in the config schema             | `components/overlay/creator-style.ts` + the `.ov-c-*` CSS block  |
-| `getEffectiveOverlayConfig()` contract and the Free fallback | `CreatorCustomizationSection.tsx` (builder UI)                   |
-| Entitlement resolver and `overlays.advancedCustomization`    | future premium presets and themes                                |
+| Core (public, MIT)                                                    | Creator module candidate                                                           |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Overlay model, Free themes, renderer, fit-to-box, base validation     | `creator.ts` (schema, effective rule, save merge), `variants.ts`, `presets.ts`     |
+| `creator`/`variants` slots and the theme registry contract (fallback) | `creator-themes.tsx` + Creator CSS blocks, `creator-style.ts`                      |
+| `getEffectiveOverlayConfig()` contract and the Free fallback          | builder sections: Creator customization, variants, presets; theme picker badges    |
+| Entitlement resolver and the `overlays.*` keys                        | `server/overlays/presets.ts` + `creator_overlay_preset` (table could stay in core) |
+| `domain/sf6/rank-prestige.ts` (game data mapping)                     | —                                                                                  |
 
-**The split is real but not worth doing yet.** The Creator code is ~4 small files behind 3 seams:
+**Reassessment (Phase 4.5): a private SST Creator repo is still not justified yet, but it's closer.**
 
-- the config slot;
-- the effective-config function;
-- the builder section.
+- Phase 4.5 adds the first assets with design value: three themes and presets. But the themes
+  are ~430 lines of CSS and ~330 of TSX behind the same seams (registry entry, effective
+  function, builder sections).
+- The real moat is the hosted service and iteration speed, not secrecy of CSS that ships to every
+  OBS browser anyway.
+- A private repo now would add a build/CI split, version skew and a harder self-host story
+  for little protection.
 
-Moving it to a private package now would add build and CI cost for code whose value is UX polish,
-not secrecy. **Recommendation:** create the private `sst-creator` module when the first asset with
-real commercial value that should not be public exists, such as a premium theme catalog or
-designed presets. At that point, move:
+**Trigger to revisit:** when there is a **catalog** (≥ 6–8 Creator themes or designed preset
+packs) or anything with a real per-asset production cost (commissioned art, licensed fonts).
+At that point:
 
-- `creator.ts`, `creator-style.ts` and the `.ov-c-*` CSS;
-- `CreatorCustomizationSection.tsx`;
-- the new premium assets.
+- move `creator-themes.tsx` and the Creator CSS blocks;
+- move the variants and the builder sections;
+- keep the registry contract, the fallback rule and `rank-prestige.ts` in core.
 
-Core keeps the slot, the contract and the fallback.
+**This PR doesn't create that repository.**
 
-## Known issues (not changed here)
+## Rollback (Phase 4.5)
+
+Reverting the code leaves `creator_overlay_preset` inert. A stored `variants` block is ignored by
+the old schema, which strips unknown keys. But under the old 3-theme enum, an overlay whose
+**stored theme is a Creator theme reads as the default config**, and an old-editor save would
+persist that. Before rolling back after users have saved Creator themes, map them to their
+fallbacks (admin connection):
+
+```sql
+update overlay
+set config = jsonb_set(config, '{theme}', to_jsonb(case config->>'theme'
+  when 'rank-card' then 'competitive' when 'broadcast' then 'minimal' else 'fighter' end))
+where config->>'theme' in ('rank-card', 'broadcast', 'prestige');
+```
+
+Prefer a forward fix.
+
+## Known issues
 
 - **Overlay limit race:** the 10-overlay check is count → check → create, so two concurrent
   creations at 9 could both pass. This predates Phase 4 and is tracked as a follow-up
   (transaction or advisory lock).
-- **Overlay builder at ~390 px:** the builder's form column is wider than the viewport. This
-  predates Phase 4; the page measures the same with the Creator section removed.
+- **Overlay builder at ~390 px / 768 px — fixed in Phase 4.5** (small, isolated):
+  - the grid items are `min-w-0`, so a previously measured preview width can no longer hold the
+    column open;
+  - the header actions and the Layout rows wrap.
+
+  Verified: no horizontal overflow at 1440, 768 and 390.
+
+- **Rank names of Master extensions:** they render only if Capcom's label carries them (SST stores
+  no `rankTier` for MR). Otherwise those players show the Master tier.

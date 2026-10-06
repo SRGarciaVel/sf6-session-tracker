@@ -36,19 +36,31 @@ describe("plans", () => {
 
   it("free preserves today's behaviour (10 overlays, no history purge)", () => {
     expect(PLAN_ENTITLEMENTS.free).toEqual({
-      overlays: { max: 10, advancedCustomization: false },
+      overlays: {
+        max: 10,
+        advancedCustomization: false,
+        premiumThemes: false,
+        creatorPresets: false,
+      },
       history: { retentionDays: null },
     });
   });
 
-  it("Phase 4: creator_beta differs from free ONLY by advanced overlay customization", () => {
-    expect(PLAN_ENTITLEMENTS.free.overlays.advancedCustomization).toBe(false);
-    expect(PLAN_ENTITLEMENTS.creator_beta.overlays.advancedCustomization).toBe(true);
+  it("Phase 4/4.5: creator_beta differs from free ONLY by NEW overlay capabilities", () => {
+    for (const key of ["advancedCustomization", "premiumThemes", "creatorPresets"] as const) {
+      expect(PLAN_ENTITLEMENTS.free.overlays[key]).toBe(false);
+      expect(PLAN_ENTITLEMENTS.creator_beta.overlays[key]).toBe(true);
+    }
     expect(PLAN_ENTITLEMENTS.creator_beta.overlays.max).toBe(10);
     expect(PLAN_ENTITLEMENTS.free.overlays.max).toBe(10);
     expect({
       ...PLAN_ENTITLEMENTS.creator_beta,
-      overlays: { ...PLAN_ENTITLEMENTS.creator_beta.overlays, advancedCustomization: false },
+      overlays: {
+        ...PLAN_ENTITLEMENTS.creator_beta.overlays,
+        advancedCustomization: false,
+        premiumThemes: false,
+        creatorPresets: false,
+      },
     }).toEqual(PLAN_ENTITLEMENTS.free);
   });
 });

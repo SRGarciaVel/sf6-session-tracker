@@ -150,7 +150,17 @@ export function toPublicLiveState(live: PlayerLiveState): PlayerLiveState {
 }
 
 /** Placeholder state for previews before any data exists. */
-export function sampleLiveState(): PlayerLiveState {
+/** Sample rank for previews (rank-aware themes); defaults to the Master MR sample. */
+export interface SampleRank {
+  rank: string;
+  system: "lp" | "mr";
+  value: number;
+}
+
+export function sampleLiveState(sample?: SampleRank): PlayerLiveState {
+  const rank = sample?.rank ?? "Master";
+  const system = sample?.system ?? "mr";
+  const value = sample?.value ?? 1684;
   return {
     player: { displayName: "Player" },
     session: {
@@ -177,9 +187,9 @@ export function sampleLiveState(): PlayerLiveState {
           losses: 5,
           draws: 0,
           games: 17,
-          ratingSystem: "mr",
-          initial: { system: "mr", value: 1588, rank: "Master" },
-          current: { system: "mr", value: 1684, rank: "Master" },
+          ratingSystem: system,
+          initial: { system, value: value - 96, rank },
+          current: { system, value, rank },
           delta: 96,
           baselineKnown: true,
         },

@@ -23,6 +23,7 @@ const SHOW_KEYS = ["labels", "units", "characterName", "decorations"] as const;
 /** Elements a theme doesn't draw, so the toggle explains instead of silently doing nothing. */
 const NOT_IN_THEME: Partial<Record<OverlayThemeId, ReadonlyArray<(typeof SHOW_KEYS)[number]>>> = {
   minimal: ["labels"],
+  broadcast: ["decorations"],
 };
 
 export function CreatorCustomizationSection({
