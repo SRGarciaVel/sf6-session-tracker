@@ -26,6 +26,8 @@ export interface ThemeDefinition {
   fallback: FreeThemeId;
   /** Uses the rank to modulate its look (domain/sf6/rank-prestige.ts). */
   rankAware: boolean;
+  /** Draws the SST rank emblem (Creator motion: rank reaction has something to animate). */
+  rankEmblem: boolean;
 }
 
 const ALL_CANVASES = OVERLAY_PRESET_IDS;
@@ -37,6 +39,7 @@ export const THEME_REGISTRY: Readonly<Record<ThemeId, ThemeDefinition>> = {
     canvases: ALL_CANVASES,
     fallback: "minimal",
     rankAware: false,
+    rankEmblem: false,
   },
   competitive: {
     id: "competitive",
@@ -44,6 +47,7 @@ export const THEME_REGISTRY: Readonly<Record<ThemeId, ThemeDefinition>> = {
     canvases: ALL_CANVASES,
     fallback: "competitive",
     rankAware: false,
+    rankEmblem: false,
   },
   fighter: {
     id: "fighter",
@@ -51,6 +55,7 @@ export const THEME_REGISTRY: Readonly<Record<ThemeId, ThemeDefinition>> = {
     canvases: ALL_CANVASES,
     fallback: "fighter",
     rankAware: false,
+    rankEmblem: false,
   },
   // Rank card: rank + rating led; closest Free composition is the scoreboard.
   "rank-card": {
@@ -59,6 +64,7 @@ export const THEME_REGISTRY: Readonly<Record<ThemeId, ThemeDefinition>> = {
     canvases: ["standard", "detailed"],
     fallback: "competitive",
     rankAware: true,
+    rankEmblem: true,
   },
   // Broadcast lower-third: flat and sober; closest Free look is the single-line minimal bar.
   broadcast: {
@@ -67,6 +73,7 @@ export const THEME_REGISTRY: Readonly<Record<ThemeId, ThemeDefinition>> = {
     canvases: ALL_CANVASES,
     fallback: "minimal",
     rankAware: false,
+    rankEmblem: false,
   },
   // Prestige: ornamental, high-tier; closest Free look is the expressive Street theme.
   prestige: {
@@ -75,6 +82,7 @@ export const THEME_REGISTRY: Readonly<Record<ThemeId, ThemeDefinition>> = {
     canvases: ["standard", "detailed"],
     fallback: "fighter",
     rankAware: true,
+    rankEmblem: true,
   },
 };
 

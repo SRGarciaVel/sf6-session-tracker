@@ -12,11 +12,17 @@ import {
   mergeOverlayConfigForSave,
   type CreatorCustomization,
 } from "./creator";
+import { DEFAULT_CREATOR_MOTION } from "./motion";
+import { appearanceFromConfig, presetAppearanceSchema } from "./presets";
 import { CREATOR_THEME_IDS, FREE_THEME_IDS, THEME_REGISTRY } from "./themes";
 import { DEFAULT_THEME_VARIANTS } from "./variants";
 
-const FREE = { overlays: { advancedCustomization: false, premiumThemes: false } };
-const CREATOR = { overlays: { advancedCustomization: true, premiumThemes: true } };
+const FREE = {
+  overlays: { advancedCustomization: false, premiumThemes: false, motionEffects: false },
+};
+const CREATOR = {
+  overlays: { advancedCustomization: true, premiumThemes: true, motionEffects: true },
+};
 const custom: CreatorCustomization = {
   secondaryAccent: "#ffb000",
   numberFont: "jetbrains-mono",
@@ -262,5 +268,102 @@ describe("Phase 4.5: premium themes (stored vs effective)", () => {
     expect(parseOverlayConfig({ ...DEFAULT_OVERLAY_CONFIG, theme: "neon" }).theme).toBe(
       DEFAULT_OVERLAY_CONFIG.theme,
     );
+  });
+});
+
+describe("Phase 5.0: Creator motion (overlays.motionEffects)", () => {
+  const motion = {
+    ...DEFAULT_CREATOR_MOTION,
+    updateStyle: "impact" as const,
+    intensity: "strong" as const,
+  };
+  const withMotion: OverlayConfig = {
+    ...DEFAULT_OVERLAY_CONFIG,
+    creator: { ...custom, motion },
+  };
+  const ALL = {
+    overlays: { advancedCustomization: true, premiumThemes: true, motionEffects: true },
+  };
+  const NONE = {
+    overlays: { advancedCustomization: false, premiumThemes: false, motionEffects: false },
+  };
+  const STYLE_ONLY = {
+    overlays: { advancedCustomization: true, premiumThemes: true, motionEffects: false },
+  };
+  const MOTION_ONLY = {
+    overlays: { advancedCustomization: false, premiumThemes: false, motionEffects: true },
+  };
+
+  it("entitled ⇒ motion renders; Free ⇒ effective config has no motion; stored untouched", () => {
+    expect(getEffectiveOverlayConfig(withMotion, ALL).creator?.motion).toEqual(motion);
+    const snapshot = structuredClone(withMotion);
+    expect(getEffectiveOverlayConfig(withMotion, NONE).creator).toBeUndefined();
+    expect(withMotion).toEqual(snapshot);
+  });
+
+  it("independent gates: style without motion, motion without style (neutral customization)", () => {
+    const styleOnly = getEffectiveOverlayConfig(withMotion, STYLE_ONLY).creator;
+    expect(styleOnly?.motion).toBeUndefined();
+    expect(styleOnly?.secondaryAccent).toBe(custom.secondaryAccent);
+    const motionOnly = getEffectiveOverlayConfig(withMotion, MOTION_ONLY).creator;
+    expect(motionOnly).toEqual({ ...DEFAULT_CREATOR_CUSTOMIZATION, motion });
+  });
+
+  it("downgrade → Free saves a base edit → motion still stored → renewal restores it", () => {
+    const freeEdit = { ...withMotion, title: "FREE", creator: undefined };
+    const saved = mergeOverlayConfigForSave(withMotion, freeEdit, NONE);
+    expect(saved.title).toBe("FREE");
+    expect(saved.creator?.motion).toEqual(motion);
+    expect(saved.creator?.secondaryAccent).toBe(custom.secondaryAccent);
+    expect(getEffectiveOverlayConfig(saved, ALL).creator?.motion).toEqual(motion);
+  });
+
+  it("crafted Free request cannot add or change motion", () => {
+    const crafted = {
+      ...DEFAULT_OVERLAY_CONFIG,
+      creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, motion },
+    };
+    expect(
+      mergeOverlayConfigForSave(DEFAULT_OVERLAY_CONFIG, crafted, NONE).creator,
+    ).toBeUndefined();
+    const tampered = {
+      ...withMotion,
+      creator: { ...custom, motion: { ...motion, intensity: "subtle" as const } },
+    };
+    expect(mergeOverlayConfigForSave(withMotion, tampered, NONE).creator?.motion).toEqual(motion);
+  });
+
+  it("entitled save sets and clears motion; style-only owner keeps stored motion", () => {
+    const off = { ...withMotion, creator: { ...custom } };
+    expect(mergeOverlayConfigForSave(withMotion, off, ALL).creator?.motion).toBeUndefined();
+    const changed = {
+      ...withMotion,
+      creator: { ...custom, motion: { ...motion, accentMotion: "sweep" as const } },
+    };
+    expect(mergeOverlayConfigForSave(withMotion, changed, STYLE_ONLY).creator?.motion).toEqual(
+      motion,
+    );
+    expect(mergeOverlayConfigForSave(DEFAULT_OVERLAY_CONFIG, changed, MOTION_ONLY).creator).toEqual(
+      {
+        ...DEFAULT_CREATOR_CUSTOMIZATION,
+        motion: changed.creator.motion,
+      },
+    );
+  });
+
+  it("stored config without motion reads exactly as before; junk motion is dropped alone", () => {
+    expect(parseOverlayConfig({ ...DEFAULT_OVERLAY_CONFIG, creator: custom }).creator).toEqual(
+      custom,
+    );
+    const junk = parseOverlayConfig({
+      ...DEFAULT_OVERLAY_CONFIG,
+      creator: { ...custom, motion: { updateStyle: "x" } },
+    });
+    expect(junk.creator).toEqual(custom);
+  });
+
+  it("presets carry motion with the rest of the appearance", () => {
+    expect(appearanceFromConfig(withMotion).creator?.motion).toEqual(motion);
+    expect(presetAppearanceSchema.safeParse(appearanceFromConfig(withMotion)).success).toBe(true);
   });
 });

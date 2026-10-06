@@ -45,6 +45,7 @@ export default async function OverlayBuilderPage({
           advancedCustomization: entitlements.overlays.advancedCustomization,
           premiumThemes: entitlements.overlays.premiumThemes,
           creatorPresets: entitlements.overlays.creatorPresets,
+          motionEffects: entitlements.overlays.motionEffects,
         }}
         presets={presets.map((p) => ({
           id: p.id,

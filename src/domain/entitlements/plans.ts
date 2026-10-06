@@ -52,6 +52,11 @@ export interface Entitlements {
     premiumThemes: boolean;
     /** Saved, reusable appearance presets (Phase 4.5, docs/creator-presets.md). */
     creatorPresets: boolean;
+    /**
+     * Creator motion & broadcast effects (Phase 5.0, domain/overlay/motion.ts). NEW, additive:
+     * Free keeps every existing animation (number ticks, the animations toggle).
+     */
+    motionEffects: boolean;
   };
   history: {
     /**
@@ -83,12 +88,19 @@ export const PLAN_ENTITLEMENTS: DeepReadonly<Record<PlanId, Entitlements>> = dee
       advancedCustomization: false,
       premiumThemes: false,
       creatorPresets: false,
+      motionEffects: false,
     },
     history: { retentionDays: null },
   },
   // Phase 4/4.5: Creator differences are NEW overlay capabilities only (max stays the same).
   creator_beta: {
-    overlays: { max: 10, advancedCustomization: true, premiumThemes: true, creatorPresets: true },
+    overlays: {
+      max: 10,
+      advancedCustomization: true,
+      premiumThemes: true,
+      creatorPresets: true,
+      motionEffects: true,
+    },
     history: { retentionDays: null },
   },
 });

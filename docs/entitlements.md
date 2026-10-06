@@ -52,6 +52,7 @@ never deleted to downgrade: they expire or get revoked, which keeps the audit tr
 | `overlays.advancedCustomization` | false | **true**     | Phase 4: NEW overlay options only ([creator-overlays.md](creator-overlays.md))              |
 | `overlays.premiumThemes`         | false | **true**     | Phase 4.5: NEW themes only (Rank Card, Broadcast, Prestige); Free themes unchanged          |
 | `overlays.creatorPresets`        | false | **true**     | Phase 4.5: saved appearance presets ([creator-presets.md](creator-presets.md))              |
+| `overlays.motionEffects`         | false | **true**     | Phase 5.0: Creator motion & broadcast effects (additive; Free animations unchanged)         |
 | `history.retentionDays`          | null  | null         | `null` = no retention policy (current behaviour: nothing is ever purged). Not enforced yet. |
 
 Phases 2–3: both plans were identical. **Phase 4** adds the first difference,

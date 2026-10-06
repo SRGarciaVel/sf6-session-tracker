@@ -11,8 +11,12 @@ import { CREATOR_THEME_IDS, THEME_REGISTRY, type CreatorThemeId } from "@/domain
 import { DEFAULT_THEME_VARIANTS } from "@/domain/overlay/variants";
 import { OverlayView } from "./OverlayView";
 
-const FREE = { overlays: { advancedCustomization: false, premiumThemes: false } };
-const CREATOR = { overlays: { advancedCustomization: true, premiumThemes: true } };
+const FREE = {
+  overlays: { advancedCustomization: false, premiumThemes: false, motionEffects: false },
+};
+const CREATOR = {
+  overlays: { advancedCustomization: true, premiumThemes: true, motionEffects: true },
+};
 const allFields = Object.fromEntries(
   Object.keys(DEFAULT_OVERLAY_CONFIG.fields).map((k) => [k, true]),
 ) as OverlayConfig["fields"];

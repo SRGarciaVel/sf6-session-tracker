@@ -16,6 +16,7 @@
  */
 import { z } from "zod";
 import { FONT_IDS } from "./fonts";
+import { creatorMotionSchema, parseCreatorMotion } from "./motion";
 import {
   THEME_REGISTRY,
   isCreatorTheme,
@@ -47,6 +48,11 @@ export const creatorCustomizationSchema = z.strictObject({
     characterName: z.boolean(),
     decorations: z.boolean(),
   }),
+  /**
+   * Creator motion (Phase 5.0, motion.ts). Optional: absent = no premium motion. Gated by
+   * `overlays.motionEffects` (independent of advancedCustomization).
+   */
+  motion: creatorMotionSchema.optional(),
 });
 
 export type CreatorCustomization = z.infer<typeof creatorCustomizationSchema>;
@@ -64,17 +70,21 @@ export function parseCreatorCustomization(raw: unknown): CreatorCustomization | 
   if (raw === null || typeof raw !== "object") return undefined;
   const obj = raw as Record<string, unknown>;
   const show = obj.show !== null && typeof obj.show === "object" ? (obj.show as object) : {};
+  // Motion is parsed on its own: an unusable motion block is dropped, never the customization.
+  const motion = parseCreatorMotion(obj.motion);
   const parsed = creatorCustomizationSchema.safeParse({
     ...DEFAULT_CREATOR_CUSTOMIZATION,
     ...obj,
     show: { ...DEFAULT_CREATOR_CUSTOMIZATION.show, ...show },
+    motion: undefined,
   });
-  return parsed.success ? parsed.data : undefined;
+  if (!parsed.success) return undefined;
+  return motion === undefined ? parsed.data : { ...parsed.data, motion };
 }
 
 /** The Creator entitlements overlays need. */
 export interface OverlayCustomizationEntitlement {
-  overlays: { advancedCustomization: boolean; premiumThemes: boolean };
+  overlays: { advancedCustomization: boolean; premiumThemes: boolean; motionEffects: boolean };
 }
 
 /** Fields of the overlay config this module reads (structural: avoids a cycle with config.ts). */
@@ -97,20 +107,44 @@ export function getEffectiveOverlayConfig<C extends CreatorAwareConfig>(
   stored: C,
   entitlements: OverlayCustomizationEntitlement,
 ): C {
-  const { advancedCustomization, premiumThemes } = entitlements.overlays;
-  const dropCreator = !advancedCustomization && stored.creator !== undefined;
+  const { advancedCustomization, premiumThemes, motionEffects } = entitlements.overlays;
+  const creator = effectiveCreator(stored.creator, advancedCustomization, motionEffects);
   const premium = isCreatorTheme(stored.theme);
   const fallback = premium && !premiumThemes;
   const preset =
     premium && premiumThemes ? supportedCanvas(stored.theme, stored.preset) : stored.preset;
   const dropVariants = stored.variants !== undefined && (!premiumThemes || !premium);
-  if (!dropCreator && !fallback && !dropVariants && preset === stored.preset) return stored;
+  if (creator === stored.creator && !fallback && !dropVariants && preset === stored.preset) {
+    return stored;
+  }
 
   const effective = { ...stored, preset };
-  if (dropCreator) delete effective.creator;
+  if (creator === undefined) delete effective.creator;
+  else effective.creator = creator;
   if (dropVariants) delete effective.variants;
   if (fallback) effective.theme = THEME_REGISTRY[stored.theme].fallback;
   return effective;
+}
+
+/**
+ * The Creator block a renderer may use. Customization needs advancedCustomization; motion needs
+ * motionEffects (independent). Without customization, motion rides on neutral defaults, which
+ * render exactly like no customization. Same object back when nothing is dropped.
+ */
+function effectiveCreator(
+  stored: CreatorCustomization | undefined,
+  advancedCustomization: boolean,
+  motionEffects: boolean,
+): CreatorCustomization | undefined {
+  if (stored === undefined) return undefined;
+  const keepMotion = motionEffects && stored.motion !== undefined;
+  if (advancedCustomization) {
+    if (keepMotion || stored.motion === undefined) return stored;
+    const withoutMotion = { ...stored };
+    delete withoutMotion.motion;
+    return withoutMotion;
+  }
+  return keepMotion ? { ...DEFAULT_CREATOR_CUSTOMIZATION, motion: stored.motion } : undefined;
 }
 
 /**
@@ -128,8 +162,19 @@ export function mergeOverlayConfigForSave<C extends CreatorAwareConfig>(
   incoming: C,
   entitlements: OverlayCustomizationEntitlement,
 ): C {
-  const { advancedCustomization, premiumThemes } = entitlements.overlays;
-  const creator = advancedCustomization ? incoming.creator : stored.creator;
+  const { advancedCustomization, premiumThemes, motionEffects } = entitlements.overlays;
+  // Customization and motion are merged independently: each comes from the request only when
+  // the owner holds its entitlement, otherwise the stored value is kept untouched.
+  const base = advancedCustomization ? incoming.creator : stored.creator;
+  const motion = motionEffects ? incoming.creator?.motion : stored.creator?.motion;
+  let creator: CreatorCustomization | undefined;
+  if (base !== undefined) {
+    creator = { ...base };
+    delete creator.motion;
+    if (motion !== undefined) creator.motion = motion;
+  } else if (motion !== undefined) {
+    creator = { ...DEFAULT_CREATOR_CUSTOMIZATION, motion };
+  }
   const variants = premiumThemes ? (incoming.variants ?? stored.variants) : stored.variants;
   let theme = incoming.theme;
   if (isCreatorTheme(theme) && !premiumThemes && theme !== stored.theme) theme = stored.theme;
