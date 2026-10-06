@@ -57,6 +57,13 @@
       "when": 1791170646724,
       "tag": "0007_companion_client_version",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791246258172,
+      "tag": "0008_entitlement_foundation",
+      "breakpoints": true
     }
   ]
 }
