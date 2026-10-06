@@ -1,10 +1,7 @@
+import { FREE_THEME_IDS } from "@/domain/overlay/themes";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import {
-  DEFAULT_OVERLAY_CONFIG,
-  OVERLAY_THEMES,
-  applyThemeDefaults,
-} from "@/domain/overlay/config";
+import { DEFAULT_OVERLAY_CONFIG, applyThemeDefaults } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION, getEffectiveOverlayConfig } from "@/domain/overlay/creator";
 import { sampleLiveState } from "@/domain/overlay/state";
 import { OverlayView } from "./OverlayView";
@@ -52,20 +49,24 @@ describe("Creator renderer hooks", () => {
     });
   });
 
-  it.each(OVERLAY_THEMES)(
+  it.each(FREE_THEME_IDS)(
     "%s: Free render has no Creator traces; Creator render applies them",
     (theme) => {
       const base = applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, theme);
       const stored = { ...base, creator: custom };
       const free = render(
-        getEffectiveOverlayConfig(stored, { overlays: { advancedCustomization: false } }),
+        getEffectiveOverlayConfig(stored, {
+          overlays: { advancedCustomization: false, premiumThemes: false },
+        }),
       );
       const plain = render(base);
       expect(free).toBe(plain); // downgraded = exactly the theme's own Free look
       expect(free).not.toContain("ov-c-");
       expect(free).not.toContain("--ov-secondary");
       const creator = render(
-        getEffectiveOverlayConfig(stored, { overlays: { advancedCustomization: true } }),
+        getEffectiveOverlayConfig(stored, {
+          overlays: { advancedCustomization: true, premiumThemes: true },
+        }),
       );
       expect(creator).toContain("ov-c-secondary");
       expect(creator).toContain("--ov-secondary:#ffb000");

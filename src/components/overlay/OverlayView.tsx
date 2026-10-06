@@ -16,9 +16,19 @@ import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { OVERLAY_PRESETS, hexToRgba, type OverlayConfig } from "@/domain/overlay/config";
 import { creatorClassNames, creatorCssVars } from "./creator-style";
 import { getOverlayMessages } from "@/i18n/overlay-messages";
-import { pickRatingCharacter, type PlayerLiveState } from "@/domain/overlay/state";
-import { deltaTone, formatDelta, formatInteger, formatWinRate } from "@/domain/format";
-import type { MatchResult } from "@/domain/sf6/types";
+import type { PlayerLiveState } from "@/domain/overlay/state";
+import { formatWinRate } from "@/domain/format";
+import { BroadcastTheme, PrestigeTheme, RankCardTheme } from "./creator-themes";
+import {
+  Animated,
+  Cell,
+  Delta,
+  Ratio,
+  RecentForm,
+  joinWith,
+  ratingParts,
+  type ThemeProps,
+} from "./parts";
 import "./overlay.css";
 
 /** Base font-size (px) per preset at 1× scale, chosen to fill the preset canvas. */
@@ -59,130 +69,6 @@ export function overlayStyle(config: OverlayConfig, sizing: OverlaySizing, fit =
     "--ov-notch": config.borderRadius === 0 ? "0.55em" : "0px",
     "--ov-gap": GAP[config.spacing],
   };
-}
-
-/**
- * Re-mounts its span when the value changes so the CSS tick animation runs; the very first
- * render is static (no animation on page load / OBS refresh). `flash` tints the glow.
- */
-function Animated({
-  value,
-  className,
-  flash,
-}: {
-  value: string | number;
-  className?: string;
-  flash?: "win" | "loss";
-}) {
-  const [tracked, setTracked] = useState({ value, version: 0 });
-  if (tracked.value !== value) setTracked({ value, version: tracked.version + 1 });
-  const cls = [
-    "ov-num",
-    tracked.version > 0 ? "ov-changed" : "",
-    tracked.version > 0 && flash ? `ov-flash-${flash}` : "",
-    className ?? "",
-  ]
-    .join(" ")
-    .trim();
-  return (
-    <span key={tracked.version} className={cls}>
-      {value}
-    </span>
-  );
-}
-
-function toneClass(delta: number | null): string {
-  const tone = deltaTone(delta);
-  return tone === "positive" ? "ov-pos" : tone === "negative" ? "ov-neg" : "ov-neutral";
-}
-
-/** ▲ +24 / ▼ -18 — glyph + sign, so up/down never depends on color alone. */
-function Delta({
-  delta,
-  locale,
-  className,
-}: {
-  delta: number | null;
-  locale: string;
-  className: string;
-}) {
-  const tone = deltaTone(delta);
-  return (
-    <span className={`${className} ${toneClass(delta)}`}>
-      {tone !== "neutral" && (
-        <span className="ov-arrow" aria-hidden>
-          {tone === "positive" ? "▲" : "▼"}
-        </span>
-      )}
-      <Animated
-        value={formatDelta(delta, locale)}
-        flash={tone === "positive" ? "win" : tone === "negative" ? "loss" : undefined}
-      />
-    </span>
-  );
-}
-
-function Ratio({ wins, losses }: { wins: number; losses: number }) {
-  return (
-    <span className="ov-ratio" aria-hidden>
-      {wins + losses === 0 ? (
-        <span className="ov-ratio-empty" />
-      ) : (
-        <>
-          <span className="ov-ratio-w" style={{ flexGrow: wins }} />
-          <span className="ov-ratio-l" style={{ flexGrow: losses }} />
-        </>
-      )}
-    </span>
-  );
-}
-
-const RESULT_KEY = { win: "resultWin", loss: "resultLoss", draw: "resultDraw" } as const;
-
-function RecentForm({ results, max = 8 }: { results: MatchResult[]; max?: number }) {
-  const t = useTranslations("Overlay");
-  if (results.length === 0) return null;
-  return (
-    <span className="ov-form">
-      {results.slice(-max).map((r, i) => (
-        <span key={`${i}-${r}`} className={`ov-form-chip ov-r-${r}`}>
-          {t(RESULT_KEY[r])}
-        </span>
-      ))}
-    </span>
-  );
-}
-
-interface ThemeProps {
-  config: OverlayConfig;
-  live: PlayerLiveState;
-}
-
-/**
- * Rating of ONE character: the overlay's pinned `ratingCharacterKey`, else the active character
- * (latest Ranked match). W/L stays global; this never mixes characters.
- */
-function ratingParts(live: PlayerLiveState, config: OverlayConfig) {
-  const c = pickRatingCharacter(live.session, config.ratingCharacterKey);
-  const system = c?.current?.system ?? c?.ratingSystem ?? null;
-  return {
-    // MR / LP are official game terms: not translated.
-    label: system === "mr" ? "MR" : system === "lp" ? "LP" : "",
-    character: c?.characterName ?? "—",
-    value: formatInteger(c?.current?.value ?? null, config.locale),
-    delta: c?.delta ?? null,
-    rank: c?.current?.rank ?? c?.initial?.rank ?? "—",
-  };
-}
-
-/** Joins nodes with a separator element (no per-stat boxes). */
-function joinWith(nodes: Array<{ key: string; node: ReactNode }>, sep: (key: string) => ReactNode) {
-  return nodes.map((item, i) => (
-    <span key={item.key} style={{ display: "contents" }}>
-      {i > 0 && sep(item.key)}
-      {item.node}
-    </span>
-  ));
 }
 
 /* ─────────────── Minimal — broadcast lower-third ─────────────── */
@@ -283,25 +169,6 @@ function MinimalTheme({ config, live }: ThemeProps) {
 }
 
 /* ─────────────── Competitive — scoreboard ─────────────── */
-
-function Cell({
-  label,
-  children,
-  className,
-  labelClassName,
-}: {
-  label: string;
-  children: ReactNode;
-  className?: string;
-  labelClassName?: string;
-}) {
-  return (
-    <div className={`ov-cell ${className ?? ""}`}>
-      <span className={labelClassName ? `ov-label ${labelClassName}` : "ov-label"}>{label}</span>
-      {children}
-    </div>
-  );
-}
 
 function CompetitiveTheme({ config, live }: ThemeProps) {
   const t = useTranslations("Overlay");
@@ -610,6 +477,10 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
         {config.theme === "minimal" && <MinimalTheme config={config} live={live} />}
         {config.theme === "competitive" && <CompetitiveTheme config={config} live={live} />}
         {config.theme === "fighter" && <FighterTheme config={config} live={live} />}
+        {/* Creator themes: only reachable via an entitled owner's EFFECTIVE config. */}
+        {config.theme === "rank-card" && <RankCardTheme config={config} live={live} />}
+        {config.theme === "broadcast" && <BroadcastTheme config={config} live={live} />}
+        {config.theme === "prestige" && <PrestigeTheme config={config} live={live} />}
       </div>
     </NextIntlClientProvider>
   );

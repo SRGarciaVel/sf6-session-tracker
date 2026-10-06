@@ -553,3 +553,448 @@
 .ov-c-hide-deco .ov-comp::before {
   content: none;
 }
+
+/* ── Creator themes (Phase 4.5, creator-themes.tsx) ──────────────────────────────────────
+ * Rendered only from an entitled owner's effective config. --ov-tier is a fixed palette color
+ * (rank-prestige.ts) or the streamer's accent; --ov-secondary is optional (Creator block). */
+
+.ov-deco {
+  pointer-events: none;
+}
+.ov-c-hide-deco .ov-deco {
+  display: none;
+}
+
+/* SST-native rank emblem: faceted gem; tiers add pips, a ring (Master) and wings (beyond). */
+.ov-emb {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.18em;
+  width: 2.6em;
+  color: var(--ov-tier);
+}
+.ov-emb-gem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2em;
+  height: 2.2em;
+  background: linear-gradient(160deg, var(--ov-tier) 0%, var(--ov-ink) 130%);
+  clip-path: polygon(50% 0, 100% 24%, 100% 76%, 50% 100%, 0 76%, 0 24%);
+}
+.ov-emb-facet {
+  position: absolute;
+  inset: 0.28em;
+  background: linear-gradient(200deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 55%);
+  clip-path: polygon(50% 0, 100% 24%, 100% 76%, 50% 100%, 0 76%, 0 24%);
+  opacity: 0.6;
+}
+.ov-emb-div {
+  position: relative;
+  font-size: 0.95em;
+  font-weight: 800;
+  color: var(--ov-ink);
+  text-shadow: none;
+}
+.ov-emb-pips {
+  display: flex;
+  gap: 0.14em;
+}
+.ov-emb-pip {
+  display: block;
+  width: 0.32em;
+  height: 0.16em;
+  background: var(--ov-tier);
+  transform: skewX(-20deg);
+}
+.ov-emb-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2.5em;
+  height: 2.5em;
+  margin: -1.25em 0 0 -1.25em;
+  border: 0.08em solid var(--ov-tier);
+  transform: rotate(45deg);
+  opacity: 0.75;
+}
+.ov-emb-wings {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3.6em;
+  height: 1em;
+  margin: -0.5em 0 0 -1.8em;
+  background: linear-gradient(
+    90deg,
+    var(--ov-tier) 0%,
+    rgba(0, 0, 0, 0) 30%,
+    rgba(0, 0, 0, 0) 70%,
+    var(--ov-tier) 100%
+  );
+  clip-path: polygon(
+    0 50%,
+    22% 0,
+    30% 50%,
+    22% 100%,
+    78% 100%,
+    70% 50%,
+    78% 0,
+    100% 50%,
+    78% 100%,
+    22% 100%
+  );
+  opacity: 0.85;
+}
+
+/* Rank Card */
+.ov-rc {
+  display: flex;
+  align-items: stretch;
+  gap: 0.9em;
+  padding: 0.6em 1.1em 0.6em 0.7em;
+  border-left: 0.22em solid var(--ov-tier);
+}
+.ov-rc-bg-solid {
+  background: var(--ov-bg-solid);
+}
+.ov-rc-compact {
+  gap: 0.6em;
+  padding: 0.4em 0.8em 0.4em 0.5em;
+}
+.ov-rc-band {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4.2em;
+  background: linear-gradient(90deg, var(--ov-tier), rgba(0, 0, 0, 0));
+  opacity: 0.18;
+}
+.ov-rc-badge {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25em;
+  min-width: 3.2em;
+}
+.ov-rc-badge .ov-emb {
+  font-size: 1.15em;
+}
+.ov-rc-badge-large .ov-rc-badge .ov-emb {
+  font-size: 1.55em;
+}
+.ov-rc-glow-subtle .ov-emb-gem {
+  filter: drop-shadow(0 0 0.25em var(--ov-tier));
+}
+.ov-rc-glow-strong .ov-emb-gem {
+  filter: drop-shadow(0 0 0.55em var(--ov-tier));
+}
+.ov-rc-rank {
+  font-size: 0.55em;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ov-tier);
+  white-space: nowrap;
+}
+.ov-rc-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.32em;
+}
+.ov-rc-compact .ov-rc-body {
+  gap: 0.2em;
+}
+.ov-rc-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  font-size: 0.62em;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ov-rc-char {
+  color: var(--ov-text);
+}
+.ov-rc-title {
+  color: var(--ov-secondary, var(--ov-accent));
+}
+.ov-rc-rating {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25em;
+  font-size: 2.1em;
+  font-weight: 800;
+  line-height: 0.9;
+  white-space: nowrap;
+}
+.ov-rc-delta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.15em;
+  margin-left: 0.2em;
+  font-size: 0.42em;
+  font-weight: 800;
+}
+.ov-rc-stats {
+  display: flex;
+  gap: var(--ov-gap);
+  padding-top: 0.28em;
+  border-top: 0.05em solid var(--ov-muted);
+  border-top-color: rgba(163, 172, 208, 0.3);
+}
+.ov-rc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+}
+.ov-rc-val {
+  font-size: 1.05em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ov-rc-dash {
+  margin: 0 0.12em;
+  color: var(--ov-muted);
+}
+
+/* Broadcast — flat lower third: tab + labelled segments, square edges, no skew or glow */
+.ov-bc {
+  display: flex;
+  align-items: stretch;
+  font-weight: 600;
+}
+.ov-bc-tab {
+  display: flex;
+  align-items: center;
+  padding: 0 0.85em;
+  font-size: 0.72em;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ov-bc-accent-block .ov-bc-tab {
+  background: var(--ov-accent);
+  color: var(--ov-ink);
+}
+.ov-bc-accent-line .ov-bc-tab {
+  background: var(--ov-bg);
+  color: var(--ov-accent);
+  border-top: 0.16em solid var(--ov-accent);
+}
+.ov-bc-bar {
+  display: flex;
+  align-items: stretch;
+  background: var(--ov-bg);
+  border: var(--ov-border);
+  border-bottom: 0.1em solid var(--ov-secondary, var(--ov-accent));
+}
+.ov-bc-seg {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.2em;
+  padding: 0.5em 0.9em;
+}
+.ov-bc-compact .ov-bc-seg {
+  padding: 0.32em 0.65em;
+}
+.ov-bc-seg + .ov-bc-seg {
+  border-left: 0.05em solid rgba(163, 172, 208, 0.22);
+}
+.ov-bc-sep-strong .ov-bc-seg + .ov-bc-seg {
+  border-left: 0.1em solid var(--ov-muted);
+}
+.ov-bc-val {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2em;
+  font-size: 1.3em;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+.ov-bc-val .ov-delta {
+  font-size: 0.6em;
+}
+.ov-bc-rank .ov-bc-val {
+  font-size: 0.95em;
+  text-transform: uppercase;
+  color: var(--ov-accent);
+}
+
+/* Prestige — framed, symmetric, ornamental; tier color drives frame and glow */
+.ov-pr {
+  display: flex;
+  align-items: center;
+  gap: 1.2em;
+  padding: 0.7em 1.4em;
+  border: 0.07em solid var(--ov-tier);
+  outline: 0.04em solid var(--ov-tier);
+  outline-offset: 0.22em;
+}
+.ov-pr-frame-subtle {
+  border-color: rgba(255, 255, 255, 0.18);
+  outline-color: rgba(255, 255, 255, 0.1);
+}
+.ov-pr-corner {
+  position: absolute;
+  width: 0.5em;
+  height: 0.5em;
+  background: var(--ov-tier);
+  transform: rotate(45deg);
+}
+.ov-pr-tl {
+  top: -0.25em;
+  left: -0.25em;
+}
+.ov-pr-tr {
+  top: -0.25em;
+  right: -0.25em;
+}
+.ov-pr-bl {
+  bottom: -0.25em;
+  left: -0.25em;
+}
+.ov-pr-br {
+  bottom: -0.25em;
+  right: -0.25em;
+}
+.ov-pr-rule {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 0;
+  height: 0.08em;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0),
+    var(--ov-tier) 30%,
+    var(--ov-secondary, var(--ov-tier)) 70%,
+    rgba(0, 0, 0, 0)
+  );
+}
+.ov-pr-glow-subtle {
+  box-shadow: 0 0 0.4em rgba(0, 0, 0, 0.6);
+}
+.ov-pr-glow-normal .ov-pr-emb .ov-emb-gem {
+  filter: drop-shadow(0 0 0.35em var(--ov-tier));
+}
+.ov-pr-glow-strong .ov-pr-emb .ov-emb-gem {
+  filter: drop-shadow(0 0 0.7em var(--ov-tier));
+}
+.ov-pr-glow-strong .ov-pr-rank {
+  text-shadow: 0 0 0.5em var(--ov-tier);
+}
+.ov-pr-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2em;
+  min-width: 4.5em;
+}
+.ov-pr-right {
+  align-items: flex-end;
+}
+.ov-pr-val {
+  font-size: 1.6em;
+  font-weight: 700;
+  line-height: 0.95;
+  white-space: nowrap;
+}
+.ov-pr-dash {
+  margin: 0 0.12em;
+  color: var(--ov-muted);
+}
+.ov-pr-sub {
+  font-size: 0.75em;
+  white-space: nowrap;
+}
+.ov-pr-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.22em;
+}
+.ov-pr-title {
+  font-size: 0.5em;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ov-muted);
+  white-space: nowrap;
+}
+.ov-pr-emb {
+  font-size: 0.95em;
+}
+.ov-pr-rank {
+  font-size: 0.9em;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ov-tier);
+  white-space: nowrap;
+}
+.ov-pr-rating {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25em;
+  font-size: 1.15em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ov-pr-char {
+  font-size: 0.55em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ov-muted);
+}
+.ov-pr-rating .ov-delta {
+  font-size: 0.6em;
+}
+/* Optional light sheen along the top rule: CSS only, transform-based, off with animations
+ * disabled or reduced motion. */
+.ov-pr-sheen .ov-pr-rule::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 30%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.85),
+    rgba(255, 255, 255, 0)
+  );
+  transform: translateX(-100%);
+}
+@keyframes ov-pr-sheen {
+  0% {
+    transform: translateX(-100%);
+  }
+  60%,
+  100% {
+    transform: translateX(340%);
+  }
+}
+.ov-animate .ov-pr-sheen .ov-pr-rule::after {
+  animation: ov-pr-sheen 6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ov-animate .ov-pr-sheen .ov-pr-rule::after {
+    animation: none;
+  }
+}

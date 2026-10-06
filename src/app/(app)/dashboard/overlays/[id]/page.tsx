@@ -39,7 +39,11 @@ export default async function OverlayBuilderPage({
         initialName={overlay.name}
         initialConfig={overlay.config}
         url={url}
-        advancedCustomization={entitlements.overlays.advancedCustomization}
+        access={{
+          advancedCustomization: entitlements.overlays.advancedCustomization,
+          premiumThemes: entitlements.overlays.premiumThemes,
+          creatorPresets: entitlements.overlays.creatorPresets,
+        }}
       />
     </LiveDashboardProvider>
   );

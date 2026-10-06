@@ -51,6 +51,13 @@ function usePreviewWidth() {
   return { ref, width };
 }
 
+/** Creator capabilities of the owner (booleans only; never the plan). */
+export interface BuilderAccess {
+  advancedCustomization: boolean;
+  premiumThemes: boolean;
+  creatorPresets: boolean;
+}
+
 /* ───────────────────────── Builder ───────────────────────── */
 
 export function OverlayBuilder({
@@ -58,15 +65,16 @@ export function OverlayBuilder({
   initialName,
   initialConfig,
   url,
-  advancedCustomization,
+  access,
 }: {
   overlayId: string;
   initialName: string;
   initialConfig: OverlayConfig;
   url: string;
-  /** Owner entitlement, resolved on the server (display only: saving is enforced server-side). */
-  advancedCustomization: boolean;
+  /** Owner entitlements, resolved on the server (display only: saving is enforced server-side). */
+  access: BuilderAccess;
 }) {
+  const { advancedCustomization } = access;
   const router = useRouter();
   const t = useTranslations("Builder");
   const tc = useTranslations("Common");
@@ -87,9 +95,7 @@ export function OverlayBuilder({
   const previewHeight = Math.round((width * preset.height) / preset.width);
   const live = useSample ? sampleLiveState() : state.live;
   // Same rule as OBS: Creator customization renders only while the owner is entitled.
-  const effectiveConfig = getEffectiveOverlayConfig(config, {
-    overlays: { advancedCustomization },
-  });
+  const effectiveConfig = getEffectiveOverlayConfig(config, { overlays: access });
   // Localized default title in the OVERLAY's language (what OBS shows when the title is empty).
   const overlayStrings = getOverlayMessages(config.locale).Overlay;
   const defaultTitle =

@@ -12,9 +12,11 @@ import {
   mergeOverlayConfigForSave,
   type CreatorCustomization,
 } from "./creator";
+import { CREATOR_THEME_IDS, FREE_THEME_IDS, THEME_REGISTRY } from "./themes";
+import { DEFAULT_THEME_VARIANTS } from "./variants";
 
-const FREE = { overlays: { advancedCustomization: false } };
-const CREATOR = { overlays: { advancedCustomization: true } };
+const FREE = { overlays: { advancedCustomization: false, premiumThemes: false } };
+const CREATOR = { overlays: { advancedCustomization: true, premiumThemes: true } };
 const custom: CreatorCustomization = {
   secondaryAccent: "#ffb000",
   numberFont: "jetbrains-mono",
@@ -132,5 +134,133 @@ describe("lenient stored read", () => {
       ...DEFAULT_CREATOR_CUSTOMIZATION,
       numberScale: 1.1,
     });
+  });
+});
+
+describe("Phase 4.5: premium themes (stored vs effective)", () => {
+  const rankCard: OverlayConfig = {
+    ...DEFAULT_OVERLAY_CONFIG,
+    theme: "rank-card",
+    preset: "detailed",
+    variants: {
+      ...DEFAULT_THEME_VARIANTS,
+      "rank-card": { ...DEFAULT_THEME_VARIANTS["rank-card"], glow: "strong" },
+    },
+  };
+
+  it("registry: Free themes are Free with all canvases; Creator themes fall back to a Free one", () => {
+    for (const id of FREE_THEME_IDS) {
+      expect(THEME_REGISTRY[id]).toMatchObject({ tier: "free", fallback: id });
+      expect(THEME_REGISTRY[id].canvases).toEqual(["compact", "standard", "detailed"]);
+    }
+    expect(THEME_REGISTRY["rank-card"].fallback).toBe("competitive");
+    expect(THEME_REGISTRY.broadcast.fallback).toBe("minimal");
+    expect(THEME_REGISTRY.prestige.fallback).toBe("fighter");
+    for (const id of CREATOR_THEME_IDS) {
+      expect(THEME_REGISTRY[id].tier).toBe("creator");
+      expect(FREE_THEME_IDS).toContain(THEME_REGISTRY[id].fallback);
+    }
+  });
+
+  it("entitled ⇒ the premium theme and its variants render", () => {
+    const eff = getEffectiveOverlayConfig(rankCard, CREATOR);
+    expect(eff.theme).toBe("rank-card");
+    expect(eff.variants?.["rank-card"].glow).toBe("strong");
+  });
+
+  it("not entitled ⇒ deterministic Free fallback, no variants, stored NOT mutated", () => {
+    const snapshot = structuredClone(rankCard);
+    const eff = getEffectiveOverlayConfig(rankCard, FREE);
+    expect(eff.theme).toBe("competitive");
+    expect(eff.variants).toBeUndefined();
+    expect(eff.preset).toBe("detailed");
+    expect(rankCard).toEqual(snapshot);
+    expect(getEffectiveOverlayConfig({ ...rankCard, theme: "broadcast" }, FREE).theme).toBe(
+      "minimal",
+    );
+    expect(getEffectiveOverlayConfig({ ...rankCard, theme: "prestige" }, FREE).theme).toBe(
+      "fighter",
+    );
+  });
+
+  it("entitled premium theme on an unsupported canvas ⇒ its first supported canvas", () => {
+    const eff = getEffectiveOverlayConfig({ ...rankCard, preset: "compact" }, CREATOR);
+    expect(eff.preset).toBe("standard");
+  });
+
+  it("Free themes ignore stored variants (identical to pre-4.5 output)", () => {
+    const eff = getEffectiveOverlayConfig({ ...rankCard, theme: "fighter" }, CREATOR);
+    expect(eff.variants).toBeUndefined();
+    expect(eff.theme).toBe("fighter");
+  });
+
+  it("crafted Free save with a never-stored premium theme does not install it", () => {
+    const merged = mergeOverlayConfigForSave(
+      DEFAULT_OVERLAY_CONFIG,
+      { ...DEFAULT_OVERLAY_CONFIG, theme: "prestige", variants: DEFAULT_THEME_VARIANTS },
+      FREE,
+    );
+    expect(merged.theme).toBe(DEFAULT_OVERLAY_CONFIG.theme);
+    expect(merged.variants).toBeUndefined();
+  });
+
+  it("Free save after downgrade keeps the stored premium theme and variants", () => {
+    const merged = mergeOverlayConfigForSave(
+      rankCard,
+      { ...rankCard, title: "GG", variants: undefined },
+      FREE,
+    );
+    expect(merged.title).toBe("GG");
+    expect(merged.theme).toBe("rank-card");
+    expect(merged.variants).toEqual(rankCard.variants);
+    // …and cannot swap it for ANOTHER premium theme.
+    expect(
+      mergeOverlayConfigForSave(rankCard, { ...rankCard, theme: "prestige" }, FREE).theme,
+    ).toBe("rank-card");
+  });
+
+  it("entitled save installs premium themes and normalizes the canvas", () => {
+    const merged = mergeOverlayConfigForSave(
+      DEFAULT_OVERLAY_CONFIG,
+      { ...rankCard, preset: "compact" },
+      CREATOR,
+    );
+    expect(merged.theme).toBe("rank-card");
+    expect(merged.preset).toBe("standard");
+    expect(merged.variants?.["rank-card"].glow).toBe("strong");
+  });
+
+  it("variants are strict: unknown keys / values are rejected; stored junk falls back to defaults", () => {
+    const bad = (variants: unknown) =>
+      overlayConfigSchema.safeParse({ ...rankCard, variants }).success;
+    expect(bad(rankCard.variants)).toBe(true);
+    expect(
+      bad({
+        ...DEFAULT_THEME_VARIANTS,
+        prestige: { ...DEFAULT_THEME_VARIANTS.prestige, css: "x" },
+      }),
+    ).toBe(false);
+    expect(
+      bad({
+        ...DEFAULT_THEME_VARIANTS,
+        broadcast: { ...DEFAULT_THEME_VARIANTS.broadcast, accent: "url(x)" },
+      }),
+    ).toBe(false);
+    expect(bad({ ...DEFAULT_THEME_VARIANTS, customCss: "body{}" })).toBe(false);
+    const read = parseOverlayConfig({
+      ...rankCard,
+      variants: { "rank-card": { glow: "javascript:x" }, broadcast: "nope" },
+    });
+    expect(read.variants).toEqual({
+      ...DEFAULT_THEME_VARIANTS,
+      "rank-card": DEFAULT_THEME_VARIANTS["rank-card"],
+    });
+    expect(read.theme).toBe("rank-card");
+  });
+
+  it("unknown stored theme ⇒ defaults (never a crash or an unregistered theme)", () => {
+    expect(parseOverlayConfig({ ...DEFAULT_OVERLAY_CONFIG, theme: "neon" }).theme).toBe(
+      DEFAULT_OVERLAY_CONFIG.theme,
+    );
   });
 });

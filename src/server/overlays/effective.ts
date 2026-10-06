@@ -35,7 +35,7 @@ export async function resolveEffectiveOverlayConfig(
   return getEffectiveOverlayConfig(overlay.config, await getEntitlements(db, ownerId, now));
 }
 
-const NOT_ENTITLED = { overlays: { advancedCustomization: false } } as const;
+const NOT_ENTITLED = { overlays: { advancedCustomization: false, premiumThemes: false } } as const;
 
 /**
  * Config to persist when `userId` (the authenticated owner) saves: base options from the

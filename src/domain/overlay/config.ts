@@ -7,15 +7,18 @@ import { CHARACTER_KEY_PATTERN } from "@/domain/sf6/rating";
 import { DEFAULT_LOCALE, LOCALES } from "@/i18n/locale";
 import { creatorCustomizationSchema, parseCreatorCustomization } from "./creator";
 import { FONT_IDS } from "./fonts";
+import { THEME_IDS, type OverlayCanvasId, type ThemeId } from "./themes";
+import { parseThemeVariants, themeVariantsSchema } from "./variants";
 
-export const OVERLAY_THEMES = ["minimal", "competitive", "fighter"] as const;
-export type OverlayThemeId = (typeof OVERLAY_THEMES)[number];
+/** Every theme (Free + Creator); tiers, canvases and fallbacks live in ./themes.ts. */
+export const OVERLAY_THEMES = THEME_IDS;
+export type OverlayThemeId = ThemeId;
 
 export const OVERLAY_PRESETS = {
   compact: { width: 600, height: 120 },
   standard: { width: 800, height: 180 },
   detailed: { width: 900, height: 240 },
-} as const;
+} as const satisfies Record<OverlayCanvasId, { width: number; height: number }>;
 export type OverlayPresetId = keyof typeof OVERLAY_PRESETS;
 const PRESET_IDS = Object.keys(OVERLAY_PRESETS) as [OverlayPresetId, ...OverlayPresetId[]];
 
@@ -87,6 +90,11 @@ export const overlayConfigSchema = z.object({
    * getEffectiveOverlayConfig(), which ignores it then.
    */
   creator: creatorCustomizationSchema.optional(),
+  /**
+   * Creator theme variants (domain/overlay/variants.ts), kept per theme. Optional; only read by
+   * Creator themes, and only when the owner is entitled to premium themes.
+   */
+  variants: themeVariantsSchema.optional(),
 });
 
 export type OverlayConfig = z.infer<typeof overlayConfigSchema>;
@@ -181,6 +189,44 @@ export const OVERLAY_THEME_META: Record<OverlayThemeId, OverlayThemeMeta> = {
       borderRadius: 0,
     },
   },
+  // Creator themes (Phase 4.5). Defaults are Free options; they only pick a starting look.
+  "rank-card": {
+    id: "rank-card",
+    defaults: {
+      ...HUD_PALETTE,
+      preset: "standard",
+      font: "chakra-petch",
+      accentColor: "#2fe0ff",
+      backgroundColor: "#090c1c",
+      backgroundOpacity: 0.9,
+      borderRadius: 0,
+    },
+  },
+  broadcast: {
+    id: "broadcast",
+    defaults: {
+      ...HUD_PALETTE,
+      preset: "standard",
+      font: "barlow",
+      accentColor: "#2fe0ff",
+      backgroundColor: "#0b0f1e",
+      backgroundOpacity: 0.94,
+      borderEnabled: false,
+      borderRadius: 0,
+    },
+  },
+  prestige: {
+    id: "prestige",
+    defaults: {
+      ...HUD_PALETTE,
+      preset: "detailed",
+      font: "oswald",
+      accentColor: "#f5c451",
+      backgroundColor: "#0a0816",
+      backgroundOpacity: 0.9,
+      borderRadius: 0,
+    },
+  },
 };
 
 export function applyThemeDefaults(config: OverlayConfig, theme: OverlayThemeId): OverlayConfig {
@@ -197,6 +243,7 @@ export function parseOverlayConfig(raw: unknown): OverlayConfig {
   const legacy = obj.locale === undefined;
   // The Creator block is parsed on its own: an unusable block is dropped, never the overlay.
   const creator = parseCreatorCustomization(obj.creator);
+  const variants = parseThemeVariants(obj.variants);
   const merged = {
     ...DEFAULT_OVERLAY_CONFIG,
     ...obj,
@@ -204,10 +251,15 @@ export function parseOverlayConfig(raw: unknown): OverlayConfig {
     version: 1,
     fields: { ...DEFAULT_OVERLAY_CONFIG.fields, ...storedFields },
     creator: undefined,
+    variants: undefined,
   };
   const parsed = overlayConfigSchema.safeParse(merged);
-  const base = parsed.success ? parsed.data : DEFAULT_OVERLAY_CONFIG;
-  return creator === undefined ? base : { ...base, creator };
+  const base: OverlayConfig = parsed.success ? parsed.data : DEFAULT_OVERLAY_CONFIG;
+  return {
+    ...base,
+    ...(creator === undefined ? {} : { creator }),
+    ...(variants === undefined ? {} : { variants }),
+  };
 }
 
 export function hexToRgba(hex: string, alpha: number): string {

@@ -10,11 +10,20 @@
  *  - Every option that existed before Phase 4 stays Free (fonts, 7 colors, opacity, border,
  *    scale, spacing, alignment, animations, 10 stat toggles, title, rating character).
  *  - Creator options are NEW, typed and bounded: no free-form CSS, HTML or URLs.
- *  - STORED config keeps `creator` forever (downgrade never deletes); the EFFECTIVE config used
- *    by every renderer (dashboard preview and OBS) drops it unless the owner is entitled.
+ *  - STORED config keeps `creator`, `variants` and a Creator `theme` forever (downgrade never
+ *    deletes); the EFFECTIVE config used by every renderer (dashboard preview and OBS) drops or
+ *    falls back unless the owner is entitled (Phase 4.5: premium themes, themes.ts).
  */
 import { z } from "zod";
 import { FONT_IDS } from "./fonts";
+import {
+  THEME_REGISTRY,
+  isCreatorTheme,
+  supportedCanvas,
+  type OverlayCanvasId,
+  type ThemeId,
+} from "./themes";
+import type { ThemeVariants } from "./variants";
 
 export const NUMBER_SCALE_MIN = 0.85;
 export const NUMBER_SCALE_MAX = 1.25;
@@ -63,39 +72,78 @@ export function parseCreatorCustomization(raw: unknown): CreatorCustomization | 
   return parsed.success ? parsed.data : undefined;
 }
 
-/** The only Creator entitlement overlays need. */
+/** The Creator entitlements overlays need. */
 export interface OverlayCustomizationEntitlement {
-  overlays: { advancedCustomization: boolean };
+  overlays: { advancedCustomization: boolean; premiumThemes: boolean };
+}
+
+/** Fields of the overlay config this module reads (structural: avoids a cycle with config.ts). */
+interface CreatorAwareConfig {
+  theme: ThemeId;
+  preset: OverlayCanvasId;
+  creator?: CreatorCustomization;
+  variants?: ThemeVariants;
 }
 
 /**
  * EFFECTIVE config for rendering (dashboard preview, OBS page, /state, SSE). Pure: never
- * mutates the stored config. Not entitled ⇒ the Creator block is ignored and the theme's own
- * look (the Free fallback) is rendered; the stored block is kept for when access returns.
+ * mutates the stored config. Not entitled ⇒
+ *  - the Creator block is ignored (the theme's own look renders);
+ *  - a Creator theme renders as its registered Free fallback, without variants.
+ * Stored values are kept for when access returns. An entitled Creator theme always gets a
+ * canvas it supports (deterministic; the builder only offers those anyway).
  */
-export function getEffectiveOverlayConfig<C extends { creator?: CreatorCustomization }>(
+export function getEffectiveOverlayConfig<C extends CreatorAwareConfig>(
   stored: C,
   entitlements: OverlayCustomizationEntitlement,
 ): C {
-  if (entitlements.overlays.advancedCustomization || stored.creator === undefined) return stored;
-  const base = { ...stored };
-  delete base.creator;
-  return base;
+  const { advancedCustomization, premiumThemes } = entitlements.overlays;
+  const dropCreator = !advancedCustomization && stored.creator !== undefined;
+  const premium = isCreatorTheme(stored.theme);
+  const fallback = premium && !premiumThemes;
+  const preset =
+    premium && premiumThemes ? supportedCanvas(stored.theme, stored.preset) : stored.preset;
+  const dropVariants = stored.variants !== undefined && (!premiumThemes || !premium);
+  if (!dropCreator && !fallback && !dropVariants && preset === stored.preset) return stored;
+
+  const effective = { ...stored, preset };
+  if (dropCreator) delete effective.creator;
+  if (dropVariants) delete effective.variants;
+  if (fallback) effective.theme = THEME_REGISTRY[stored.theme].fallback;
+  return effective;
 }
 
 /**
- * Config to PERSIST when the owner saves. Base options are always taken from the request.
- * The Creator block is taken from the request only if the owner is entitled; otherwise the
- * previously stored block is kept untouched (a Free save can neither add, change nor delete
- * it — downgrade never deletes, and crafted requests can't unlock anything).
+ * Config to PERSIST when the owner saves. Free options are always taken from the request.
+ * Creator values are taken from the request only if the owner is entitled; otherwise:
+ *  - the Creator block and the theme variants keep their stored values (a Free save can neither
+ *    add, change nor delete them — downgrade never deletes, crafted requests unlock nothing);
+ *  - a Creator theme is accepted only if it is already the stored theme (the editor sending
+ *    back what it loaded). A Creator theme that was never stored keeps the stored theme. An
+ *    explicit switch to a Free theme is a Free choice and is saved.
+ * An entitled save normalizes the canvas to one the Creator theme supports.
  */
-export function mergeOverlayConfigForSave<C extends { creator?: CreatorCustomization }>(
+export function mergeOverlayConfigForSave<C extends CreatorAwareConfig>(
   stored: C,
   incoming: C,
   entitlements: OverlayCustomizationEntitlement,
 ): C {
-  const creator = entitlements.overlays.advancedCustomization ? incoming.creator : stored.creator;
-  const merged = { ...incoming };
+  const { advancedCustomization, premiumThemes } = entitlements.overlays;
+  const creator = advancedCustomization ? incoming.creator : stored.creator;
+  const variants = premiumThemes ? (incoming.variants ?? stored.variants) : stored.variants;
+  let theme = incoming.theme;
+  if (isCreatorTheme(theme) && !premiumThemes && theme !== stored.theme) theme = stored.theme;
+  const preset =
+    isCreatorTheme(theme) && premiumThemes
+      ? supportedCanvas(theme, incoming.preset)
+      : incoming.preset;
+
+  const merged = { ...incoming, theme, preset };
   delete merged.creator;
-  return creator === undefined ? merged : { ...merged, creator };
+  delete merged.variants;
+  return {
+    ...merged,
+    ...(creator === undefined ? {} : { creator }),
+    ...(variants === undefined ? {} : { variants }),
+  };
 }
