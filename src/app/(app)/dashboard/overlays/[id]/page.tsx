@@ -7,6 +7,7 @@ import { buildDashboardLiveState } from "@/server/dashboard/state";
 import { getDb } from "@/server/db/client";
 import { getEntitlements } from "@/server/entitlements/service";
 import { getEnv } from "@/server/env";
+import { listPresets } from "@/server/overlays/presets";
 import { getOwnedOverlay } from "@/server/overlays/service";
 import { LiveDashboardProvider } from "../../_components/LiveDashboard";
 import { OverlayBuilder } from "./OverlayBuilder";
@@ -25,9 +26,10 @@ export default async function OverlayBuilderPage({
   const db = getDb();
   const overlay = await getOwnedOverlay(db, user.id, id); // IDOR-safe
   if (!overlay) notFound();
-  const [live, entitlements] = await Promise.all([
+  const [live, entitlements, presets] = await Promise.all([
     buildDashboardLiveState(db, player.id),
     getEntitlements(db, user.id),
+    listPresets(db, user.id), // the signed-in account's own presets only
   ]);
   if (!live) notFound();
 
@@ -44,6 +46,11 @@ export default async function OverlayBuilderPage({
           premiumThemes: entitlements.overlays.premiumThemes,
           creatorPresets: entitlements.overlays.creatorPresets,
         }}
+        presets={presets.map((p) => ({
+          id: p.id,
+          name: p.name,
+          theme: p.appearance?.theme ?? null,
+        }))}
       />
     </LiveDashboardProvider>
   );

@@ -444,6 +444,18 @@
       "fighter": {
         "name": "Street",
         "description": "Slanted panels, cyan/magenta energy and halftone texture."
+      },
+      "rank-card": {
+        "name": "Rank Card",
+        "description": "Your rank front and center: emblem, MR/LP and change, with the session below."
+      },
+      "broadcast": {
+        "name": "Broadcast",
+        "description": "Flat TV-style lower third with a title tab and labelled stats."
+      },
+      "prestige": {
+        "name": "Prestige",
+        "description": "Framed, symmetric and ornamental. Its color follows your rank."
       }
     },
     "presets": {
@@ -485,6 +497,78 @@
       },
       "notInTheme": "This theme doesn't show this element.",
       "reset": "Reset Creator customization"
+    },
+    "creatorThemesNote": "Rank Card, Broadcast and Prestige are Creator Beta themes (invite-only).",
+    "themeSavedInactive": "Your Creator theme “{theme}” is saved. Renew Creator access to use it again — until then the preview and OBS show {fallback}.",
+    "canvasLimited": "{theme} is designed for: {canvases}.",
+    "sampleRank": "Sample rank",
+    "zoomFit": "Fit",
+    "zoomActual": "100%",
+    "variants": {
+      "title": "Theme variants",
+      "savedButInactive": "Your theme variants are saved. Renew Creator access to use them again.",
+      "density": "Density",
+      "densityValues": {
+        "compact": "Compact",
+        "normal": "Normal"
+      },
+      "badge": "Rank emblem",
+      "badgeValues": {
+        "normal": "Normal",
+        "large": "Large"
+      },
+      "glow": "Glow",
+      "glowValues": {
+        "off": "Off",
+        "subtle": "Subtle",
+        "normal": "Normal",
+        "strong": "Strong"
+      },
+      "background": "Background",
+      "backgroundValues": {
+        "translucent": "Translucent",
+        "solid": "Solid"
+      },
+      "separators": "Separators",
+      "separatorsValues": {
+        "subtle": "Subtle",
+        "strong": "Strong"
+      },
+      "accent": "Accent",
+      "accentValues": {
+        "line": "Line",
+        "block": "Block"
+      },
+      "frame": "Frame",
+      "frameValues": {
+        "subtle": "Subtle",
+        "normal": "Normal"
+      },
+      "animatedAccent": "Animated accent (respects reduced motion)"
+    },
+    "presetsCreator": {
+      "title": "Creator presets",
+      "summary": "Save this overlay's look (theme, canvas, colors, fonts, layout, visible stats and Creator options) and apply it to any of your overlays. Titles, language and data are never included.",
+      "savedButInactive": "Your Creator presets are saved. Renew Creator access to use them again.",
+      "namePlaceholder": "Preset name",
+      "saveCurrent": "Save current look",
+      "empty": "No presets yet.",
+      "broken": "Can't be applied (invalid)",
+      "apply": "Apply",
+      "applyConfirm": "Apply this look to the overlay and save it?",
+      "applyConfirmDirty": "Applying saves the preset to this overlay and discards your unsaved changes.",
+      "applied": "Preset applied and saved. OBS has updated.",
+      "update": "Update from current",
+      "updated": "Preset updated with the current look.",
+      "rename": "Rename",
+      "renamed": "Preset renamed.",
+      "duplicate": "Duplicate",
+      "duplicated": "Preset duplicated.",
+      "copyName": "{name} (copy)",
+      "delete": "Delete",
+      "deleteConfirm": "Delete this preset permanently?",
+      "deleted": "Preset deleted.",
+      "created": "Preset saved."
     }
   },
   "NotFound": {
