@@ -18,7 +18,7 @@ import { getEnv } from "@/server/env";
 function createAuth() {
   const env = getEnv();
   return betterAuth({
-    appName: "SF6 Session Tracker",
+    appName: "SST — Session Stats Tracker",
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.APP_URL,
     trustedOrigins: [env.APP_URL],

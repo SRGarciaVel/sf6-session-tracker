@@ -37,6 +37,7 @@ const STEPS = ["step1", "step2", "step3", "step4", "step5", "step6", "step7", "s
 /** Beta install guide for the companion: one page, plain language, no developer jargon. */
 export default async function CompanionHelpPage() {
   const t = await getTranslations("Help");
+  const tc = await getTranslations("Common");
   const user = await getCurrentUser();
   const { downloadUrl, checksumUrl, latestVersion } = getCompanionRelease();
 
@@ -161,6 +162,7 @@ export default async function CompanionHelpPage() {
           </div>
         ))}
       </section>
+      <footer className="mt-8 text-xs text-faint">{tc("notAffiliated")}</footer>
     </main>
   );
 }

@@ -124,14 +124,18 @@ def main() -> None:
 
     if FONTS:
         og = Image.new("RGBA", (1200, 630), (*APP_BG, 255))
-        logo = fit_height(full, 190)
-        og.alpha_composite(logo, ((1200 - logo.width) // 2, 120))
+        logo = fit_height(full, 180)
+        og.alpha_composite(logo, ((1200 - logo.width) // 2, 95))
         draw = ImageDraw.Draw(og)
         title = ImageFont.truetype(str(FONTS / "BarlowCondensed-Bold.ttf"), 76)
         sub = ImageFont.truetype(str(FONTS / "Barlow-Medium.ttf"), 30)
+        small = ImageFont.truetype(str(FONTS / "Barlow-Medium.ttf"), 22)
+        # The logo already reads "SST"; the text spells out the name, the category and the
+        # (only) supported game, without implying other games work.
         for text, font, y, fill in (
-            ("SF6 Session Tracker", title, 345, (241, 244, 250)),
-            ("Real-time Street Fighter 6 session tracking for streamers", sub, 445, (150, 160, 180)),
+            ("Session Stats Tracker", title, 310, (241, 244, 250)),
+            ("Session tracking & overlays for fighting games.", sub, 408, (150, 160, 180)),
+            ("Currently supporting Street Fighter 6", small, 520, (110, 120, 140)),
         ):
             w = draw.textlength(text, font=font)
             draw.text(((1200 - w) / 2, y), text, font=font, fill=fill)
@@ -139,7 +143,7 @@ def main() -> None:
         for x in range(360, 840):
             t = (x - 360) / 480
             colour = tuple(round(a + (b - a) * t) for a, b in zip((255, 122, 26), (40, 160, 255)))
-            draw.line([(x, 530), (x, 532)], fill=colour)
+            draw.line([(x, 486), (x, 488)], fill=colour)
         og.convert("RGB").save(APP / "(app)/opengraph-image.png", optimize=True)
 
     for p in sorted([*PUBLIC.iterdir(), *DOCS.glob("sst-*.png"), APP / "favicon.ico", APP / "icon.png",

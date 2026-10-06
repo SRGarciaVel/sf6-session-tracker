@@ -79,7 +79,7 @@ writeFileSync(sumPath, checksumLine(hash, `${name}.zip`));
 writeFileSync(stableZipPath, zip);
 writeFileSync(stableSumPath, checksumLine(hash, `${STABLE_ASSET_BASENAME}.zip`));
 
-console.log(`\n✓ SF6 Session Companion ${result.version} (beta) packaged`);
+console.log(`\n✓ SST Companion for Street Fighter 6 ${result.version} (beta) packaged`);
 console.log(`  tracker:  ${BETA_TRACKER_ORIGIN}`);
 console.log(
   `  zip:      ${relative(repoRoot, zipPath)} (${zip.length} bytes, ${files.length} files)`,

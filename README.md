@@ -1,6 +1,8 @@
-# SF6 Session Tracker
+# SST — Session Stats Tracker
 
-**Real-time Street Fighter 6 session tracking and OBS overlays powered by a browser companion.**
+**Session tracking & overlays for fighting games.**
+
+Currently supported: **Street Fighter 6**
 
 [![CI](https://github.com/SRGarciaVel/sf6-session-tracker/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SRGarciaVel/sf6-session-tracker/actions/workflows/ci.yml)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
@@ -9,16 +11,16 @@
 ![Status](https://img.shields.io/badge/status-closed--beta-orange)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-SF6 Session Tracker is for players and streamers. You start a session and play Ranked. Your wins,
-losses, win rate, streaks and LP/MR change for each character update on a dashboard and on an
-OBS overlay, with no hotkeys or manual counters.
+SST is for fighting-game players and streamers. You start a session and play Ranked. Your wins,
+losses, win rate, streaks and rating change for each character update on a dashboard and on an
+OBS overlay, with no hotkeys or manual counters. Street Fighter 6 is the only supported game today.
 
-Match data comes from **Buckler's Boot Camp**. A small Chromium extension, the **SF6 Session
-Companion**, reads it inside your own logged-in browser. Your Capcom credentials and cookies never
-reach the server.
+For Street Fighter 6, match data comes from **Buckler's Boot Camp**. A small Chromium extension,
+the **SST Companion for Street Fighter 6**, reads it inside your own logged-in browser. Your
+Capcom credentials and cookies never reach the server.
 
-> This project is not affiliated with or endorsed by Capcom. Street Fighter is a trademark of
-> Capcom Co., Ltd.
+> SST is not affiliated with or endorsed by Capcom. Street Fighter and Street Fighter 6 are
+> trademarks of Capcom Co., Ltd.
 
 ---
 
@@ -26,20 +28,21 @@ reach the server.
 
 Real captures of the running app. The dashboard and overlay use demo data generated through the
 actual pipeline (mock provider, a fake CFN). The companion capture comes from a real browser
-session. URLs and tokens are not shown.
+session. URLs and tokens are not shown. The captures predate the SST rename and may show the
+previous branding; the features shown are current.
 
 **Dashboard**: live session, active character, rank, LP change, W/L, win rate and streaks.
 
-![SF6 Session Tracker dashboard](docs/assets/dashboard.png)
+![SST dashboard](docs/assets/dashboard.png)
 
 **OBS overlay**: the Browser Source (Competitive theme), shown here over a dark backdrop. In OBS
 it is transparent.
 
-![SF6 Session Tracker OBS overlay](docs/assets/overlay.png)
+![SST OBS overlay](docs/assets/overlay.png)
 
-**SF6 Session Companion**: browser companion connected to Buckler and ready to sync.
+**SST Companion for Street Fighter 6**: browser companion connected to Buckler and ready to sync.
 
-![SF6 Session Companion](docs/assets/companion.png)
+![SST Companion for Street Fighter 6](docs/assets/companion.png)
 
 ## Contents
 
@@ -50,7 +53,7 @@ it is transparent.
 - [Security](#security)
 - [Quick start](#quick-start)
 - [Environment variables](#environment-variables)
-- [SF6 Session Companion](#sf6-session-companion)
+- [SST Companion for Street Fighter 6](#sst-companion-for-street-fighter-6)
 - [Closed Beta](#closed-beta)
 - [OBS setup](#obs-setup)
 - [Development commands](#development-commands)
@@ -89,14 +92,14 @@ it is transparent.
 - Realtime updates over **SSE**. A reload or scene change never resets the stats.
 - Spanish and English for both the dashboard and the overlay, set independently.
 
-**In beta:** the SF6 Session Companion (Chromium only) and the whole live-data pipeline. See
+**In beta:** the SST Companion for Street Fighter 6 (Chromium only) and the whole live-data pipeline. See
 [Project status](#project-status).
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-    B["Buckler's Boot Camp<br/>(Capcom)"] -->|"read in the user's browser<br/>with their normal session"| C["SF6 Session Companion<br/>Chromium MV3 extension"]
+    B["Buckler's Boot Camp<br/>(Capcom)"] -->|"read in the user's browser<br/>with their normal session"| C["SST Companion for Street Fighter 6<br/>Chromium MV3 extension"]
     C -->|"normalized profile + matches<br/>Bearer device token"| API["Next.js API<br/>/api/companion/*"]
     API --> DB[("PostgreSQL")]
     W["Worker<br/>Session Engine"] <--> DB
@@ -184,7 +187,7 @@ pnpm dev               # web on http://localhost:3000 + tracking worker
 **Dev tools** panel that simulates matches through the real pipeline.
 
 **Real data:** set `SF6_PROVIDER=companion` and follow
-[SF6 Session Companion](#sf6-session-companion).
+[SST Companion for Street Fighter 6](#sst-companion-for-street-fighter-6).
 
 ## Environment variables
 
@@ -222,7 +225,7 @@ defaults. Never commit real values.
 Secrets are read on the server only. Nothing uses `NEXT_PUBLIC_*`. The extension build reads
 `COMPANION_TRACKER_ORIGINS`, a public list of allowed tracker origins.
 
-## SF6 Session Companion
+## SST Companion for Street Fighter 6
 
 A Manifest V3 extension (`apps/companion-extension`) for Chrome, Edge and Brave.
 
@@ -372,7 +375,7 @@ src/server/                 auth, db (schema), ingestion, sessions, tracking, re
 src/worker/                 standalone tracking worker (wraps src/server/tracking/worker-runtime.ts)
 src/components/overlay/     OBS overlay renderer (CEF-safe CSS)
 packages/sf6-capcom-core/   pure Buckler parsers/normalizers + companion contract (shared)
-apps/companion-extension/   SF6 Session Companion (Chromium MV3)
+apps/companion-extension/   SST Companion for Street Fighter 6 (Chromium MV3)
 drizzle/                    SQL migrations
 tests/                      integration tests (Postgres) and sanitized Buckler fixtures
 e2e/                        Playwright end-to-end tests
@@ -384,9 +387,10 @@ docs/                       architecture, companion, security audit, research
 
 - [docs/architecture.md](docs/architecture.md): system design, data model, ingestion, realtime,
   overlays.
+- [docs/brand/NOTICE.md](docs/brand/NOTICE.md): SST name and logo (brand notice, draft).
 - [docs/rfc/0001-sst-open-core-multigame.md](docs/rfc/0001-sst-open-core-multigame.md):
   RFC for SST's open-core, cloud and multi-game direction.
-- [docs/companion.md](docs/companion.md): the SF6 Session Companion (transports, permissions,
+- [docs/companion.md](docs/companion.md): the SST Companion for Street Fighter 6 (transports, permissions,
   polling, recovery, limits, validation).
 - [docs/security-audit.md](docs/security-audit.md): pre-production security audit, accepted risks
   and production requirements.

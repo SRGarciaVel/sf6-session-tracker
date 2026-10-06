@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "SF6 Session Companion"
+    "message": "SST Companion for Street Fighter 6"
   },
   "extDescription": {
-    "message": "Sends your own Street Fighter 6 matches from Buckler's Boot Camp to your SF6 Session Tracker. Never sends your Capcom cookies or credentials."
+    "message": "Sends your own Street Fighter 6 matches from Buckler's Boot Camp to your SST account. Never sends your Capcom cookies or credentials."
   },
   "tracker": {
     "message": "Tracker"
@@ -18,7 +18,7 @@
     "message": "Last sync"
   },
   "connectTitle": {
-    "message": "Connect to your Session Tracker"
+    "message": "Connect to SST"
   },
   "trackerUrl": {
     "message": "Tracker"
@@ -48,7 +48,7 @@
     "message": "Disconnect"
   },
   "privacy": {
-    "message": "The companion never sends your Capcom cookies or credentials to the Session Tracker. It only sends your CFN ID, fighter name, characters, rank/LP/MR and your matches (replay ID, time, mode, result, rival name and character)."
+    "message": "The companion never sends your Capcom cookies or credentials to SST. It only sends your CFN ID, fighter name, characters, rank/LP/MR and your matches (replay ID, time, mode, result, rival name and character)."
   },
   "connected": {
     "message": "Connected"
@@ -142,7 +142,7 @@
     "message": "Browser companion"
   },
   "errTrackerUnreachable": {
-    "message": "We couldn't reach Session Tracker ($VALUE$). On the first visit of the day the beta server can take up to a minute to start: open that address in a tab, wait for it to load and try again.",
+    "message": "We couldn't reach SST ($VALUE$). On the first visit of the day the beta server can take up to a minute to start: open that address in a tab, wait for it to load and try again.",
     "placeholders": {
       "value": {
         "content": "$1"

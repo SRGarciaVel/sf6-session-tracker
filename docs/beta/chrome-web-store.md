@@ -45,14 +45,14 @@ informative.
    _New item_ → upload `artifacts/sf6-session-companion-vX.Y.Z-beta.zip`.
    Guide: <https://developer.chrome.com/docs/webstore/publish>.
 3. **Store listing:**
-   - description (ES/EN), stating it is unofficial and needs the Session Tracker plus a Buckler
+   - description (ES/EN), stating it is unofficial and needs an SST account plus a Buckler
      login of your own;
    - category;
    - store icon and screenshots;
    - support link (repository Issues).
 4. **Privacy** tab (<https://developer.chrome.com/docs/webstore/cws-dashboard-privacy>):
-   - single purpose: "send the user's own SF6 match results from Buckler's Boot Camp to their
-     SF6 Session Tracker";
+   - single purpose: "send the user's own Street Fighter 6 match results from Buckler's Boot Camp
+     to their SST account";
    - justify each permission (§4);
    - declare the data types collected and the Limited Use certifications
      (<https://developer.chrome.com/docs/webstore/program-policies/limited-use>);
@@ -72,13 +72,13 @@ again. Their sessions and matches live on the tracker and are not lost.
 
 ## 4. Permission justifications (copy into the dashboard)
 
-| Permission                                       | Justification                                                                                                                    |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| `https://www.streetfighter.com/6/buckler/*`      | Read the signed-in user's own profile and battle log from Buckler's Boot Camp, with the browser's existing session.              |
-| `https://sf6-session-tracker-web.onrender.com/*` | Send the normalized results to the user's Session Tracker account (pairing, state, sync). It is the only tracker origin allowed. |
-| `storage`                                        | Keep the device token, pairing state and last-seen match IDs locally.                                                            |
-| `alarms`                                         | Check for new matches every 30 s (the MV3 minimum) without keep-alive tricks.                                                    |
-| `scripting`                                      | Fallback when Buckler only answers from its own page: run the same read in an open Buckler tab the user opened.                  |
+| Permission                                       | Justification                                                                                                        |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `https://www.streetfighter.com/6/buckler/*`      | Read the signed-in user's own profile and battle log from Buckler's Boot Camp, with the browser's existing session.  |
+| `https://sf6-session-tracker-web.onrender.com/*` | Send the normalized results to the user's SST account (pairing, state, sync). It is the only tracker origin allowed. |
+| `storage`                                        | Keep the device token, pairing state and last-seen match IDs locally.                                                |
+| `alarms`                                         | Check for new matches every 30 s (the MV3 minimum) without keep-alive tricks.                                        |
+| `scripting`                                      | Fallback when Buckler only answers from its own page: run the same read in an open Buckler tab the user opened.      |
 
 Not requested: `cookies`, `webRequest`, `tabs`, `<all_urls>`, `debugger`.
 

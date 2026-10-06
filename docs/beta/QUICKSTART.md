@@ -1,4 +1,4 @@
-# SF6 Session Companion — beta en 5 minutos
+# SST Companion para Street Fighter 6 — beta en 5 minutos
 
 **Tracker de la beta:** <https://sf6-session-tracker-web.onrender.com>
 **Navegadores:** Chrome, Brave o Edge (en PC).
@@ -9,7 +9,7 @@
 2. Abre `chrome://extensions` (o `brave://extensions` / `edge://extensions`).
 3. Activa **Modo desarrollador**.
 4. Pulsa **Cargar descomprimida** y elige **la carpeta que contiene `manifest.json`**.
-5. **Fija** la extensión: 🧩 → 📌 _SF6 Session Companion_.
+5. **Fija** la extensión: 🧩 → 📌 _SST Companion para Street Fighter 6_.
 6. En ese navegador, **inicia sesión en Buckler**:
    <https://www.streetfighter.com/6/buckler/>
 7. Abre el **tracker** (la primera carga puede tardar ~1 min) → **Crear cuenta** → añade tu CFN

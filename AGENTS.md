@@ -8,7 +8,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# SF6 Session Tracker — project rules
+# SST (Session Stats Tracker) — project rules
 
 - Architecture & decisions: `docs/architecture.md`. Read it before structural changes.
 - Session math lives ONLY in `src/domain/session/engine.ts` (pure, unit tested). Never compute
