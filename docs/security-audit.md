@@ -260,11 +260,34 @@ despliega en Supabase sin el paso del §7.
 - **Aceptado:** aparece en los logs de acceso del hosting y puede filtrarse en el stream; si
   ocurre, se rota.
 
-### SEC-008 — Enumeración de cuentas (LOW, ACCEPTED)
+### SEC-008 — Enumeración de cuentas (LOW, FIXED en Phase 4.6)
 
-- **Qué pasa:** el sign-up responde "el usuario ya existe".
-- **Por qué se acepta:** sin verificación de email no hay forma limpia de evitarlo.
-- **Mitigación:** el rate limit (SEC-002) limita la velocidad.
+- **Qué pasaba:** el sign-up respondía "el usuario ya existe".
+- **Corrección (Phase 4.6, [auth.md](auth.md#account-enumeration)):**
+  - con `requireEmailVerification`, un sign-up duplicado devuelve la misma respuesta genérica que
+    uno nuevo (usuario sintético de Better Auth, sin sesión);
+  - "olvidé mi contraseña" y "reenviar verificación" responden igual exista o no la cuenta;
+  - los correos se encolan sin bloquear la respuesta;
+  - hay límites por IP y por email (hash con clave).
+- **Residual:** hay pequeñas diferencias de tiempo por escrituras en BD, acotadas por el rate
+  limit. No se promete indistinguibilidad perfecta.
+
+### SEC-026 — Email sin verificar y sin recuperación de cuenta (MEDIUM, FIXED en Phase 4.6)
+
+- **Qué pasaba:**
+  - cualquiera podía registrarse con un correo ajeno y obtener sesión al instante;
+  - no había forma de recuperar una contraseña olvidada.
+- **Corrección:**
+  - **verificación obligatoria** antes de cualquier sesión, con enlaces JWT firmados de 60 min;
+  - **gate central** `getVerifiedSession()`, que también ignora sesiones antiguas de cuentas sin
+    verificar;
+  - **reset de contraseña** nativo de Better Auth:
+    - de un solo uso, 60 min, con el token guardado hasheado;
+    - revoca todas las sesiones;
+  - callbacks limitados a páginas propias (sin open redirect);
+  - logs sin direcciones, enlaces ni tokens;
+  - `RESEND_API_KEY` y `EMAIL_FROM` obligatorios en producción (fail closed).
+- **Despliegue:** cuentas existentes y cuenta de QA según [auth.md § Existing accounts](auth.md#existing-accounts-rollout).
 
 ### SEC-015 — Privacidad y retención (LOW, ACCEPTED, documentado)
 
@@ -284,7 +307,9 @@ partidas antiguas. Hay que resolverlo antes de una beta abierta.
 ### SEC-024 — Registro abierto (LOW, recomendación)
 
 En beta cerrada conviene limitar el registro a una lista de emails o invitaciones (hook
-`before` de sign-up en Better Auth). No implementado.
+`before` de sign-up en Better Auth). No implementado. Desde Phase 4.6 cada cuenta debe probar
+que controla su correo y el sign-up tiene un límite de 5 / 15 min por IP; CAPTCHA solo si los
+logs muestran abuso distribuido.
 
 ### SEC-009, 011, 014, 016–021, 023 — Sin vulnerabilidad (detalle en §4)
 
@@ -436,6 +461,8 @@ En beta cerrada conviene limitar el registro a una lista de emails o invitacione
 | ----------------------------------------------------------------------- | --------------- | ------------------------ | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DATABASE_URL`                                                          | **secret**      | ✔                        | ✔                                 | Conexión **directa o session pooler** (5432) con `?sslmode=require`. **No** usar el transaction pooler (6543): rompe `LISTEN/NOTIFY` (SSE) y las sentencias preparadas (SEC-023) |
 | `BETTER_AUTH_SECRET`                                                    | **secret**      | ✔                        | ✔ (lo exige la validación de env) | `openssl rand -base64 32`; el placeholder se rechaza                                                                                                                             |
+| `RESEND_API_KEY`                                                        | **secret**      | ✔ (web)                  | ✔ (lo exige la validación de env) | Resend, permiso _Sending access_ limitado al dominio; nunca en chat ni en el repo ([auth.md](auth.md))                                                                           |
+| `EMAIL_FROM`                                                            | config          | ✔ (web)                  | ✔                                 | remitente en un dominio verificado en Resend (SPF + DKIM; DMARC recomendado)                                                                                                     |
 | `APP_URL`                                                               | público         | ✔                        | ✔                                 | `https://…` (activa cookies `Secure`, HSTS y `upgrade-insecure-requests`)                                                                                                        |
 | `NODE_ENV`                                                              | público         | `production`             | `production`                      |                                                                                                                                                                                  |
 | `TRUST_PROXY`                                                           | público         | `true`                   | —                                 | Imprescindible detrás del proxy de la plataforma                                                                                                                                 |

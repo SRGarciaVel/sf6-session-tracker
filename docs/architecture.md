@@ -225,6 +225,13 @@ close OBS mid-session and come back to correct stats. Each poll fetches recent m
   mutations.
 - Rate limits (in-memory per instance): CFN lookup, overlay state/stream per IP, and dev tools.
   better-auth limits auth endpoints.
+- **Account trust (Phase 4.6, [auth.md](auth.md)):** an email is trusted only after its owner opens
+  the verification link. Better Auth creates no session for an unverified account, and every
+  session read goes through `getVerifiedSession()`, which also ignores sessions of older
+  unverified accounts. Password reset is single-use, lasts 60 min and revokes all sessions.
+  Sign-up, resend and reset answer identically for known and unknown addresses. Email goes
+  through `src/server/email` (Resend in production), queued so it never delays a response, with
+  per-IP and per-email (keyed hash) limits.
 - Secrets stay server-side only (no `NEXT_PUBLIC_` secrets). Logs redact keys that look like
   `token|secret|password|cookie|authorization`.
 - Dev endpoints (mock matches, outage simulation) exist only when `NODE_ENV !== "production"`
