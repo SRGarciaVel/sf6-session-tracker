@@ -131,7 +131,8 @@
     },
     "companionDeviceNotFound": "Ese dispositivo no existe o ya fue revocado.",
     "companionNoData": "No hemos recibido datos recientes del Companion. Ábrelo en tu navegador, comprueba que Buckler tiene la sesión iniciada y pulsa «Sincronizar ahora».",
-    "companionNoDataCfn": "Aún no hemos recibido datos de ese CFN desde el Companion. En el Companion, escribe tu CFN ID, pulsa «Guardar» y vuelve a buscar en unos segundos."
+    "companionNoDataCfn": "Aún no hemos recibido datos de ese CFN desde el Companion. En el Companion, escribe tu CFN ID, pulsa «Guardar» y vuelve a buscar en unos segundos.",
+    "creatorKeyInvalid": "Esta Creator Key no es válida o no está disponible."
   },
   "Dashboard": {
     "eyebrow": "Street Fighter 6",
@@ -327,6 +328,18 @@
         "syncNow": "Esperando una sincronización reciente: abre el Companion y pulsa «Sincronizar ahora»."
       },
       "goToCompanion": "Ir al Companion ↓"
+    },
+    "creatorBeta": {
+      "title": "Creator Beta",
+      "planLabel": "Plan",
+      "free": "Free",
+      "creatorBeta": "Creator Beta",
+      "activeUntil": "Activo hasta",
+      "intro": "¿Tienes una Creator Key? Canjéala para unirte a la Creator Beta. Las funciones Creator irán llegando durante la beta.",
+      "keyLabel": "Creator Key",
+      "redeem": "Canjear",
+      "redeeming": "Canjeando…",
+      "success": "Acceso a Creator Beta activado. Las funciones Creator irán llegando durante la beta."
     }
   },
   "Recap": {

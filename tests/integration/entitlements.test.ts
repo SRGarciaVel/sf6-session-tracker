@@ -46,7 +46,7 @@ describe.skipIf(!TEST_DB)("plans & entitlements (integration)", () => {
       source: "default",
       entitlements: PLAN_ENTITLEMENTS.free,
     });
-    expect(await getPlanSummary(db, userId)).toEqual({ plan: "free" });
+    expect(await getPlanSummary(db, userId)).toEqual({ plan: "free", activeUntil: null });
   });
 
   it("explicit free and creator_beta rows; creator_beta is behaviour-equivalent", async () => {

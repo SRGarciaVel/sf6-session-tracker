@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const BASE = {
   DATABASE_URL: "postgres://u:p@localhost:5432/db",
   BETTER_AUTH_SECRET: "a-real-random-secret-value-with-enough-length-0001",
+  CREATOR_KEY_PEPPER: "9f1c2b7e4d8a6f3c0b5e7d9a2c4f6e8b1d3a5c7e9f0b2d4c6e8a1f3b5d7c9e0a",
 };
 
 async function loadEnv(vars: Record<string, string>) {
@@ -58,5 +59,29 @@ describe("environment hardening", () => {
     await loadEnv({ ...BASE, NODE_ENV: "development" });
     const local = await import("./security/client-ip");
     expect(local.getClientIp(new Headers({ "x-forwarded-for": "1.2.3.4" }))).toBe("local"); // untrusted
+  });
+
+  it("Creator Keys: pepper required in production, ≥ 32 chars, no placeholders", async () => {
+    const noPepper = {
+      DATABASE_URL: BASE.DATABASE_URL,
+      BETTER_AUTH_SECRET: BASE.BETTER_AUTH_SECRET,
+    };
+    await expect(loadEnv({ ...noPepper, NODE_ENV: "production" })).rejects.toThrow(
+      /CREATOR_KEY_PEPPER: required/,
+    );
+    await expect(
+      loadEnv({
+        ...BASE,
+        NODE_ENV: "production",
+        CREATOR_KEY_PEPPER: "dev-only-creator-key-pepper-not-a-secret-0000",
+      }),
+    ).rejects.toThrow(/CREATOR_KEY_PEPPER: placeholder/);
+    await expect(loadEnv({ ...BASE, CREATOR_KEY_PEPPER: "too-short" })).rejects.toThrow(
+      /at least 32/,
+    );
+    // Optional outside production (redeem simply reports keys as unavailable).
+    expect(
+      (await loadEnv({ ...noPepper, NODE_ENV: "development" })).CREATOR_KEY_PEPPER,
+    ).toBeUndefined();
   });
 });

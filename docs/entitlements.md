@@ -23,7 +23,9 @@ const { overlays } = await getEntitlements(db, userId); // userId from the serve
 - **The server is the only authority.** There is no plan in cookies, localStorage, env, query
   strings or `NEXT_PUBLIC_*`. If the UI ever shows "Plan: Free", it comes from
   `getPlanSummary()` (`{ plan }` only, never row ids, sources or dates) and is display-only.
-- `plus`, `creator`, billing and Creator Keys do **not** exist yet (Phase 3+).
+- `plus`, `creator` and billing do **not** exist yet. **Creator Keys** (Phase 3) grant
+  `creator_beta` for 90 days through `entitlement_grant` (`source = 'creator_key'`, linked by
+  `creator_key_id`): see [creator-keys.md](creator-keys.md).
 
 ## Resolution and precedence
 
@@ -117,8 +119,9 @@ no backfill.
   If `sf6_app` already receives DML on new tables through default privileges, the grant is a
   no-op. Never grant `CREATE`, `ALTER`, `DROP` or `BYPASSRLS`.
 
-- Plans and grants are set by operators with the admin connection until Phase 3. Phase 3's
-  redeem flow will need `INSERT` on `entitlement_grant`.
+- Plans and operator grants are set with the admin connection. Since Phase 3 the runtime also
+  needs `INSERT` on `entitlement_grant` (Creator Key redeem only; never `UPDATE`/`DELETE`):
+  see [creator-keys.md § Production permissions](creator-keys.md#production-permissions-least-privilege).
 - The Data API stays disabled and `anon`/`authenticated` stay revoked. Plans are only read by the
   SST backend.
 
