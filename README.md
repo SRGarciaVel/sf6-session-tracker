@@ -205,22 +205,23 @@ defaults. Never commit real values.
 
 **Optional / configuration**
 
-| Variable                                                                                                                                                    | Purpose                                                                                 |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `TEST_DATABASE_URL`                                                                                                                                         | Database for integration tests (skipped when unset)                                     |
-| `TRUST_PROXY`, `CLIENT_IP_HEADER`                                                                                                                           | Client IP from your proxy's header (rightmost entry); required behind a proxy           |
-| `RATE_LIMIT_STORE`                                                                                                                                          | `memory` (dev default) or `postgres` (production default, shared by instances)          |
-| `PROVIDER_TIMEOUT_MS`, `PROVIDER_CACHE_TTL_MS`                                                                                                              | Provider timeout and profile cache                                                      |
-| `COMPANION_SNAPSHOT_MAX_AGE_MS`                                                                                                                             | Maximum age of companion data to start or end a session                                 |
-| `COMPANION_DOWNLOAD_URL`                                                                                                                                    | Optional https link to the beta companion ZIP (download button on `/help/companion`)    |
-| `COMPANION_LATEST_VERSION`                                                                                                                                  | Newest released companion version (e.g. `0.1.1`); enables the dashboard's update notice |
-| `TRACKER_POLL_INTERVAL_MS`, `TRACKER_POLL_JITTER_MS`, `TRACKER_BACKOFF_BASE_MS`, `TRACKER_BACKOFF_MAX_MS`, `TRACKER_PROFILE_REFRESH_MS`, `TRACKER_LEASE_MS` | Worker cadence, backoff and leases                                                      |
-| `WORKER_TICK_MS`, `WORKER_CONCURRENCY`                                                                                                                      | Worker scheduler                                                                        |
-| `TRACKER_RUNTIME_MODE`                                                                                                                                      | `standalone` (default: separate worker process) or `embedded` (tracker inside the web)  |
-| `SESSION_START_GRACE_SECONDS`                                                                                                                               | Count matches finished up to N s before "Start session"                                 |
-| `ENABLE_DEV_TOOLS`                                                                                                                                          | Mock-match tools (only with `SF6_PROVIDER=mock`, never in production)                   |
-| `LOG_LEVEL`                                                                                                                                                 | `debug` · `info` · `warn` · `error`                                                     |
-| `CAPCOM_*`                                                                                                                                                  | Server-side Capcom prototype only ([docs/capcom-provider.md](docs/capcom-provider.md))  |
+| Variable                                                                                                                                                    | Purpose                                                                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `TEST_DATABASE_URL`                                                                                                                                         | Database for integration tests (skipped when unset)                                                                   |
+| `TRUST_PROXY`, `CLIENT_IP_HEADER`                                                                                                                           | Client IP from your proxy's header (rightmost entry); required behind a proxy                                         |
+| `RATE_LIMIT_STORE`                                                                                                                                          | `memory` (dev default) or `postgres` (production default, shared by instances)                                        |
+| `PROVIDER_TIMEOUT_MS`, `PROVIDER_CACHE_TTL_MS`                                                                                                              | Provider timeout and profile cache                                                                                    |
+| `COMPANION_SNAPSHOT_MAX_AGE_MS`                                                                                                                             | Maximum age of companion data to start or end a session                                                               |
+| `COMPANION_DOWNLOAD_URL`                                                                                                                                    | Optional https link to the beta companion ZIP (download button on `/help/companion`)                                  |
+| `COMPANION_LATEST_VERSION`                                                                                                                                  | Newest released companion version (e.g. `0.1.1`); enables the dashboard's update notice                               |
+| `CREATOR_KEY_PEPPER`                                                                                                                                        | Server-only secret for Creator Keys (HMAC); **required in production** ([docs/creator-keys.md](docs/creator-keys.md)) |
+| `TRACKER_POLL_INTERVAL_MS`, `TRACKER_POLL_JITTER_MS`, `TRACKER_BACKOFF_BASE_MS`, `TRACKER_BACKOFF_MAX_MS`, `TRACKER_PROFILE_REFRESH_MS`, `TRACKER_LEASE_MS` | Worker cadence, backoff and leases                                                                                    |
+| `WORKER_TICK_MS`, `WORKER_CONCURRENCY`                                                                                                                      | Worker scheduler                                                                                                      |
+| `TRACKER_RUNTIME_MODE`                                                                                                                                      | `standalone` (default: separate worker process) or `embedded` (tracker inside the web)                                |
+| `SESSION_START_GRACE_SECONDS`                                                                                                                               | Count matches finished up to N s before "Start session"                                                               |
+| `ENABLE_DEV_TOOLS`                                                                                                                                          | Mock-match tools (only with `SF6_PROVIDER=mock`, never in production)                                                 |
+| `LOG_LEVEL`                                                                                                                                                 | `debug` · `info` · `warn` · `error`                                                                                   |
+| `CAPCOM_*`                                                                                                                                                  | Server-side Capcom prototype only ([docs/capcom-provider.md](docs/capcom-provider.md))                                |
 
 Secrets are read on the server only. Nothing uses `NEXT_PUBLIC_*`. The extension build reads
 `COMPANION_TRACKER_ORIGINS`, a public list of allowed tracker origins.
@@ -290,23 +291,24 @@ private.** It works like a read-only secret link. If it leaks (for example, on s
 
 ## Development commands
 
-| Command                                                           | What it does                                                              |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `pnpm dev`                                                        | Next.js dev server **and** the tracking worker (auto-reload)              |
-| `pnpm dev:web` · `pnpm dev:worker`                                | Run them separately                                                       |
-| `pnpm build` · `pnpm start` · `pnpm start:worker`                 | Production build (Next.js + `dist/worker.mjs`) and start (split mode)     |
-| `pnpm companion:package:beta` · `pnpm companion:inspect:prod`     | Closed-beta companion ZIP + SHA-256 in `artifacts/`, and its summary      |
-| `pnpm typecheck` · `pnpm lint` · `pnpm test`                      | Types (app + extension), ESLint, Vitest (unit + integration)              |
-| `pnpm check`                                                      | typecheck + lint + test                                                   |
-| `pnpm format` · `pnpm format:check`                               | Prettier                                                                  |
-| `pnpm test:e2e`                                                   | Playwright against the dev stack (see the note below)                     |
-| `pnpm db:migrate` · `pnpm db:generate` · `pnpm db:studio`         | Apply migrations, generate one after a schema change, browse data         |
-| `pnpm db:seed`                                                    | Demo account with mock data (`SF6_PROVIDER=mock` only)                    |
-| `pnpm companion:build` · `companion:dev` · `companion:build:prod` | Build the extension                                                       |
-| `pnpm provider:check <cfnId>` · `--fixture`                       | Validate a provider's output against the contract (fixtures work offline) |
-| `pnpm dev:reassign-cfn --email <e> --cfn <id> [--dry-run]`        | Dev only: point an account at another CFN                                 |
-| `pnpm dev:cleanup-test-accounts [--confirm N]`                    | Dev only: remove `@test.local` accounts (dry run by default)              |
-| `pnpm research:cfn-browser`                                       | Research tool from the Buckler investigation (not used by the app)        |
+| Command                                                           | What it does                                                               |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `pnpm dev`                                                        | Next.js dev server **and** the tracking worker (auto-reload)               |
+| `pnpm dev:web` · `pnpm dev:worker`                                | Run them separately                                                        |
+| `pnpm build` · `pnpm start` · `pnpm start:worker`                 | Production build (Next.js + `dist/worker.mjs`) and start (split mode)      |
+| `pnpm companion:package:beta` · `pnpm companion:inspect:prod`     | Closed-beta companion ZIP + SHA-256 in `artifacts/`, and its summary       |
+| `pnpm typecheck` · `pnpm lint` · `pnpm test`                      | Types (app + extension), ESLint, Vitest (unit + integration)               |
+| `pnpm check`                                                      | typecheck + lint + test                                                    |
+| `pnpm format` · `pnpm format:check`                               | Prettier                                                                   |
+| `pnpm test:e2e`                                                   | Playwright against the dev stack (see the note below)                      |
+| `pnpm db:migrate` · `pnpm db:generate` · `pnpm db:studio`         | Apply migrations, generate one after a schema change, browse data          |
+| `pnpm db:seed`                                                    | Demo account with mock data (`SF6_PROVIDER=mock` only)                     |
+| `pnpm companion:build` · `companion:dev` · `companion:build:prod` | Build the extension                                                        |
+| `pnpm provider:check <cfnId>` · `--fixture`                       | Validate a provider's output against the contract (fixtures work offline)  |
+| `pnpm dev:reassign-cfn --email <e> --cfn <id> [--dry-run]`        | Dev only: point an account at another CFN                                  |
+| `pnpm creator-key:issue` · `:list` · `:revoke`                    | Operator CLI for Creator Keys (admin connection; see docs/creator-keys.md) |
+| `pnpm dev:cleanup-test-accounts [--confirm N]`                    | Dev only: remove `@test.local` accounts (dry run by default)               |
+| `pnpm research:cfn-browser`                                       | Research tool from the Buckler investigation (not used by the app)         |
 
 **Tests.** Integration tests need `TEST_DATABASE_URL` (the `sf6_tracker_test` database from Docker
 Compose; run `DATABASE_URL=$TEST_DATABASE_URL pnpm db:migrate` once).
@@ -387,6 +389,8 @@ docs/                       architecture, companion, security audit, research
 
 - [docs/architecture.md](docs/architecture.md): system design, data model, ingestion, realtime,
   overlays.
+- [docs/creator-keys.md](docs/creator-keys.md): Creator Beta invitation keys (crypto, redeem,
+  operator CLI, permissions, rollout).
 - [docs/entitlements.md](docs/entitlements.md): plans vs entitlements, the server resolver,
   current limits and downgrade safety.
 - [docs/brand/NOTICE.md](docs/brand/NOTICE.md): SST name and logo (brand notice, draft).

@@ -31,6 +31,8 @@ TRUST_PROXY=true
 # Companion distribution (docs/companion.md §11c)
 COMPANION_DOWNLOAD_URL=https://github.com/SRGarciaVel/sf6-session-tracker/releases/latest/download/sf6-session-companion-beta.zip
 COMPANION_LATEST_VERSION=<latest released companion version, e.g. 0.1.0>
+# Creator Keys (docs/creator-keys.md): required; set BEFORE deploying Phase 3
+CREATOR_KEY_PEPPER=<openssl rand -hex 32>
 ```
 
 Do **not** also create a Background Worker in this mode (it refuses to start with
