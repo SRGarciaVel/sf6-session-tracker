@@ -481,23 +481,13 @@
   },
   "Builder": {
     "title": "Configure overlay",
-    "unsaved": "Unsaved changes",
-    "saved": "Saved",
     "discard": "Discard",
     "save": "Save & update OBS",
     "saving": "Saving…",
     "savedMessage": "Saved. Your OBS overlay has updated.",
     "rotatedMessage": "New URL generated. Update the Browser Source in OBS.",
-    "sectionName": "Name",
     "sectionTheme": "Theme",
-    "sectionSize": "Size preset",
-    "sectionShow": "Show",
-    "sectionText": "Text & language",
-    "sectionColors": "Colors",
-    "sectionBackground": "Background",
-    "sectionLayout": "Layout",
     "nameAria": "Overlay name",
-    "sizeHint": "OBS Browser Source: {width} × {height}. Any size works — the overlay scales to fit.",
     "titleLabel": "Title",
     "titlePlaceholder": "Default: “{default}”",
     "showTitle": "Show title",
@@ -533,7 +523,6 @@
     "bgAlpha": "Alpha",
     "previewSample": "Showing sample numbers.",
     "previewLive": "Showing your real session — it updates live as you play.",
-    "previewUnsaved": "Unsaved changes only appear here.",
     "urlTitle": "OBS Browser Source URL",
     "urlNote": "The URL never changes when you edit the design. Treat it like a password: anyone with it can view this overlay.",
     "regenerate": "Regenerate URL",
@@ -606,14 +595,15 @@
         "decorations": "Decorative bars and strokes"
       },
       "notInTheme": "This theme doesn't show this element.",
-      "reset": "Reset Creator customization"
+      "reset": "Reset Creator customization",
+      "tabSummary": "Reusable presets and advanced styling on top of any theme.",
+      "typographyGroup": "Number typography",
+      "accentGroup": "Accent"
     },
     "creatorThemesNote": "Rank Card, Broadcast and Prestige are Creator Beta themes (invite-only).",
     "themeSavedInactive": "Your Creator theme “{theme}” is saved. Renew Creator access to use it again — until then the preview and OBS show {fallback}.",
-    "canvasLimited": "{theme} is designed for: {canvases}.",
     "sampleRank": "Sample rank",
     "zoomFit": "Fit",
-    "zoomActual": "100%",
     "variants": {
       "title": "Theme variants",
       "savedButInactive": "Your theme variants are saved. Renew Creator access to use them again.",
@@ -654,7 +644,8 @@
         "subtle": "Subtle",
         "normal": "Normal"
       },
-      "animatedAccent": "Animated accent (respects reduced motion)"
+      "animatedAccent": "Animated accent (respects reduced motion)",
+      "titleFor": "{theme} variants"
     },
     "presetsCreator": {
       "title": "Creator presets",
@@ -678,8 +669,57 @@
       "delete": "Delete",
       "deleteConfirm": "Delete this preset permanently?",
       "deleted": "Preset deleted.",
-      "created": "Preset saved."
-    }
+      "created": "Preset saved.",
+      "selectLabel": "Preset",
+      "more": "More"
+    },
+    "tabs": {
+      "appearance": "Appearance",
+      "content": "Content",
+      "style": "Style",
+      "creator": "Creator"
+    },
+    "editorLabel": "Editor sections",
+    "themeGroupFree": "Free",
+    "statsTitle": "Visible stats",
+    "statsGroups": {
+      "session": "Session",
+      "rating": "Rating & rank"
+    },
+    "showAll": "Show all",
+    "hideAll": "Hide all",
+    "titleGroup": "Title",
+    "languageGroup": "Language & character",
+    "ratingCharacterHint": "Rating and rank always belong to a single character.",
+    "typography": "Typography",
+    "moreTypography": "Number font and size → Creator",
+    "colorsCore": "Core colors",
+    "colorsResults": "Results",
+    "backgroundGroup": "Background",
+    "borderGroup": "Border",
+    "layoutGroup": "Size & layout",
+    "resetThemeStyle": "Reset the theme's style",
+    "resetThemeStyleConfirm": "The theme's colors, font and background will be restored. Your stats and title don't change.",
+    "resetColorAria": "Reset {label} to the theme color",
+    "status": {
+      "saved": "Saved",
+      "unsaved": "Unsaved changes",
+      "saving": "Saving…",
+      "failed": "Save failed"
+    },
+    "saveFailed": "Couldn't save: {reason} Your changes are still here; try again.",
+    "leaveWarning": "You have unsaved changes.",
+    "leaveStay": "Keep editing",
+    "leaveDiscard": "Leave without saving",
+    "canvas": "Canvas",
+    "canvasHint": "The canvas ({width} × {height}) is saved: it's the browser source size in OBS.",
+    "zoom": "Zoom",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "openOverlay": "Open overlay ↗",
+    "obsHint": "In OBS: Browser Source → paste the URL → {width} × {height}.",
+    "dangerZone": "More actions",
+    "saveNetworkError": "The server couldn't be reached."
   },
   "NotFound": {
     "title": "Page not found",

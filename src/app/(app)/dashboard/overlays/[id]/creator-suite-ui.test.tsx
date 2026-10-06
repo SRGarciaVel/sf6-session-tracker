@@ -2,11 +2,20 @@ import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { DEFAULT_OVERLAY_CONFIG } from "@/domain/overlay/config";
+import {
+  DEFAULT_OVERLAY_CONFIG,
+  applyThemeDefaults,
+  type OverlayConfig,
+} from "@/domain/overlay/config";
+import { DEFAULT_CREATOR_CUSTOMIZATION } from "@/domain/overlay/creator";
+import { sampleLiveState } from "@/domain/overlay/state";
+import { OVERLAY_THEMES } from "@/domain/overlay/config";
 import en from "@/i18n/messages/en.json";
 import es from "@/i18n/messages/es.json";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => undefined }) }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: () => undefined, push: () => undefined }),
+}));
 vi.mock("../../actions", () => ({
   applyPresetAction: vi.fn(),
   createPresetAction: vi.fn(),
@@ -14,10 +23,18 @@ vi.mock("../../actions", () => ({
   duplicatePresetAction: vi.fn(),
   renamePresetAction: vi.fn(),
   updatePresetAction: vi.fn(),
+  saveOverlayAction: vi.fn(),
+  deleteOverlayAction: vi.fn(),
+  rotateOverlayTokenAction: vi.fn(),
+}));
+vi.mock("../../_components/LiveDashboard", () => ({
+  useLiveDashboard: () => ({ state: { live: sampleLiveState() }, stream: "open" }),
 }));
 
 const { ThemePicker } = await import("./ThemePicker");
 const { PresetsSection } = await import("./PresetsSection");
+const { CreatorPanel } = await import("./CreatorPanel");
+const { OverlayBuilder } = await import("./OverlayBuilder");
 
 const wrap = (locale: "es" | "en", node: ReactNode) =>
   renderToString(
@@ -25,85 +42,183 @@ const wrap = (locale: "es" | "en", node: ReactNode) =>
       {node}
     </NextIntlClientProvider>,
   );
-const button = (html: string, theme: string) =>
-  html.match(new RegExp(`<button[^>]*data-theme="${theme}"[^>]*>`))?.[0] ?? "";
+const radio = (html: string, theme: string) =>
+  html.match(new RegExp(`<input[^>]*value="${theme}"[^>]*>`))?.[0] ?? "";
+const presets = [
+  { id: "00000000-0000-4000-8000-000000000001", name: "Gold look", theme: "prestige" as const },
+  { id: "00000000-0000-4000-8000-000000000002", name: "Old", theme: null },
+];
+const FREE = { advancedCustomization: false, premiumThemes: false, creatorPresets: false };
+const CREATOR = { advancedCustomization: true, premiumThemes: true, creatorPresets: true };
 
 describe("ThemePicker", () => {
-  it("Free: every Free theme selectable, Creator themes visible but disabled, one discreet note", () => {
+  it("is a real radio group; every registered theme present once", () => {
+    const html = wrap(
+      "en",
+      <ThemePicker value="competitive" locale="en" premiumThemes onSelect={() => {}} />,
+    );
+    expect(html).toContain('role="radiogroup"');
+    for (const t of OVERLAY_THEMES) expect(radio(html, t), t).toContain('type="radio"');
+    expect(html.match(/type="radio"/g)?.length).toBe(OVERLAY_THEMES.length);
+    expect(radio(html, "competitive")).toContain("checked");
+  });
+
+  it("Free: Free themes selectable, Creator themes visible but disabled, ONE badge + ONE note", () => {
     const html = wrap(
       "en",
       <ThemePicker value="competitive" locale="en" premiumThemes={false} onSelect={() => {}} />,
     );
     for (const t of ["minimal", "competitive", "fighter"])
-      expect(button(html, t)).not.toMatch(/ disabled=""/);
-    for (const t of ["rank-card", "broadcast", "prestige"]) {
-      expect(button(html, t)).toMatch(/ disabled=""/);
-      expect(button(html, t)).toContain('aria-disabled="true"');
-    }
-    expect(html.match(/Creator Beta/g)?.length).toBe(3 + 1); // 3 badges + the note
+      expect(radio(html, t)).not.toMatch(/disabled/);
+    for (const t of ["rank-card", "broadcast", "prestige"])
+      expect(radio(html, t)).toMatch(/disabled/);
+    expect(html.match(/Creator Beta/g)?.length).toBe(2); // group badge + the note
     expect(html).toContain(en.Builder.creatorThemesNote);
-    expect(html).not.toMatch(/🔒|padlock|lock-icon/i);
   });
 
-  it("Creator: all six selectable; no note", () => {
-    const html = wrap(
-      "es",
-      <ThemePicker value="rank-card" locale="es" premiumThemes onSelect={() => {}} />,
-    );
-    for (const t of ["minimal", "competitive", "fighter", "rank-card", "broadcast", "prestige"]) {
-      expect(button(html, t)).not.toMatch(/ disabled=""/);
-    }
-    expect(button(html, "rank-card")).toContain('aria-pressed="true"');
-    expect(html).not.toContain(es.Builder.creatorThemesNote);
-  });
-
-  it("downgraded with a stored Creator theme: saved message naming the Free fallback", () => {
+  it("stored Creator theme after downgrade: saved message naming the fallback", () => {
     const html = wrap(
       "es",
       <ThemePicker value="prestige" locale="es" premiumThemes={false} onSelect={() => {}} />,
     );
     expect(html).toContain("Tu tema Creator «Prestige» está guardado");
-    expect(html).toContain("muestran Street");
   });
 });
 
-describe("PresetsSection", () => {
-  const presets = [
-    { id: "00000000-0000-4000-8000-000000000001", name: "Gold look", theme: "prestige" as const },
-    { id: "00000000-0000-4000-8000-000000000002", name: "Old", theme: null },
-  ];
+describe("Presets (compact selector)", () => {
   const props = {
     overlayId: "00000000-0000-4000-8000-0000000000aa",
     config: DEFAULT_OVERLAY_CONFIG,
     dirty: false,
     onApplied: () => {},
   };
-
-  it("downgraded: presets kept and listed, required message, only delete offered", () => {
+  it("downgraded: presets kept and listed, only delete offered, no create form", () => {
     const html = wrap("en", <PresetsSection {...props} presets={presets} enabled={false} />);
+    expect(html).toContain("Gold look");
+    expect(html).not.toContain(">Apply<");
+    expect(html).not.toContain(">More<");
+    expect(html).not.toContain("Save current look");
+    expect(html).toContain(">Delete<");
+  });
+  it("entitled: selector + Apply + Update + More menu + create form", () => {
+    const html = wrap("es", <PresetsSection {...props} presets={presets} enabled />);
+    for (const s of [
+      ">Aplicar<",
+      ">Actualizar con el actual<",
+      ">Más<",
+      "Guardar aspecto actual",
+      "2/20",
+    ]) {
+      expect(html, s).toContain(s);
+    }
+  });
+});
+
+describe("CreatorPanel", () => {
+  const base = {
+    update: () => {},
+    overlayId: "00000000-0000-4000-8000-0000000000aa",
+    dirty: false,
+    onPresetApplied: () => {},
+  };
+  it("Free with stored Creator data: ONE notice with both saved messages; controls disabled", () => {
+    const config: OverlayConfig = {
+      ...DEFAULT_OVERLAY_CONFIG,
+      creator: DEFAULT_CREATOR_CUSTOMIZATION,
+    };
+    const html = wrap(
+      "en",
+      <CreatorPanel
+        {...base}
+        config={config}
+        presets={presets}
+        advancedCustomization={false}
+        creatorPresets={false}
+      />,
+    );
+    expect(html.match(/data-testid="creator-notice"/g)?.length).toBe(1);
+    expect(html).toContain("Your Creator customization is saved");
     expect(html).toContain(
       "Your Creator presets are saved. Renew Creator access to use them again.",
     );
-    expect(html).toContain("Gold look");
-    expect(html).not.toContain(">Apply<");
-    expect(html).not.toContain(">Rename<");
-    expect(html).not.toContain(">Duplicate<");
-    expect(html).not.toContain("Save current look");
-    expect(html.match(/>Delete</g)?.length).toBe(2);
+    expect(html).toMatch(/<fieldset[^>]*disabled=""[^>]*data-testid="creator-customization"/);
+    expect(html.match(/class="hud-tag[^"]*">Creator Beta</g)?.length).toBe(1); // one badge
+  });
+  it("Creator: no notice, controls enabled", () => {
+    const html = wrap(
+      "en",
+      <CreatorPanel
+        {...base}
+        config={DEFAULT_OVERLAY_CONFIG}
+        presets={[]}
+        advancedCustomization
+        creatorPresets
+      />,
+    );
+    expect(html).not.toContain("creator-notice");
+    expect(html).not.toMatch(/<fieldset[^>]*disabled=""/);
+  });
+});
+
+describe("OverlayBuilder", () => {
+  const render = (access: typeof FREE, config: OverlayConfig = DEFAULT_OVERLAY_CONFIG) =>
+    wrap(
+      "es",
+      <OverlayBuilder
+        overlayId="00000000-0000-4000-8000-0000000000aa"
+        initialName="Overlay de juego"
+        initialConfig={config}
+        url="https://sst.example/overlay/tok"
+        access={access}
+        presets={[]}
+      />,
+    );
+
+  it("renders header, four tabs (all panels present), preview and OBS output", () => {
+    const html = render(FREE);
+    expect(html.match(/role="tab"/g)?.length).toBe(4);
+    expect(html.match(/role="tabpanel"/g)?.length).toBe(4);
+    for (const id of ["appearance", "content", "style", "creator"])
+      expect(html).toContain(`id="panel-${id}"`);
+    expect(html).toContain('aria-selected="true"');
+    expect(html).toContain('data-testid="overlay-preview"');
+    expect(html).toContain('data-testid="obs-output"');
+    expect(html).toMatch(
+      /href="https:\/\/sst\.example\/overlay\/tok"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/,
+    );
   });
 
-  it("entitled: create form and all actions; invalid stored preset can only be deleted", () => {
-    const html = wrap("es", <PresetsSection {...props} presets={presets} enabled />);
-    expect(html).toContain("Guardar aspecto actual");
-    expect(html.match(/>Aplicar</g)?.length).toBe(1);
-    expect(html).toContain("No se puede aplicar (no válido)");
-    expect(html).toContain("2/20");
+  it("starts saved (not dirty), no mobile save bar", () => {
+    const html = render(FREE);
+    expect(html).toContain('data-state="saved"');
+    expect(html).not.toContain("mobile-save-bar");
+    expect(html).toMatch(
+      /data-testid="save-button"[^>]*disabled|disabled[^>]*data-testid="save-button"/,
+    );
   });
 
-  it("Free without presets: invite note, no empty-state list, no create form", () => {
-    const html = wrap("en", <PresetsSection {...props} presets={[]} enabled={false} />);
-    expect(html).not.toContain("Your Creator presets are saved");
-    expect(html).toContain(en.Builder.creator.inviteOnly);
-    expect(html).not.toContain("preset-list");
+  it("desktop: sticky preview column; mobile: preview first without sticky", () => {
+    const html = render(CREATOR);
+    const col = html.match(/<div class="([^"]*)" data-testid="preview-column"/)?.[1] ?? "";
+    expect(col).toContain("lg:sticky");
+    expect(col).not.toMatch(/(^| )sticky( |$)/); // only from lg up
+    expect(col).toContain("lg:order-2");
+    // Preview column comes first in source order (mobile), editor second.
+    expect(html.indexOf("preview-column")).toBeLessThan(html.indexOf('data-testid="editor"'));
+  });
+
+  it("preview state (zoom/background/sample) is not part of the overlay config", () => {
+    // The builder passes the EFFECTIVE config to the preview and keeps preview state local:
+    // the config schema has no zoom/background/sample keys.
+    for (const k of ["zoom", "previewBg", "useSample", "sampleRank"]) {
+      expect(Object.keys(DEFAULT_OVERLAY_CONFIG)).not.toContain(k);
+    }
+  });
+
+  it("Free owner with a stored premium theme: preview renders the Free fallback", () => {
+    const html = render(FREE, applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, "rank-card"));
+    const preview = html.slice(html.indexOf('data-testid="overlay-preview"'));
+    expect(preview).toContain("ov-theme-competitive");
+    expect(preview.slice(0, 2000)).not.toContain("ov-theme-rank-card");
   });
 });

@@ -14,6 +14,32 @@ export function Section({ title, children }: { title: string; children: ReactNod
   );
 }
 
+/** A titled group inside a section (no extra box: a label and a divider-free stack). */
+export function Group({
+  title,
+  tag,
+  children,
+}: {
+  title: string;
+  /** Optional small tag next to the title (e.g. "Creator"). */
+  tag?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <fieldset className="min-w-0 space-y-3">
+      <legend className="mb-2 flex items-center gap-2 font-display text-xs font-semibold tracking-[0.14em] text-muted uppercase">
+        {title}
+        {tag}
+      </legend>
+      {children}
+    </fieldset>
+  );
+}
+
+/** Native select styled like the other inputs. */
+export const selectClass =
+  "h-9 w-full border border-line-strong bg-surface-2 px-2.5 text-sm focus:border-cyan focus:outline-none";
+
 export function Segmented<T extends string>({
   value,
   options,
@@ -121,10 +147,13 @@ export function ColorField({
   label,
   value,
   onChange,
+  resetTo,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  /** The theme's own value; shows a reset button while the colour differs from it. */
+  resetTo?: string;
 }) {
   const t = useTranslations("Builder");
   const [draft, setDraft] = useState(value);
@@ -154,6 +183,18 @@ export function ColorField({
           className="size-8 cursor-pointer border border-line-strong bg-transparent"
           aria-label={label}
         />
+        {resetTo !== undefined && (
+          <button
+            type="button"
+            onClick={() => onChange(resetTo)}
+            disabled={value.toLowerCase() === resetTo.toLowerCase()}
+            aria-label={t("resetColorAria", { label })}
+            title={t("resetColorAria", { label })}
+            className="grid size-8 place-items-center border border-line text-muted hover:border-line-strong hover:text-text focus-visible:border-cyan focus-visible:outline-none disabled:invisible"
+          >
+            <span aria-hidden>↺</span>
+          </button>
+        )}
       </span>
     </label>
   );
