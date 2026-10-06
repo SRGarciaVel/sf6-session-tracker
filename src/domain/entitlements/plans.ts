@@ -7,9 +7,9 @@
  * The server is the only authority (src/server/entitlements). Features ask for entitlements,
  * never compare plan ids.
  *
- * Phase 2: both plans resolve to the SAME entitlements, so nothing changes for anyone. Values
- * mirror today's behaviour; they are NOT the final commercial Free policy (decided later from
- * beta usage data). Creator value arrives with new entitlements in Phase 4, never by lowering Free.
+ * Values mirror today's behaviour; they are NOT the final commercial Free policy (decided later
+ * from beta usage data). Creator value arrives as NEW entitlements (Phase 4:
+ * overlays.advancedCustomization), never by lowering Free.
  *
  * Downgrade rule (all phases): losing a plan never deletes data. Over-limit resources stay
  * readable/usable, and only the creation of new ones is refused.
@@ -38,6 +38,11 @@ export interface Entitlements {
      * final commercial Free policy. Existing overlays above the max are never deleted.
      */
     max: number;
+    /**
+     * Creator Beta advanced overlay customization (Phase 4, domain/overlay/creator.ts): NEW
+     * options only; every pre-Phase-4 overlay option stays available to all plans.
+     */
+    advancedCustomization: boolean;
   };
   history: {
     /**
@@ -61,16 +66,17 @@ function deepFreeze<T extends object>(value: T): DeepReadonly<T> {
   return Object.freeze(value) as DeepReadonly<T>;
 }
 
-/** Today's behaviour, shared by every plan in Phase 2. */
-const CURRENT_BEHAVIOUR: Entitlements = {
-  overlays: { max: 10 },
-  history: { retentionDays: null },
-};
-
 export const PLAN_ENTITLEMENTS: DeepReadonly<Record<PlanId, Entitlements>> = deepFreeze({
-  free: CURRENT_BEHAVIOUR,
-  // Behaviour-equivalent to free until Phase 4 adds the first Creator capability.
-  creator_beta: CURRENT_BEHAVIOUR,
+  // Free keeps everything it had; limits are today's behaviour, not a final commercial policy.
+  free: {
+    overlays: { max: 10, advancedCustomization: false },
+    history: { retentionDays: null },
+  },
+  // Phase 4: the first (and only) difference is advanced overlay customization.
+  creator_beta: {
+    overlays: { max: 10, advancedCustomization: true },
+    history: { retentionDays: null },
+  },
 });
 
 /** A time-bound plan grant (entitlement_grant row), as the resolver needs it. */

@@ -492,3 +492,64 @@
   color: var(--ov-ink);
   opacity: 0.75;
 }
+
+/* ── Creator Beta customization (creator-style.ts) ───────────────────────────────────────
+ * Active only when the owner is entitled AND the value differs from the theme's own look:
+ * the root then carries an .ov-c-* class. Without it, nothing below applies (Free render is
+ * unchanged). */
+
+/* Secondary accent: partner color of the accent sweeps and the Street theme's second slash. */
+.ov-c-secondary .ov-minimal::after,
+.ov-c-secondary .ov-comp::before {
+  background: linear-gradient(
+    90deg,
+    var(--ov-accent),
+    var(--ov-secondary) 55%,
+    rgba(255, 255, 255, 0)
+  );
+}
+.ov-c-secondary .ov-st-slash {
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    var(--ov-cyan) 38%,
+    var(--ov-cyan) 48%,
+    transparent 48%,
+    transparent 62%,
+    var(--ov-secondary) 62%,
+    var(--ov-secondary) 70%,
+    transparent 70%
+  );
+}
+.ov-c-secondary .ov-st-main {
+  box-shadow: inset 0 -0.1em 0 var(--ov-secondary);
+}
+
+/* Number typography: font from the bundled catalog, bounded relative size. */
+.ov-c-numfont .ov-num {
+  font-family: var(--ov-num-font), var(--ov-font), "Segoe UI", system-ui, sans-serif;
+}
+.ov-c-numscale .ov-num {
+  font-size: calc(var(--ov-num-scale) * 1em);
+}
+
+/* Element visibility (stats themselves are the Free `fields` toggles; the title has its own). */
+.ov-c-hide-labels .ov-label,
+.ov-c-hide-labels .ov-st-label:not(.ov-st-title) {
+  display: none;
+}
+.ov-c-hide-units .ov-unit {
+  display: none;
+}
+.ov-c-hide-char .ov-char {
+  display: none;
+}
+.ov-c-hide-deco .ov-min-bar,
+.ov-c-hide-deco .ov-comp-rule,
+.ov-c-hide-deco .ov-st-slash {
+  display: none;
+}
+.ov-c-hide-deco .ov-minimal::after,
+.ov-c-hide-deco .ov-comp::before {
+  content: none;
+}

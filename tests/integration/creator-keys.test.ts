@@ -101,8 +101,8 @@ describe.skipIf(!TEST_DB)("Creator Keys (integration)", () => {
     const resolved = await resolveAccountPlan(db, userId);
     expect(resolved).toMatchObject({ plan: "creator_beta", source: "grant" });
     expect(resolved.activeUntil?.getTime()).toBe(now.getTime() + 90 * DAY);
-    // Phase 3: same effective entitlements as free.
-    expect(await getEntitlements(db, userId)).toEqual(PLAN_ENTITLEMENTS.free);
+    // Since Phase 4 the redeemed plan unlocks advanced overlay customization.
+    expect(await getEntitlements(db, userId)).toEqual(PLAN_ENTITLEMENTS.creator_beta);
   });
 
   it("CONCURRENT redeem of one key: exactly one success and exactly one grant", async () => {
