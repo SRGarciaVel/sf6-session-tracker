@@ -19,7 +19,12 @@ import { sampleLiveState } from "@/domain/overlay/state";
 import { THEME_REGISTRY, isCreatorTheme } from "@/domain/overlay/themes";
 import type { Locale } from "@/i18n/locale";
 
-const THUMB = { width: 280, height: 63 } as const;
+/**
+ * Thumbnails render at the real Standard canvas and are shrunk with a transform: auto-fit then
+ * measures the same layout as OBS (tiny font sizes don't scale linearly and could oscillate).
+ */
+const CANVAS = { width: 800, height: 180 } as const;
+const THUMB_SCALE = 0.35;
 const SAMPLE = sampleLiveState({ rank: "Diamond 3", system: "lp", value: 21_480 });
 
 export function ThemePicker({
@@ -39,7 +44,7 @@ export function ThemePicker({
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
         {OVERLAY_THEMES.map((theme) => {
           const creator = isCreatorTheme(theme);
           const locked = creator && !premiumThemes;
@@ -62,12 +67,20 @@ export function ThemePicker({
               <span
                 aria-hidden
                 className={cx(
-                  "relative block overflow-hidden bg-[radial-gradient(ellipse_at_30%_20%,#3b2a4d_0%,#141824_45%,#0a0b0e_100%)]",
+                  "relative flex justify-center overflow-hidden bg-[radial-gradient(ellipse_at_30%_20%,#3b2a4d_0%,#141824_45%,#0a0b0e_100%)]",
                   locked && "opacity-60",
                 )}
-                style={{ aspectRatio: `${THUMB.width} / ${THUMB.height}` }}
+                style={{ height: CANVAS.height * THUMB_SCALE }}
               >
-                <span className="pointer-events-none absolute inset-0">
+                <span
+                  className="pointer-events-none block shrink-0 origin-top"
+                  style={{
+                    width: CANVAS.width,
+                    height: CANVAS.height,
+                    transform: `scale(${THUMB_SCALE})`,
+                    marginInline: (CANVAS.width * (1 - THUMB_SCALE)) / -2,
+                  }}
+                >
                   <OverlayView
                     config={{
                       ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, theme),
@@ -77,7 +90,7 @@ export function ThemePicker({
                       locale,
                     }}
                     live={SAMPLE}
-                    sizing={{ mode: "box", ...THUMB }}
+                    sizing={{ mode: "box", ...CANVAS }}
                   />
                 </span>
               </span>

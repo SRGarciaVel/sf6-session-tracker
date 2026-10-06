@@ -113,7 +113,7 @@ export function PresetsSection({
 
       {enabled && (
         <form
-          className="flex gap-2"
+          className="flex flex-col items-start gap-2"
           onSubmit={(e) => {
             e.preventDefault();
             run(async () => {
@@ -182,7 +182,7 @@ export function PresetsSection({
                   </div>
                 ) : pending === "rename" ? (
                   <form
-                    className="flex gap-2"
+                    className="flex flex-wrap gap-2"
                     onSubmit={(e) => {
                       e.preventDefault();
                       run(

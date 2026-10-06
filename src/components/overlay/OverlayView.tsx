@@ -407,6 +407,8 @@ export interface OverlayViewProps {
 function useFitToBox() {
   const rootRef = useRef<HTMLDivElement>(null);
   const fitRef = useRef(1);
+  /** Adjustments in the current frame (see the convergence guard below). */
+  const burstRef = useRef(0);
   const [fit, setFit] = useState(1);
 
   const measure = useCallback(() => {
@@ -422,6 +424,16 @@ function useFitToBox() {
     if (w <= 0 || h <= 0 || availW <= 0 || availH <= 0) return;
     const next = Math.max(0.2, Math.floor(Math.min(1, availW / w, availH / h) * 1000) / 1000);
     if (Math.abs(next - fitRef.current) > 0.004) {
+      // Convergence guard: at very small canvases, borders and glyphs snap to whole pixels, so
+      // size is not exactly proportional to the font-size and the estimate can ping-pong. After
+      // a few adjustments in one frame only shrinking is allowed (monotonic ⇒ always settles).
+      burstRef.current += 1;
+      if (burstRef.current === 1 && typeof requestAnimationFrame !== "undefined") {
+        requestAnimationFrame(() => {
+          burstRef.current = 0;
+        });
+      }
+      if (burstRef.current > 4 && next > fitRef.current) return;
       fitRef.current = next;
       setFit(next);
     }

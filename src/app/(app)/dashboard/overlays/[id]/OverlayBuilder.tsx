@@ -176,7 +176,7 @@ export function OverlayBuilder({
           </Link>
           <h1 className="mt-1 font-display text-2xl font-bold">{t("title")}</h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {dirty ? (
             <Badge tone="warn">{t("unsaved")}</Badge>
           ) : (
@@ -208,7 +208,7 @@ export function OverlayBuilder({
 
       <div className="grid items-start gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
         {/* Controls */}
-        <div className="hud-panel lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+        <div className="hud-panel min-w-0 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
           <Section title={t("sectionName")}>
             <Input
               value={name}
@@ -425,7 +425,7 @@ export function OverlayBuilder({
               format={(v) => `${v.toFixed(2)}×`}
               onChange={(v) => set("scale", v)}
             />
-            <div className="flex items-center justify-between gap-3 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
               <span>{t("spacing")}</span>
               <Segmented
                 value={config.spacing}
@@ -437,7 +437,7 @@ export function OverlayBuilder({
                 ]}
               />
             </div>
-            <div className="flex items-center justify-between gap-3 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
               <span>{t("align")}</span>
               <Segmented
                 value={config.align}
@@ -478,7 +478,7 @@ export function OverlayBuilder({
         </div>
 
         {/* Preview */}
-        <div className="space-y-4 lg:sticky lg:top-20">
+        <div className="min-w-0 space-y-4 lg:sticky lg:top-20">
           <div className="hud-panel">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
               <h2 className="hud-heading">

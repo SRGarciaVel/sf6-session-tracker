@@ -611,44 +611,33 @@
   background: var(--ov-tier);
   transform: skewX(-20deg);
 }
+/* Master and above: room for the ring so it never overlaps the rank label below. */
+.ov-emb.ov-tier-5,
+.ov-emb.ov-tier-6 {
+  padding: 0.55em 0;
+}
 .ov-emb-ring {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 2.5em;
-  height: 2.5em;
-  margin: -1.25em 0 0 -1.25em;
+  width: 2.3em;
+  height: 2.3em;
+  margin: -1.15em 0 0 -1.15em;
   border: 0.08em solid var(--ov-tier);
   transform: rotate(45deg);
   opacity: 0.75;
 }
+/* Beyond Master: an elongated bar behind the gem, read as wings on both sides. */
 .ov-emb-wings {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 3.6em;
-  height: 1em;
-  margin: -0.5em 0 0 -1.8em;
-  background: linear-gradient(
-    90deg,
-    var(--ov-tier) 0%,
-    rgba(0, 0, 0, 0) 30%,
-    rgba(0, 0, 0, 0) 70%,
-    var(--ov-tier) 100%
-  );
-  clip-path: polygon(
-    0 50%,
-    22% 0,
-    30% 50%,
-    22% 100%,
-    78% 100%,
-    70% 50%,
-    78% 0,
-    100% 50%,
-    78% 100%,
-    22% 100%
-  );
-  opacity: 0.85;
+  width: 4.2em;
+  height: 0.6em;
+  margin: -0.3em 0 0 -2.1em;
+  background: linear-gradient(90deg, var(--ov-tier), rgba(255, 255, 255, 0.85) 50%, var(--ov-tier));
+  clip-path: polygon(0 50%, 16% 0, 84% 0, 100% 50%, 84% 100%, 16% 100%);
+  opacity: 0.9;
 }
 
 /* Rank Card */
