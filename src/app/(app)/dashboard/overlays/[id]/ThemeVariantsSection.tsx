@@ -1,12 +1,11 @@
 "use client";
 
 /**
- * Variants of the current Creator theme (Phase 4.5). Bounded enums/booleans only; each one
+ * Variants of the current Creator theme (Phase 4.5; inline under the picker since 4.9). Bounded enums/booleans only; each one
  * has a visible effect in that theme. Stored per theme, so switching themes keeps them.
  */
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { Badge } from "@/components/ui/primitives";
 import type { CreatorThemeId } from "@/domain/overlay/themes";
 import { DEFAULT_THEME_VARIANTS, type ThemeVariants } from "@/domain/overlay/variants";
 import { Segmented, Toggle } from "./controls";
@@ -23,6 +22,7 @@ export function ThemeVariantsSection({
   onChange: (next: ThemeVariants) => void;
 }) {
   const t = useTranslations("Builder.variants");
+  const tb = useTranslations("Builder");
   const all = value ?? DEFAULT_THEME_VARIANTS;
   const patch = <K extends CreatorThemeId>(key: K, p: Partial<ThemeVariants[K]>) =>
     onChange({ ...all, [key]: { ...all[key], ...p } });
@@ -34,18 +34,15 @@ export function ThemeVariantsSection({
     </div>
   );
 
+  // Rendered inline right under the theme picker (Phase 4.9): contextual to the selected theme.
   return (
-    <section
-      className="space-y-3 border-b border-line px-5 py-4 last:border-b-0"
-      aria-labelledby="theme-variants-title"
-      data-testid="theme-variants"
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        <h3 id="theme-variants-title" className="hud-heading">
-          {t("title")}
-        </h3>
-        <Badge tone="accent">Creator Beta</Badge>
-      </div>
+    <div className="space-y-3 border-l-2 border-magenta/60 pl-4" data-testid="theme-variants">
+      <p
+        id="theme-variants-title"
+        className="font-display text-xs font-semibold tracking-[0.14em] text-muted uppercase"
+      >
+        {t("titleFor", { theme: tb(`themes.${theme}.name`) })}
+      </p>
       {!enabled && value && (
         <p className="border-l-2 border-line-strong bg-surface-2/60 px-3 py-2 text-xs font-semibold">
           {t("savedButInactive")}
@@ -170,6 +167,6 @@ export function ThemeVariantsSection({
           </>
         )}
       </fieldset>
-    </section>
+    </div>
   );
 }

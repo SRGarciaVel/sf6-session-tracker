@@ -481,23 +481,13 @@
   },
   "Builder": {
     "title": "Configurar overlay",
-    "unsaved": "Cambios sin guardar",
-    "saved": "Guardado",
     "discard": "Descartar",
     "save": "Guardar y actualizar OBS",
     "saving": "Guardando…",
     "savedMessage": "Guardado. Tu overlay de OBS se ha actualizado.",
     "rotatedMessage": "Nueva URL generada. Actualiza la fuente de navegador en OBS.",
-    "sectionName": "Nombre",
     "sectionTheme": "Tema",
-    "sectionSize": "Tamaño",
-    "sectionShow": "Mostrar",
-    "sectionText": "Texto e idioma",
-    "sectionColors": "Colores",
-    "sectionBackground": "Fondo",
-    "sectionLayout": "Disposición",
     "nameAria": "Nombre del overlay",
-    "sizeHint": "Fuente de navegador de OBS: {width} × {height}. Cualquier tamaño funciona: el overlay se adapta.",
     "titleLabel": "Título",
     "titlePlaceholder": "Por defecto: «{default}»",
     "showTitle": "Mostrar título",
@@ -533,7 +523,6 @@
     "bgAlpha": "Alfa",
     "previewSample": "Mostrando números de ejemplo.",
     "previewLive": "Mostrando tu sesión real: se actualiza en directo mientras juegas.",
-    "previewUnsaved": "Los cambios sin guardar solo se ven aquí.",
     "urlTitle": "URL de la fuente de navegador de OBS",
     "urlNote": "La URL no cambia al editar el diseño. Trátala como una contraseña: cualquiera que la tenga puede ver este overlay.",
     "regenerate": "Regenerar URL",
@@ -606,14 +595,15 @@
         "decorations": "Barras y trazos decorativos"
       },
       "notInTheme": "Este tema no muestra este elemento.",
-      "reset": "Restablecer personalización Creator"
+      "reset": "Restablecer personalización Creator",
+      "tabSummary": "Presets reutilizables y estilo avanzado que se aplica encima de cualquier tema.",
+      "typographyGroup": "Tipografía de los números",
+      "accentGroup": "Acento"
     },
     "creatorThemesNote": "Rank Card, Broadcast y Prestige son temas de Creator Beta (solo con invitación).",
     "themeSavedInactive": "Tu tema Creator «{theme}» está guardado. Renueva el acceso Creator para volver a usarlo; mientras tanto, la vista previa y OBS muestran {fallback}.",
-    "canvasLimited": "{theme} está diseñado para: {canvases}.",
     "sampleRank": "Rango de ejemplo",
     "zoomFit": "Ajustar",
-    "zoomActual": "100 %",
     "variants": {
       "title": "Variantes del tema",
       "savedButInactive": "Tus variantes del tema están guardadas. Renueva el acceso Creator para volver a usarlas.",
@@ -654,7 +644,8 @@
         "subtle": "Sutil",
         "normal": "Normal"
       },
-      "animatedAccent": "Acento animado (respeta movimiento reducido)"
+      "animatedAccent": "Acento animado (respeta movimiento reducido)",
+      "titleFor": "Variantes de {theme}"
     },
     "presetsCreator": {
       "title": "Presets de Creator",
@@ -678,8 +669,57 @@
       "delete": "Eliminar",
       "deleteConfirm": "¿Eliminar este preset definitivamente?",
       "deleted": "Preset eliminado.",
-      "created": "Preset guardado."
-    }
+      "created": "Preset guardado.",
+      "selectLabel": "Preset",
+      "more": "Más"
+    },
+    "tabs": {
+      "appearance": "Apariencia",
+      "content": "Contenido",
+      "style": "Estilo",
+      "creator": "Creator"
+    },
+    "editorLabel": "Secciones del editor",
+    "themeGroupFree": "Free",
+    "statsTitle": "Estadísticas visibles",
+    "statsGroups": {
+      "session": "Sesión",
+      "rating": "Rating y rango"
+    },
+    "showAll": "Mostrar todas",
+    "hideAll": "Ocultar todas",
+    "titleGroup": "Título",
+    "languageGroup": "Idioma y personaje",
+    "ratingCharacterHint": "El rating y el rango siempre son de un solo personaje.",
+    "typography": "Tipografía",
+    "moreTypography": "Tipografía y tamaño de los números → Creator",
+    "colorsCore": "Colores principales",
+    "colorsResults": "Resultados",
+    "backgroundGroup": "Fondo",
+    "borderGroup": "Borde",
+    "layoutGroup": "Tamaño y disposición",
+    "resetThemeStyle": "Restablecer el estilo del tema",
+    "resetThemeStyleConfirm": "Se restaurarán los colores, la fuente y el fondo del tema. Tus estadísticas y el título no cambian.",
+    "resetColorAria": "Restablecer {label} al color del tema",
+    "status": {
+      "saved": "Guardado",
+      "unsaved": "Cambios sin guardar",
+      "saving": "Guardando…",
+      "failed": "Error al guardar"
+    },
+    "saveFailed": "No se pudo guardar: {reason} Tus cambios siguen aquí; vuelve a intentarlo.",
+    "leaveWarning": "Tienes cambios sin guardar.",
+    "leaveStay": "Seguir editando",
+    "leaveDiscard": "Salir sin guardar",
+    "canvas": "Lienzo",
+    "canvasHint": "El lienzo ({width} × {height}) se guarda: es el tamaño de la fuente de navegador en OBS.",
+    "zoom": "Zoom",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "openOverlay": "Abrir overlay ↗",
+    "obsHint": "En OBS: Fuente de navegador → pega la URL → {width} × {height}.",
+    "dangerZone": "Más acciones",
+    "saveNetworkError": "No hay conexión con el servidor."
   },
   "NotFound": {
     "title": "Página no encontrada",
