@@ -17,7 +17,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="mx-auto flex h-14 max-w-[1440px] items-stretch justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-stretch gap-4 sm:gap-8">
             <div className="flex items-center">
-              <Logo />
+              <Logo variant="compact" />
             </div>
             <div className="hidden sm:flex">
               <NavTabs />

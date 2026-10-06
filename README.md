@@ -1,4 +1,4 @@
-# SST — Session Stats Tracker
+# SST | Session Stats Tracker
 
 **Session tracking & overlays for fighting games.**
 

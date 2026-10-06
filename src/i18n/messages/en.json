@@ -38,7 +38,7 @@
     "switchLanguage": "Change language"
   },
   "Landing": {
-    "eyebrow": "SST — Session Stats Tracker",
+    "eyebrow": "SST | Session Stats Tracker",
     "titleLine1": "Your session stats,",
     "titleLine2": "live on stream.",
     "subtitle": "Wins, losses, win rate, MR and LP update automatically after every Ranked match. No hotkeys, no manual counters.",
