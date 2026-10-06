@@ -106,6 +106,9 @@ body {
     radial-gradient(1100px 520px at 88% -8%, rgb(59 108 255 / 0.16), transparent 62%),
     radial-gradient(900px 480px at -8% 108%, rgb(255 46 147 / 0.07), transparent 60%),
     var(--color-bg);
+  /* The html box is one viewport tall (h-full): without this the glows tile every viewport
+     height and draw hard horizontal bands on long pages. The base color still fills the canvas. */
+  background-repeat: no-repeat;
   color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;

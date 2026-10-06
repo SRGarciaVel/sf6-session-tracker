@@ -426,14 +426,16 @@ function useFitToBox() {
     if (Math.abs(next - fitRef.current) > 0.004) {
       // Convergence guard: at very small canvases, borders and glyphs snap to whole pixels, so
       // size is not exactly proportional to the font-size and the estimate can ping-pong. After
-      // a few adjustments in one frame only shrinking is allowed (monotonic ⇒ always settles).
+      // a few adjustments in one frame only shrinking is allowed, and never more than a hard
+      // cap per frame (a long run of tiny shrinks must not exceed React's nested-update limit);
+      // the next frame (ResizeObserver / render) resumes from the current value.
       burstRef.current += 1;
       if (burstRef.current === 1 && typeof requestAnimationFrame !== "undefined") {
         requestAnimationFrame(() => {
           burstRef.current = 0;
         });
       }
-      if (burstRef.current > 4 && next > fitRef.current) return;
+      if (burstRef.current > 4 && (next > fitRef.current || burstRef.current > 8)) return;
       fitRef.current = next;
       setFit(next);
     }
