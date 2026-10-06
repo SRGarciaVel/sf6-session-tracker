@@ -93,6 +93,12 @@ export interface ResolvedPlan {
   plan: PlanId;
   /** Where the effective plan came from (server-side diagnostics only; never sent to clients). */
   source: PlanSource;
+  /**
+   * When the effective plan ends if it comes from grants: the LATEST expiry among the active
+   * grants of that plan (overlapping grants are not summed); null when it comes from the base
+   * plan or an open-ended grant.
+   */
+  activeUntil: Date | null;
   entitlements: DeepReadonly<Entitlements>;
 }
 
@@ -107,13 +113,21 @@ export function resolvePlan(input: {
 }): ResolvedPlan {
   let plan: PlanId = input.accountPlan ?? DEFAULT_PLAN;
   let source: PlanSource = input.accountPlan === null ? "default" : "account_plan";
-  for (const grant of input.grants) {
-    if (isGrantActive(grant, input.now) && PLAN_RANK[grant.plan] > PLAN_RANK[plan]) {
+  const active = input.grants.filter((g) => isGrantActive(g, input.now));
+  for (const grant of active) {
+    if (PLAN_RANK[grant.plan] > PLAN_RANK[plan]) {
       plan = grant.plan;
       source = "grant";
     }
   }
-  return { plan, source, entitlements: PLAN_ENTITLEMENTS[plan] };
+  let activeUntil: Date | null = null;
+  if (source === "grant") {
+    const window = active.filter((g) => g.plan === plan);
+    activeUntil = window.some((g) => g.expiresAt === null)
+      ? null
+      : new Date(Math.max(...window.map((g) => (g.expiresAt as Date).getTime())));
+  }
+  return { plan, source, activeUntil, entitlements: PLAN_ENTITLEMENTS[plan] };
 }
 
 /** True when one more resource fits under a count limit. */

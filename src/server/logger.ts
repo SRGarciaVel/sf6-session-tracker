@@ -5,7 +5,8 @@
 
 type Level = "debug" | "info" | "warn" | "error";
 const LEVELS: Record<Level, number> = { debug: 10, info: 20, warn: 30, error: 40 };
-const SENSITIVE_KEY = /token|secret|password|cookie|authorization|apikey|api_key/i;
+const SENSITIVE_KEY =
+  /token|secret|password|cookie|authorization|apikey|api_key|pepper|rawkey|plaintext/i;
 
 export type LogFields = Record<string, unknown>;
 

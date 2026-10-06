@@ -62,12 +62,18 @@ export async function getEntitlements(db: DbExecutor, userId: string, now = new 
   return (await resolveAccountPlan(db, userId, now)).entitlements;
 }
 
+export interface PlanSummary {
+  plan: PlanId;
+  /** ISO end of the effective plan when it comes from a time-bound grant; else null. */
+  activeUntil: string | null;
+}
+
 /**
- * Safe subset for UI display only (never authority, never row ids, sources or dates).
- * Not rendered anywhere in Phase 2.
+ * Safe subset for UI display only (never authority; no row ids, sources, keys or notes).
  */
-export async function getPlanSummary(db: DbExecutor, userId: string): Promise<{ plan: PlanId }> {
-  return { plan: (await resolveAccountPlan(db, userId)).plan };
+export async function getPlanSummary(db: DbExecutor, userId: string): Promise<PlanSummary> {
+  const resolved = await resolveAccountPlan(db, userId);
+  return { plan: resolved.plan, activeUntil: resolved.activeUntil?.toISOString() ?? null };
 }
 
 /**

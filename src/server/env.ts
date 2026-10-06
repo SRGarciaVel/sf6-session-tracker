@@ -41,6 +41,15 @@ const envSchema = z.object({
    * Drives the dashboard's update notice. Invalid values are ignored (logged), never fatal.
    */
   COMPANION_LATEST_VERSION: z.string().trim().min(1).optional(),
+  /**
+   * Server-only secret for Creator Keys: keys are stored as HMAC-SHA-256(pepper, key), never in
+   * plaintext (docs/creator-keys.md). Required in production. Stable: rotating it makes every
+   * unredeemed key unusable. Generate with `openssl rand -hex 32`.
+   */
+  CREATOR_KEY_PEPPER: z
+    .string()
+    .min(32, "CREATOR_KEY_PEPPER must be at least 32 characters")
+    .optional(),
 
   TRACKER_POLL_INTERVAL_MS: int(20_000, 5_000),
   TRACKER_POLL_JITTER_MS: int(3_000),
@@ -101,6 +110,18 @@ export function getEnv(): Env {
     ) {
       throw new Error(
         "Invalid environment configuration:\n  - BETTER_AUTH_SECRET: placeholder value; generate one with `openssl rand -base64 32`",
+      );
+    }
+  }
+  if (data.NODE_ENV === "production") {
+    if (!data.CREATOR_KEY_PEPPER) {
+      throw new Error(
+        "Invalid environment configuration:\n  - CREATOR_KEY_PEPPER: required in production; generate one with `openssl rand -hex 32`",
+      );
+    }
+    if (/change-me|dev-only|not-a-secret/i.test(data.CREATOR_KEY_PEPPER)) {
+      throw new Error(
+        "Invalid environment configuration:\n  - CREATOR_KEY_PEPPER: placeholder value; generate one with `openssl rand -hex 32`",
       );
     }
   }

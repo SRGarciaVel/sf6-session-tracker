@@ -3,6 +3,7 @@ import {
   bigint,
   boolean,
   check,
+  customType,
   index,
   integer,
   jsonb,
@@ -25,6 +26,9 @@ import type {
 
 /** A NormalizedSF6Match as stored in JSON (playedAt serialized to ISO). */
 export type CompanionWireMatch = Omit<NormalizedSF6Match, "playedAt"> & { playedAt: string };
+
+/** Raw bytes (postgres bytea ↔ Node Buffer). */
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
 
 const tz = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
 const createdAt = () => tz("created_at").notNull().defaultNow();
@@ -454,15 +458,74 @@ export const entitlementGrant = pgTable(
     expiresAt: tz("expires_at"),
     revokedAt: tz("revoked_at"),
     createdAt: createdAt(),
+    /** The Creator Key this grant came from (source = 'creator_key'); one grant per key. */
+    creatorKeyId: uuid("creator_key_id").references(() => creatorKey.id, {
+      onDelete: "restrict",
+    }),
   },
   (t) => [
     index("entitlement_grant_user_idx").on(t.userId),
+    uniqueIndex("entitlement_grant_creator_key_uq")
+      .on(t.creatorKeyId)
+      .where(sql`${t.creatorKeyId} is not null`),
+    check(
+      "entitlement_grant_creator_key_source_ck",
+      sql`(${t.source} = 'creator_key') = (${t.creatorKeyId} is not null)`,
+    ),
     check("entitlement_grant_plan_ck", sql`${t.plan} in ('creator_beta')`),
     check("entitlement_grant_source_ck", sql`${t.source} in ('operator', 'creator_key')`),
     check(
       "entitlement_grant_window_ck",
       sql`${t.expiresAt} is null or ${t.expiresAt} > ${t.startsAt}`,
     ),
+  ],
+);
+
+/**
+ * One-time Creator Key (docs/creator-keys.md). Plaintext is never stored: key_hash =
+ * HMAC-SHA-256(CREATOR_KEY_PEPPER, key). State is derived, not a status column:
+ *   redeemed = redeemed_at set · revoked = revoked_at set (independent of redemption)
+ *   expired  = not redeemed and expires_at <= now (no job needed)
+ * Redeemable = not redeemed, not revoked, not expired (one conditional UPDATE). Rows are never
+ * deleted (audit trail); issuance/revocation use the operator connection.
+ */
+export const creatorKey = pgTable(
+  "creator_key",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    keyHash: bytea("key_hash").notNull(),
+    /** Last 4 characters (not secret), for support: "••••-ABCD". */
+    keyHint: text("key_hint").notNull(),
+    /** What the key grants, frozen at issuance (redeem never reinterprets old keys). */
+    plan: text("plan").$type<PlanId>().notNull(),
+    grantDays: integer("grant_days").notNull(),
+    issuedAt: tz("issued_at").notNull().defaultNow(),
+    /** Unredeemed keys stop working at this instant (issued_at + 30 days). */
+    expiresAt: tz("expires_at").notNull(),
+    /** Operator label (not an SST account). */
+    issuedBy: text("issued_by").notNull(),
+    issuedNote: text("issued_note"),
+    /** SET NULL keeps the audit row (and redeemed_at) if the account is deleted. */
+    redeemedBy: text("redeemed_by").references(() => authUser.id, { onDelete: "set null" }),
+    redeemedAt: tz("redeemed_at"),
+    revokedAt: tz("revoked_at"),
+    revokedBy: text("revoked_by"),
+  },
+  (t) => [
+    uniqueIndex("creator_key_hash_uq").on(t.keyHash),
+    index("creator_key_redeemed_by_idx").on(t.redeemedBy),
+    check("creator_key_hash_len_ck", sql`octet_length(${t.keyHash}) = 32`),
+    check("creator_key_hint_ck", sql`${t.keyHint} ~ '^[0-9A-HJKMNP-TV-Z]{4}$'`),
+    check("creator_key_plan_ck", sql`${t.plan} in ('creator_beta')`),
+    check("creator_key_grant_days_ck", sql`${t.grantDays} between 1 and 366`),
+    check("creator_key_window_ck", sql`${t.expiresAt} > ${t.issuedAt}`),
+    check(
+      "creator_key_note_len_ck",
+      sql`${t.issuedNote} is null or length(${t.issuedNote}) <= 200`,
+    ),
+    // Who redeemed may become NULL (account deleted); a redeemer without a time never exists.
+    check("creator_key_redeemed_ck", sql`${t.redeemedBy} is null or ${t.redeemedAt} is not null`),
+    check("creator_key_revoked_ck", sql`${t.revokedBy} is null or ${t.revokedAt} is not null`),
   ],
 );
 
