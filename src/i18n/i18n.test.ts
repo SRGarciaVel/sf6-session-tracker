@@ -62,7 +62,7 @@ describe("catalogs", () => {
     expect(t("Dashboard.session.ratingChange", { unit: "MR" })).toBe("Cambio de MR");
     expect(t("Landing.supportedGame")).toContain("Street Fighter 6");
     // The product name is a brand: never translated.
-    expect(t("Landing.eyebrow")).toBe("SST — Session Stats Tracker");
+    expect(t("Landing.eyebrow")).toBe("SST | Session Stats Tracker");
     expect(t("Onboarding.cfnLabel")).toBe("CFN User ID");
   });
 });

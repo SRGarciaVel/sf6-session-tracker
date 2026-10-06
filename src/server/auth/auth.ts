@@ -5,6 +5,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
+import { BRAND_TITLE } from "@/components/brand/names";
 import { getDb } from "@/server/db/client";
 import {
   authAccount,
@@ -18,7 +19,7 @@ import { getEnv } from "@/server/env";
 function createAuth() {
   const env = getEnv();
   return betterAuth({
-    appName: "SST — Session Stats Tracker",
+    appName: BRAND_TITLE,
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.APP_URL,
     trustedOrigins: [env.APP_URL],

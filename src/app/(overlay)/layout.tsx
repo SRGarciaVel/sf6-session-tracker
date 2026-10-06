@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { BRAND_NAME } from "@/components/brand/names";
 import { overlayFontVariables } from "@/components/overlay/fonts";
 import "./overlay-root.css";
 
 export const metadata: Metadata = {
-  title: "SST Overlay",
+  title: `Overlay | ${BRAND_NAME}`,
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };
