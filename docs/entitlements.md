@@ -44,18 +44,23 @@ separate now means Phase 3 only adds the key table and inserts a grant (`source 
 without reshaping this resolver. Grants carry no free-form JSON and no notes or secrets. They are
 never deleted to downgrade: they expire or get revoked, which keeps the audit trail.
 
-## Entitlement set (Phase 4)
+## Entitlement set (Phase 4.5)
 
 | Key                              | free  | creator_beta | Notes                                                                                       |
 | -------------------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------- |
 | `overlays.max`                   | 10    | 10           | **10 is the current technical/product behaviour, not a final commercial Free policy.**      |
 | `overlays.advancedCustomization` | false | **true**     | Phase 4: NEW overlay options only ([creator-overlays.md](creator-overlays.md))              |
+| `overlays.premiumThemes`         | false | **true**     | Phase 4.5: NEW themes only (Rank Card, Broadcast, Prestige); Free themes unchanged          |
+| `overlays.creatorPresets`        | false | **true**     | Phase 4.5: saved appearance presets ([creator-presets.md](creator-presets.md))              |
 | `history.retentionDays`          | null  | null         | `null` = no retention policy (current behaviour: nothing is ever purged). Not enforced yet. |
 
 Phases 2–3: both plans were identical. **Phase 4** adds the first difference,
-`overlays.advancedCustomization`. It gates **new** options only: every overlay option that existed
-before stays Free, and Free is never lowered. The final Free limits are decided from beta usage
-data (RFC §11.4).
+`overlays.advancedCustomization`. **Phase 4.5** adds `overlays.premiumThemes` and
+`overlays.creatorPresets`. All three gate **new** capabilities only: every overlay option, theme
+and canvas that existed before stays Free, `overlays.max` stays 10 for both plans, and Free is
+never lowered. The final Free limits are decided from beta usage data (RFC §11.4).
+
+**No existing Free overlay capability was moved behind Creator Beta.**
 
 ## Limits audit (what goes through the resolver)
 
@@ -69,6 +74,7 @@ data (RFC §11.4).
 | SSE caps (per user / overlay / IP)                                                                  | `realtime/connection-limits.ts`                  | **Technical safety** | **Never**                                                      |
 | Companion body size, sync interval, known replay ids, snapshot size, pairing TTL, device inactivity | `COMPANION_LIMITS`, companion service            | **Technical safety** | **Never**                                                      |
 | Input validation (overlay name, config schema), worker concurrency, polling                         | domain/env                                       | **Technical safety** | **Never**                                                      |
+| Creator presets per account (20), preset size (8 KB)                                                | `domain/overlay/presets.ts`, DB CHECK            | **Technical safety** | **Never** (not a commercial limit)                             |
 | One active session per player, one player per account                                               | DB constraints                                   | **Domain invariant** | Out of scope                                                   |
 
 ## Downgrade safety (all phases)
@@ -80,9 +86,10 @@ renderings must fall back to a fully functional core rendering.
 ## Public overlay (OBS)
 
 The overlay endpoint has no viewer session. Entitlements are resolved for the **owner**, never
-the viewer: `overlay.player_id → sf6_player.user_id → getEntitlements(owner)`. The path exists
-today. Phase 2 changes nothing in rendering; Phase 4 will apply the owner's entitlements to the
-public payload.
+the viewer: `overlay.player_id → sf6_player.user_id → getEntitlements(owner)`. Since
+Phase 4 the public payload is built from the **effective** config (owner entitlements, resolved
+per payload/push); Phase 4.5 extends the same function to Creator themes (Free fallback) and
+variants. Plans and entitlements are never part of the payload.
 
 ## Self-hosting
 
