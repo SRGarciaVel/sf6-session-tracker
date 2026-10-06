@@ -25,6 +25,17 @@ import { sf6Player } from "@/server/db/schema";
 import { attemptCreatorKeyRedeem } from "@/server/creator-keys/service";
 import { canCreateOverlay } from "@/server/entitlements/service";
 import { prepareOverlayConfigForSave } from "@/server/overlays/effective";
+import {
+  applyPresetToOverlay,
+  createPreset,
+  deletePreset,
+  duplicatePreset,
+  renamePreset,
+  updatePresetFromConfig,
+  type PresetError,
+} from "@/server/overlays/presets";
+import { PRESETS_PER_ACCOUNT_MAX, presetNameSchema } from "@/domain/overlay/presets";
+import type { OverlayConfig } from "@/domain/overlay/config";
 import { devToolsEnabled } from "@/server/env";
 import { logger } from "@/server/logger";
 import {
@@ -174,6 +185,123 @@ export async function deleteOverlayAction(overlayId: string): Promise<ActionResu
   await deleteOverlay(db, target);
   revalidatePath("/dashboard");
   return ok(undefined);
+}
+
+/* ───────────── Creator presets (Phase 4.5; rules in server/overlays/presets.ts) ───────────── */
+
+async function presetError(error: PresetError): Promise<string> {
+  const t = await getTranslations("Errors");
+  switch (error) {
+    case "not_entitled":
+      return t("presetsNotEntitled");
+    case "limit":
+      return t("presetLimit", { max: PRESETS_PER_ACCOUNT_MAX });
+    case "too_large":
+      return t("presetTooLarge");
+    case "not_found":
+      return t("presetNotFound");
+  }
+}
+
+/** Shared validation for actions that take a preset id / name / config from the client. */
+async function presetInput(input: { presetId?: string; name?: string; config?: unknown }) {
+  const t = await getTranslations("Errors");
+  const user = await getCurrentUser();
+  if (!user) return { valid: false, error: t("sessionExpired") } as const;
+  if (input.presetId !== undefined && !uuid.safeParse(input.presetId).success)
+    return { valid: false, error: t("presetNotFound") } as const;
+  let name: string | undefined;
+  if (input.name !== undefined) {
+    const parsed = presetNameSchema.safeParse(input.name);
+    if (!parsed.success) return { valid: false, error: t("presetNameInvalid") } as const;
+    name = parsed.data;
+  }
+  let config: OverlayConfig | undefined;
+  if (input.config !== undefined) {
+    const parsed = overlayConfigSchema.safeParse(input.config);
+    if (!parsed.success) return { valid: false, error: t("invalidInput") } as const;
+    config = parsed.data;
+  }
+  return { valid: true, userId: user.id, name, config } as const;
+}
+
+export async function createPresetAction(input: {
+  name: string;
+  config: unknown;
+}): Promise<ActionResult<{ presetId: string }>> {
+  const v = await presetInput(input);
+  if (!v.valid) return fail(v.error);
+  if (v.name === undefined || v.config === undefined) return fail(await presetError("not_found"));
+  const res = await createPreset(getDb(), { userId: v.userId, name: v.name, config: v.config });
+  return res.ok ? ok({ presetId: res.value.id }) : fail(await presetError(res.error));
+}
+
+export async function duplicatePresetAction(input: {
+  presetId: string;
+  name: string;
+}): Promise<ActionResult<{ presetId: string }>> {
+  const v = await presetInput(input);
+  if (!v.valid) return fail(v.error);
+  const res = await duplicatePreset(getDb(), {
+    userId: v.userId,
+    presetId: input.presetId,
+    name: v.name ?? "",
+  });
+  return res.ok ? ok({ presetId: res.value.id }) : fail(await presetError(res.error));
+}
+
+export async function renamePresetAction(input: {
+  presetId: string;
+  name: string;
+}): Promise<ActionResult> {
+  const v = await presetInput(input);
+  if (!v.valid) return fail(v.error);
+  const res = await renamePreset(getDb(), {
+    userId: v.userId,
+    presetId: input.presetId,
+    name: v.name ?? "",
+  });
+  return res.ok ? ok(undefined) : fail(await presetError(res.error));
+}
+
+export async function updatePresetAction(input: {
+  presetId: string;
+  config: unknown;
+}): Promise<ActionResult> {
+  const v = await presetInput(input);
+  if (!v.valid) return fail(v.error);
+  if (v.config === undefined) return fail(await presetError("not_found"));
+  const res = await updatePresetFromConfig(getDb(), {
+    userId: v.userId,
+    presetId: input.presetId,
+    config: v.config,
+  });
+  return res.ok ? ok(undefined) : fail(await presetError(res.error));
+}
+
+export async function deletePresetAction(input: { presetId: string }): Promise<ActionResult> {
+  const v = await presetInput(input);
+  if (!v.valid) return fail(v.error);
+  const res = await deletePreset(getDb(), { userId: v.userId, presetId: input.presetId });
+  return res.ok ? ok(undefined) : fail(await presetError(res.error));
+}
+
+/** Applies AND saves (server-side rules); returns the stored config for the editor. */
+export async function applyPresetAction(input: {
+  presetId: string;
+  overlayId: string;
+}): Promise<ActionResult<{ config: OverlayConfig }>> {
+  const v = await presetInput({ presetId: input.presetId });
+  if (!v.valid) return fail(v.error);
+  if (!uuid.safeParse(input.overlayId).success) return fail(await presetError("not_found"));
+  const res = await applyPresetToOverlay(getDb(), {
+    userId: v.userId,
+    presetId: input.presetId,
+    overlayId: input.overlayId,
+  });
+  if (!res.ok) return fail(await presetError(res.error));
+  revalidatePath("/dashboard");
+  return ok({ config: res.value });
 }
 
 /* ─────────────── Dev tools (mock provider only, never in production) ─────────────── */

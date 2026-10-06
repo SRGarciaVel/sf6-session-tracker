@@ -132,7 +132,12 @@
     "companionDeviceNotFound": "That device does not exist or was already revoked.",
     "companionNoData": "We haven't received recent data from the Companion. Open it in your browser, check that you are logged in to Buckler and press “Sync now”.",
     "companionNoDataCfn": "We haven't received data for that CFN from the Companion yet. In the Companion, enter your CFN ID, press “Save” and search again in a few seconds.",
-    "creatorKeyInvalid": "This Creator Key is invalid or unavailable."
+    "creatorKeyInvalid": "This Creator Key is invalid or unavailable.",
+    "presetNotFound": "Preset not found.",
+    "presetNameInvalid": "The preset name must be between 1 and 40 characters.",
+    "presetsNotEntitled": "Creator presets are part of Creator Beta.",
+    "presetLimit": "You can save up to {max} presets.",
+    "presetTooLarge": "This preset is too large to save."
   },
   "Dashboard": {
     "eyebrow": "Street Fighter 6",
