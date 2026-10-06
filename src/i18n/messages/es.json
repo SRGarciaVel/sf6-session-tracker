@@ -116,7 +116,7 @@
     "overlayNameInvalid": "El nombre debe tener entre 1 y 40 caracteres.",
     "invalidSetting": "Ajuste no válido: {field}",
     "invalidTheme": "Tema no válido.",
-    "maxOverlays": "Puedes tener hasta 10 overlays.",
+    "maxOverlays": "Puedes tener hasta {max} overlays.",
     "devToolsDisabled": "Las herramientas de desarrollo están desactivadas.",
     "mockInactive": "El proveedor mock no está activo.",
     "invalidInput": "Datos no válidos.",

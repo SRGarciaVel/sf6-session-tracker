@@ -21,6 +21,7 @@ import { getCurrentUser } from "@/server/auth/session";
 import { createPairingCode, purgePairingCodes, revokeDevice } from "@/server/companion/service";
 import { getDb } from "@/server/db/client";
 import { sf6Player } from "@/server/db/schema";
+import { canCreateOverlay } from "@/server/entitlements/service";
 import { devToolsEnabled } from "@/server/env";
 import { logger } from "@/server/logger";
 import {
@@ -93,7 +94,11 @@ export async function createOverlayAction(
   if (!themeParsed.success) return fail(t("invalidTheme"));
 
   const db = getDb();
-  if ((await listOverlays(db, ctx.player.id)).length >= 10) return fail(t("maxOverlays"));
+  const quota = await canCreateOverlay(db, {
+    userId: ctx.user.id,
+    currentCount: (await listOverlays(db, ctx.player.id)).length,
+  });
+  if (!quota.ok) return fail(t("maxOverlays", { max: quota.max }));
   const created = await createOverlay(
     db,
     ctx.player.id,
