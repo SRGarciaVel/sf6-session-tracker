@@ -251,6 +251,23 @@ At that point:
 
 **This PR doesn't create that repository.**
 
+## Rollback (Phase 4.5)
+
+Reverting the code leaves `creator_overlay_preset` inert. A stored `variants` block is ignored by
+the old schema, which strips unknown keys. But under the old 3-theme enum, an overlay whose
+**stored theme is a Creator theme reads as the default config**, and an old-editor save would
+persist that. Before rolling back after users have saved Creator themes, map them to their
+fallbacks (admin connection):
+
+```sql
+update overlay
+set config = jsonb_set(config, '{theme}', to_jsonb(case config->>'theme'
+  when 'rank-card' then 'competitive' when 'broadcast' then 'minimal' else 'fighter' end))
+where config->>'theme' in ('rank-card', 'broadcast', 'prestige');
+```
+
+Prefer a forward fix.
+
 ## Known issues
 
 - **Overlay limit race:** the 10-overlay check is count → check → create, so two concurrent
