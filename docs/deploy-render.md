@@ -33,7 +33,15 @@ COMPANION_DOWNLOAD_URL=https://github.com/SRGarciaVel/sf6-session-tracker/releas
 COMPANION_LATEST_VERSION=<latest released companion version, e.g. 0.1.0>
 # Creator Keys (docs/creator-keys.md): required; set BEFORE deploying Phase 3
 CREATOR_KEY_PEPPER=<openssl rand -hex 32>
+# Account email (docs/auth.md): required since Phase 4.6; the app refuses to boot without them.
+# Set them in the Render dashboard only (never in chat/tickets/repo).
+RESEND_API_KEY=<Resend key with Sending access, restricted to your domain>
+EMAIL_FROM=SST <no-reply@mail.your-domain>   # domain verified in Resend (SPF + DKIM)
+# EMAIL_REPLY_TO=<optional monitored inbox>
 ```
+
+Before deploying Phase 4.6 follow [docs/auth.md § Production setup](auth.md#production-setup-operator)
+(Resend domain, DNS, env, real-inbox checks) and [§ Existing accounts](auth.md#existing-accounts-rollout).
 
 Do **not** also create a Background Worker in this mode (it refuses to start with
 `TRACKER_RUNTIME_MODE=embedded`).

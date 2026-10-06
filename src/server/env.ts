@@ -51,6 +51,20 @@ const envSchema = z.object({
     .min(32, "CREATOR_KEY_PEPPER must be at least 32 characters")
     .optional(),
 
+  /**
+   * Transactional email (docs/auth.md). resend = real delivery (REQUIRED in production);
+   * log = development only (the link is printed to the server console); memory = tests (an
+   * in-process outbox, nothing leaves the machine). Default: resend in production, log in
+   * development, memory in tests.
+   */
+  EMAIL_PROVIDER: z.enum(["resend", "log", "memory"]).optional(),
+  /** Resend API key (server-only). Required when EMAIL_PROVIDER=resend. Never logged. */
+  RESEND_API_KEY: z.string().trim().min(1).optional(),
+  /** Sender, e.g. `SST <no-reply@your-verified-domain>`. Must be a domain verified in Resend. */
+  EMAIL_FROM: z.string().trim().min(3).optional(),
+  /** Optional Reply-To (e.g. a monitored support inbox). */
+  EMAIL_REPLY_TO: z.string().trim().email().optional(),
+
   TRACKER_POLL_INTERVAL_MS: int(20_000, 5_000),
   TRACKER_POLL_JITTER_MS: int(3_000),
   TRACKER_BACKOFF_BASE_MS: int(30_000, 1_000),
@@ -82,9 +96,21 @@ const envSchema = z.object({
   CLIENT_IP_HEADER: z.string().trim().toLowerCase().default("x-forwarded-for"),
 });
 
-export type Env = Omit<z.infer<typeof envSchema>, "RATE_LIMIT_STORE"> & {
+export type Env = Omit<z.infer<typeof envSchema>, "RATE_LIMIT_STORE" | "EMAIL_PROVIDER"> & {
   RATE_LIMIT_STORE: "memory" | "postgres";
+  EMAIL_PROVIDER: "resend" | "log" | "memory";
 };
+
+/** `Name <local@domain>` or `local@domain`; returns the address part or null. */
+export function emailFromAddress(from: string): string | null {
+  const match = /^(?:[^<>]{1,80}<([^<>\s]+@[^<>\s]+)>|([^<>\s]+@[^<>\s]+))$/.exec(from.trim());
+  const address = match?.[1] ?? match?.[2] ?? null;
+  return address && z.string().email().safeParse(address).success ? address : null;
+}
+
+/** Example/placeholder sender domains that can never be verified in a provider. */
+const PLACEHOLDER_EMAIL_DOMAIN =
+  /@(example\.(com|org|net)|your[-_]?(verified[-_]?)?domain[^>]*|localhost)\b/i;
 
 /** Placeholder secrets that must never reach production (they are public in the repo). */
 const KNOWN_PLACEHOLDER_SECRETS = new Set([
@@ -125,8 +151,38 @@ export function getEnv(): Env {
       );
     }
   }
+  const emailProvider =
+    data.EMAIL_PROVIDER ??
+    (data.NODE_ENV === "production" ? "resend" : data.NODE_ENV === "test" ? "memory" : "log");
+  const emailIssues: string[] = [];
+  if (data.NODE_ENV === "production" && emailProvider !== "resend") {
+    // Account verification and password reset depend on real delivery: fail closed.
+    emailIssues.push("EMAIL_PROVIDER: must be `resend` in production");
+  }
+  if (emailProvider === "resend") {
+    if (!data.RESEND_API_KEY)
+      emailIssues.push("RESEND_API_KEY: required when EMAIL_PROVIDER=resend");
+    else if (
+      !/^re_[A-Za-z0-9_]{8,}$/.test(data.RESEND_API_KEY) ||
+      /change-me|placeholder|xxxx/i.test(data.RESEND_API_KEY)
+    ) {
+      emailIssues.push("RESEND_API_KEY: not a valid Resend API key (expected re_…)");
+    }
+    if (!data.EMAIL_FROM) emailIssues.push("EMAIL_FROM: required when EMAIL_PROVIDER=resend");
+    else if (!emailFromAddress(data.EMAIL_FROM)) {
+      emailIssues.push("EMAIL_FROM: expected `Name <address@domain>` or `address@domain`");
+    } else if (data.NODE_ENV === "production" && PLACEHOLDER_EMAIL_DOMAIN.test(data.EMAIL_FROM)) {
+      emailIssues.push("EMAIL_FROM: placeholder domain; use a sender domain verified in Resend");
+    }
+  }
+  if (emailIssues.length > 0) {
+    throw new Error(
+      `Invalid environment configuration:\n${emailIssues.map((i) => `  - ${i}`).join("\n")}`,
+    );
+  }
   cached = {
     ...data,
+    EMAIL_PROVIDER: emailProvider,
     RATE_LIMIT_STORE:
       data.RATE_LIMIT_STORE ?? (data.NODE_ENV === "production" ? "postgres" : "memory"),
   };

@@ -1,4 +1,4 @@
-import { getAuth } from "@/server/auth/auth";
+import { getVerifiedSession } from "@/server/auth/verified-session";
 import { getDb } from "@/server/db/client";
 import { getEnv } from "@/server/env";
 import { rateLimit } from "@/server/security/rate-limit";
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   if (!isSameOrigin(request, getEnv().APP_URL)) {
     return new Response(null, { status: 403, headers: NO_STORE });
   }
-  const session = await getAuth().api.getSession({ headers: request.headers });
+  const session = await getVerifiedSession(request.headers);
   if (!session) return new Response(null, { status: 401, headers: NO_STORE });
 
   const limited = await rateLimit(`heartbeat:user:${session.user.id}`, LIMIT, WINDOW_MS);

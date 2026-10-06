@@ -30,7 +30,10 @@
     "overlayBuilder": "Configure overlay",
     "sessionRecap": "Session recap",
     "notFound": "Not found",
-    "helpCompanion": "Install the Companion"
+    "helpCompanion": "Install the Companion",
+    "verifyEmail": "Verify your email",
+    "forgotPassword": "Forgot password",
+    "resetPassword": "Reset password"
   },
   "Nav": {
     "dashboard": "Dashboard",
@@ -181,11 +184,53 @@
     "createAnAccount": "Create an account",
     "errors": {
       "invalidCredentials": "Wrong email or password.",
-      "userExists": "An account with this email already exists.",
       "passwordTooShort": "The password must be at least 8 characters.",
       "invalidEmail": "Enter a valid email address.",
       "tooManyRequests": "Too many attempts. Wait a minute and try again.",
-      "generic": "Something went wrong. Try again."
+      "generic": "Something went wrong. Try again.",
+      "emailNotVerified": "Your email isn't verified yet. Check your inbox or request a new link.",
+      "passwordTooLong": "The password can be at most 128 characters."
+    },
+    "forgotPassword": "Forgot your password?",
+    "verify": {
+      "pendingTitle": "Check your email",
+      "pendingBodyMasked": "If <email></email> can be used to create an account, we've sent it a verification link. Open it to activate your SST account.",
+      "pendingBody": "If that address can be used to create an account, we've sent it a verification link. Open it to activate your SST account.",
+      "pendingExpires": "The link is valid for 60 minutes.",
+      "pendingSpam": "Can't find it? Check your spam or promotions folder.",
+      "notReceived": "Didn't get the email?",
+      "resend": "Resend email",
+      "resendIn": "Resend available in {seconds}s",
+      "resent": "If there's an account waiting for verification at that address, a new link is on its way.",
+      "backToLogin": "Back to log in",
+      "successTitle": "Email verified",
+      "successBody": "Your email is confirmed. Log in to continue setting up SST.",
+      "successCta": "Log in",
+      "expiredTitle": "This link has expired",
+      "expiredBody": "Verification links are valid for 60 minutes. Request a new one below.",
+      "invalidTitle": "This link isn't valid",
+      "invalidBody": "The link is incomplete or can't be used. Request a new verification email below."
+    },
+    "forgot": {
+      "title": "Reset your password",
+      "subtitle": "Enter your account's email. We'll send you a link to choose a new password.",
+      "submit": "Send reset link",
+      "generic": "If an account exists for that email, we'll send password reset instructions.",
+      "checkSpam": "The link is valid for 60 minutes. Check your spam folder if you don't see it.",
+      "backToLogin": "Back to log in"
+    },
+    "reset": {
+      "title": "Choose a new password",
+      "subtitle": "After the change you'll be signed out on every device.",
+      "newPassword": "New password",
+      "confirmPassword": "Repeat the new password",
+      "hint": "Between 8 and 128 characters. Longer is better; a passphrase works well.",
+      "mismatch": "The passwords don't match.",
+      "submit": "Change password",
+      "successBody": "Your password has been changed and every session was closed. Log in with your new password.",
+      "successCta": "Log in",
+      "invalidBody": "This reset link is invalid, has expired or was already used.",
+      "requestNew": "Request a new link"
     }
   },
   "Onboarding": {

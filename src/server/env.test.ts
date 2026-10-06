@@ -4,6 +4,9 @@ const BASE = {
   DATABASE_URL: "postgres://u:p@localhost:5432/db",
   BETTER_AUTH_SECRET: "a-real-random-secret-value-with-enough-length-0001",
   CREATOR_KEY_PEPPER: "9f1c2b7e4d8a6f3c0b5e7d9a2c4f6e8b1d3a5c7e9f0b2d4c6e8a1f3b5d7c9e0a",
+  // Shape-valid but fake: no test ever talks to Resend.
+  RESEND_API_KEY: "re_TestOnlyKeyNotReal_1234567890",
+  EMAIL_FROM: "SST <no-reply@mail.sst-test.dev>",
 };
 
 async function loadEnv(vars: Record<string, string>) {
@@ -83,5 +86,69 @@ describe("environment hardening", () => {
     expect(
       (await loadEnv({ ...noPepper, NODE_ENV: "development" })).CREATOR_KEY_PEPPER,
     ).toBeUndefined();
+  });
+
+  describe("Phase 4.6: transactional email configuration", () => {
+    const without = (...keys: Array<keyof typeof BASE>) =>
+      Object.fromEntries(
+        Object.entries(BASE).filter(([k]) => !keys.includes(k as keyof typeof BASE)),
+      );
+    const NO_EMAIL = without("RESEND_API_KEY", "EMAIL_FROM");
+
+    it("defaults: resend in production, log in development, memory in tests", async () => {
+      expect((await loadEnv({ ...BASE, NODE_ENV: "production" })).EMAIL_PROVIDER).toBe("resend");
+      expect((await loadEnv({ ...NO_EMAIL, NODE_ENV: "development" })).EMAIL_PROVIDER).toBe("log");
+      expect((await loadEnv({ ...NO_EMAIL, NODE_ENV: "test" })).EMAIL_PROVIDER).toBe("memory");
+    });
+
+    it("production fails closed without RESEND_API_KEY or EMAIL_FROM", async () => {
+      await expect(
+        loadEnv({ ...BASE, NODE_ENV: "production", RESEND_API_KEY: "" }),
+      ).rejects.toThrow(/RESEND_API_KEY/);
+      await expect(
+        loadEnv({ ...without("RESEND_API_KEY"), NODE_ENV: "production" }),
+      ).rejects.toThrow(/RESEND_API_KEY/);
+      await expect(loadEnv({ ...without("EMAIL_FROM"), NODE_ENV: "production" })).rejects.toThrow(
+        /EMAIL_FROM/,
+      );
+    });
+
+    it("production refuses non-delivering transports", async () => {
+      for (const provider of ["log", "memory"]) {
+        await expect(
+          loadEnv({ ...BASE, NODE_ENV: "production", EMAIL_PROVIDER: provider }),
+        ).rejects.toThrow(/EMAIL_PROVIDER/);
+      }
+    });
+
+    it("rejects placeholder / malformed keys and senders", async () => {
+      for (const key of ["re_change-me", "sk_live_123456789", "re_placeholder_xxxx", "re_123"]) {
+        await expect(
+          loadEnv({ ...BASE, NODE_ENV: "production", RESEND_API_KEY: key }),
+        ).rejects.toThrow(/RESEND_API_KEY/);
+      }
+      for (const from of [
+        "SST <no-reply@example.com>",
+        "no-reply@YOUR_VERIFIED_DOMAIN",
+        "SST <no-reply@localhost>",
+        "not an address",
+        "SST <a@b.c> extra",
+      ]) {
+        await expect(
+          loadEnv({ ...BASE, NODE_ENV: "production", EMAIL_FROM: from }),
+        ).rejects.toThrow(/EMAIL_FROM/);
+      }
+      expect(
+        (await loadEnv({ ...BASE, NODE_ENV: "production", EMAIL_FROM: "no-reply@mail.sst.gg" }))
+          .EMAIL_FROM,
+      ).toBe("no-reply@mail.sst.gg");
+    });
+
+    it("development/test need no Resend key; an explicit resend transport still validates", async () => {
+      await expect(loadEnv({ ...NO_EMAIL, NODE_ENV: "development" })).resolves.toBeTruthy();
+      await expect(
+        loadEnv({ ...NO_EMAIL, NODE_ENV: "development", EMAIL_PROVIDER: "resend" }),
+      ).rejects.toThrow(/RESEND_API_KEY/);
+    });
   });
 });

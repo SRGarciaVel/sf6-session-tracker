@@ -1,0 +1,24 @@
+{
+  "common": {
+    "brand": "SST — Session Stats Tracker",
+    "fallbackLink": "Si el botón no funciona, copia y pega este enlace en tu navegador:",
+    "expires": "Este enlace caduca en {minutes} minutos y solo sirve para esta cuenta.",
+    "automated": "Este es un mensaje automático de SST. Las respuestas a esta dirección no se leen."
+  },
+  "verify": {
+    "subject": "Verifica tu correo de SST",
+    "preheader": "Confirma tu correo para terminar de crear tu cuenta de SST.",
+    "heading": "Verifica tu correo",
+    "body": "Confirma que esta dirección de correo es tuya para terminar de crear tu cuenta de SST.",
+    "cta": "Verificar correo",
+    "ignore": "Si no has creado una cuenta en SST, puedes ignorar este correo. Ninguna cuenta se activa sin esta confirmación."
+  },
+  "reset": {
+    "subject": "Restablece tu contraseña de SST",
+    "preheader": "Elige una contraseña nueva para tu cuenta de SST.",
+    "heading": "Restablece tu contraseña",
+    "body": "Hemos recibido una solicitud para restablecer la contraseña de la cuenta de SST asociada a este correo.",
+    "cta": "Elegir una contraseña nueva",
+    "ignore": "Si no lo has pedido tú, ignora este correo: tu contraseña no cambia. Tras restablecerla, se cierra la sesión en todos los dispositivos."
+  }
+}
