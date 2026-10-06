@@ -100,6 +100,11 @@ constraints, dropping the global rating columns):
   `toCharacterKey()`.
 - The v1 "rating after" becomes `rating_after_*`: MR if present, otherwise LP.
 
+**Plans and entitlements** (migration `0008`, [docs/entitlements.md](entitlements.md)):
+`account_plan` (base plan; **no row = free**) and `entitlement_grant` (time-bound override).
+Entitlements are derived in code by one server resolver (`src/server/entitlements/service.ts`),
+never stored and never trusted from the client. In Phase 2 both plans behave identically.
+
 ## 4. Match ingestion and exactly-once effect
 
 ```
