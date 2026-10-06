@@ -6,6 +6,7 @@
  * Server actions carry Next.js' built-in Origin check (CSRF).
  */
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { getRequestLocale } from "@/i18n/server";
 import { eq, sql } from "drizzle-orm";
@@ -21,6 +22,7 @@ import { getCurrentUser } from "@/server/auth/session";
 import { createPairingCode, purgePairingCodes, revokeDevice } from "@/server/companion/service";
 import { getDb } from "@/server/db/client";
 import { sf6Player } from "@/server/db/schema";
+import { attemptCreatorKeyRedeem } from "@/server/creator-keys/service";
 import { canCreateOverlay } from "@/server/entitlements/service";
 import { devToolsEnabled } from "@/server/env";
 import { logger } from "@/server/logger";
@@ -34,6 +36,7 @@ import {
 } from "@/server/overlays/service";
 import { findPlayerByUserId } from "@/server/players/service";
 import { publishEvent } from "@/server/realtime/events";
+import { getClientIp } from "@/server/security/client-ip";
 import { rateLimit } from "@/server/security/rate-limit";
 import { endSession, startSession } from "@/server/sessions/service";
 import { getMockProvider, getSF6DataProvider } from "@/server/sf6";
@@ -232,6 +235,31 @@ async function nudgeTracker(playerId: string) {
     .set({ nextPollAt: sql`now()` })
     .where(eq(sf6Player.id, playerId));
   await publishEvent(db, { kind: "player", playerId });
+}
+
+/* ───────────────────────── Creator Beta ───────────────────────── */
+
+/**
+ * Redeem a Creator Key for the signed-in user (identity from the server session only). Every
+ * failure except rate limiting returns the same message: no key-state probing.
+ */
+export async function redeemCreatorKeyAction(
+  rawKey: string,
+): Promise<ActionResult<{ activeUntil: string }>> {
+  const t = await getTranslations("Errors");
+  const user = await getCurrentUser();
+  if (!user) return fail(t("sessionExpired"));
+  const result = await attemptCreatorKeyRedeem(getDb(), {
+    userId: user.id,
+    ip: getClientIp(await headers()),
+    rawKey,
+  });
+  if (result.status === "rate_limited") {
+    return fail(t("slowDown", { seconds: result.retryAfterSeconds }));
+  }
+  if (result.status === "invalid") return fail(t("creatorKeyInvalid"));
+  revalidatePath("/dashboard");
+  return ok({ activeUntil: result.grantExpiresAt.toISOString() });
 }
 
 /* ───────────────────────── Companion ───────────────────────── */

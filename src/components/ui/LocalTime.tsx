@@ -6,12 +6,20 @@ import { useLocale } from "next-intl";
  * Formats a timestamp in the app locale and the viewer's timezone (the server usually runs in
  * UTC). suppressHydrationWarning: the server's best guess is replaced on the client.
  */
-export function LocalTime({ iso, format }: { iso: string; format: "day" | "time" | "datetime" }) {
+export function LocalTime({
+  iso,
+  format,
+}: {
+  iso: string;
+  format: "day" | "time" | "datetime" | "date";
+}) {
   const locale = useLocale();
   const date = new Date(iso);
   let text: string;
   if (format === "time") {
     text = date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  } else if (format === "date") {
+    text = date.toLocaleDateString(locale, { dateStyle: "medium" });
   } else if (format === "datetime") {
     text = date.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
   } else {
