@@ -389,6 +389,8 @@ docs/                       architecture, companion, security audit, research
 
 - [docs/architecture.md](docs/architecture.md): system design, data model, ingestion, realtime,
   overlays.
+- [docs/creator-overlays.md](docs/creator-overlays.md): Creator Beta advanced overlay
+  customization (what stays Free, stored vs effective config, downgrade).
 - [docs/creator-keys.md](docs/creator-keys.md): Creator Beta invitation keys (crypto, redeem,
   operator CLI, permissions, rollout).
 - [docs/entitlements.md](docs/entitlements.md): plans vs entitlements, the server resolver,

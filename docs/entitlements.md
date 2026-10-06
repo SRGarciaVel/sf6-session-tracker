@@ -44,16 +44,18 @@ separate now means Phase 3 only adds the key table and inserts a grant (`source 
 without reshaping this resolver. Grants carry no free-form JSON and no notes or secrets. They are
 never deleted to downgrade: they expire or get revoked, which keeps the audit trail.
 
-## Entitlement set (Phase 2)
+## Entitlement set (Phase 4)
 
-| Key                     | free | creator_beta | Notes                                                                                       |
-| ----------------------- | ---- | ------------ | ------------------------------------------------------------------------------------------- |
-| `overlays.max`          | 10   | 10           | **10 is the current technical/product behaviour, not a final commercial Free policy.**      |
-| `history.retentionDays` | null | null         | `null` = no retention policy (current behaviour: nothing is ever purged). Not enforced yet. |
+| Key                              | free  | creator_beta | Notes                                                                                       |
+| -------------------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------- |
+| `overlays.max`                   | 10    | 10           | **10 is the current technical/product behaviour, not a final commercial Free policy.**      |
+| `overlays.advancedCustomization` | false | **true**     | Phase 4: NEW overlay options only ([creator-overlays.md](creator-overlays.md))              |
+| `history.retentionDays`          | null  | null         | `null` = no retention policy (current behaviour: nothing is ever purged). Not enforced yet. |
 
-**`creator_beta` is behaviour-equivalent to `free` in Phase 2.** The first Creator capability
-(advanced overlay customization) arrives in Phase 4 as **new** entitlements, never by lowering
-Free. The final Free limits are decided from beta usage data (RFC §11.4).
+Phases 2–3: both plans were identical. **Phase 4** adds the first difference,
+`overlays.advancedCustomization`. It gates **new** options only: every overlay option that existed
+before stays Free, and Free is never lowered. The final Free limits are decided from beta usage
+data (RFC §11.4).
 
 ## Limits audit (what goes through the resolver)
 

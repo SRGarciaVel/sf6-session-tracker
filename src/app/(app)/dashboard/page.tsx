@@ -9,7 +9,8 @@ import { devToolsEnabled, getEnv } from "@/server/env";
 import { listOverlays } from "@/server/overlays/service";
 import { listSessionHistory } from "@/server/sessions/service";
 import { getCompanionRelease } from "@/server/companion/release";
-import { getPlanSummary } from "@/server/entitlements/service";
+import { getEntitlements, getPlanSummary } from "@/server/entitlements/service";
+import { getEffectiveOverlayConfig } from "@/domain/overlay/creator";
 import { companionIngestEnabled, listDevices, toDeviceSummary } from "@/server/companion/service";
 import { CompanionPanel } from "./_components/CompanionPanel";
 import { CreatorBetaPanel } from "./_components/CreatorBetaPanel";
@@ -28,12 +29,13 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const { user, player } = await requirePlayer();
   const db = getDb();
-  const [live, overlays, history, devices, planSummary] = await Promise.all([
+  const [live, overlays, history, devices, planSummary, entitlements] = await Promise.all([
     buildDashboardLiveState(db, player.id),
     listOverlays(db, player.id),
     listSessionHistory(db, player, 10),
     listDevices(db, user.id),
     getPlanSummary(db, user.id),
+    getEntitlements(db, user.id),
   ]);
   if (!live) notFound();
 
@@ -42,7 +44,8 @@ export default async function DashboardPage() {
     id: o.id,
     name: o.name,
     url: `${appUrl}/overlay/${o.publicToken}`,
-    config: o.config,
+    // Same effective config as OBS (Creator customization only while entitled).
+    config: getEffectiveOverlayConfig(o.config, entitlements),
   }));
   const firstPreset = OVERLAY_PRESETS[overlays[0]?.config.preset ?? "standard"];
 

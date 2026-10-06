@@ -459,7 +459,28 @@
       "recentForm": "Últimos resultados"
     },
     "ratingCharacter": "Rating mostrado",
-    "ratingCharacterActive": "Personaje activo (última partida Ranked)"
+    "ratingCharacterActive": "Personaje activo (última partida Ranked)",
+    "creator": {
+      "title": "Personalización avanzada",
+      "summary": "Color secundario de acento, tipografía y tamaño propios para los números, y qué elementos visuales se muestran. Se aplica encima de cualquier tema.",
+      "inviteOnly": "El acceso a Creator Beta es por invitación.",
+      "haveKey": "¿Tienes una Creator Key? Canjéala en el panel.",
+      "savedButInactive": "Tu personalización Creator está guardada. Renueva el acceso Creator para volver a usarla.",
+      "secondaryAccentToggle": "Usar un acento secundario",
+      "secondaryAccent": "Acento secundario",
+      "numberFont": "Tipografía de los números",
+      "numberFontSame": "Igual que el texto",
+      "numberScale": "Tamaño de los números",
+      "showTitle": "Elementos visibles",
+      "show": {
+        "labels": "Etiquetas de las estadísticas",
+        "units": "Unidades (V, D, MR/LP…)",
+        "characterName": "Nombre del personaje",
+        "decorations": "Barras y trazos decorativos"
+      },
+      "notInTheme": "Este tema no muestra este elemento.",
+      "reset": "Restablecer personalización Creator"
+    }
   },
   "NotFound": {
     "title": "Página no encontrada",

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requirePlayer } from "@/server/auth/session";
 import { buildDashboardLiveState } from "@/server/dashboard/state";
 import { getDb } from "@/server/db/client";
+import { getEntitlements } from "@/server/entitlements/service";
 import { getEnv } from "@/server/env";
 import { getOwnedOverlay } from "@/server/overlays/service";
 import { LiveDashboardProvider } from "../../_components/LiveDashboard";
@@ -24,7 +25,10 @@ export default async function OverlayBuilderPage({
   const db = getDb();
   const overlay = await getOwnedOverlay(db, user.id, id); // IDOR-safe
   if (!overlay) notFound();
-  const live = await buildDashboardLiveState(db, player.id);
+  const [live, entitlements] = await Promise.all([
+    buildDashboardLiveState(db, player.id),
+    getEntitlements(db, user.id),
+  ]);
   if (!live) notFound();
 
   const url = `${getEnv().APP_URL.replace(/\/$/, "")}/overlay/${overlay.publicToken}`;
@@ -35,6 +39,7 @@ export default async function OverlayBuilderPage({
         initialName={overlay.name}
         initialConfig={overlay.config}
         url={url}
+        advancedCustomization={entitlements.overlays.advancedCustomization}
       />
     </LiveDashboardProvider>
   );

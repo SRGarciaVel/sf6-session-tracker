@@ -5,6 +5,8 @@
 import { z } from "zod";
 import { CHARACTER_KEY_PATTERN } from "@/domain/sf6/rating";
 import { DEFAULT_LOCALE, LOCALES } from "@/i18n/locale";
+import { creatorCustomizationSchema, parseCreatorCustomization } from "./creator";
+import { FONT_IDS } from "./fonts";
 
 export const OVERLAY_THEMES = ["minimal", "competitive", "fighter"] as const;
 export type OverlayThemeId = (typeof OVERLAY_THEMES)[number];
@@ -17,18 +19,7 @@ export const OVERLAY_PRESETS = {
 export type OverlayPresetId = keyof typeof OVERLAY_PRESETS;
 const PRESET_IDS = Object.keys(OVERLAY_PRESETS) as [OverlayPresetId, ...OverlayPresetId[]];
 
-export const OVERLAY_FONTS = {
-  "barlow-condensed": "Barlow Condensed",
-  barlow: "Barlow",
-  "chakra-petch": "Chakra Petch",
-  rajdhani: "Rajdhani",
-  oswald: "Oswald",
-  "bebas-neue": "Bebas Neue",
-  inter: "Inter",
-  "jetbrains-mono": "JetBrains Mono",
-} as const;
-export type OverlayFontId = keyof typeof OVERLAY_FONTS;
-const FONT_IDS = Object.keys(OVERLAY_FONTS) as [OverlayFontId, ...OverlayFontId[]];
+export { OVERLAY_FONTS, type OverlayFontId } from "./fonts";
 
 export const OVERLAY_FIELDS = [
   "wins",
@@ -90,6 +81,12 @@ export const overlayConfigSchema = z.object({
   spacing: z.enum(["tight", "normal", "relaxed"]),
   align: z.enum(["left", "center", "right"]),
   animations: z.boolean(),
+  /**
+   * Creator Beta customization (domain/overlay/creator.ts). Optional and default-safe: old
+   * configs have none. Stored even when the owner is not entitled; renderers use
+   * getEffectiveOverlayConfig(), which ignores it then.
+   */
+  creator: creatorCustomizationSchema.optional(),
 });
 
 export type OverlayConfig = z.infer<typeof overlayConfigSchema>;
@@ -198,15 +195,19 @@ export function parseOverlayConfig(raw: unknown): OverlayConfig {
     obj.fields !== null && typeof obj.fields === "object" ? (obj.fields as object) : {};
   // Configs saved before i18n had no `locale` and stored the default title literally.
   const legacy = obj.locale === undefined;
+  // The Creator block is parsed on its own: an unusable block is dropped, never the overlay.
+  const creator = parseCreatorCustomization(obj.creator);
   const merged = {
     ...DEFAULT_OVERLAY_CONFIG,
     ...obj,
     ...(legacy && obj.title === "SESSION" ? { title: "" } : {}),
     version: 1,
     fields: { ...DEFAULT_OVERLAY_CONFIG.fields, ...storedFields },
+    creator: undefined,
   };
   const parsed = overlayConfigSchema.safeParse(merged);
-  return parsed.success ? parsed.data : DEFAULT_OVERLAY_CONFIG;
+  const base = parsed.success ? parsed.data : DEFAULT_OVERLAY_CONFIG;
+  return creator === undefined ? base : { ...base, creator };
 }
 
 export function hexToRgba(hex: string, alpha: number): string {

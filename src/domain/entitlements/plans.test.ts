@@ -36,13 +36,20 @@ describe("plans", () => {
 
   it("free preserves today's behaviour (10 overlays, no history purge)", () => {
     expect(PLAN_ENTITLEMENTS.free).toEqual({
-      overlays: { max: 10 },
+      overlays: { max: 10, advancedCustomization: false },
       history: { retentionDays: null },
     });
   });
 
-  it("creator_beta is behaviour-equivalent to free in Phase 2", () => {
-    expect(PLAN_ENTITLEMENTS.creator_beta).toEqual(PLAN_ENTITLEMENTS.free);
+  it("Phase 4: creator_beta differs from free ONLY by advanced overlay customization", () => {
+    expect(PLAN_ENTITLEMENTS.free.overlays.advancedCustomization).toBe(false);
+    expect(PLAN_ENTITLEMENTS.creator_beta.overlays.advancedCustomization).toBe(true);
+    expect(PLAN_ENTITLEMENTS.creator_beta.overlays.max).toBe(10);
+    expect(PLAN_ENTITLEMENTS.free.overlays.max).toBe(10);
+    expect({
+      ...PLAN_ENTITLEMENTS.creator_beta,
+      overlays: { ...PLAN_ENTITLEMENTS.creator_beta.overlays, advancedCustomization: false },
+    }).toEqual(PLAN_ENTITLEMENTS.free);
   });
 });
 

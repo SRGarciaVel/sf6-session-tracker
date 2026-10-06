@@ -14,6 +14,7 @@ import {
 } from "react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { OVERLAY_PRESETS, hexToRgba, type OverlayConfig } from "@/domain/overlay/config";
+import { creatorClassNames, creatorCssVars } from "./creator-style";
 import { getOverlayMessages } from "@/i18n/overlay-messages";
 import { pickRatingCharacter, type PlayerLiveState } from "@/domain/overlay/state";
 import { deltaTone, formatDelta, formatInteger, formatWinRate } from "@/domain/format";
@@ -235,7 +236,7 @@ function MinimalTheme({ config, live }: ThemeProps) {
       key: "rating",
       node: (
         <span className="ov-delta">
-          <span className="ov-unit ov-upper">{r.character}</span>
+          <span className="ov-unit ov-upper ov-char">{r.character}</span>
           {f.rating && (
             <>
               <Animated value={r.value} />
@@ -287,14 +288,16 @@ function Cell({
   label,
   children,
   className,
+  labelClassName,
 }: {
   label: string;
   children: ReactNode;
   className?: string;
+  labelClassName?: string;
 }) {
   return (
     <div className={`ov-cell ${className ?? ""}`}>
-      <span className="ov-label">{label}</span>
+      <span className={labelClassName ? `ov-label ${labelClassName}` : "ov-label"}>{label}</span>
       {children}
     </div>
   );
@@ -359,7 +362,7 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
     groups.push({
       key: "rating",
       node: (
-        <Cell label={r.character}>
+        <Cell label={r.character} labelClassName="ov-char">
           <span className="ov-mid">
             {f.rating && (
               <>
@@ -468,7 +471,11 @@ function FighterTheme({ config, live }: ThemeProps) {
           <div className="ov-st-inner">
             <div className="ov-st-col">
               <span className="ov-st-label">
-                {f.rank ? `${r.character} · ${r.rank}` : r.character}
+                <span className="ov-char">
+                  {r.character}
+                  {f.rank ? " · " : ""}
+                </span>
+                {f.rank ? r.rank : null}
               </span>
               <span className="ov-st-mid">
                 {f.rating && (
@@ -586,6 +593,8 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
     `ov-theme-${config.theme}`,
     `ov-align-${config.align}`,
     config.animations ? "ov-animate" : "",
+    // Creator Beta customization: present only in an entitled owner's EFFECTIVE config.
+    ...creatorClassNames(config.creator),
   ].join(" ");
 
   // The overlay has its own language (config.locale), independent from the dashboard's.
@@ -595,7 +604,7 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
         ref={rootRef}
         lang={config.locale}
         className={className}
-        style={overlayStyle(config, sizing, fit)}
+        style={{ ...overlayStyle(config, sizing, fit), ...creatorCssVars(config.creator) }}
         data-session-status={live.session.status}
       >
         {config.theme === "minimal" && <MinimalTheme config={config} live={live} />}

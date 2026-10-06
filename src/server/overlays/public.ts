@@ -3,6 +3,7 @@ import { toPublicLiveState, type OverlayPayload } from "@/domain/overlay/state";
 import { getDb } from "@/server/db/client";
 import { buildPlayerLiveState } from "@/server/sessions/service";
 import { rateLimit, type RateLimitResult } from "@/server/security/rate-limit";
+import { resolveEffectiveOverlayConfig } from "./effective";
 import { getOverlayByToken, type OverlayView } from "./service";
 
 /** Generous: OBS reconnects + several scenes. Stops token brute-forcing and abuse. */
@@ -23,7 +24,9 @@ export async function loadOverlayPayload(
   if (!overlay) return null;
   const live = await buildPlayerLiveState(db, overlay.playerId);
   if (!live) return null;
-  return { overlay, payload: { config: overlay.config, live: toPublicLiveState(live) } };
+  // Owner's entitlements, resolved now: Creator customization only while the owner has it.
+  const config = await resolveEffectiveOverlayConfig(db, overlay);
+  return { overlay, payload: { config, live: toPublicLiveState(live) } };
 }
 
 export const NO_STORE_HEADERS = {

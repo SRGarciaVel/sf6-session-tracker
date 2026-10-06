@@ -49,7 +49,7 @@ describe.skipIf(!TEST_DB)("plans & entitlements (integration)", () => {
     expect(await getPlanSummary(db, userId)).toEqual({ plan: "free", activeUntil: null });
   });
 
-  it("explicit free and creator_beta rows; creator_beta is behaviour-equivalent", async () => {
+  it("explicit free and creator_beta rows; only advancedCustomization differs (Phase 4)", async () => {
     const free = await newUser();
     const beta = await newUser();
     await db.insert(accountPlan).values([
@@ -61,7 +61,14 @@ describe.skipIf(!TEST_DB)("plans & entitlements (integration)", () => {
       plan: "creator_beta",
       source: "account_plan",
     });
-    expect(await getEntitlements(db, beta)).toEqual(await getEntitlements(db, free));
+    expect((await getEntitlements(db, beta)).overlays).toEqual({
+      max: 10,
+      advancedCustomization: true,
+    });
+    expect((await getEntitlements(db, free)).overlays).toEqual({
+      max: 10,
+      advancedCustomization: false,
+    });
   });
 
   it("CHECK constraints reject unknown plans, sources and inverted windows", async () => {
