@@ -1,0 +1,395 @@
+/*
+ * Landing (Phase 4.7). Motion language:
+ *   headlines   → masked reveal (clip-path + small rise)
+ *   product UI  → depth (scale + translate), via Motion in the scenes
+ *   copy        → short rise, used sparingly
+ *   CTA         → plain opacity
+ * Only transform / opacity / clip-path are animated. Hidden "before" states apply ONLY under
+ * [data-motion="ready"] (set after hydration) and never with reduced motion, so the content is
+ * always present and readable without JS.
+ */
+
+/* ── Reveal grammar ─────────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  .sst-landing [data-reveal] {
+    transition:
+      opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+      clip-path 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .sst-landing[data-motion="ready"] [data-reveal="mask"]:not([data-inview]) {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(0.35em);
+  }
+  .sst-landing[data-motion="ready"] [data-reveal="rise"]:not([data-inview]) {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  .sst-landing[data-motion="ready"] [data-reveal="stage"]:not([data-inview]) {
+    opacity: 0;
+    transform: translateY(28px) scale(0.96);
+  }
+  .sst-landing[data-motion="ready"] [data-reveal="cta"]:not([data-inview]) {
+    opacity: 0;
+  }
+  .sst-landing [data-reveal="mask"] {
+    clip-path: inset(0 0 -0.2em 0);
+  }
+
+  /* Hero: CSS-only load animation (no JS needed, short: comprehension first). */
+  .sst-load-mask {
+    animation: sst-mask-in 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .sst-delay-1 {
+    animation-delay: 0.12s;
+  }
+  .sst-load-stage {
+    animation: sst-stage-in 0.9s 0.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@keyframes sst-mask-in {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(0.3em);
+  }
+  to {
+    clip-path: inset(0 0 -0.2em 0);
+    transform: none;
+  }
+}
+@keyframes sst-stage-in {
+  from {
+    opacity: 0;
+    transform: perspective(1200px) rotateY(-8deg) translateX(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Hero stream stage ─────────────────────────────────────────────────────────────────── */
+
+.sst-stream {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--color-line-strong);
+  background: #070914;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 18px) 0,
+    100% 18px,
+    100% 100%,
+    18px 100%,
+    0 calc(100% - 18px)
+  );
+  box-shadow: 0 30px 80px -30px rgb(59 108 255 / 0.35);
+}
+/* Abstract arena (no game artwork): two energy fields, a horizon and a floor grid. */
+.sst-stream-backdrop {
+  position: absolute;
+  inset: -12% 0;
+  background:
+    linear-gradient(
+      105deg,
+      transparent 0 38%,
+      rgb(47 224 255 / 0.18) 38% 39%,
+      transparent 39% 61%,
+      rgb(255 46 147 / 0.2) 61% 62%,
+      transparent 62%
+    ),
+    radial-gradient(40% 55% at 22% 48%, rgb(47 224 255 / 0.28), transparent 70%),
+    radial-gradient(40% 55% at 80% 46%, rgb(255 46 147 / 0.3), transparent 70%),
+    linear-gradient(180deg, #0d1230 0%, #151a3c 52%, #0a0d1f 53%, #06070f 100%);
+}
+.sst-stream-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 53% -20% 0;
+  background-image:
+    linear-gradient(rgb(95 178 255 / 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(95 178 255 / 0.12) 1px, transparent 1px);
+  background-size: 48px 24px;
+  transform: perspective(300px) rotateX(55deg);
+  transform-origin: top;
+}
+.sst-stream-live {
+  position: absolute;
+  top: 4%;
+  left: 3%;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.6rem;
+  background: rgb(5 7 15 / 0.75);
+  border: 1px solid var(--color-line-strong);
+  font: 700 0.7rem/1 var(--font-display);
+  letter-spacing: 0.2em;
+  color: var(--color-text);
+}
+.sst-live-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-loss);
+  box-shadow: 0 0 8px var(--color-loss);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sst-live-dot {
+    animation: sst-pulse 1.6s ease-in-out infinite;
+  }
+}
+@keyframes sst-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ── Product stages (story, showcase, creator) ─────────────────────────────────────────── */
+
+.sst-stage {
+  position: relative;
+  border: 1px solid var(--color-line-strong);
+  background:
+    radial-gradient(70% 90% at 30% 10%, rgb(124 92 255 / 0.18), transparent 70%),
+    linear-gradient(180deg, #0c1024, #070914);
+  box-shadow: 0 24px 70px -32px rgb(0 0 0 / 0.9);
+}
+/* Program-monitor corner brackets (SST builder language). */
+.sst-stage::before,
+.sst-stage::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--color-cyan);
+  pointer-events: none;
+}
+.sst-stage::before {
+  top: -6px;
+  left: -6px;
+  border-top: 2px solid;
+  border-left: 2px solid;
+}
+.sst-stage::after {
+  right: -6px;
+  bottom: -6px;
+  border-right: 2px solid;
+  border-bottom: 2px solid;
+}
+.sst-stage[data-tier="creator"]::before,
+.sst-stage[data-tier="creator"]::after {
+  border-color: var(--color-magenta);
+}
+.sst-stage-tall {
+  min-height: 420px;
+}
+
+.sst-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font: 700 0.8rem/1 var(--font-display);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.sst-status::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  background: currentColor;
+  transform: skewX(-18deg);
+}
+.sst-status-live {
+  color: var(--color-loss);
+}
+.sst-status-finished {
+  color: var(--color-warn);
+}
+.sst-status-victory {
+  color: var(--color-win);
+}
+.sst-status-updated {
+  color: var(--color-cyan);
+}
+.sst-status-obs {
+  color: var(--color-win);
+}
+
+/* One-shot flash when the result is detected (transform/opacity only). */
+.sst-victory-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 30%, rgb(41 240 168 / 0.22) 50%, transparent 70%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sst-victory-flash {
+    animation: sst-sweep 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sst-victory-flash {
+    display: none;
+  }
+}
+@keyframes sst-sweep {
+  from {
+    transform: translateX(-60%);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  to {
+    transform: translateX(60%);
+    opacity: 0;
+  }
+}
+
+.sst-obs-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border: 1px solid var(--color-faint);
+}
+.sst-obs-dot.is-on {
+  background: var(--color-win);
+  border-color: var(--color-win);
+  box-shadow: 0 0 8px var(--color-win);
+}
+
+.sst-story-step {
+  transition: border-color 0.3s;
+}
+
+.sst-mini-stage {
+  border: 1px solid var(--color-line);
+  background: linear-gradient(180deg, #0c1024, #070914);
+  padding: 0.75rem;
+}
+
+/* ── Pipeline (how it works) ───────────────────────────────────────────────────────────── */
+
+.sst-track {
+  position: absolute;
+  left: 1.6rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-line);
+}
+.sst-track-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--color-cyan), var(--color-magenta));
+  box-shadow: 0 0 10px rgb(47 224 255 / 0.5);
+}
+.sst-track-fill-y {
+  transform-origin: top;
+}
+.sst-track-fill-x {
+  display: none;
+  transform-origin: left;
+  background: linear-gradient(90deg, var(--color-cyan), var(--color-magenta));
+}
+@media (min-width: 64rem) {
+  .sst-track {
+    left: 2rem;
+    right: calc(25% - 2rem);
+    top: 1.85rem;
+    bottom: auto;
+    width: auto;
+    height: 2px;
+  }
+  .sst-track-fill-y {
+    display: none;
+  }
+  .sst-track-fill-x {
+    display: block;
+  }
+}
+
+.sst-node {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-surface);
+  color: var(--color-faint);
+  clip-path: polygon(
+    10px 0,
+    100% 0,
+    100% calc(100% - 10px),
+    calc(100% - 10px) 100%,
+    0 100%,
+    0 10px
+  );
+  transition:
+    color 0.35s,
+    border-color 0.35s,
+    background-color 0.35s;
+}
+@media (min-width: 64rem) {
+  .sst-node {
+    width: 3.75rem;
+    height: 3.75rem;
+  }
+}
+.sst-node.is-on {
+  color: var(--color-cyan);
+  border-color: var(--color-cyan);
+  background: #0d1a33;
+}
+.sst-node.is-core.is-on {
+  color: var(--color-magenta);
+  border-color: var(--color-magenta);
+  background: #2a0d22;
+}
+
+/* ── Creator & ladder & final ──────────────────────────────────────────────────────────── */
+
+.sst-creator {
+  position: relative;
+  border: 1px solid var(--color-line-strong);
+  background:
+    radial-gradient(60% 80% at 100% 0%, rgb(255 46 147 / 0.12), transparent 70%),
+    var(--color-surface-0);
+  clip-path: polygon(
+    0 0,
+    calc(100% - 22px) 0,
+    100% 22px,
+    100% 100%,
+    22px 100%,
+    0 calc(100% - 22px)
+  );
+}
+
+.sst-ladder {
+  border: 1px solid var(--color-line);
+  background: linear-gradient(180deg, var(--color-surface-0), transparent);
+  padding: 1.75rem 1rem;
+}
+/* Host for the real overlay emblem outside an overlay root: provide its tokens and size. */
+.sst-emblem-host {
+  --ov-ink: #070a16;
+  display: inline-flex;
+  font-size: 22px;
+}
+
+.sst-final {
+  position: relative;
+}
+.sst-final::before {
+  content: "";
+  position: absolute;
+  inset: 0 10%;
+  z-index: -1;
+  background: radial-gradient(50% 60% at 50% 50%, rgb(255 46 147 / 0.12), transparent 70%);
+}

@@ -53,7 +53,117 @@
     "step2Body": "Your current MR/LP and last match become the baseline.",
     "step3Title": "Add one URL to OBS",
     "step3Body": "Browser Source → paste → done. Stats update by themselves.",
-    "supportedGame": "Built for fighting games. Currently supports Street Fighter 6."
+    "supportedGame": "Built for fighting games. Currently supports Street Fighter 6.",
+    "navLabel": "Main",
+    "seeHow": "See how it works",
+    "live": "LIVE",
+    "heroStageAlt": "Simulated stream with the SST overlay showing the session: 12 wins, 5 losses, 1684 MR.",
+    "demoNote": "Simulation with sample data.",
+    "story": {
+      "eyebrow": "Live",
+      "title": "A match ends. Your overlay already knows.",
+      "demoValues": "Demo values",
+      "obsSource": "OBS browser source",
+      "status": {
+        "live": "Session live",
+        "finished": "Match finished",
+        "victory": "Victory detected",
+        "updated": "Stats updated",
+        "obs": "OBS updated"
+      },
+      "steps": {
+        "live": {
+          "title": "Session live",
+          "body": "11 wins, 5 losses, 1588 MR and a 3-win streak. Your overlay is already on screen."
+        },
+        "finished": {
+          "title": "The match ends",
+          "body": "You press nothing. SST waits for the Ranked match result."
+        },
+        "victory": {
+          "title": "Victory detected",
+          "body": "The result comes from your match history: no screenshots, no manual counters."
+        },
+        "updated": {
+          "title": "Everything updates",
+          "body": "12-5, 1684 MR (+96) and the streak goes up to 4. Every value changes as soon as the result arrives."
+        },
+        "obs": {
+          "title": "OBS shows it by itself",
+          "body": "The same URL in your browser source: the overlay updates live, no reload."
+        }
+      }
+    },
+    "how": {
+      "eyebrow": "How it works",
+      "title": "From your match to your stream",
+      "subtitle": "Your matches travel a short, known path. You just play.",
+      "nodes": {
+        "buckler": "Buckler's Boot Camp",
+        "companion": "SST Companion",
+        "sst": "SST",
+        "obs": "OBS"
+      },
+      "sourceTitle": "Your Ranked matches",
+      "sourceBody": "Your history on Buckler's Boot Camp, with your own login."
+    },
+    "showcase": {
+      "eyebrow": "Overlays",
+      "title": "An overlay for every stream",
+      "subtitle": "The same live data, presented the way your channel looks.",
+      "freeGroup": "Included in Free.",
+      "creatorGroup": "With Creator Beta: extra themes, variants and reusable presets.",
+      "taglines": {
+        "minimal": "Just the essentials, in one line.",
+        "competitive": "Clear information during the match.",
+        "fighter": "More identity for high-energy streams.",
+        "rank-card": "Your rank front and center.",
+        "broadcast": "Clean, TV-style presentation.",
+        "prestige": "A more elaborate finish, in your rank's color."
+      }
+    },
+    "creator": {
+      "title": "Your style, saved and reusable",
+      "body": "More visual control over the same overlay: pick a theme, tune its variant and save it as a preset to apply to any overlay.",
+      "controlsLabel": "Example settings",
+      "rows": {
+        "theme": {
+          "label": "Theme",
+          "value": "Rank Card"
+        },
+        "variant": {
+          "label": "Variant",
+          "value": "Large emblem"
+        },
+        "density": {
+          "label": "Density",
+          "value": "Compact"
+        },
+        "glow": {
+          "label": "Glow",
+          "value": "Strong"
+        },
+        "preset": {
+          "label": "Preset",
+          "value": "Tournament · applied"
+        }
+      },
+      "replay": "Replay",
+      "applied": "Preset applied to the overlay."
+    },
+    "built": {
+      "title": "Built for fighting games.",
+      "supported": "Street Fighter 6 supported today.",
+      "body": "Every character with its own MR or LP, ranks that style the overlay, and sessions that only count Ranked matches. Designed around how fighting games are played and streamed.",
+      "ladderLabel": "SST rank styles",
+      "ladderCaption": "SST's own emblem for each rank; no official artwork."
+    },
+    "final": {
+      "line1": "Your stream.",
+      "line2": "Your matches.",
+      "line3": "Your stats.",
+      "secondary": "See how it works"
+    }
   },
   "Auth": {
     "welcomeBack": "Welcome back",

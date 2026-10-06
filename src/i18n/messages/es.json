@@ -53,7 +53,117 @@
     "step2Body": "Tu MR/LP actual y tu última partida se guardan como punto de partida.",
     "step3Title": "Añade una URL a OBS",
     "step3Body": "Fuente de navegador → pegar → listo. Las estadísticas se actualizan solas.",
-    "supportedGame": "Hecho para juegos de pelea. Juego compatible actualmente: Street Fighter 6."
+    "supportedGame": "Hecho para juegos de pelea. Juego compatible actualmente: Street Fighter 6.",
+    "navLabel": "Principal",
+    "seeHow": "Ver cómo funciona",
+    "live": "EN DIRECTO",
+    "heroStageAlt": "Simulación de un stream con el overlay de SST mostrando la sesión: 12 victorias, 5 derrotas, 1684 MR.",
+    "demoNote": "Simulación con datos de ejemplo.",
+    "story": {
+      "eyebrow": "En directo",
+      "title": "Una partida termina. Tu overlay ya lo sabe.",
+      "demoValues": "Valores de demostración",
+      "obsSource": "Fuente de navegador de OBS",
+      "status": {
+        "live": "Sesión en directo",
+        "finished": "Partida terminada",
+        "victory": "Victoria detectada",
+        "updated": "Estadísticas actualizadas",
+        "obs": "OBS actualizado"
+      },
+      "steps": {
+        "live": {
+          "title": "Sesión en directo",
+          "body": "11 victorias, 5 derrotas, 1588 MR y una racha de 3. Tu overlay ya está en pantalla."
+        },
+        "finished": {
+          "title": "Termina la partida",
+          "body": "No pulsas nada. SST espera al resultado de la partida Ranked."
+        },
+        "victory": {
+          "title": "Victoria detectada",
+          "body": "El resultado llega desde tu historial de partidas: sin capturas de pantalla ni contadores manuales."
+        },
+        "updated": {
+          "title": "Todo se actualiza",
+          "body": "12-5, 1684 MR (+96) y la racha sube a 4. Cada valor cambia en cuanto llega el resultado."
+        },
+        "obs": {
+          "title": "OBS lo muestra solo",
+          "body": "La misma URL de siempre en tu fuente de navegador: el overlay se actualiza en directo, sin recargar."
+        }
+      }
+    },
+    "how": {
+      "eyebrow": "Cómo funciona",
+      "title": "De tu partida a tu stream",
+      "subtitle": "Tus partidas viajan por un camino corto y conocido. Tú solo juegas.",
+      "nodes": {
+        "buckler": "Buckler's Boot Camp",
+        "companion": "SST Companion",
+        "sst": "SST",
+        "obs": "OBS"
+      },
+      "sourceTitle": "Tus partidas Ranked",
+      "sourceBody": "Tu historial en Buckler's Boot Camp, con tu propia sesión iniciada."
+    },
+    "showcase": {
+      "eyebrow": "Overlays",
+      "title": "Un overlay para cada stream",
+      "subtitle": "Los mismos datos en directo, con la presentación que encaje con tu canal.",
+      "freeGroup": "Incluidos en Free.",
+      "creatorGroup": "Con Creator Beta: temas adicionales, variantes y presets reutilizables.",
+      "taglines": {
+        "minimal": "Solo lo esencial, en una línea.",
+        "competitive": "Información clara durante la partida.",
+        "fighter": "Más identidad para streams con energía.",
+        "rank-card": "Tu rango como protagonista.",
+        "broadcast": "Presentación limpia de estilo televisivo.",
+        "prestige": "Un acabado más elaborado, del color de tu rango."
+      }
+    },
+    "creator": {
+      "title": "Tu estilo, guardado y reutilizable",
+      "body": "Más control visual sobre el mismo overlay: elige un tema, ajusta su variante y guárdalo como preset para aplicarlo a cualquier overlay.",
+      "controlsLabel": "Ajustes de ejemplo",
+      "rows": {
+        "theme": {
+          "label": "Tema",
+          "value": "Rank Card"
+        },
+        "variant": {
+          "label": "Variante",
+          "value": "Emblema grande"
+        },
+        "density": {
+          "label": "Densidad",
+          "value": "Compacta"
+        },
+        "glow": {
+          "label": "Brillo",
+          "value": "Intenso"
+        },
+        "preset": {
+          "label": "Preset",
+          "value": "Torneo · aplicado"
+        }
+      },
+      "replay": "Repetir",
+      "applied": "Preset aplicado al overlay."
+    },
+    "built": {
+      "title": "Hecho para juegos de pelea.",
+      "supported": "Street Fighter 6, compatible hoy.",
+      "body": "Cada personaje con su propio MR o LP, rangos que dan estilo al overlay y sesiones que solo cuentan partidas Ranked. Pensado para cómo se juega y se retransmite un juego de pelea.",
+      "ladderLabel": "Estilos de rango de SST",
+      "ladderCaption": "Emblemas propios de SST para cada rango; sin arte oficial."
+    },
+    "final": {
+      "line1": "Tu stream.",
+      "line2": "Tus partidas.",
+      "line3": "Tus estadísticas.",
+      "secondary": "Ver cómo funciona"
+    }
   },
   "Auth": {
     "welcomeBack": "Bienvenido de nuevo",
