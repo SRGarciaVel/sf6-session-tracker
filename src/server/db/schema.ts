@@ -13,6 +13,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { PlanId } from "@/domain/entitlements/plans";
 import type { SessionFilter } from "@/domain/session/engine";
 import type {
   MatchMode,
@@ -412,6 +413,57 @@ export const companionSnapshot = pgTable(
     updatedAt: tz("updated_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.cfnUserId] })],
+);
+
+/* ───────────────────────── Plans (RFC 0001 §11, docs/entitlements.md) ───────────────────────── */
+
+/**
+ * Explicit base plan of an account. NO ROW = "free": existing accounts need no backfill.
+ * Entitlements are derived in code from the effective plan, never stored here.
+ */
+export const accountPlan = pgTable(
+  "account_plan",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    plan: text("plan").$type<PlanId>().notNull(),
+    createdAt: createdAt(),
+    updatedAt: tz("updated_at").notNull().defaultNow(),
+  },
+  (t) => [check("account_plan_plan_ck", sql`${t.plan} in ('free', 'creator_beta')`)],
+);
+
+/**
+ * Time-bound plan override on top of the base plan (e.g. a 90-day creator_beta grant).
+ * Active = not revoked, started, not expired. A grant can only raise the effective plan.
+ * Rows are never deleted to "downgrade": they expire or get revoked (audit trail).
+ */
+export const entitlementGrant = pgTable(
+  "entitlement_grant",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    plan: text("plan").$type<PlanId>().notNull(),
+    /** Who issued it: "operator" now; "creator_key" from Phase 3. */
+    source: text("source").$type<"operator" | "creator_key">().notNull(),
+    startsAt: tz("starts_at").notNull().defaultNow(),
+    /** NULL = until revoked. */
+    expiresAt: tz("expires_at"),
+    revokedAt: tz("revoked_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("entitlement_grant_user_idx").on(t.userId),
+    check("entitlement_grant_plan_ck", sql`${t.plan} in ('creator_beta')`),
+    check("entitlement_grant_source_ck", sql`${t.source} in ('operator', 'creator_key')`),
+    check(
+      "entitlement_grant_window_ck",
+      sql`${t.expiresAt} is null or ${t.expiresAt} > ${t.startsAt}`,
+    ),
+  ],
 );
 
 /* ───────────────────────── Rate limiting (distributed) ───────────────────────── */

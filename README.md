@@ -387,6 +387,8 @@ docs/                       architecture, companion, security audit, research
 
 - [docs/architecture.md](docs/architecture.md): system design, data model, ingestion, realtime,
   overlays.
+- [docs/entitlements.md](docs/entitlements.md): plans vs entitlements, the server resolver,
+  current limits and downgrade safety.
 - [docs/brand/NOTICE.md](docs/brand/NOTICE.md): SST name and logo (brand notice, draft).
 - [docs/rfc/0001-sst-open-core-multigame.md](docs/rfc/0001-sst-open-core-multigame.md):
   RFC for SST's open-core, cloud and multi-game direction.
