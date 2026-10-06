@@ -66,12 +66,14 @@ describe.skipIf(!TEST_DB)("plans & entitlements (integration)", () => {
       advancedCustomization: true,
       premiumThemes: true,
       creatorPresets: true,
+      motionEffects: true,
     });
     expect((await getEntitlements(db, free)).overlays).toEqual({
       max: 10,
       advancedCustomization: false,
       premiumThemes: false,
       creatorPresets: false,
+      motionEffects: false,
     });
   });
 

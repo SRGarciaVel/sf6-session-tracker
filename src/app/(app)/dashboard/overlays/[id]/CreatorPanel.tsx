@@ -19,8 +19,17 @@ import {
   NUMBER_SCALE_MIN,
 } from "@/domain/overlay/creator";
 import { OVERLAY_FONTS, type OverlayFontId } from "@/domain/overlay/fonts";
-import { patchCreator } from "./builder-state";
-import { ColorField, Group, Slider, Toggle, selectClass } from "./controls";
+import {
+  ACCENT_MOTIONS,
+  DEFAULT_CREATOR_MOTION,
+  MOTION_INTENSITIES,
+  RANK_MOTIONS,
+  UPDATE_STYLES,
+  type CreatorMotion,
+} from "@/domain/overlay/motion";
+import { THEME_REGISTRY } from "@/domain/overlay/themes";
+import { canonicalJson, patchCreator, patchMotion, setMotionEnabled } from "./builder-state";
+import { ColorField, Group, Segmented, Slider, Toggle, selectClass } from "./controls";
 import type { Update } from "./panels";
 import { PresetsSection, type PresetSummary } from "./PresetsSection";
 
@@ -36,6 +45,7 @@ export function CreatorPanel({
   update,
   advancedCustomization,
   creatorPresets,
+  motionEffects,
   overlayId,
   presets,
   dirty,
@@ -45,6 +55,7 @@ export function CreatorPanel({
   update: Update;
   advancedCustomization: boolean;
   creatorPresets: boolean;
+  motionEffects: boolean;
   overlayId: string;
   presets: PresetSummary[];
   dirty: boolean;
@@ -54,8 +65,11 @@ export function CreatorPanel({
   const tp = useTranslations("Builder.presetsCreator");
   const current = config.creator ?? DEFAULT_CREATOR_CUSTOMIZATION;
   const notInTheme = NOT_IN_THEME[config.theme] ?? [];
-  const entitled = advancedCustomization && creatorPresets;
-  const storedCustomization = !advancedCustomization && config.creator !== undefined;
+  const entitled = advancedCustomization && creatorPresets && motionEffects;
+  // One message for any stored Creator styling the owner can't use right now (incl. motion).
+  const storedCustomization =
+    (!advancedCustomization && config.creator !== undefined) ||
+    (!motionEffects && config.creator?.motion !== undefined);
   const storedPresets = !creatorPresets && presets.length > 0;
 
   return (
@@ -166,22 +180,131 @@ export function CreatorPanel({
             </div>
           ))}
         </Group>
+      </fieldset>
 
+      <MotionGroup config={config} update={update} enabled={motionEffects} />
+
+      <fieldset
+        disabled={!advancedCustomization}
+        className="min-w-0 border-t border-line pt-4 disabled:opacity-50"
+      >
+        <legend className="sr-only">{t("reset")}</legend>
         <Button
           variant="ghost"
           size="sm"
           onClick={() =>
             update((c) => {
+              // Resets the styling only; Movement has its own on/off switch.
               const next = { ...c };
               delete next.creator;
-              return next;
+              const motion = c.creator?.motion;
+              return motion
+                ? { ...next, creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, motion } }
+                : next;
             })
           }
-          disabled={!config.creator}
+          disabled={
+            !config.creator ||
+            canonicalJson({ ...config.creator, motion: undefined }) ===
+              canonicalJson(DEFAULT_CREATOR_CUSTOMIZATION)
+          }
         >
           {t("reset")}
         </Button>
       </fieldset>
     </div>
+  );
+}
+
+/** Movement (Phase 5.0): Creator motion, gated by overlays.motionEffects. */
+function MotionGroup({
+  config,
+  update,
+  enabled,
+}: {
+  config: OverlayConfig;
+  update: Update;
+  enabled: boolean;
+}) {
+  const t = useTranslations("Builder.motion");
+  const motion = config.creator?.motion;
+  const current = motion ?? DEFAULT_CREATOR_MOTION;
+  const hasEmblem = THEME_REGISTRY[config.theme].rankEmblem;
+  return (
+    <fieldset
+      disabled={!enabled}
+      className="min-w-0 space-y-4 border-t border-line pt-5 disabled:opacity-50"
+      data-testid="creator-motion"
+    >
+      <legend className="sr-only">{t("title")}</legend>
+      <Group title={t("title")}>
+        <Toggle
+          label={t("enabled")}
+          checked={motion !== undefined}
+          onChange={(on) => update((c) => setMotionEnabled(c, on))}
+        />
+        {motion !== undefined && (
+          <>
+            <label className="flex items-center justify-between gap-3 text-sm">
+              <span>{t("updateStyle")}</span>
+              <select
+                value={current.updateStyle}
+                onChange={(e) => {
+                  const updateStyle = e.target.value as CreatorMotion["updateStyle"];
+                  update((c) => patchMotion(c, { updateStyle }));
+                }}
+                className={`${selectClass} max-w-40`}
+              >
+                {UPDATE_STYLES.map((s) => (
+                  <option key={s} value={s}>
+                    {t(`styles.${s}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span>{t("intensity")}</span>
+              <Segmented
+                value={current.intensity}
+                onChange={(intensity) => update((c) => patchMotion(c, { intensity }))}
+                options={MOTION_INTENSITIES.map((v) => ({
+                  value: v,
+                  label: t(`intensities.${v}`),
+                }))}
+              />
+            </div>
+            <Toggle
+              label={t("resultEmphasis")}
+              checked={current.resultEmphasis}
+              onChange={(resultEmphasis) => update((c) => patchMotion(c, { resultEmphasis }))}
+            />
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span>{t("accentMotion")}</span>
+              <Segmented
+                value={current.accentMotion}
+                onChange={(accentMotion) => update((c) => patchMotion(c, { accentMotion }))}
+                options={ACCENT_MOTIONS.map((v) => ({ value: v, label: t(`accents.${v}`) }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span>{t("rankMotion")}</span>
+                <Segmented
+                  value={current.rankMotion}
+                  onChange={(rankMotion) => update((c) => patchMotion(c, { rankMotion }))}
+                  options={RANK_MOTIONS.map((v) => ({
+                    value: v,
+                    label: t(`ranks.${v}`),
+                    disabled: !hasEmblem && v !== "none",
+                  }))}
+                />
+              </div>
+              {!hasEmblem && <p className="text-xs text-faint">{t("rankNotInTheme")}</p>}
+            </div>
+            <p className="text-xs text-faint">{t("hint")}</p>
+          </>
+        )}
+      </Group>
+    </fieldset>
   );
 }
