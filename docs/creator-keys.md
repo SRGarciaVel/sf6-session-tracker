@@ -4,8 +4,8 @@ Implements RFC 0001 **Phase 3**
 ([§12](rfc/0001-sst-open-core-multigame.md#12-creator-keys)): a one-time invitation key gives a
 signed-in account **`creator_beta` for 90 days**.
 
-**Creator Beta still has the same effective feature entitlements as Free in Phase 3.** The first
-Creator capability (advanced overlay customization) is Phase 4.
+In Phase 3 Creator Beta had the same effective entitlements as Free. **Since Phase 4** it also
+unlocks advanced overlay customization ([creator-overlays.md](creator-overlays.md)).
 
 ## Lifecycle
 

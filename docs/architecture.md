@@ -190,7 +190,13 @@ close OBS mid-session and come back to correct stats. Each poll fetches recent m
 - **OBS CEF compatibility:** overlay CSS is hand-written. It uses no Tailwind, `oklch`,
   `color-mix`, container queries or `:has()`, and colors are hex/rgba computed in JS. OBS ≥ 31 is
   recommended.
-- **Custom CSS is deferred.** See §10 for how to add it safely.
+- **Creator Beta customization** (Phase 4, [creator-overlays.md](creator-overlays.md)) adds typed,
+  bounded options (secondary accent, number font/size, element visibility) in `config.creator`.
+  Every renderer uses the **effective** config, resolved with the overlay **owner's**
+  entitlements on each payload or push. The stored config is never mutated by plan changes, and
+  non-entitled owners render exactly as before.
+- **Custom CSS is deferred.** See §10 for how to add it safely. Creator customization
+  deliberately contains none.
 
 ## 9. Security
 
