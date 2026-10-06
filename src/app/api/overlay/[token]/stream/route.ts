@@ -1,6 +1,7 @@
 import type { OverlayConfig } from "@/domain/overlay/config";
 import { toPublicLiveState, type PlayerLiveState } from "@/domain/overlay/state";
 import { getDb } from "@/server/db/client";
+import { resolveEffectiveOverlayConfig } from "@/server/overlays/effective";
 import { logger } from "@/server/logger";
 import {
   NO_STORE_HEADERS,
@@ -65,15 +66,27 @@ export async function GET(request: Request, ctx: RouteContext<"/api/overlay/[tok
   const { overlay } = initial;
 
   return sseResponse(request.signal, async (sse) => {
+    // Stored config (as saved) vs effective config (what may render): the owner's entitlements
+    // are re-resolved on every push, so an expired Creator grant falls back without reconnecting.
+    let stored: OverlayConfig = overlay.config;
     let config: OverlayConfig = initial.payload.config;
     let live: PlayerLiveState = initial.payload.live;
     const sendState = () => sse.send("state", { config, live });
+    const refreshAndSend = async (onlyIfChanged = false) => {
+      const next = await resolveEffectiveOverlayConfig(db, {
+        playerId: overlay.playerId,
+        config: stored,
+      });
+      const changed = JSON.stringify(next) !== JSON.stringify(config);
+      config = next;
+      if (!onlyIfChanged || changed) sendState();
+    };
     sendState();
 
     const unsubscribe = hub.subscribe(overlay.playerId, (message) => {
       if (message.type === "live") {
         live = toPublicLiveState(message.live);
-        sendState();
+        void refreshAndSend().catch(() => sendState());
       } else if (
         message.type === "overlay" &&
         (message.overlayId === overlay.id || message.overlayId === "*")
@@ -85,8 +98,8 @@ export async function GET(request: Request, ctx: RouteContext<"/api/overlay/[tok
             sse.close();
             return;
           }
-          config = fresh.config;
-          sendState();
+          stored = fresh.config;
+          void refreshAndSend().catch(() => undefined);
         });
       }
     });
@@ -101,6 +114,8 @@ export async function GET(request: Request, ctx: RouteContext<"/api/overlay/[tok
       if (++ticks % 2 === 0) {
         void heartbeatConnection(db, connectionId).catch(() => undefined);
       }
+      // Every ~5 min: plan changes (e.g. a Creator grant expiring) reach a quiet overlay too.
+      if (ticks % 20 === 0) void refreshAndSend(true).catch(() => undefined);
     }, PING_MS);
 
     return async () => {

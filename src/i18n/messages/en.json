@@ -459,7 +459,28 @@
       "recentForm": "Recent form"
     },
     "ratingCharacter": "Rating shown",
-    "ratingCharacterActive": "Active character (latest Ranked match)"
+    "ratingCharacterActive": "Active character (latest Ranked match)",
+    "creator": {
+      "title": "Advanced customization",
+      "summary": "A secondary accent color, your own font and size for the numbers, and which visual elements are shown. Works on top of any theme.",
+      "inviteOnly": "Creator Beta access is currently invite-only.",
+      "haveKey": "Have a Creator Key? Redeem it on the dashboard.",
+      "savedButInactive": "Your Creator customization is saved. Renew Creator access to use it again.",
+      "secondaryAccentToggle": "Use a secondary accent",
+      "secondaryAccent": "Secondary accent",
+      "numberFont": "Number font",
+      "numberFontSame": "Same as text",
+      "numberScale": "Number size",
+      "showTitle": "Visible elements",
+      "show": {
+        "labels": "Stat labels",
+        "units": "Units (W, L, MR/LP…)",
+        "characterName": "Character name",
+        "decorations": "Decorative bars and strokes"
+      },
+      "notInTheme": "This theme doesn't show this element.",
+      "reset": "Reset Creator customization"
+    }
   },
   "NotFound": {
     "title": "Page not found",

@@ -24,6 +24,7 @@ import { getDb } from "@/server/db/client";
 import { sf6Player } from "@/server/db/schema";
 import { attemptCreatorKeyRedeem } from "@/server/creator-keys/service";
 import { canCreateOverlay } from "@/server/entitlements/service";
+import { prepareOverlayConfigForSave } from "@/server/overlays/effective";
 import { devToolsEnabled } from "@/server/env";
 import { logger } from "@/server/logger";
 import {
@@ -136,7 +137,14 @@ export async function saveOverlayAction(
   const db = getDb();
   const target = await getOwnedOverlay(db, ctx.user.id, overlayId);
   if (!target) return fail(t("overlayNotFound"));
-  await updateOverlay(db, target, { name: name.data, config: config.data });
+  // Creator customization is persisted only for entitled owners; otherwise the stored block is
+  // kept untouched (server-side; the editor's locked controls are only a convenience).
+  const merged = await prepareOverlayConfigForSave(db, {
+    userId: ctx.user.id,
+    stored: target.config,
+    incoming: config.data,
+  });
+  await updateOverlay(db, target, { name: name.data, config: merged });
   revalidatePath("/dashboard");
   return ok(undefined);
 }
