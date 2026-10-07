@@ -161,6 +161,19 @@ export function pickRatingCharacter(
 }
 
 /** Public (unauthenticated) view: strips internal identifiers. */
+/**
+ * Client-side identity of the session a snapshot belongs to, for change detection (rotation
+ * priority, motion/rotation baselines). The public overlay payload never carries the internal
+ * `sessionId` (toPublicLiveState), so it falls back to `startedAt`, which the payload already has
+ * and which is unique per session for a player. null = no session.
+ */
+export function sessionIdentity(
+  session: Pick<LiveSessionState, "sessionId" | "startedAt" | "status">,
+): string | null {
+  if (session.sessionId !== null) return session.sessionId;
+  return session.status === "none" ? null : session.startedAt;
+}
+
 export function toPublicLiveState(live: PlayerLiveState): PlayerLiveState {
   return { ...live, session: { ...live.session, sessionId: null } };
 }
