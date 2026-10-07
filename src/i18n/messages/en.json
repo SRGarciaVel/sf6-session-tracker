@@ -778,41 +778,68 @@
     "ratingCharacterHintScoped": "This character sets the overlay's rating, rank and statistics. With no matches in the session, they show as zero.",
     "sampleCharacter": "Sample character",
     "rotation": {
-      "title": "Character rotation",
-      "enabled": "Automatic rotation",
+      "title": "Automatic presentation",
+      "enabled": "Turn on automatic presentation",
       "requiresCreator": "Creator Beta required.",
-      "summary": "Shows the characters played in the session in turn, each with its own rating and rank (and its own stats when “Stats shown” is “Displayed character”).",
-      "interval": "Interval between characters",
+      "summary": "Automatically alternates overlay views: the whole session and/or the characters played, each with its own rating, rank and stats.",
+      "interval": "Interval between views",
       "seconds": "{n} seconds",
-      "transition": "Transition",
+      "transition": "Transition type",
       "transitions": {
         "fade": "Fade",
         "slide": "Slide",
+        "wipe": "Wipe",
         "instant": "Instant"
       },
-      "order": "Rotation order",
+      "order": "Character order",
       "orders": {
         "recent": "Most recent first",
         "mostPlayed": "Most played first",
         "alphabetical": "Alphabetical"
       },
-      "prioritize": "Prioritize the latest match's character",
+      "prioritize": "Prioritize the latest match",
       "priorityDuration": "Priority time",
-      "priorityHint": "After a new match its character is shown for this long; then the rotation resumes.",
-      "priorityOffHint": "New matches update the numbers without interrupting the rotation.",
-      "included": "Included characters",
+      "priorityHint": "After a new match its character's view is shown for this long; then the sequence resumes.",
+      "priorityOffHint": "New matches update the numbers without interrupting the sequence.",
+      "included": "Sequence",
       "sample": "sample data",
-      "noCharacters": "No characters available: rotation starts once you play matches in the session.",
-      "pinnedNote": "While rotating, the session's characters are shown. Turning rotation off brings back the pinned character.",
-      "overridesCharacter": "Character rotation (Creator) is on: it temporarily replaces this choice on the overlay.",
-      "resume": "Resume"
+      "noCharacters": "No characters available: the presentation starts once you play matches in the session.",
+      "pinnedNote": "While the automatic presentation runs, the session's views are shown. Turning it off brings back the pinned character.",
+      "overridesCharacter": "Automatic presentation (Creator) is on: it temporarily replaces this choice on the overlay.",
+      "resume": "Resume",
+      "mode": "Presentation mode",
+      "modes": {
+        "characters": {
+          "label": "Characters only",
+          "hint": "Rotates through the characters played. Wins and losses follow “Stats shown” (Content)."
+        },
+        "session-active": {
+          "label": "Session + active character",
+          "hint": "Alternates the whole session and the latest match's character, with its own stats. Works with a single character too."
+        },
+        "session-all": {
+          "label": "Session + all characters",
+          "hint": "Shows the session before each character played: Session → Character 1 → Session → Character 2…"
+        }
+      },
+      "direction": "Direction",
+      "directions": {
+        "left": "Left",
+        "right": "Right",
+        "up": "Up",
+        "down": "Down"
+      },
+      "directionHint": "Side the new view enters from.",
+      "viewSession": "Session",
+      "viewCharacter": "Character view",
+      "viewLabelHint": "The overlay title identifies the view (“Session” or the character). A custom title is kept: “Your title · Session”. In the session view the rating is the latest match's character's, shown with its name."
     },
     "rotationTest": {
-      "start": "Test rotation",
+      "start": "Test presentation",
       "stop": "Exit the test",
-      "intro": "Try the rotation with sample data (Chun-Li, Jamie, Ryu). Nothing is saved.",
-      "active": "Testing the rotation with sample data.",
-      "hint": "Changes every {interval} s. A simulated match prioritizes its character for {priority} s, then the rotation resumes.",
+      "intro": "Try the automatic presentation with sample data (Chun-Li, Jamie, Ryu). Nothing is saved.",
+      "active": "Testing the presentation with sample data.",
+      "hint": "Changes every {interval} s. A simulated match prioritizes its character's view for {priority} s, then the sequence resumes.",
       "character": "Character",
       "simulate": "Simulate match",
       "done": {

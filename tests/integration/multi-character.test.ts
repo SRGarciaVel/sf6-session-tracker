@@ -318,7 +318,7 @@ describe.skipIf(!TEST_DB)("per-character ratings (integration)", () => {
     expect(rotationOrder(first.characters, "mostPlayed")).toEqual(["kimberly", "aki"]);
     expect(first.characters.find((c) => c.characterKey === "cammy")?.lastPlayedAt).toBeNull();
     let state = initRotation(inputOf(first));
-    expect(state.visible).toBe("kimberly");
+    expect(state.visible).toEqual({ kind: "character", characterKey: "kimberly" });
     // Re-polling (no new match) is not a new match.
     await poll();
     expect(syncRotation(state, inputOf(await live()))).toBe(state);
@@ -328,7 +328,10 @@ describe.skipIf(!TEST_DB)("per-character ratings (integration)", () => {
     await poll();
     const after = await live();
     state = syncRotation(state, inputOf(after));
-    expect(state).toMatchObject({ visible: "aki", priority: "aki" });
+    expect(state).toMatchObject({
+      visible: { kind: "character", characterKey: "aki" },
+      priority: "aki",
+    });
     expect(rotationOrder(after.characters, "recent")).toEqual(["aki", "kimberly"]);
     // Global stats stay global; A.K.I.'s own stats are its own (rotation changes neither).
     expect(after).toMatchObject({ wins: 2, losses: 2, totalGames: 4 });
@@ -341,5 +344,71 @@ describe.skipIf(!TEST_DB)("per-character ratings (integration)", () => {
     expect(
       payload?.live.session.characters.find((c) => c.characterKey === "aki")?.lastPlayedAt,
     ).toEqual(expect.any(String));
+  });
+
+  it("Phase 5.3A: presentation views from the real payload (session + characters), priority, stats", async () => {
+    const { rotationOrder, modeCharacters, buildViews, initRotation, syncRotation, viewKey } =
+      await import("@/domain/overlay/rotation");
+    const { resolvePresentation } = await import("@/domain/overlay/presentation");
+    const { sessionIdentity } = await import("@/domain/overlay/state");
+    await startSession(db, provider, await player());
+    await mock.simulateMatch(cfn, { result: "win" }); // A.K.I.
+    await mock.setCharacter(cfn, "kimberly");
+    await mock.simulateMatch(cfn, { result: "loss" }); // Kimberly
+    await poll();
+
+    const [overlay] = await listOverlays(db, playerId);
+    if (!overlay) throw new Error("no overlay");
+    const payload = (await loadOverlayPayload(overlay.publicToken))?.payload;
+    if (!payload) throw new Error("no payload");
+    const session = payload.live.session;
+    const order = rotationOrder(session.characters, "recent");
+    const keys = (mode: "session-active" | "session-all") =>
+      buildViews(mode, modeCharacters(mode, order, session.activeCharacterKey)).map(viewKey);
+    expect(keys("session-all")).toEqual([
+      "session",
+      "character:kimberly",
+      "session",
+      "character:aki",
+    ]);
+    expect(keys("session-active")).toEqual(["session", "character:kimberly"]);
+
+    // Session view: global stats; character views: their own (from the real payload).
+    const config = { ...payload.config, statsScope: "character" as const };
+    const sessionView = resolvePresentation(config, session, { kind: "session" }, "session-all", {
+      session: "Sesión",
+    });
+    expect(resolveOverlayStats(session, sessionView.config)).toMatchObject({ wins: 1, losses: 1 });
+    const aki = resolvePresentation(
+      config,
+      session,
+      { kind: "character", characterKey: "aki" },
+      "session-all",
+      { session: "Sesión" },
+    );
+    expect(resolveOverlayStats(session, aki.config)).toMatchObject({ wins: 1, losses: 0 });
+
+    // A real A.K.I. match prioritizes A.K.I.'s view (session-active follows the active character).
+    // Inputs come from the PUBLIC payload, as in OBS: no sessionId, identity via sessionIdentity.
+    expect(session.sessionId).toBeNull();
+    const inputOf = (sess: typeof session) => ({
+      sessionId: sessionIdentity(sess),
+      totalGames: sess.totalGames,
+      activeCharacterKey: sess.activeCharacterKey,
+      order: rotationOrder(sess.characters, "recent"),
+      prioritizeLatestMatch: true,
+      mode: "session-active" as const,
+    });
+    let state = initRotation(inputOf(session));
+    await mock.setCharacter(cfn, "aki");
+    await mock.simulateMatch(cfn, { result: "win" });
+    await poll();
+    const after = (await loadOverlayPayload(overlay.publicToken))?.payload.live.session;
+    if (!after) throw new Error("no payload");
+    state = syncRotation(state, inputOf(after));
+    expect(state).toMatchObject({
+      visible: { kind: "character", characterKey: "aki" },
+      priority: "aki",
+    });
   });
 });

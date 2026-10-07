@@ -260,6 +260,11 @@
   height: 0.07em;
   background: linear-gradient(90deg, var(--ov-accent), rgba(255, 255, 255, 0));
 }
+/* Presentation view identifier (Phase 5.3A mixed modes; Minimal has no title slot). */
+.ov-view {
+  white-space: nowrap;
+}
+
 .ov-min-items {
   display: flex;
   align-items: baseline;
@@ -1206,6 +1211,93 @@
   to {
     opacity: 1;
     transform: none;
+  }
+}
+/* Phase 5.3A: directions (the side the NEW view enters from) and the wipe. "left" — and a
+   missing direction — is exactly the Phase 5.2 slide above. The wipe reveals the new view with
+   an inset clip-path (no layout change, nothing measured). */
+.ov-rot-frame[data-rot-transition="slide"][data-rot-direction="right"] {
+  animation-name: ov-rot-slide-right;
+}
+.ov-rot-frame[data-rot-transition="slide"][data-rot-direction="up"] {
+  animation-name: ov-rot-slide-up;
+}
+.ov-rot-frame[data-rot-transition="slide"][data-rot-direction="down"] {
+  animation-name: ov-rot-slide-down;
+}
+.ov-rot-frame[data-rot-transition="wipe"] {
+  /* backwards: once finished no clip-path remains (shadows/glows outside the box stay intact). */
+  animation: ov-rot-wipe-left 420ms cubic-bezier(0.65, 0, 0.35, 1) backwards;
+}
+.ov-rot-frame[data-rot-transition="wipe"][data-rot-direction="right"] {
+  animation-name: ov-rot-wipe-right;
+}
+.ov-rot-frame[data-rot-transition="wipe"][data-rot-direction="up"] {
+  animation-name: ov-rot-wipe-up;
+}
+.ov-rot-frame[data-rot-transition="wipe"][data-rot-direction="down"] {
+  animation-name: ov-rot-wipe-down;
+}
+@keyframes ov-rot-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(0.75em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ov-rot-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ov-rot-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(0.5em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ov-rot-wipe-left {
+  from {
+    clip-path: inset(-2em 100% -2em -2em);
+  }
+  to {
+    clip-path: inset(-2em -2em -2em -2em);
+  }
+}
+@keyframes ov-rot-wipe-right {
+  from {
+    clip-path: inset(-2em -2em -2em 100%);
+  }
+  to {
+    clip-path: inset(-2em -2em -2em -2em);
+  }
+}
+@keyframes ov-rot-wipe-up {
+  from {
+    clip-path: inset(-2em -2em 100% -2em);
+  }
+  to {
+    clip-path: inset(-2em -2em -2em -2em);
+  }
+}
+@keyframes ov-rot-wipe-down {
+  from {
+    clip-path: inset(100% -2em -2em -2em);
+  }
+  to {
+    clip-path: inset(-2em -2em -2em -2em);
   }
 }
 @media (prefers-reduced-motion: reduce) {

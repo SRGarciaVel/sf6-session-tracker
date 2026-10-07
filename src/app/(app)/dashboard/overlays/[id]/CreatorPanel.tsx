@@ -4,7 +4,7 @@
  * Creator tab (Phase 4.9). Everything Creator Beta adds beyond themes, in one place:
  *   presets (top: the fastest path to a known look) → advanced styling grouped as
  *   Typography (number font/size) · Accent (secondary colour) · Visibility (labels, units,
- *   character name, decorations) → Movement (5.0) → Character rotation (5.2).
+ *   character name, decorations) → Movement (5.0) → Automatic presentation (5.2 / 5.3A).
  * ONE badge and ONE entitlement/renewal message for the whole tab. Display only: the server
  * keeps or applies Creator values according to the owner's entitlements (saving a Free edit
  * never drops a stored Creator block).
@@ -33,9 +33,15 @@ import {
   ROTATION_ORDERS,
   ROTATION_TRANSITIONS,
   DEFAULT_CHARACTER_ROTATION,
+  PRESENTATION_MODES,
+  TRANSITION_DIRECTIONS,
+  transitionHasDirection,
+  type PresentationMode,
   type PriorityDuration,
   type RotationInterval,
   type RotationOrder,
+  type RotationTransition,
+  type TransitionDirection,
 } from "@/domain/overlay/rotation";
 import { THEME_REGISTRY } from "@/domain/overlay/themes";
 import {
@@ -63,7 +69,7 @@ export function CreatorPanel({
   creatorPresets,
   motionEffects,
   characterRotation,
-  rotationCharacters,
+  rotationViews,
   overlayId,
   presets,
   dirty,
@@ -75,8 +81,8 @@ export function CreatorPanel({
   creatorPresets: boolean;
   motionEffects: boolean;
   characterRotation: boolean;
-  /** Names of the characters that would rotate now (live data, else the preview sample). */
-  rotationCharacters: { names: string[]; sample: boolean };
+  /** One cycle of views (null = session) the overlay would show now (live, else the sample). */
+  rotationViews: { views: Array<string | null>; sample: boolean };
   overlayId: string;
   presets: PresetSummary[];
   dirty: boolean;
@@ -211,7 +217,7 @@ export function CreatorPanel({
         config={config}
         update={update}
         enabled={characterRotation}
-        characters={rotationCharacters}
+        views={rotationViews}
       />
 
       <fieldset
@@ -346,23 +352,26 @@ function MotionGroup({
 }
 
 /**
- * Character rotation (Phase 5.2): Creator presentation option gated by
- * overlays.characterRotation. Progressive disclosure: only the switch while it's off.
+ * Automatic presentation (Phase 5.2 rotation, Phase 5.3A modes): Creator option gated by
+ * overlays.characterRotation. Progressive disclosure: only the switch while it's off; direction
+ * only for transitions that move; character order only when it changes the cycle; priority
+ * duration only meaningful with priority on.
  */
 function RotationGroup({
   config,
   update,
   enabled,
-  characters,
+  views,
 }: {
   config: OverlayConfig;
   update: Update;
   enabled: boolean;
-  characters: { names: string[]; sample: boolean };
+  views: { views: Array<string | null>; sample: boolean };
 }) {
   const t = useTranslations("Builder.rotation");
   const rotation = config.creator?.characterRotation ?? DEFAULT_CHARACTER_ROTATION;
   const on = config.creator?.characterRotation?.enabled === true;
+  const sequence = views.views.map((v) => v ?? t("viewSession"));
   return (
     <fieldset
       disabled={!enabled}
@@ -380,6 +389,28 @@ function RotationGroup({
         <p className="text-xs text-faint">{t("summary")}</p>
         {on && (
           <>
+            <label className="block text-sm">
+              <span className="mb-1.5 block">{t("mode")}</span>
+              <select
+                value={rotation.mode}
+                onChange={(e) => {
+                  const mode = e.target.value as PresentationMode;
+                  update((c) => patchRotation(c, { mode }));
+                }}
+                className={selectClass}
+                aria-describedby="rotation-mode-hint"
+                data-testid="rotation-mode"
+              >
+                {PRESENTATION_MODES.map((m) => (
+                  <option key={m} value={m}>
+                    {t(`modes.${m}.label`)}
+                  </option>
+                ))}
+              </select>
+              <span id="rotation-mode-hint" className="mt-1 block text-xs text-faint">
+                {t(`modes.${rotation.mode}.hint`)}
+              </span>
+            </label>
             <label className="flex items-center justify-between gap-3 text-sm">
               <span>{t("interval")}</span>
               <select
@@ -398,35 +429,70 @@ function RotationGroup({
                 ))}
               </select>
             </label>
-            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-              <span>{t("transition")}</span>
-              <Segmented
-                value={rotation.transition}
-                onChange={(transition) => update((c) => patchRotation(c, { transition }))}
-                options={ROTATION_TRANSITIONS.map((v) => ({
-                  value: v,
-                  label: t(`transitions.${v}`),
-                }))}
-              />
-            </div>
             <label className="flex items-center justify-between gap-3 text-sm">
-              <span>{t("order")}</span>
+              <span>{t("transition")}</span>
               <select
-                value={rotation.order}
+                value={rotation.transition}
                 onChange={(e) => {
-                  const order = e.target.value as RotationOrder;
-                  update((c) => patchRotation(c, { order }));
+                  const transition = e.target.value as RotationTransition;
+                  update((c) => patchRotation(c, { transition }));
                 }}
-                className={`${selectClass} max-w-48`}
-                data-testid="rotation-order"
+                className={`${selectClass} max-w-40`}
+                data-testid="rotation-transition"
               >
-                {ROTATION_ORDERS.map((o) => (
-                  <option key={o} value={o}>
-                    {t(`orders.${o}`)}
+                {ROTATION_TRANSITIONS.map((v) => (
+                  <option key={v} value={v}>
+                    {t(`transitions.${v}`)}
                   </option>
                 ))}
               </select>
             </label>
+            {transitionHasDirection(rotation.transition) && (
+              <div className="space-y-1">
+                <label className="flex items-center justify-between gap-3 text-sm">
+                  <span>{t("direction")}</span>
+                  <select
+                    value={rotation.direction}
+                    onChange={(e) => {
+                      const direction = e.target.value as TransitionDirection;
+                      update((c) => patchRotation(c, { direction }));
+                    }}
+                    className={`${selectClass} max-w-40`}
+                    aria-describedby="rotation-direction-hint"
+                    data-testid="rotation-direction"
+                  >
+                    {TRANSITION_DIRECTIONS.map((v) => (
+                      <option key={v} value={v}>
+                        {t(`directions.${v}`)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p id="rotation-direction-hint" className="text-xs text-faint">
+                  {t("directionHint")}
+                </p>
+              </div>
+            )}
+            {rotation.mode !== "session-active" && (
+              <label className="flex items-center justify-between gap-3 text-sm">
+                <span>{t("order")}</span>
+                <select
+                  value={rotation.order}
+                  onChange={(e) => {
+                    const order = e.target.value as RotationOrder;
+                    update((c) => patchRotation(c, { order }));
+                  }}
+                  className={`${selectClass} max-w-48`}
+                  data-testid="rotation-order"
+                >
+                  {ROTATION_ORDERS.map((o) => (
+                    <option key={o} value={o}>
+                      {t(`orders.${o}`)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <Toggle
               label={t("prioritize")}
               checked={rotation.prioritizeLatestMatch}
@@ -462,11 +528,14 @@ function RotationGroup({
             <div className="space-y-0.5 text-sm" data-testid="rotation-characters">
               <p>{t("included")}</p>
               <p className="text-xs text-muted">
-                {characters.names.length > 0
-                  ? `${characters.names.join(" · ")}${characters.sample ? ` (${t("sample")})` : ""}`
+                {sequence.length > 0
+                  ? `${sequence.join(" → ")}${views.sample ? ` (${t("sample")})` : ""}`
                   : t("noCharacters")}
               </p>
             </div>
+            {rotation.mode !== "characters" && (
+              <p className="text-xs text-faint">{t("viewLabelHint")}</p>
+            )}
             {config.ratingCharacterKey !== null && (
               <p
                 className="border-l-2 border-cyan/60 bg-surface-2/60 px-3 py-2 text-xs text-text"

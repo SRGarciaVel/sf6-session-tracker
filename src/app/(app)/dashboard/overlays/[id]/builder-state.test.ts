@@ -68,6 +68,22 @@ describe("Phase 5.2: rotation edits (69–73)", () => {
   });
 });
 
+describe("Phase 5.3A: presentation edits", () => {
+  it("mode and direction mark dirty; saving clears it; stored statsScope is untouched", () => {
+    const on = patchRotation(base, { enabled: true });
+    for (const patch of [
+      { mode: "session-all" },
+      { direction: "down" },
+      { transition: "wipe" },
+    ] as const) {
+      const edited = patchRotation(on, patch);
+      expect(isDirty(snap(on), snap(edited))).toBe(true);
+      expect(isDirty(snap(edited), snap(edited))).toBe(false);
+      expect(edited.statsScope).toBe(on.statsScope);
+    }
+  });
+});
+
 describe("Phase 5.1: statsScope edits", () => {
   it("changing statsScope marks dirty; saving that state clears it", () => {
     const scoped: OverlayConfig = { ...base, statsScope: "character" };

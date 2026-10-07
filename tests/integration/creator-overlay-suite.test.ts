@@ -454,6 +454,8 @@ describe.skipIf(!TEST_DB)("Phase 5.2: character rotation lifecycle (integration)
     prioritizeLatestMatch: true,
     prioritySeconds: 30 as const,
     order: "mostPlayed" as const,
+    mode: "characters" as const,
+    direction: "left" as const,
   };
 
   it("Creator enables → OBS gets it → expiry drops it (stored kept) → Free edit/crafted ignored → renew restores → revocation drops; presets carry it", async () => {
@@ -543,6 +545,80 @@ describe.skipIf(!TEST_DB)("Phase 5.2: character rotation lifecycle (integration)
       .where(eq(entitlementGrant.id, g2?.id ?? ""));
     expect((await payload())?.config.creator?.characterRotation).toBeUndefined();
     expect((await current()).config.creator?.characterRotation).toEqual(rotation);
+  });
+});
+
+describe.skipIf(!TEST_DB)("Phase 5.3A: presentation modes lifecycle (integration)", () => {
+  const db = TEST_DB ? getDb() : (null as never);
+  it("Creator saves a mixed mode → public payload; expiry drops it (kept); renewal restores", async () => {
+    const userId = randomUUID();
+    await db.insert(authUser).values({ id: userId, name: "P", email: `${userId}@test.local` });
+    const mock = new MockSF6DataProvider(db);
+    const cfn = String(8_000_000_000 + Math.floor(Math.random() * 999_999_999));
+    const player = await upsertPlayerForUser(db, userId, await mock.getPlayerProfile(cfn));
+    const [ov] = await listOverlays(db, player.id);
+    if (!ov) throw new Error("no overlay");
+    const rotation = {
+      enabled: true,
+      intervalSeconds: 10 as const,
+      transition: "wipe" as const,
+      prioritizeLatestMatch: true,
+      prioritySeconds: 20 as const,
+      order: "recent" as const,
+      mode: "session-all" as const,
+      direction: "down" as const,
+    };
+    const current = async () => {
+      const v = await getOverlayById(db, ov.id);
+      if (!v) throw new Error("gone");
+      return v;
+    };
+    const save = async (edit: Partial<OverlayConfig>) => {
+      const v = await current();
+      const merged = await prepareOverlayConfigForSave(db, {
+        userId,
+        stored: v.config,
+        incoming: { ...v.config, ...edit },
+      });
+      await updateOverlay(db, v, { config: merged });
+    };
+    const payload = async () => (await loadOverlayPayload((await current()).publicToken))?.payload;
+    const [g] = await db
+      .insert(entitlementGrant)
+      .values({
+        userId,
+        plan: "creator_beta",
+        source: "operator",
+        expiresAt: new Date(Date.now() + 90 * 86_400_000),
+      })
+      .returning({ id: entitlementGrant.id });
+    await save({ creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, characterRotation: rotation } });
+    expect((await payload())?.config.creator?.characterRotation).toEqual(rotation);
+    expect((await current()).config.statsScope).toBe("session"); // content, untouched
+
+    await db
+      .update(entitlementGrant)
+      .set({
+        startsAt: new Date(Date.now() - 2 * 3_600_000),
+        expiresAt: new Date(Date.now() - 3_600_000),
+      })
+      .where(eq(entitlementGrant.id, g?.id ?? ""));
+    expect((await payload())?.config.creator?.characterRotation).toBeUndefined();
+    await save({
+      creator: {
+        ...DEFAULT_CREATOR_CUSTOMIZATION,
+        characterRotation: { ...rotation, mode: "characters" },
+      },
+    }); // crafted Free change: ignored
+    expect((await current()).config.creator?.characterRotation).toEqual(rotation);
+
+    await db.insert(entitlementGrant).values({
+      userId,
+      plan: "creator_beta",
+      source: "operator",
+      expiresAt: new Date(Date.now() + 90 * 86_400_000),
+    });
+    expect((await payload())?.config.creator?.characterRotation).toEqual(rotation);
   });
 });
 
