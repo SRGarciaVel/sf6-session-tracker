@@ -57,6 +57,12 @@ export interface Entitlements {
      * Free keeps every existing animation (number ticks, the animations toggle).
      */
     motionEffects: boolean;
+    /**
+     * Creator character rotation & latest-match priority (Phase 5.2, domain/overlay/rotation.ts).
+     * Presentation only and independent of motionEffects: Free keeps every existing option,
+     * including Phase 5.1 character-scoped statistics.
+     */
+    characterRotation: boolean;
   };
   history: {
     /**
@@ -89,6 +95,7 @@ export const PLAN_ENTITLEMENTS: DeepReadonly<Record<PlanId, Entitlements>> = dee
       premiumThemes: false,
       creatorPresets: false,
       motionEffects: false,
+      characterRotation: false,
     },
     history: { retentionDays: null },
   },
@@ -100,6 +107,7 @@ export const PLAN_ENTITLEMENTS: DeepReadonly<Record<PlanId, Entitlements>> = dee
       premiumThemes: true,
       creatorPresets: true,
       motionEffects: true,
+      characterRotation: true,
     },
     history: { retentionDays: null },
   },

@@ -111,7 +111,15 @@ export interface OverlaySummary {
   sessionId: string | null;
   /** Statistics shown (Phase 5.1): switching session ↔ character is a config edit, not a match. */
   scope: "session" | "character";
-  /** Character whose rating is shown (changing it — a config edit — is not an update). */
+  /**
+   * Phase 5.2. "fixed": the displayed character comes from the config (pinned or active) and the
+   * counters are the DISPLAYED ones (session or character scope) — the 5.0/5.1 semantics.
+   * "rotation": the displayed character is presentation state that changes on its own, so the
+   * counters are the authoritative GLOBAL session counters (they never depend on which character
+   * is on screen) and a match is detected from them alone. Switching mode is a config edit.
+   */
+  mode: "fixed" | "rotation";
+  /** Character whose rating is shown (changing it — a config edit or a rotation — is not an update). */
   character: string | null;
   totalGames: number;
   wins: number;
@@ -137,6 +145,7 @@ export function summaryKey(s: OverlaySummary): string {
   return [
     s.sessionId ?? "-",
     s.scope,
+    s.mode,
     s.character ?? "-",
     s.totalGames,
     s.wins,
@@ -156,6 +165,14 @@ export function summaryKey(s: OverlaySummary): string {
  *    (only counters the backend already provides — never inferred from colour or MR alone);
  *  - same games but rating/rank changed (e.g. a profile refresh) ⇒ an update with result null
  *    (no result emphasis).
+ *
+ * Rotation mode (Phase 5.2) separates match detection from character selection:
+ *  - the displayed character changed WITHOUT new games ⇒ a rotation step: null (no result,
+ *    rank or match effect — only the rotation transition plays);
+ *  - it changed WITH new games ⇒ a real match moved the overlay to that match's character
+ *    (latest-match priority): the result comes from the global counters; rating/rank flags stay
+ *    false because the two summaries describe different characters (never compared);
+ *  - same character ⇒ exactly the fixed-mode rules (on global counters).
  */
 export function detectOverlayChange(
   prev: OverlaySummary | null,
@@ -165,15 +182,17 @@ export function detectOverlayChange(
   if (
     prev.sessionId !== next.sessionId ||
     prev.scope !== next.scope ||
-    prev.character !== next.character ||
+    prev.mode !== next.mode ||
     next.totalGames < prev.totalGames
   ) {
     return null;
   }
-  const ratingChanged = prev.rating !== next.rating;
-  const rankChanged = prev.rank !== next.rank;
-  const streakChanged = prev.streak !== next.streak;
   const matchCompleted = next.totalGames > prev.totalGames;
+  const sameCharacter = prev.character === next.character;
+  if (!sameCharacter && (next.mode === "fixed" || !matchCompleted)) return null;
+  const ratingChanged = sameCharacter && prev.rating !== next.rating;
+  const rankChanged = sameCharacter && prev.rank !== next.rank;
+  const streakChanged = sameCharacter && prev.streak !== next.streak;
   if (!matchCompleted && !ratingChanged && !rankChanged) return null;
   const result: UpdateResult | null = !matchCompleted
     ? null

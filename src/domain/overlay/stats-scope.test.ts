@@ -14,7 +14,12 @@ import { resolveOverlayStats } from "./state";
 import { DEFAULT_THEME_VARIANTS } from "./variants";
 
 const FREE = {
-  overlays: { advancedCustomization: false, premiumThemes: false, motionEffects: false },
+  overlays: {
+    advancedCustomization: false,
+    premiumThemes: false,
+    motionEffects: false,
+    characterRotation: false,
+  },
 };
 const session = sampleMultiCharacterState().session;
 const char = (k: string) => session.characters.find((c) => c.characterKey === k);
@@ -145,6 +150,7 @@ describe("Creator Motion with statsScope (38–42)", () => {
   const base: OverlaySummary = {
     sessionId: "s",
     scope: "session",
+    mode: "fixed",
     character: "ryu",
     totalGames: 28,
     wins: 14,

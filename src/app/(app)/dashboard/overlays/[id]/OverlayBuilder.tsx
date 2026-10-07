@@ -32,6 +32,7 @@ import { saveOverlayAction } from "../../actions";
 import { useLiveDashboard } from "../../_components/LiveDashboard";
 import { EDITOR_TABS, isDirty, type EditorSnapshot, type EditorTab } from "./builder-state";
 import { CreatorPanel } from "./CreatorPanel";
+import { rotationCharacterNames } from "./rotation-preview";
 import { ObsOutput } from "./ObsOutput";
 import { AppearancePanel, ContentPanel, StylePanel, type Update } from "./panels";
 import { PreviewPane } from "./PreviewPane";
@@ -43,6 +44,7 @@ export interface BuilderAccess {
   premiumThemes: boolean;
   creatorPresets: boolean;
   motionEffects: boolean;
+  characterRotation: boolean;
 }
 
 type SaveState = "saved" | "unsaved" | "saving" | "failed";
@@ -266,6 +268,7 @@ export function OverlayBuilder({
             config={effectiveConfig}
             liveState={state.live}
             onCanvasChange={(preset) => update((c) => ({ ...c, preset }))}
+            rotationAvailable={access.characterRotation}
           />
           <ObsOutput overlayId={overlayId} url={url} canvas={canvas} onMessage={setNotice} />
         </div>
@@ -328,6 +331,7 @@ export function OverlayBuilder({
                   config={config}
                   update={update}
                   characters={state.live.session.characters}
+                  rotationActive={effectiveConfig.creator?.characterRotation?.enabled === true}
                   defaultTitle={defaultTitle}
                 />
               )}
@@ -345,6 +349,11 @@ export function OverlayBuilder({
                   advancedCustomization={access.advancedCustomization}
                   creatorPresets={access.creatorPresets}
                   motionEffects={access.motionEffects}
+                  characterRotation={access.characterRotation}
+                  rotationCharacters={rotationCharacterNames(
+                    state.live.session,
+                    config.creator?.characterRotation?.order ?? "recent",
+                  )}
                   overlayId={overlayId}
                   presets={presets}
                   dirty={dirty}

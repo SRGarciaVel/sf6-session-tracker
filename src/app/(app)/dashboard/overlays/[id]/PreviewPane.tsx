@@ -4,8 +4,9 @@
  * Live preview (Phase 4.9): the real overlay renderer fed with the EFFECTIVE config (what OBS
  * will show for this owner) and either sample or live session data.
  *
- * Preview-only state — zoom, background, sample data, sample rank — lives here and never
- * touches the overlay config. The canvas selector is the one saved setting in the toolbar
+ * Preview-only state — zoom, background, sample data, sample rank, the Play update simulation
+ * and the rotation test (Phase 5.2) — lives here and never touches the overlay config, the
+ * session, the API or SSE. The canvas selector is the one saved setting in the toolbar
  * (it is the OBS Browser Source size), so it's labelled as such.
  */
 import { useTranslations } from "next-intl";
@@ -14,10 +15,13 @@ import { OverlayView } from "@/components/overlay/OverlayView";
 import { usePrefersReducedMotion } from "@/components/overlay/motion";
 import { Button, cx } from "@/components/ui/primitives";
 import { OVERLAY_PRESETS, type OverlayConfig, type OverlayPresetId } from "@/domain/overlay/config";
+import { DEFAULT_CREATOR_CUSTOMIZATION } from "@/domain/overlay/creator";
+import { DEFAULT_CHARACTER_ROTATION } from "@/domain/overlay/rotation";
 import {
   SAMPLE_CHARACTER_KEYS,
   sampleMultiCharacterState,
   type SampleCharacterKey,
+  type SampleExtraMatch,
 } from "@/domain/overlay/sample-session";
 import type { PlayerLiveState, SampleRank } from "@/domain/overlay/state";
 import {
@@ -73,15 +77,34 @@ function usePaneWidth() {
   return { ref, width };
 }
 
+/**
+ * Rotation test (Phase 5.2): the effective config with rotation switched on (the editor's own
+ * rotation settings, else the defaults). Preview only — never saved.
+ */
+function withTestRotation(config: OverlayConfig): OverlayConfig {
+  const creator = config.creator;
+  const rotation = creator?.characterRotation ?? DEFAULT_CHARACTER_ROTATION;
+  return {
+    ...config,
+    creator: {
+      ...(creator ?? DEFAULT_CREATOR_CUSTOMIZATION),
+      characterRotation: { ...rotation, enabled: true },
+    },
+  };
+}
+
 export function PreviewPane({
   config,
   liveState,
   onCanvasChange,
+  rotationAvailable = false,
 }: {
   /** EFFECTIVE config (owner entitlements applied) — exactly what OBS renders. */
   config: OverlayConfig;
   liveState: PlayerLiveState;
   onCanvasChange: (canvas: OverlayPresetId) => void;
+  /** The owner may use character rotation (overlays.characterRotation). */
+  rotationAvailable?: boolean;
 }) {
   const t = useTranslations("Builder");
   const [bg, setBg] = useState<PreviewBg>("dark");
@@ -97,6 +120,9 @@ export function PreviewPane({
     phase: SimulationPhase;
     run: number;
   } | null>(null);
+  // "Probar rotación": the multi-character sample + simulated matches (engine-built), local only.
+  const [rotationTest, setRotationTest] = useState<{ extra: SampleExtraMatch[] } | null>(null);
+  const [simCharacter, setSimCharacter] = useState<SampleCharacterKey>("jamie");
   const reducedMotion = usePrefersReducedMotion();
   const { ref, width } = usePaneWidth();
 
@@ -108,6 +134,12 @@ export function PreviewPane({
     );
     return () => clearTimeout(id);
   }, [sim]);
+
+  const simulateMatch = () =>
+    setRotationTest((r) => ({
+      extra: [...(r?.extra ?? []), { characterKey: simCharacter, result: simResult }],
+    }));
+  const lastSimulated = rotationTest?.extra[rotationTest.extra.length - 1];
 
   const play = () =>
     setSim((s) => ({
@@ -124,14 +156,18 @@ export function PreviewPane({
   const scale = zoom ?? fitScale;
   const boxWidth = Math.round(canvas.width * scale);
   const boxHeight = Math.round(canvas.height * scale);
-  const live = sim
-    ? simulationState(sim.result, sim.phase)
-    : useSample
-      ? sampleMultiCharacterState(
-          sampleCharacter,
-          theme.rankAware ? SAMPLE_RANKS[sampleRank] : undefined,
-        )
-      : liveState;
+  const testing = rotationTest !== null && rotationAvailable;
+  const previewConfig = testing ? withTestRotation(config) : config;
+  const live = testing
+    ? sampleMultiCharacterState("ryu", undefined, rotationTest.extra)
+    : sim
+      ? simulationState(sim.result, sim.phase)
+      : useSample
+        ? sampleMultiCharacterState(
+            sampleCharacter,
+            theme.rankAware ? SAMPLE_RANKS[sampleRank] : undefined,
+          )
+        : liveState;
 
   return (
     <section aria-labelledby="preview-title" className="hud-panel" data-testid="preview-pane">
@@ -209,7 +245,7 @@ export function PreviewPane({
               data-testid="overlay-preview"
             >
               <OverlayView
-                config={config}
+                config={previewConfig}
                 live={live}
                 sizing={{ mode: "box", width: boxWidth, height: boxHeight }}
               />
@@ -226,9 +262,10 @@ export function PreviewPane({
             onChange={(v) => {
               setUseSample(v);
               setSim(null);
+              setRotationTest(null);
             }}
           />
-          {useSample && !sim && (
+          {useSample && !sim && !testing && (
             <label className="flex items-center gap-2 text-sm">
               <span>{t("sampleCharacter")}</span>
               <select
@@ -245,7 +282,7 @@ export function PreviewPane({
               </select>
             </label>
           )}
-          {useSample && !sim && theme.rankAware && (
+          {useSample && !sim && !testing && theme.rankAware && (
             <label className="flex items-center gap-2 text-sm">
               <span>{t("sampleRank")}</span>
               <select
@@ -263,7 +300,13 @@ export function PreviewPane({
             </label>
           )}
           <span className="text-xs text-faint">
-            {sim ? t("simulation.active") : useSample ? t("previewSample") : t("previewLive")}
+            {testing
+              ? t("rotationTest.active")
+              : sim
+                ? t("simulation.active")
+                : useSample
+                  ? t("previewSample")
+                  : t("previewLive")}
           </span>
         </div>
         <div
@@ -280,18 +323,84 @@ export function PreviewPane({
               { value: "loss", label: t("simulation.loss") },
             ]}
           />
-          <Button size="sm" variant="secondary" onClick={play} data-testid="play-update">
-            {`▶ ${t("simulation.play")}`}
-          </Button>
-          {sim && (
+          {testing ? (
+            <>
+              {/* Rotation test: the same Victory | Loss choice, for a match with a character. */}
+              <label className="flex items-center gap-2 text-sm">
+                <span>{t("rotationTest.character")}</span>
+                <select
+                  value={simCharacter}
+                  onChange={(e) => setSimCharacter(e.target.value as SampleCharacterKey)}
+                  className="h-8 border border-line-strong bg-surface-2 px-2 text-sm focus:border-cyan focus:outline-none"
+                  data-testid="sim-character"
+                >
+                  {SAMPLE_CHARACTERS.map((c) => (
+                    <option key={c.characterKey} value={c.characterKey}>
+                      {c.characterName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={simulateMatch}
+                data-testid="simulate-match"
+              >
+                {`▶ ${t("rotationTest.simulate")}`}
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" variant="secondary" onClick={play} data-testid="play-update">
+              {`▶ ${t("simulation.play")}`}
+            </Button>
+          )}
+          {sim && !testing && (
             <Button size="sm" variant="ghost" onClick={() => setSim(null)}>
               {t("simulation.exit")}
             </Button>
           )}
           <span className="text-xs text-faint" aria-live="polite" data-testid="simulation-status">
-            {sim?.phase === "after" ? t(`simulation.done.${sim.result}`) : ""}
+            {testing
+              ? lastSimulated
+                ? t(`rotationTest.done.${lastSimulated.result}`, {
+                    character:
+                      SAMPLE_CHARACTERS.find((c) => c.characterKey === lastSimulated.characterKey)
+                        ?.characterName ?? lastSimulated.characterKey,
+                  })
+                : ""
+              : sim?.phase === "after"
+                ? t(`simulation.done.${sim.result}`)
+                : ""}
           </span>
         </div>
+        {rotationAvailable && (
+          <div
+            className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line pt-3"
+            data-testid="rotation-preview"
+          >
+            <Button
+              size="sm"
+              variant={testing ? "primary" : "ghost"}
+              aria-pressed={testing}
+              onClick={() => {
+                setSim(null);
+                setRotationTest((r) => (r ? null : { extra: [] }));
+              }}
+              data-testid="rotation-test"
+            >
+              {testing ? t("rotationTest.stop") : `↻ ${t("rotationTest.start")}`}
+            </Button>
+            <span className="text-xs text-faint">
+              {testing
+                ? t("rotationTest.hint", {
+                    interval: previewConfig.creator?.characterRotation?.intervalSeconds ?? 10,
+                    priority: previewConfig.creator?.characterRotation?.prioritySeconds ?? 20,
+                  })
+                : t("rotationTest.intro")}
+            </span>
+          </div>
+        )}
       </div>
     </section>
   );

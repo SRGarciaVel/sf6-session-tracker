@@ -776,7 +776,50 @@
       }
     },
     "ratingCharacterHintScoped": "This character sets the overlay's rating, rank and statistics. With no matches in the session, they show as zero.",
-    "sampleCharacter": "Sample character"
+    "sampleCharacter": "Sample character",
+    "rotation": {
+      "title": "Character rotation",
+      "enabled": "Automatic rotation",
+      "requiresCreator": "Creator Beta required.",
+      "summary": "Shows the characters played in the session in turn, each with its own rating and rank (and its own stats when “Stats shown” is “Displayed character”).",
+      "interval": "Interval between characters",
+      "seconds": "{n} seconds",
+      "transition": "Transition",
+      "transitions": {
+        "fade": "Fade",
+        "slide": "Slide",
+        "instant": "Instant"
+      },
+      "order": "Rotation order",
+      "orders": {
+        "recent": "Most recent first",
+        "mostPlayed": "Most played first",
+        "alphabetical": "Alphabetical"
+      },
+      "prioritize": "Prioritize the latest match's character",
+      "priorityDuration": "Priority time",
+      "priorityHint": "After a new match its character is shown for this long; then the rotation resumes.",
+      "priorityOffHint": "New matches update the numbers without interrupting the rotation.",
+      "included": "Included characters",
+      "sample": "sample data",
+      "noCharacters": "No characters available: rotation starts once you play matches in the session.",
+      "pinnedNote": "While rotating, the session's characters are shown. Turning rotation off brings back the pinned character.",
+      "overridesCharacter": "Character rotation (Creator) is on: it temporarily replaces this choice on the overlay.",
+      "resume": "Resume"
+    },
+    "rotationTest": {
+      "start": "Test rotation",
+      "stop": "Exit the test",
+      "intro": "Try the rotation with sample data (Chun-Li, Jamie, Ryu). Nothing is saved.",
+      "active": "Testing the rotation with sample data.",
+      "hint": "Changes every {interval} s. A simulated match prioritizes its character for {priority} s, then the rotation resumes.",
+      "character": "Character",
+      "simulate": "Simulate match",
+      "done": {
+        "win": "Simulation: win with {character}.",
+        "loss": "Simulation: loss with {character}."
+      }
+    }
   },
   "NotFound": {
     "title": "Page not found",

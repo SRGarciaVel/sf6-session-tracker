@@ -29,6 +29,8 @@ export interface LiveCharacterProgress {
   draws: number;
   /** Matches with this character in the session (0 = known from the roster, not played). */
   games: number;
+  /** ISO time of this character's latest counted match (null = not played). Phase 5.2 order. */
+  lastPlayedAt: string | null;
   /** Phase 5.1: this character's own session stats (same engine rules as the session's). */
   winRate: number;
   currentWinStreak: number;
@@ -93,6 +95,7 @@ function toLiveCharacter(p: CharacterProgress): LiveCharacterProgress {
     losses: p.losses,
     draws: p.draws,
     games: p.games,
+    lastPlayedAt: p.lastPlayedAt?.toISOString() ?? null,
     winRate: roundOneDecimal(p.winRate),
     currentWinStreak: p.currentWinStreak,
     currentLossStreak: p.currentLossStreak,
@@ -200,6 +203,7 @@ export function sampleLiveState(sample?: SampleRank): PlayerLiveState {
           losses: 5,
           draws: 0,
           games: 17,
+          lastPlayedAt: "2026-01-01T00:00:00.000Z",
           // Single character: its own stats equal the session's.
           winRate: 70.6,
           currentWinStreak: 4,

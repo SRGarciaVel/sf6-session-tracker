@@ -56,7 +56,12 @@ describe("Creator renderer hooks", () => {
       const stored = { ...base, creator: custom };
       const free = render(
         getEffectiveOverlayConfig(stored, {
-          overlays: { advancedCustomization: false, premiumThemes: false, motionEffects: false },
+          overlays: {
+            advancedCustomization: false,
+            premiumThemes: false,
+            motionEffects: false,
+            characterRotation: false,
+          },
         }),
       );
       const plain = render(base);
@@ -65,7 +70,12 @@ describe("Creator renderer hooks", () => {
       expect(free).not.toContain("--ov-secondary");
       const creator = render(
         getEffectiveOverlayConfig(stored, {
-          overlays: { advancedCustomization: true, premiumThemes: true, motionEffects: true },
+          overlays: {
+            advancedCustomization: true,
+            premiumThemes: true,
+            motionEffects: true,
+            characterRotation: true,
+          },
         }),
       );
       expect(creator).toContain("ov-c-secondary");

@@ -36,7 +36,12 @@ export async function resolveEffectiveOverlayConfig(
 }
 
 const NOT_ENTITLED = {
-  overlays: { advancedCustomization: false, premiumThemes: false, motionEffects: false },
+  overlays: {
+    advancedCustomization: false,
+    premiumThemes: false,
+    motionEffects: false,
+    characterRotation: false,
+  },
 } as const;
 
 /**

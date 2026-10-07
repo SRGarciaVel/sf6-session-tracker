@@ -4,7 +4,7 @@
  * Creator tab (Phase 4.9). Everything Creator Beta adds beyond themes, in one place:
  *   presets (top: the fastest path to a known look) → advanced styling grouped as
  *   Typography (number font/size) · Accent (secondary colour) · Visibility (labels, units,
- *   character name, decorations).
+ *   character name, decorations) → Movement (5.0) → Character rotation (5.2).
  * ONE badge and ONE entitlement/renewal message for the whole tab. Display only: the server
  * keeps or applies Creator values according to the owner's entitlements (saving a Free edit
  * never drops a stored Creator block).
@@ -27,8 +27,24 @@ import {
   UPDATE_STYLES,
   type CreatorMotion,
 } from "@/domain/overlay/motion";
+import {
+  PRIORITY_DURATIONS,
+  ROTATION_INTERVALS,
+  ROTATION_ORDERS,
+  ROTATION_TRANSITIONS,
+  DEFAULT_CHARACTER_ROTATION,
+  type PriorityDuration,
+  type RotationInterval,
+  type RotationOrder,
+} from "@/domain/overlay/rotation";
 import { THEME_REGISTRY } from "@/domain/overlay/themes";
-import { canonicalJson, patchCreator, patchMotion, setMotionEnabled } from "./builder-state";
+import {
+  canonicalJson,
+  patchCreator,
+  patchMotion,
+  patchRotation,
+  setMotionEnabled,
+} from "./builder-state";
 import { ColorField, Group, Segmented, Slider, Toggle, selectClass } from "./controls";
 import type { Update } from "./panels";
 import { PresetsSection, type PresetSummary } from "./PresetsSection";
@@ -46,6 +62,8 @@ export function CreatorPanel({
   advancedCustomization,
   creatorPresets,
   motionEffects,
+  characterRotation,
+  rotationCharacters,
   overlayId,
   presets,
   dirty,
@@ -56,6 +74,9 @@ export function CreatorPanel({
   advancedCustomization: boolean;
   creatorPresets: boolean;
   motionEffects: boolean;
+  characterRotation: boolean;
+  /** Names of the characters that would rotate now (live data, else the preview sample). */
+  rotationCharacters: { names: string[]; sample: boolean };
   overlayId: string;
   presets: PresetSummary[];
   dirty: boolean;
@@ -65,11 +86,13 @@ export function CreatorPanel({
   const tp = useTranslations("Builder.presetsCreator");
   const current = config.creator ?? DEFAULT_CREATOR_CUSTOMIZATION;
   const notInTheme = NOT_IN_THEME[config.theme] ?? [];
-  const entitled = advancedCustomization && creatorPresets && motionEffects;
-  // One message for any stored Creator styling the owner can't use right now (incl. motion).
+  const entitled = advancedCustomization && creatorPresets && motionEffects && characterRotation;
+  // One message for any stored Creator styling the owner can't use right now (incl. motion
+  // and rotation).
   const storedCustomization =
     (!advancedCustomization && config.creator !== undefined) ||
-    (!motionEffects && config.creator?.motion !== undefined);
+    (!motionEffects && config.creator?.motion !== undefined) ||
+    (!characterRotation && config.creator?.characterRotation?.enabled === true);
   const storedPresets = !creatorPresets && presets.length > 0;
 
   return (
@@ -184,6 +207,13 @@ export function CreatorPanel({
 
       <MotionGroup config={config} update={update} enabled={motionEffects} />
 
+      <RotationGroup
+        config={config}
+        update={update}
+        enabled={characterRotation}
+        characters={rotationCharacters}
+      />
+
       <fieldset
         disabled={!advancedCustomization}
         className="min-w-0 border-t border-line pt-4 disabled:opacity-50"
@@ -194,19 +224,25 @@ export function CreatorPanel({
           size="sm"
           onClick={() =>
             update((c) => {
-              // Resets the styling only; Movement has its own on/off switch.
+              // Resets the styling only; Movement and rotation have their own switches.
               const next = { ...c };
               delete next.creator;
               const motion = c.creator?.motion;
-              return motion
-                ? { ...next, creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, motion } }
-                : next;
+              const characterRotation = c.creator?.characterRotation;
+              if (!motion && !characterRotation) return next;
+              const creator = { ...DEFAULT_CREATOR_CUSTOMIZATION };
+              if (motion) creator.motion = motion;
+              if (characterRotation) creator.characterRotation = characterRotation;
+              return { ...next, creator };
             })
           }
           disabled={
             !config.creator ||
-            canonicalJson({ ...config.creator, motion: undefined }) ===
-              canonicalJson(DEFAULT_CREATOR_CUSTOMIZATION)
+            canonicalJson({
+              ...config.creator,
+              motion: undefined,
+              characterRotation: undefined,
+            }) === canonicalJson(DEFAULT_CREATOR_CUSTOMIZATION)
           }
         >
           {t("reset")}
@@ -302,6 +338,143 @@ function MotionGroup({
               {!hasEmblem && <p className="text-xs text-faint">{t("rankNotInTheme")}</p>}
             </div>
             <p className="text-xs text-faint">{t("hint")}</p>
+          </>
+        )}
+      </Group>
+    </fieldset>
+  );
+}
+
+/**
+ * Character rotation (Phase 5.2): Creator presentation option gated by
+ * overlays.characterRotation. Progressive disclosure: only the switch while it's off.
+ */
+function RotationGroup({
+  config,
+  update,
+  enabled,
+  characters,
+}: {
+  config: OverlayConfig;
+  update: Update;
+  enabled: boolean;
+  characters: { names: string[]; sample: boolean };
+}) {
+  const t = useTranslations("Builder.rotation");
+  const rotation = config.creator?.characterRotation ?? DEFAULT_CHARACTER_ROTATION;
+  const on = config.creator?.characterRotation?.enabled === true;
+  return (
+    <fieldset
+      disabled={!enabled}
+      className="min-w-0 space-y-4 border-t border-line pt-5 disabled:opacity-50"
+      data-testid="creator-rotation"
+    >
+      <legend className="sr-only">{t("title")}</legend>
+      <Group title={t("title")}>
+        <Toggle
+          label={t("enabled")}
+          checked={on}
+          onChange={(v) => update((c) => patchRotation(c, { enabled: v }))}
+        />
+        {!enabled && <p className="text-xs text-faint">{t("requiresCreator")}</p>}
+        <p className="text-xs text-faint">{t("summary")}</p>
+        {on && (
+          <>
+            <label className="flex items-center justify-between gap-3 text-sm">
+              <span>{t("interval")}</span>
+              <select
+                value={rotation.intervalSeconds}
+                onChange={(e) => {
+                  const intervalSeconds = Number(e.target.value) as RotationInterval;
+                  update((c) => patchRotation(c, { intervalSeconds }));
+                }}
+                className={`${selectClass} max-w-40`}
+                data-testid="rotation-interval"
+              >
+                {ROTATION_INTERVALS.map((n) => (
+                  <option key={n} value={n}>
+                    {t("seconds", { n })}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span>{t("transition")}</span>
+              <Segmented
+                value={rotation.transition}
+                onChange={(transition) => update((c) => patchRotation(c, { transition }))}
+                options={ROTATION_TRANSITIONS.map((v) => ({
+                  value: v,
+                  label: t(`transitions.${v}`),
+                }))}
+              />
+            </div>
+            <label className="flex items-center justify-between gap-3 text-sm">
+              <span>{t("order")}</span>
+              <select
+                value={rotation.order}
+                onChange={(e) => {
+                  const order = e.target.value as RotationOrder;
+                  update((c) => patchRotation(c, { order }));
+                }}
+                className={`${selectClass} max-w-48`}
+                data-testid="rotation-order"
+              >
+                {ROTATION_ORDERS.map((o) => (
+                  <option key={o} value={o}>
+                    {t(`orders.${o}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Toggle
+              label={t("prioritize")}
+              checked={rotation.prioritizeLatestMatch}
+              onChange={(prioritizeLatestMatch) =>
+                update((c) => patchRotation(c, { prioritizeLatestMatch }))
+              }
+            />
+            <div className="space-y-1">
+              <label className="flex items-center justify-between gap-3 text-sm">
+                <span>{t("priorityDuration")}</span>
+                <select
+                  value={rotation.prioritySeconds}
+                  disabled={!rotation.prioritizeLatestMatch}
+                  onChange={(e) => {
+                    const prioritySeconds = Number(e.target.value) as PriorityDuration;
+                    update((c) => patchRotation(c, { prioritySeconds }));
+                  }}
+                  className={`${selectClass} max-w-40 disabled:opacity-50`}
+                  aria-describedby="rotation-priority-hint"
+                  data-testid="rotation-priority"
+                >
+                  {PRIORITY_DURATIONS.map((n) => (
+                    <option key={n} value={n}>
+                      {t("seconds", { n })}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p id="rotation-priority-hint" className="text-xs text-faint">
+                {rotation.prioritizeLatestMatch ? t("priorityHint") : t("priorityOffHint")}
+              </p>
+            </div>
+            <div className="space-y-0.5 text-sm" data-testid="rotation-characters">
+              <p>{t("included")}</p>
+              <p className="text-xs text-muted">
+                {characters.names.length > 0
+                  ? `${characters.names.join(" · ")}${characters.sample ? ` (${t("sample")})` : ""}`
+                  : t("noCharacters")}
+              </p>
+            </div>
+            {config.ratingCharacterKey !== null && (
+              <p
+                className="border-l-2 border-cyan/60 bg-surface-2/60 px-3 py-2 text-xs text-text"
+                data-testid="rotation-pinned-note"
+              >
+                {t("pinnedNote")}
+              </p>
+            )}
           </>
         )}
       </Group>

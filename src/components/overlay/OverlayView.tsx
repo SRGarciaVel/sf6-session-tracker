@@ -24,6 +24,8 @@ import {
 } from "@/domain/overlay/state";
 import { motionProfile, type OverlaySummary } from "@/domain/overlay/motion";
 import { MotionFx, MotionProvider, useOverlayUpdate, usePrefersReducedMotion } from "./motion";
+import { effectiveTransition } from "@/domain/overlay/rotation";
+import { useCharacterRotation } from "./rotation";
 import { formatWinRate } from "@/domain/format";
 import { BroadcastTheme, PrestigeTheme, RankCardTheme } from "./creator-themes";
 import {
@@ -414,6 +416,20 @@ export interface OverlayViewProps {
  * scale), shrink the root font-size until it fits. Everything is em-based, so content size is
  * proportional to the font-size and one measurement is enough.
  */
+/**
+ * The element whose natural size fit-to-box measures: the theme panel. With Creator rotation
+ * (Phase 5.2) the panel sits inside a static stage and an animated frame; measuring the panel
+ * itself keeps the fit identical to an overlay without rotation (a panel that clips its own
+ * overflow would otherwise report a smaller box through the stage) and never measures the
+ * element being animated.
+ */
+function fitTarget(root: HTMLElement | null): HTMLElement | null {
+  const first = root?.firstElementChild as HTMLElement | null | undefined;
+  if (!first) return null;
+  if (!first.classList.contains("ov-rot-stage")) return first;
+  return (first.firstElementChild?.firstElementChild as HTMLElement | null | undefined) ?? first;
+}
+
 function useFitToBox() {
   const rootRef = useRef<HTMLDivElement>(null);
   const fitRef = useRef(1);
@@ -423,7 +439,7 @@ function useFitToBox() {
 
   const measure = useCallback(() => {
     const root = rootRef.current;
-    const content = root?.firstElementChild as HTMLElement | null | undefined;
+    const content = fitTarget(root);
     if (!root || !content) return;
     const cs = getComputedStyle(root);
     const availW = root.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
@@ -464,7 +480,8 @@ function useFitToBox() {
     if (!root || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(measure);
     ro.observe(root);
-    if (root.firstElementChild) ro.observe(root.firstElementChild);
+    const content = fitTarget(root);
+    if (content) ro.observe(content);
     const fonts = typeof document !== "undefined" ? document.fonts : undefined;
     void fonts?.ready.then(measure);
     fonts?.addEventListener("loadingdone", measure);
@@ -477,25 +494,43 @@ function useFitToBox() {
   return { rootRef, fit };
 }
 
-/** Data-only summary for update detection (never config: edits must not "play" an update). */
+/**
+ * Data-only summary for update detection (never config: edits must not "play" an update).
+ * `display` is the PRESENTATION config (rotation may have replaced the character). In rotation
+ * mode the counters are the global session ones, so a rotation step never looks like a match
+ * and a real match is detected whatever character is on screen (motion.ts).
+ */
 function overlaySummary(
   live: PlayerLiveState,
-  config: OverlayConfig,
+  display: OverlayConfig,
   stats: OverlayStats,
+  rotating: boolean,
 ): OverlaySummary {
-  const c = pickRatingCharacter(live.session, config.ratingCharacterKey);
+  const c = pickRatingCharacter(live.session, display.ratingCharacterKey);
+  const counters = rotating ? live.session : stats;
   return {
     sessionId: live.session.sessionId,
     // The statistics being shown (scope + their counters): switching scope is a new baseline.
     scope: stats.scope,
+    mode: rotating ? "rotation" : "fixed",
     character: c?.characterKey ?? null,
-    totalGames: stats.totalGames,
-    wins: stats.wins,
-    losses: stats.losses,
+    totalGames: counters.totalGames,
+    wins: counters.wins,
+    losses: counters.losses,
     rating: c?.current?.value ?? null,
     rank: c?.current?.rank ?? null,
     streak: stats.currentWinStreak,
   };
+}
+
+/**
+ * Presentation config for this render: with Creator rotation, the rotated character temporarily
+ * takes the place of `ratingCharacterKey` — for EVERYTHING the themes draw (name, rating, rank,
+ * delta, emblem, and the statistics via resolveOverlayStats), so characters can never mix.
+ * Never saved: the stored pinned character is back as soon as rotation stops.
+ */
+function presentationConfig(config: OverlayConfig, characterKey: string | null): OverlayConfig {
+  return characterKey === null ? config : { ...config, ratingCharacterKey: characterKey };
 }
 
 /**
@@ -521,6 +556,24 @@ function withDisplayedStats(live: PlayerLiveState, stats: OverlayStats): PlayerL
   };
 }
 
+function ThemeView({ config, live }: ThemeProps) {
+  switch (config.theme) {
+    case "minimal":
+      return <MinimalTheme config={config} live={live} />;
+    case "competitive":
+      return <CompetitiveTheme config={config} live={live} />;
+    case "fighter":
+      return <FighterTheme config={config} live={live} />;
+    // Creator themes: only reachable via an entitled owner's EFFECTIVE config.
+    case "rank-card":
+      return <RankCardTheme config={config} live={live} />;
+    case "broadcast":
+      return <BroadcastTheme config={config} live={live} />;
+    case "prestige":
+      return <PrestigeTheme config={config} live={live} />;
+  }
+}
+
 export function OverlayView({ config, live, sizing }: OverlayViewProps) {
   const { rootRef, fit } = useFitToBox();
   // Creator motion (Phase 5.0): only an entitled owner's EFFECTIVE config carries `motion`;
@@ -530,13 +583,26 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
     animations: config.animations,
     reducedMotion,
   });
+  // Phase 5.2: Creator rotation (only in an entitled owner's EFFECTIVE config) picks the
+  // character to represent; null = the config's own choice (pinned, else active).
+  const rotationConfig = config.creator?.characterRotation;
+  const rotation = useCharacterRotation(live.session, rotationConfig);
+  const rotating = rotationConfig?.enabled === true && live.session.status === "active";
+  const display = presentationConfig(config, rotation?.characterKey ?? null);
   // Phase 5.1: the ONE projection of the statistics this overlay shows (session or character).
-  const stats = resolveOverlayStats(live.session, config);
+  const stats = resolveOverlayStats(live.session, display);
   const shown = withDisplayedStats(live, stats);
   const update = useOverlayUpdate(
-    overlaySummary(live, config, stats),
+    overlaySummary(live, display, stats, rotating),
     profile?.clearAfterMs ?? null,
   );
+  const transition =
+    rotation && rotationConfig
+      ? effectiveTransition(rotationConfig.transition, {
+          animations: config.animations,
+          reducedMotion,
+        })
+      : null;
   const motionAttrs = profile
     ? {
         "data-motion-style": profile.style,
@@ -578,13 +644,21 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
         {...motionAttrs}
       >
         <MotionProvider value={{ update, sweep: profile?.accent === "sweep" }}>
-          {config.theme === "minimal" && <MinimalTheme config={config} live={shown} />}
-          {config.theme === "competitive" && <CompetitiveTheme config={config} live={shown} />}
-          {config.theme === "fighter" && <FighterTheme config={config} live={shown} />}
-          {/* Creator themes: only reachable via an entitled owner's EFFECTIVE config. */}
-          {config.theme === "rank-card" && <RankCardTheme config={config} live={shown} />}
-          {config.theme === "broadcast" && <BroadcastTheme config={config} live={shown} />}
-          {config.theme === "prestige" && <PrestigeTheme config={config} live={shown} />}
+          {rotation ? (
+            // Rotation stage: static (it is what fit-to-box measures); the inner frame is re-keyed
+            // per character, so the transition runs once on the new content and no old DOM stays.
+            <div className="ov-rot-stage">
+              <div
+                key={rotation.characterKey}
+                className="ov-rot-frame"
+                data-rot-transition={rotation.seq > 0 ? (transition ?? "instant") : undefined}
+              >
+                <ThemeView config={display} live={shown} />
+              </div>
+            </div>
+          ) : (
+            <ThemeView config={display} live={shown} />
+          )}
         </MotionProvider>
       </div>
     </NextIntlClientProvider>

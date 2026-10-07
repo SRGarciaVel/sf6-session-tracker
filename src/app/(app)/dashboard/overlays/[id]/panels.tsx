@@ -69,11 +69,14 @@ export function ContentPanel({
   update,
   characters,
   defaultTitle,
+  rotationActive = false,
 }: {
   config: OverlayConfig;
   update: Update;
   characters: ReadonlyArray<{ characterKey: string; characterName: string }>;
   defaultTitle: string;
+  /** Creator rotation is on in the EFFECTIVE config (it temporarily replaces this choice). */
+  rotationActive?: boolean;
 }) {
   const t = useTranslations("Builder");
   const tc = useTranslations("Common");
@@ -178,6 +181,11 @@ export function ContentPanel({
               ? t("ratingCharacterHintScoped")
               : t("ratingCharacterHint")}
           </span>
+          {rotationActive && (
+            <span className="mt-1 block text-xs text-cyan" data-testid="rotation-overrides-hint">
+              {t("rotation.overridesCharacter")}
+            </span>
+          )}
         </label>
       </Group>
 

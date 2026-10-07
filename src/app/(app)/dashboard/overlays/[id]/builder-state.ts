@@ -12,6 +12,7 @@ import {
 } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION, type CreatorCustomization } from "@/domain/overlay/creator";
 import { DEFAULT_CREATOR_MOTION, type CreatorMotion } from "@/domain/overlay/motion";
+import { DEFAULT_CHARACTER_ROTATION, type CharacterRotation } from "@/domain/overlay/rotation";
 
 /** JSON with sorted keys and without `undefined` members: key order never makes a config "dirty". */
 export function canonicalJson(value: unknown): string {
@@ -89,6 +90,22 @@ export function setMotionEnabled(config: OverlayConfig, on: boolean): OverlayCon
 export function patchMotion(config: OverlayConfig, patch: Partial<CreatorMotion>): OverlayConfig {
   return patchCreator(config, {
     motion: { ...(config.creator?.motion ?? DEFAULT_CREATOR_MOTION), ...patch },
+  });
+}
+
+/**
+ * Character rotation (Phase 5.2): patch the block, creating it from the defaults. Turning it off
+ * keeps every preference (enabled: false), so turning it back on restores them.
+ */
+export function patchRotation(
+  config: OverlayConfig,
+  patch: Partial<CharacterRotation>,
+): OverlayConfig {
+  return patchCreator(config, {
+    characterRotation: {
+      ...(config.creator?.characterRotation ?? DEFAULT_CHARACTER_ROTATION),
+      ...patch,
+    },
   });
 }
 

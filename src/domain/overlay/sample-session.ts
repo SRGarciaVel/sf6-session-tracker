@@ -6,6 +6,10 @@
  *   Jamie 3W 5L · Chun-Li 2W 1L · Ryu 9W 8L  ⇒  session 14W 14L
  *   Ryu's games are split around Chun-Li's: Chun-Li's matches don't break Ryu's streak.
  *   Cammy is known from the roster with 0 games (to preview a character without matches).
+ *
+ * Phase 5.2: the builder's rotation test appends simulated matches (`extra`), still run through
+ * the engine, so a simulated Jamie match changes Jamie's numbers, the session totals, the active
+ * character and the recent order exactly as a real one would.
  */
 import {
   summarizeSession,
@@ -55,10 +59,23 @@ const RATINGS: Record<string, { start: RatingPoint; now: RatingPoint }> = {
 
 const START = new Date("2026-01-01T18:00:00Z");
 
-function matches(): SessionMatch[] {
+/** A simulated extra match for the builder's rotation test (preview only). */
+export interface SampleExtraMatch {
+  characterKey: SampleCharacterKey;
+  result: "win" | "loss";
+}
+
+/** Rating change per simulated match (per system), so rank reactions can be previewed. */
+const EXTRA_STEP = { mr: 18, lp: 120 } as const;
+
+function matches(extra: readonly SampleExtraMatch[]): SessionMatch[] {
   const out: SessionMatch[] = [];
   let i = 0;
-  for (const [key, results] of PLAY) {
+  const play: Array<[CharacterKey, MatchResult[]]> = [
+    ...PLAY,
+    ...extra.map((m): [CharacterKey, MatchResult[]] => [m.characterKey, [m.result]]),
+  ];
+  for (const [key, results] of play) {
     for (const result of results) {
       out.push({
         externalMatchId: `sample-${String(i).padStart(3, "0")}`,
@@ -83,7 +100,20 @@ export type SampleCharacterKey = (typeof SAMPLE_CHARACTER_KEYS)[number];
  * @param focus character featured as "active" in the sample (preview-only choice; an overlay
  *   with a pinned `ratingCharacterKey` that exists here still shows that one).
  * @param rank optional sample rank/rating for the focused character (rank-aware themes).
+ * @param extra simulated matches appended after the fixed list (rotation test). When present,
+ *   the active character is the engine's (the latest match's), like a real session.
  */
+/** Current rating after the simulated matches of that character (the fixed one otherwise). */
+function simulatedRating(key: string, extra: readonly SampleExtraMatch[]): RatingPoint | null {
+  const now = RATINGS[key]?.now;
+  if (!now) return null;
+  const step = EXTRA_STEP[now.system];
+  const change = extra
+    .filter((m) => m.characterKey === key)
+    .reduce((sum, m) => sum + (m.result === "win" ? step : -step), 0);
+  return change === 0 ? now : { ...now, value: now.value + change };
+}
+
 function ownDelta(key: SampleCharacterKey): number {
   const r = RATINGS[key];
   return r?.start && r.now ? r.now.value - r.start.value : 0;
@@ -92,8 +122,9 @@ function ownDelta(key: SampleCharacterKey): number {
 export function sampleMultiCharacterState(
   focus: SampleCharacterKey = "ryu",
   rank?: SampleRank,
+  extra: readonly SampleExtraMatch[] = [],
 ): PlayerLiveState {
-  const all = matches();
+  const all = matches(extra);
   const capturedAt = START;
   const observedAt = new Date(START.getTime() + 24 * 3_600_000);
   const keys = Object.keys(RATINGS);
@@ -110,7 +141,7 @@ export function sampleMultiCharacterState(
     rating:
       k === focus && rank
         ? { system: rank.system, value: rank.value, rank: rank.rank }
-        : (RATINGS[k]?.now ?? null),
+        : simulatedRating(k, extra),
     observedAt,
   }));
   const summary = summarizeSession({
@@ -149,7 +180,10 @@ export function sampleMultiCharacterState(
   });
   return {
     player: { displayName: "Player" },
-    session: { ...session, activeCharacterKey: focus },
+    session: {
+      ...session,
+      activeCharacterKey: extra.length > 0 ? session.activeCharacterKey : focus,
+    },
     generatedAt: new Date(0).toISOString(),
   };
 }
