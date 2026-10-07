@@ -224,6 +224,12 @@ close OBS mid-session and come back to correct stats. Each poll fetches recent m
     numbers and none recomputes anything. The live payload still carries the global stats plus
     every character's stats. The scope is part of the motion summary, so switching scope never
     plays a match effect.
+- **SST Brand Flag** (Phase 5.3B, [creator-overlays.md](creator-overlays.md)): an optional tab
+  with the official SST mark attached to the panel's side, gated by `overlays.brandFlag`.
+  - `[panel][slot]` share a row. Fit-to-box measures the panel plus the reserved slot, so the
+    pair always fits the canvas, and the tab animates inside its slot (transform/opacity) without
+    re-measuring.
+  - Its own `setTimeout` schedule is independent of the live data, rotation and motion.
 - **Presentation modes** (Phase 5.3A) generalize rotation to **views**: a session view or a
   character view, a discriminated `PresentationView`. `resolvePresentation()`
   (`domain/overlay/presentation.ts`) is the single projection from the current view to the
