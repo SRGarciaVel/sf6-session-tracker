@@ -5,7 +5,11 @@
  * simulation a "different session" (nothing plays) and before → after exactly one match.
  */
 import type { MatchResult } from "@/domain/sf6/types";
+import { MASTER_TIER_LABELS, masterTierFromMr } from "@/domain/sf6/master-tier";
 import { sampleLiveState, type PlayerLiveState } from "./state";
+
+/** Display tier of a sample MR (the same rule the live state applies). */
+const tierOf = (mr: number) => MASTER_TIER_LABELS[masterTierFromMr(mr) ?? "master"];
 
 export type SimulatedResult = "win" | "loss";
 export type SimulationPhase = "before" | "after";
@@ -54,7 +58,7 @@ const AFTER: Record<SimulatedResult, SimStats> = {
 
 export function simulationState(result: SimulatedResult, phase: SimulationPhase): PlayerLiveState {
   const s = phase === "before" ? BEFORE : AFTER[result];
-  const base = sampleLiveState({ rank: "Master", system: "mr", value: s.rating });
+  const base = sampleLiveState({ rank: tierOf(s.rating), system: "mr", value: s.rating });
   const [ryu] = base.session.characters;
   return {
     ...base,
@@ -80,8 +84,8 @@ export function simulationState(result: SimulatedResult, phase: SimulationPhase)
               currentWinStreak: s.streak,
               currentLossStreak: s.streak === 0 ? 1 : 0,
               recentResults: s.recent,
-              initial: { system: "mr", value: BEFORE.rating, rank: "Master" },
-              current: { system: "mr", value: s.rating, rank: "Master" },
+              initial: { system: "mr", value: BEFORE.rating, rank: tierOf(BEFORE.rating) },
+              current: { system: "mr", value: s.rating, rank: tierOf(s.rating) },
               delta: s.delta,
             },
           ]

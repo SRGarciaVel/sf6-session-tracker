@@ -136,6 +136,40 @@ Evidencia:
 - **Sin calificar:** el replay de A.K.I. previo a la colocación tiene −1/39 y el siguiente
   tiene 19000/31.
 
+### Tier de Master mostrado (derivado al leer)
+
+El rank **guardado** sigue siendo el de la normalización: `36 → "Master"`, `37+ → null`. No se
+reescribe nada persistido. Lo que se **muestra** se decide al construir el estado en vivo
+(`src/domain/sf6/master-tier.ts`, `resolveDisplayRank`). Así el sistema de rating (LP/MR) y el
+tier mostrado quedan como conceptos separados.
+
+| MR actual (sistema `mr`, valor > 0) | Tier mostrado   |
+| ----------------------------------- | --------------- |
+| < 1600                              | Master          |
+| 1600–1699                           | High Master     |
+| 1700–1799                           | Grand Master    |
+| ≥ 1800                              | Ultimate Master |
+
+Fuente: umbrales actuales de la Master League de SF6 documentados por el responsable del
+proyecto. Se actualizan en una sola constante (`MASTER_MR_THRESHOLDS`).
+
+- **Legend** no se infiere nunca del MR: depende de la posición en la clasificación global (top
+  500). Solo se mostraría con una posición **autoritativa** (`leaderboardPosition` 1…500). SST
+  no tiene esa señal hoy: `master_rating_ranking` existe en el payload, pero su significado no
+  está probado. Por tanto Legend no aparece.
+- **Precedencia del rank mostrado:**
+  1. etiqueta de Capcom compatible (hoy no se guarda ninguna para MR);
+  2. MR válido → tier derivado;
+  3. LP → solo etiquetas con evidencia;
+  4. si no, `null`.
+- **Solo sesiones activas y estado sin sesión.** Una sesión **terminada** conserva sus
+  etiquetas congeladas/guardadas. Los umbrales pueden cambiar entre fases, y una sesión antigua
+  no se reetiqueta con las constantes de hoy. Si algún día se quieren tiers históricos
+  derivados, deberían usar reglas versionadas por fecha.
+- **Consecuencias:** "1605 MR / Rank —" pasa a mostrar **High Master**. Los temas con rango
+  usan la familia `high-master` ya existente en `rank-prestige.ts`. Cruzar un umbral en una
+  partida real es un cambio de rango legítimo para Creator Motion.
+
 ### Temporada / fase
 
 - `current_season_id` (13) y `season_ids` se exponen como `seasonId` en los detalles.

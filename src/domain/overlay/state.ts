@@ -4,6 +4,10 @@
  * Every realtime message carries the *full* authoritative state — clients replace, never
  * increment. Ratings are per character. The session's W/L/streaks are global; each character
  * also carries its own (Phase 5.1) — overlays pick one via resolveOverlayStats().
+ *
+ * `LiveRating.rank` is the rank to DISPLAY (domain/sf6/master-tier.ts): for an active session or
+ * the idle state, a valid MR shows its documented Master tier (1605 MR ⇒ High Master); an ended
+ * session keeps its frozen/stored labels. Persisted raw ranks are never rewritten.
  */
 import type {
   CharacterProgress,
@@ -12,6 +16,7 @@ import type {
   SessionSummary,
 } from "@/domain/session/engine";
 import { EMPTY_STATS } from "@/domain/session/engine";
+import { resolveDisplayRank } from "@/domain/sf6/master-tier";
 import type { CharacterKey, MatchResult, RatingSystem } from "@/domain/sf6/types";
 import type { OverlayConfig } from "./config";
 
@@ -85,9 +90,22 @@ export function roundOneDecimal(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
-function toLiveCharacter(p: CharacterProgress): LiveCharacterProgress {
+/**
+ * @param deriveTier  true for current presentation (active session, idle profile): a valid MR
+ *   displays its Master tier. false for ended sessions: their stored labels are preserved.
+ */
+function toLiveCharacter(p: CharacterProgress, deriveTier: boolean): LiveCharacterProgress {
   const live = (r: CharacterProgress["current"]): LiveRating | null =>
-    r ? { system: r.system, value: r.value, rank: r.rank ?? null } : null;
+    r
+      ? {
+          system: r.system,
+          value: r.value,
+          rank: resolveDisplayRank(
+            { system: r.system, value: r.value, rank: r.rank ?? null },
+            { derive: deriveTier },
+          ),
+        }
+      : null;
   return {
     characterKey: p.characterKey,
     characterName: p.characterName,
@@ -124,7 +142,8 @@ export function toLiveSessionState(
       ...EMPTY_STATS,
       recentResults: [],
       activeCharacterKey: idle.activeCharacterKey,
-      characters: idle.characters.map(toLiveCharacter),
+      // No session: the latest profile, i.e. current data ⇒ current Master tiers.
+      characters: idle.characters.map((c) => toLiveCharacter(c, true)),
     };
   }
   return {
@@ -143,7 +162,8 @@ export function toLiveSessionState(
     bestWinStreak: summary.bestWinStreak,
     recentResults: summary.recentResults,
     activeCharacterKey: summary.activeCharacterKey,
-    characters: summary.characters.map(toLiveCharacter),
+    // Ended sessions keep their frozen ranks (no retroactive relabelling with today's rules).
+    characters: summary.characters.map((c) => toLiveCharacter(c, summary.status !== "ended")),
   };
 }
 
@@ -179,7 +199,7 @@ export function toPublicLiveState(live: PlayerLiveState): PlayerLiveState {
 }
 
 /** Placeholder state for previews before any data exists. */
-/** Sample rank for previews (rank-aware themes); defaults to the Master MR sample. */
+/** Sample rank for previews (rank-aware themes); defaults to the 1684 MR (High Master) sample. */
 export interface SampleRank {
   rank: string;
   system: "lp" | "mr";
@@ -187,9 +207,10 @@ export interface SampleRank {
 }
 
 export function sampleLiveState(sample?: SampleRank): PlayerLiveState {
-  const rank = sample?.rank ?? "Master";
   const system = sample?.system ?? "mr";
   const value = sample?.value ?? 1684;
+  // Like the live state, the sample shows the DISPLAY rank: an MR sample derives its tier.
+  const rank = sample?.rank ?? resolveDisplayRank({ system, value, rank: null }, { derive: true });
   return {
     player: { displayName: "Player" },
     session: {

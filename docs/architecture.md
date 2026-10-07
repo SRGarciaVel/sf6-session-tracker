@@ -210,6 +210,10 @@ close OBS mid-session and come back to correct stats. Each poll fetches recent m
   `overlays.premiumThemes`; otherwise `getEffectiveOverlayConfig()` swaps in the registered
   fallback and drops the theme variants. That function is the **single stored → effective path**
   used by the builder preview, the dashboard, the OBS page, `/state` and every SSE push.
+- **Master display tier** (`domain/sf6/master-tier.ts`): for active sessions and the idle state,
+  `toLiveSessionState` shows a valid MR's documented tier (Master / High / Grand / Ultimate
+  Master). It never infers Legend from MR. Persisted raw ranks are never rewritten, and ended
+  sessions keep their frozen labels ([capcom-provider.md](capcom-provider.md)).
 - **Rank-aware styling** reads only what SST already stores (the rank label and the MR/LP system
   per character). `src/domain/sf6/rank-prestige.ts` maps it to a generic `{ family, level, color }`.
   Themes consume the level and the fixed palette color through classes and `--ov-tier`, and the
