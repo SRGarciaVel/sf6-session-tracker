@@ -4,6 +4,7 @@ import {
   MOTION_TOKENS,
   creatorMotionSchema,
   detectOverlayChange,
+  isStaleSummary,
   motionProfile,
   parseCreatorMotion,
   summaryKey,
@@ -168,5 +169,26 @@ describe("preview simulation", () => {
         sum(simulationState("win", "before")),
       ),
     ).toBeNull();
+  });
+});
+
+describe("isStaleSummary (out-of-order snapshots never become the baseline)", () => {
+  it("same session, scope and character with fewer games ⇒ stale", () => {
+    expect(isStaleSummary(base, { ...base, totalGames: base.totalGames - 1 })).toBe(true);
+  });
+  it("same or more games ⇒ not stale (repeats and real matches are handled normally)", () => {
+    expect(isStaleSummary(base, { ...base })).toBe(false);
+    expect(isStaleSummary(base, { ...base, totalGames: base.totalGames + 1 })).toBe(false);
+  });
+  it("a new session with fewer games is a genuine new baseline, not stale", () => {
+    expect(isStaleSummary(base, { ...base, sessionId: "s2", totalGames: 1 })).toBe(false);
+  });
+  it("another displayed character or statsScope (config) is a new baseline, not stale", () => {
+    expect(isStaleSummary(base, { ...base, character: "jamie", totalGames: 3 })).toBe(false);
+    expect(isStaleSummary(base, { ...base, scope: "character", totalGames: 3 })).toBe(false);
+  });
+  it("no session ⇒ never stale", () => {
+    const none = { ...base, sessionId: null };
+    expect(isStaleSummary(none, { ...none, totalGames: 0 })).toBe(false);
   });
 });

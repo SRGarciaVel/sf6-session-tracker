@@ -161,13 +161,14 @@ no durations, CSS or free-form values.
 **When it plays.** `detectOverlayChange(prev, next)` compares data only: session id, displayed
 character, games, wins, losses, rating, rank and streak.
 
-| Case                                                                          | Event                                                               |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| First render, identical data (any re-render, resize, fit-to-box pass, locale) | none                                                                |
-| Theme, colour, font, canvas or other config edits                             | none                                                                |
-| New session, different displayed character, fewer games                       | none: shown, nothing plays                                          |
-| Games grew                                                                    | a **match** event: win if wins grew, loss if losses grew, else draw |
-| Rating/rank changed without a new match                                       | an update without result emphasis                                   |
+| Case                                                                                                    | Event                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| First render, identical data (any re-render, resize, fit-to-box pass, locale)                           | none                                                                                                                                         |
+| Theme, colour, font, canvas or other config edits                                                       | none                                                                                                                                         |
+| New session, different displayed character, fewer games                                                 | none: shown, nothing plays                                                                                                                   |
+| Games grew                                                                                              | a **match** event: win if wins grew, loss if losses grew, else draw                                                                          |
+| Rating/rank changed without a new match                                                                 | an update without result emphasis                                                                                                            |
+| Stale snapshot (same session and displayed character, fewer games), or the current data again after one | none: the baseline is kept (never replaced by an older snapshot), so an already processed match never replays and a running effect isn't cut |
 
 Results come only from counters the backend already sends; nothing is inferred from colour or
 MR alone. Events are derived during render (no effect loop), cleared after the effect by one
