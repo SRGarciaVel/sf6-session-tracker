@@ -88,6 +88,11 @@ export function landingLiveState(stats: LandingDemoStats): PlayerLiveState {
               wins: stats.wins,
               losses: stats.losses,
               games: stats.wins + stats.losses,
+              // Single character: its own stats equal the session's.
+              winRate: stats.winRate,
+              currentWinStreak: stats.streak,
+              bestWinStreak: stats.best,
+              recentResults: stats.recent,
               initial: {
                 system: stats.system,
                 value: stats.rating - stats.ratingDelta,

@@ -10,8 +10,10 @@ import { useState } from "react";
 import { Button, Input, cx } from "@/components/ui/primitives";
 import {
   OVERLAY_FONTS,
+  STATS_SCOPES,
   applyThemeDefaults,
   type OverlayConfig,
+  type StatsScope,
   type OverlayFontId,
 } from "@/domain/overlay/config";
 import { isCreatorTheme, supportedCanvas } from "@/domain/overlay/themes";
@@ -129,16 +131,29 @@ export function ContentPanel({
         </label>
       </Group>
 
-      <Group title={t("languageGroup")}>
-        <div className="space-y-1.5 text-sm">
-          <span className="block">{t("overlayLanguage")}</span>
-          <Segmented<Locale>
-            value={config.locale}
-            onChange={(v) => update((c) => ({ ...c, locale: v }))}
-            options={LOCALES.map((l) => ({ value: l, label: tc(`languageNames.${l}`) }))}
-          />
-          <p className="text-xs text-faint">{t("overlayLanguageHint")}</p>
-        </div>
+      <Group title={t("sessionStatsGroup")}>
+        <label className="block text-sm">
+          <span className="mb-1.5 block">{t("statsScope")}</span>
+          <select
+            value={config.statsScope}
+            onChange={(e) => {
+              const statsScope = e.target.value as StatsScope;
+              update((c) => ({ ...c, statsScope }));
+            }}
+            className={selectClass}
+            data-testid="stats-scope"
+            aria-describedby="stats-scope-hint"
+          >
+            {STATS_SCOPES.map((scope) => (
+              <option key={scope} value={scope}>
+                {t(`statsScopes.${scope}.label`)}
+              </option>
+            ))}
+          </select>
+          <span id="stats-scope-hint" className="mt-1 block text-xs text-faint">
+            {t(`statsScopes.${config.statsScope}.hint`)}
+          </span>
+        </label>
         <label className="block text-sm">
           <span className="mb-1.5 block">{t("ratingCharacter")}</span>
           <select
@@ -159,9 +174,23 @@ export function ContentPanel({
             ))}
           </select>
           <span id="rating-character-hint" className="mt-1 block text-xs text-faint">
-            {t("ratingCharacterHint")}
+            {config.statsScope === "character"
+              ? t("ratingCharacterHintScoped")
+              : t("ratingCharacterHint")}
           </span>
         </label>
+      </Group>
+
+      <Group title={t("languageGroup")}>
+        <div className="space-y-1.5 text-sm">
+          <span className="block">{t("overlayLanguage")}</span>
+          <Segmented<Locale>
+            value={config.locale}
+            onChange={(v) => update((c) => ({ ...c, locale: v }))}
+            options={LOCALES.map((l) => ({ value: l, label: tc(`languageNames.${l}`) }))}
+          />
+          <p className="text-xs text-faint">{t("overlayLanguageHint")}</p>
+        </div>
       </Group>
     </div>
   );

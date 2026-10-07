@@ -12,17 +12,17 @@
 
 ## What stays Free (every option that existed before Phase 4 and 4.5)
 
-| Area                     | Options                                                                                                       |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| Themes                   | `minimal`, `competitive`, `fighter` (Street)                                                                  |
-| Canvas presets           | compact 600×120, standard 800×180, detailed 900×240                                                           |
-| Stats shown (10 toggles) | wins, losses, win rate, rating, rating delta, rank, win streak, best streak, total games, recent form         |
-| Text                     | title on/off, custom title (≤ 24), overlay language, rating character (active or pinned)                      |
-| Typography               | 8 bundled fonts (Barlow Condensed, Barlow, Chakra Petch, Rajdhani, Oswald, Bebas Neue, Inter, JetBrains Mono) |
-| Colors                   | text, muted, accent, win, loss, background (+ opacity), border                                                |
-| Frame                    | border on/off, width 0–8, radius 0–40                                                                         |
-| Layout                   | scale 0.5–2×, spacing (tight/normal/relaxed), alignment, animations                                           |
-| Limits                   | up to 10 overlays (unchanged for every plan)                                                                  |
+| Area                     | Options                                                                                                                                 |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Themes                   | `minimal`, `competitive`, `fighter` (Street)                                                                                            |
+| Canvas presets           | compact 600×120, standard 800×180, detailed 900×240                                                                                     |
+| Stats shown (10 toggles) | wins, losses, win rate, rating, rating delta, rank, win streak, best streak, total games, recent form                                   |
+| Text                     | title on/off, custom title (≤ 24), overlay language, rating character (active or pinned), stats scope (session or character, Phase 5.1) |
+| Typography               | 8 bundled fonts (Barlow Condensed, Barlow, Chakra Petch, Rajdhani, Oswald, Bebas Neue, Inter, JetBrains Mono)                           |
+| Colors                   | text, muted, accent, win, loss, background (+ opacity), border                                                                          |
+| Frame                    | border on/off, width 0–8, radius 0–40                                                                                                   |
+| Layout                   | scale 0.5–2×, spacing (tight/normal/relaxed), alignment, animations                                                                     |
+| Limits                   | up to 10 overlays (unchanged for every plan)                                                                                            |
 
 Phase 4.5 changes none of these. The three Free themes keep every canvas, and the builder only
 adds a visual picker on top of them.

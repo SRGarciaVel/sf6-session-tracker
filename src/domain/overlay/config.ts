@@ -24,6 +24,9 @@ const PRESET_IDS = Object.keys(OVERLAY_PRESETS) as [OverlayPresetId, ...OverlayP
 
 export { OVERLAY_FONTS, type OverlayFontId } from "./fonts";
 
+export const STATS_SCOPES = ["session", "character"] as const;
+export type StatsScope = (typeof STATS_SCOPES)[number];
+
 export const OVERLAY_FIELDS = [
   "wins",
   "losses",
@@ -68,6 +71,12 @@ export const overlayConfigSchema = z.object({
    * a key (e.g. "aki") pins it. W/L stays global either way.
    */
   ratingCharacterKey: z.string().regex(CHARACTER_KEY_PATTERN).max(40).nullable(),
+  /**
+   * Phase 5.1 (Free): which statistics the overlay shows. "session" = the whole session
+   * (default, historical behaviour); "character" = the character selected above (same one as
+   * the rating). Configs saved before 5.1 have none and read as "session".
+   */
+  statsScope: z.enum(STATS_SCOPES),
   font: z.enum(FONT_IDS),
   textColor: hexColor,
   mutedColor: hexColor,
@@ -119,6 +128,7 @@ export const DEFAULT_OVERLAY_CONFIG: OverlayConfig = {
   showTitle: true,
   locale: DEFAULT_LOCALE,
   ratingCharacterKey: null,
+  statsScope: "session",
   font: "barlow-condensed",
   textColor: "#f4f6ff",
   mutedColor: "#a3acd0",

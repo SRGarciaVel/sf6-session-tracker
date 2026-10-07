@@ -13,6 +13,7 @@ import { simulationState } from "./preview-simulation";
 
 const base: OverlaySummary = {
   sessionId: "s1",
+  scope: "session",
   character: "ryu",
   totalGames: 16,
   wins: 11,
@@ -138,6 +139,7 @@ describe("preview simulation", () => {
     const c = s.session.characters[0];
     return {
       sessionId: s.session.sessionId,
+      scope: "session",
       character: c?.characterKey ?? null,
       totalGames: s.session.totalGames,
       wins: s.session.wins,

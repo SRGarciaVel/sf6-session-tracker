@@ -25,12 +25,12 @@ capabilities: the same options, themes, entitlements and server actions.
 
 ## Information architecture
 
-| Tab            | Contents                                                                                                                                                                                                                     |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Apariencia** | theme picker, then the selected Creator theme's **variants** right below it (contextual)                                                                                                                                     |
-| **Contenido**  | visible stats (Session: W, L, win rate, games, streak, best, recent form · Rating & rank: MR/LP, change, rank) with show all / hide all; title + visibility; overlay language; rating character                              |
-| **Estilo**     | text font; core colours (text, labels, accent); results (win, loss); background (colour + opacity); border (toggle, colour, width, radius); size & layout (scale, spacing, alignment, animations); "reset the theme's style" |
-| **Creator**    | one Creator Beta badge, one entitlement/renewal notice, **presets** first, then advanced styling: number typography (font, size) · accent (secondary colour) · visibility (labels, units, character name, decorations)       |
+| Tab            | Contents                                                                                                                                                                                                                                  |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Apariencia** | theme picker, then the selected Creator theme's **variants** right below it (contextual)                                                                                                                                                  |
+| **Contenido**  | visible stats (Session: W, L, win rate, games, streak, best, recent form · Rating & rank: MR/LP, change, rank) with show all / hide all; title + visibility; **session statistics** (shown stats + displayed character); overlay language |
+| **Estilo**     | text font; core colours (text, labels, accent); results (win, loss); background (colour + opacity); border (toggle, colour, width, radius); size & layout (scale, spacing, alignment, animations); "reset the theme's style"              |
+| **Creator**    | one Creator Beta badge, one entitlement/renewal notice, **presets** first, then advanced styling: number typography (font, size) · accent (secondary colour) · visibility (labels, units, character name, decorations)                    |
 
 **Movement** (Phase 5.0, Creator tab) holds:
 
@@ -41,6 +41,22 @@ Rank reaction is disabled with a note on themes without the emblem. The group is
 `overlays.motionEffects`; stored values stay visible and are kept. The tab's single notice covers
 it.
 
+**Estadísticas de sesión** (Phase 5.1, Contenido tab, Free) holds:
+
+- **Estadísticas mostradas:** _Sesión completa_ (default: every match of the session, all
+  characters) or _Personaje mostrado_ (only the matches of the character whose rating is shown).
+  A contextual hint under the select explains the current choice.
+- **Personaje mostrado:** the existing character selector (active character, or a pinned one).
+  With character scope its hint says the stats follow it too.
+
+Both are content, saved like any edit (dirty, then saved). The visible-stat toggles are
+unchanged and apply to whichever numbers are shown.
+
+**Sample data** is a multi-character session built by the engine (`sample-session.ts`):
+Chun-Li 2-1, Jamie 3-5, Ryu 9-8, Cammy unplayed, 14-14 in total. A preview-only **sample
+character** select (shown with sample data) chooses the active character, so both scopes can be
+checked, including a character with 0 games. It is never saved.
+
 **Play update** (preview, below the toolbar, preview-only) offers Victoria | Derrota and
 "▶ Reproducir actualización":
 
@@ -48,12 +64,14 @@ it.
   3 → 4; or 11-5 → 11-6, −72 MR). It shows the "before" state for 450 ms, then the update lands.
 - **Afterwards:** the final state stays. Playing again restarts from "before". "Salir de la
   simulación" (or the sample-data switch) returns to sample or live data.
+- **Stats scope:** the simulated states have one character (Ryu), so session and character
+  scope show the same numbers and both play the effect.
 - **Isolation:** no API, session, config or SSE change. A status line announces the result.
   With reduced motion the values jump straight to the final state.
 
 **Canvas** lives in the preview toolbar because it is the OBS Browser Source size. It is saved,
 and the toolbar says so. Options a theme doesn't support are disabled (theme registry).
-**Zoom** (fit, 50–150 %), **background**, **sample data** and **sample rank** are preview-only
+**Zoom** (fit, 50–150 %), **background**, **sample data**, **sample character** and **sample rank** are preview-only
 state inside `PreviewPane`. They never enter the overlay config.
 
 Tabs follow the WAI-ARIA pattern: `role="tablist"`, arrow keys, Home and End. Inactive panels
@@ -152,3 +170,19 @@ disabled controls are a convenience.
   - copy feedback;
   - mobile save bar;
   - Free downgrade save keeps stored Creator data.
+
+## Stats scope (Phase 5.1)
+
+| Question                    | Answer                                                                                                                                      |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Which character?            | The one whose rating is shown: the pinned `ratingCharacterKey`, else the active character. Rating and stats always refer to the same one.   |
+| Where are the numbers from? | The session engine: `computeSessionStats` over that character's matches. The renderer never counts anything.                                |
+| Streaks                     | Per character. A loss with another character doesn't end this character's streak. Draws end it, as in the global stats.                     |
+| Recent form                 | The last 10 results of that character only.                                                                                                 |
+| Character with 0 games      | 0-0, 0 %, no streak, no form. Its rating (if known) is still shown.                                                                         |
+| Character not available     | Neutral zeros and "—" for the rating. Never the global numbers.                                                                             |
+| Old overlays                | No `statsScope` stored ⇒ `"session"`: unchanged. No migration.                                                                              |
+| Plan                        | Free. Not an entitlement, and the effective config never drops it.                                                                          |
+| Presets                     | Not stored in presets (content, like the rating character). Applying a preset keeps the overlay's scope.                                    |
+| Creator Motion              | Changing scope, character, theme, locale, canvas or font plays nothing. Real matches still play, in either scope.                           |
+| Phase 5.2 (rotation)        | Rotation will only change which character is projected. `resolveOverlayStats` already takes any character, so no new stats logic is needed. |

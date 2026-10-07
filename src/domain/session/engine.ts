@@ -73,12 +73,15 @@ export interface CharacterSnapshot {
 export type InitialSource = "session_start" | "prior_snapshot" | "match_before" | "unknown";
 export type CurrentSource = "match_after" | "snapshot" | "baseline" | "unknown";
 
-export interface CharacterProgress {
+/**
+ * Per-character progress. The W/L/D, win rate, streaks and recent form are the SAME statistics
+ * as the session's (computeSessionStats), computed over this character's matches only: a match
+ * with another character never interrupts this character's streak (Phase 5.1).
+ */
+export interface CharacterProgress extends SessionStats {
   characterKey: CharacterKey;
   characterName: string;
-  wins: number;
-  losses: number;
-  draws: number;
+  /** Matches played with this character in the session (= totalGames). */
   games: number;
   lastPlayedAt: Date | null;
   /** System of the shown rating (current if known, else initial). */
@@ -346,23 +349,15 @@ export function computeCharacterProgress(input: {
       currentSource = "baseline";
     }
 
-    let wins = 0;
-    let losses = 0;
-    let draws = 0;
-    for (const m of ms) {
-      if (m.result === "win") wins++;
-      else if (m.result === "loss") losses++;
-      else draws++;
-    }
+    // Same engine, same rules, this character's matches only (already normalized above).
+    const stats = computeSessionStats(ms);
 
     out.push({
+      ...stats,
       characterKey: key,
       characterName:
         last?.characterName ?? snapshot?.characterName ?? baseline?.characterName ?? key,
-      wins,
-      losses,
-      draws,
-      games: ms.length,
+      games: stats.totalGames,
       lastPlayedAt: last?.playedAt ?? null,
       ratingSystem: current?.system ?? initial?.system ?? null,
       initial,

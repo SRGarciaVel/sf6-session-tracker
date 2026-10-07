@@ -40,6 +40,15 @@ describe("dirty state", () => {
   });
 });
 
+describe("Phase 5.1: statsScope edits", () => {
+  it("changing statsScope marks dirty; saving that state clears it", () => {
+    const scoped: OverlayConfig = { ...base, statsScope: "character" };
+    expect(isDirty(snap(base), snap(scoped))).toBe(true);
+    expect(isDirty(snap(scoped), snap(scoped))).toBe(false);
+    expect(isDirty(snap(scoped), snap({ ...scoped, ratingCharacterKey: "jamie" }))).toBe(true);
+  });
+});
+
 describe("Free save safety (stored Creator state survives base edits)", () => {
   it("base edits never drop a stored premium theme, variants or Creator block", () => {
     const stored: OverlayConfig = {

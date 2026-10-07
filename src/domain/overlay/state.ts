@@ -2,7 +2,8 @@
  * Live state pushed to overlays and the dashboard. JSON-serializable (dates as ISO strings).
  *
  * Every realtime message carries the *full* authoritative state — clients replace, never
- * increment. Ratings are per character; W/L stays global.
+ * increment. Ratings are per character. The session's W/L/streaks are global; each character
+ * also carries its own (Phase 5.1) — overlays pick one via resolveOverlayStats().
  */
 import type {
   CharacterProgress,
@@ -26,7 +27,14 @@ export interface LiveCharacterProgress {
   wins: number;
   losses: number;
   draws: number;
+  /** Matches with this character in the session (0 = known from the roster, not played). */
   games: number;
+  /** Phase 5.1: this character's own session stats (same engine rules as the session's). */
+  winRate: number;
+  currentWinStreak: number;
+  currentLossStreak: number;
+  bestWinStreak: number;
+  recentResults: MatchResult[];
   ratingSystem: RatingSystem | null;
   initial: LiveRating | null;
   current: LiveRating | null;
@@ -85,6 +93,11 @@ function toLiveCharacter(p: CharacterProgress): LiveCharacterProgress {
     losses: p.losses,
     draws: p.draws,
     games: p.games,
+    winRate: roundOneDecimal(p.winRate),
+    currentWinStreak: p.currentWinStreak,
+    currentLossStreak: p.currentLossStreak,
+    bestWinStreak: p.bestWinStreak,
+    recentResults: p.recentResults,
     ratingSystem: p.ratingSystem,
     initial: live(p.initial),
     current: live(p.current),
@@ -187,6 +200,12 @@ export function sampleLiveState(sample?: SampleRank): PlayerLiveState {
           losses: 5,
           draws: 0,
           games: 17,
+          // Single character: its own stats equal the session's.
+          winRate: 70.6,
+          currentWinStreak: 4,
+          currentLossStreak: 0,
+          bestWinStreak: 6,
+          recentResults: ["win", "loss", "win", "win", "win", "win"],
           ratingSystem: system,
           initial: { system, value: value - 96, rank },
           current: { system, value, rank },
@@ -196,5 +215,80 @@ export function sampleLiveState(sample?: SampleRank): PlayerLiveState {
       ],
     },
     generatedAt: new Date(0).toISOString(),
+  };
+}
+
+/* ───────── Phase 5.1: statistics an overlay displays ───────── */
+
+export interface OverlayStats {
+  /** Which statistics these are; "character" with `character: null` = nothing to show. */
+  scope: "session" | "character";
+  /** Key of the character the stats belong to (character scope), else null. */
+  characterKey: CharacterKey | null;
+  wins: number;
+  losses: number;
+  draws: number;
+  totalGames: number;
+  winRate: number;
+  currentWinStreak: number;
+  currentLossStreak: number;
+  bestWinStreak: number;
+  recentResults: MatchResult[];
+}
+
+const NEUTRAL_STATS = {
+  wins: 0,
+  losses: 0,
+  draws: 0,
+  totalGames: 0,
+  winRate: 0,
+  currentWinStreak: 0,
+  currentLossStreak: 0,
+  bestWinStreak: 0,
+  recentResults: [] as MatchResult[],
+};
+
+/**
+ * THE statistics an overlay shows (single source of truth for every theme). Pure selection of
+ * already-computed authoritative numbers — never recomputes a streak or win rate.
+ *   scope "session":   the session's global stats (unchanged behaviour).
+ *   scope "character": the stats of the SAME character whose rating is shown
+ *                      (pickRatingCharacter: pinned key, else the active character).
+ *                      A selected character with 0 games shows zeros. When no character can be
+ *                      resolved at all, neutral zeros — never the global stats in disguise.
+ */
+export function resolveOverlayStats(
+  session: LiveSessionState,
+  config: Pick<OverlayConfig, "statsScope" | "ratingCharacterKey">,
+): OverlayStats {
+  if (config.statsScope !== "character") {
+    return {
+      scope: "session",
+      characterKey: null,
+      wins: session.wins,
+      losses: session.losses,
+      draws: session.draws,
+      totalGames: session.totalGames,
+      winRate: session.winRate,
+      currentWinStreak: session.currentWinStreak,
+      currentLossStreak: session.currentLossStreak,
+      bestWinStreak: session.bestWinStreak,
+      recentResults: session.recentResults,
+    };
+  }
+  const c = pickRatingCharacter(session, config.ratingCharacterKey);
+  if (!c) return { scope: "character", characterKey: null, ...NEUTRAL_STATS };
+  return {
+    scope: "character",
+    characterKey: c.characterKey,
+    wins: c.wins,
+    losses: c.losses,
+    draws: c.draws,
+    totalGames: c.games,
+    winRate: c.winRate,
+    currentWinStreak: c.currentWinStreak,
+    currentLossStreak: c.currentLossStreak,
+    bestWinStreak: c.bestWinStreak,
+    recentResults: c.recentResults,
   };
 }

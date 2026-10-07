@@ -574,7 +574,7 @@
       "totalGames": "Total de partidas",
       "recentForm": "Últimos resultados"
     },
-    "ratingCharacter": "Rating mostrado",
+    "ratingCharacter": "Personaje mostrado",
     "ratingCharacterActive": "Personaje activo (última partida Ranked)",
     "creator": {
       "title": "Personalización avanzada",
@@ -689,7 +689,7 @@
     "showAll": "Mostrar todas",
     "hideAll": "Ocultar todas",
     "titleGroup": "Título",
-    "languageGroup": "Idioma y personaje",
+    "languageGroup": "Idioma",
     "ratingCharacterHint": "El rating y el rango siempre son de un solo personaje.",
     "typography": "Tipografía",
     "moreTypography": "Tipografía y tamaño de los números → Creator",
@@ -762,7 +762,21 @@
         "win": "Simulación: victoria, 11-5 → 12-5, +96 MR.",
         "loss": "Simulación: derrota, 11-5 → 11-6, −72 MR."
       }
-    }
+    },
+    "sessionStatsGroup": "Estadísticas de sesión",
+    "statsScope": "Estadísticas mostradas",
+    "statsScopes": {
+      "session": {
+        "label": "Sesión completa",
+        "hint": "Muestra las victorias, derrotas y rachas de toda la sesión."
+      },
+      "character": {
+        "label": "Personaje mostrado",
+        "hint": "Muestra las estadísticas del personaje seleccionado en este overlay: sus victorias, derrotas, rachas y últimos resultados."
+      }
+    },
+    "ratingCharacterHintScoped": "Este personaje decide el rating, el rango y las estadísticas del overlay. Si no tiene partidas en la sesión, se muestran a cero.",
+    "sampleCharacter": "Personaje de ejemplo"
   },
   "NotFound": {
     "title": "Página no encontrada",

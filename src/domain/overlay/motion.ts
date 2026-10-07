@@ -109,6 +109,8 @@ export function motionProfile(
 /** The authoritative fields an update is derived from (already in the live state). */
 export interface OverlaySummary {
   sessionId: string | null;
+  /** Statistics shown (Phase 5.1): switching session ↔ character is a config edit, not a match. */
+  scope: "session" | "character";
   /** Character whose rating is shown (changing it — a config edit — is not an update). */
   character: string | null;
   totalGames: number;
@@ -134,6 +136,7 @@ export interface OverlayUpdate {
 export function summaryKey(s: OverlaySummary): string {
   return [
     s.sessionId ?? "-",
+    s.scope,
     s.character ?? "-",
     s.totalGames,
     s.wins,
@@ -161,6 +164,7 @@ export function detectOverlayChange(
   if (!prev) return null;
   if (
     prev.sessionId !== next.sessionId ||
+    prev.scope !== next.scope ||
     prev.character !== next.character ||
     next.totalGames < prev.totalGames
   ) {

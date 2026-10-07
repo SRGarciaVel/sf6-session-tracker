@@ -88,7 +88,8 @@ auth_user ─1:1─ sf6_player ─1:N─ player_character_rating   (current snap
   - Unique on `(player_id, external_match_id)`.
   - W/L, win rate, streaks and deltas are **derived, not stored**.
 - **overlay**: `public_token` and `config`. The config is jsonb; `ratingCharacterKey` set to
-  `null` means "active character".
+  `null` means "active character". `statsScope` (Phase 5.1, `"session"` by default and for old
+  configs, no migration) picks whose stats the overlay shows.
 - **creator_overlay_preset** (migration `0010`, [creator-presets.md](creator-presets.md)): saved
   overlay appearance per account (`user_id` FK ON DELETE CASCADE, name and config-size CHECKs).
 - **mock_cfn_player / mock_cfn_character / mock_cfn_match**: the fake CFN, used only by the mock
@@ -135,8 +136,13 @@ These are pure functions with no IO, React or DB, and they are fully unit tested
 
 - `computeSessionStats(matches)`: **global** W/L/D, win rate, streaks and form across all
   characters.
-- `computeCharacterProgress({ baselines, matches, current })`: per character, the W/L, initial and
-  current rating, and the delta.
+- `computeCharacterProgress({ baselines, matches, current })`: per character, the session stats,
+  initial and current rating, and the delta.
+  - **Stats (Phase 5.1):** `computeSessionStats` over **only that character's matches** (the same
+    function as the global stats, never a second algorithm). So W/L/D, win rate, current and best
+    streaks and recent form follow the global rules (dedupe, chronological order, draws break
+    streaks and are excluded from win rate), and another character's matches never break this
+    character's streak. A character with no games has all zeros and empty form.
   - **Initial:** the start baseline, else `ratingBefore` of the character's first match, else
     **unknown**.
   - **Current:** `ratingAfter` of the latest match, else a profile snapshot **not older than that
@@ -208,6 +214,16 @@ close OBS mid-session and come back to correct stats. Each poll fetches recent m
   per character). `src/domain/sf6/rank-prestige.ts` maps it to a generic `{ family, level, color }`.
   Themes consume the level and the fixed palette color through classes and `--ov-tier`, and the
   emblem is SST-native CSS (no official artwork). Unknown ranks never invent a tier.
+- **Stats scope** (Phase 5.1, Free): `resolveOverlayStats(session, config)` in
+  `src/domain/overlay/state.ts` is the **single projection** of what an overlay shows.
+  - `"session"`: the global counters, exactly as before.
+  - `"character"`: the counters of the character whose rating is shown (`pickRatingCharacter`:
+    the pinned `ratingCharacterKey`, else the active character), copied from the engine output.
+    If that character isn't available, neutral zeros are shown, never the global numbers.
+  - `OverlayView` applies it once, before choosing a theme, so all six themes get the same
+    numbers and none recomputes anything. The live payload still carries the global stats plus
+    every character's stats. The scope is part of the motion summary, so switching scope never
+    plays a match effect.
 - **Fit-to-box** shrinks the root font-size until the content fits. A convergence guard stops it
   from ping-ponging at very small canvases, where borders and glyphs snap to whole pixels (after
   a few adjustments in one frame, only shrinking is allowed).
