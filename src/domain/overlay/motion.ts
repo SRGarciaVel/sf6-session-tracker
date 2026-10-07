@@ -148,6 +148,23 @@ export function summaryKey(s: OverlaySummary): string {
 }
 
 /**
+ * True when `next` is an OLDER snapshot than the baseline: same (non-null) session, same
+ * comparison basis (scope + displayed character, so the counters are comparable) and fewer
+ * games. Such a snapshot must never become the baseline — otherwise the current snapshot
+ * arriving again would look like a new match and replay its effect. A different session or
+ * displayed character is a genuine new baseline, never "stale".
+ */
+export function isStaleSummary(baseline: OverlaySummary, next: OverlaySummary): boolean {
+  return (
+    baseline.sessionId !== null &&
+    baseline.sessionId === next.sessionId &&
+    baseline.scope === next.scope &&
+    baseline.character === next.character &&
+    next.totalGames < baseline.totalGames
+  );
+}
+
+/**
  * One update event for a meaningful data change, or null.
  *  - no previous summary (first render), identical data, a different session, a different
  *    displayed character (config edit) or a rewind (fewer games) ⇒ null: the overlay just shows
