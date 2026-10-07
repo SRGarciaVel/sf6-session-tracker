@@ -10,6 +10,7 @@ import {
 import { DEFAULT_CREATOR_CUSTOMIZATION } from "@/domain/overlay/creator";
 import { DEFAULT_CREATOR_MOTION } from "@/domain/overlay/motion";
 import { DEFAULT_CHARACTER_ROTATION } from "@/domain/overlay/rotation";
+import { DEFAULT_BRAND_FLAG } from "@/domain/overlay/brand-flag";
 import { sampleLiveState } from "@/domain/overlay/state";
 import { OVERLAY_THEMES } from "@/domain/overlay/config";
 import en from "@/i18n/messages/en.json";
@@ -56,6 +57,7 @@ const FREE = {
   creatorPresets: false,
   motionEffects: false,
   characterRotation: false,
+  brandFlag: false,
 };
 const CREATOR = {
   advancedCustomization: true,
@@ -63,6 +65,7 @@ const CREATOR = {
   creatorPresets: true,
   motionEffects: true,
   characterRotation: true,
+  brandFlag: true,
 };
 
 describe("ThemePicker", () => {
@@ -151,6 +154,7 @@ describe("CreatorPanel", () => {
         creatorPresets={false}
         motionEffects={false}
         characterRotation={false}
+        brandFlag={false}
       />,
     );
     expect(html.match(/data-testid="creator-notice"/g)?.length).toBe(1);
@@ -181,6 +185,7 @@ describe("CreatorPanel", () => {
         creatorPresets={false}
         motionEffects={false}
         characterRotation={false}
+        brandFlag={false}
       />,
     );
     expect(html.match(/data-testid="creator-notice"/g)?.length).toBe(1);
@@ -204,6 +209,7 @@ describe("CreatorPanel", () => {
           creatorPresets
           motionEffects
           characterRotation
+          brandFlag
         />,
       );
     const minimal = render("minimal");
@@ -226,6 +232,7 @@ describe("CreatorPanel", () => {
         creatorPresets
         motionEffects
         characterRotation
+        brandFlag
       />,
     );
     expect(html).not.toContain("creator-notice");
@@ -352,6 +359,7 @@ describe("Phase 5.2: character rotation (builder)", () => {
         creatorPresets={entitled}
         motionEffects={entitled}
         characterRotation={entitled}
+        brandFlag={entitled}
       />,
     );
   const group = (html: string) =>
@@ -424,6 +432,7 @@ describe("Phase 5.2: character rotation (builder)", () => {
         creatorPresets
         motionEffects
         characterRotation
+        brandFlag
       />,
     );
     expect(html).toContain(en.Builder.rotation.noCharacters);
@@ -489,6 +498,7 @@ describe("Phase 5.3A: automatic presentation (builder)", () => {
         creatorPresets
         motionEffects
         characterRotation
+        brandFlag
       />,
     );
 
@@ -518,5 +528,114 @@ describe("Phase 5.3A: automatic presentation (builder)", () => {
     expect(html).toContain("Sesión → Ryu → Sesión → Chun-Li (datos de ejemplo)");
     expect(html).toContain(es.Builder.rotation.viewLabelHint);
     expect(panel(cfg({ mode: "characters" }))).not.toContain(es.Builder.rotation.viewLabelHint);
+  });
+});
+
+describe("Phase 5.3B: SST branding (builder)", () => {
+  const base = {
+    update: () => {},
+    overlayId: "00000000-0000-4000-8000-0000000000aa",
+    dirty: false,
+    onPresetApplied: () => {},
+    presets: [],
+    rotationViews: { views: [], sample: true },
+  };
+  const cfg = (
+    over: Partial<typeof DEFAULT_BRAND_FLAG> = {},
+    extra: Partial<OverlayConfig> = {},
+  ): OverlayConfig => ({
+    ...DEFAULT_OVERLAY_CONFIG,
+    ...extra,
+    creator: {
+      ...DEFAULT_CREATOR_CUSTOMIZATION,
+      brandFlag: { ...DEFAULT_BRAND_FLAG, enabled: true, ...over },
+    },
+  });
+  const panel = (config: OverlayConfig, entitled = true) =>
+    wrap(
+      "es",
+      <CreatorPanel
+        {...base}
+        config={config}
+        advancedCustomization={entitled}
+        creatorPresets={entitled}
+        motionEffects={entitled}
+        characterRotation={entitled}
+        brandFlag={entitled}
+      />,
+    );
+  const group = (html: string) => html.slice(html.indexOf('data-testid="creator-brand-flag"'));
+
+  it("Creator: the group with every control for the periodic tab", () => {
+    const html = group(panel(cfg()));
+    expect(html).toContain("Marca SST");
+    expect(html).toContain("Mostrar logo SST");
+    for (const label of [
+      "Pestaña periódica",
+      "Insignia fija",
+      "Izquierda",
+      "Derecha",
+      "Deslizar",
+      "Monograma",
+      "Logo completo",
+      "Del tema",
+      "Acento Creator",
+    ])
+      expect(html).toContain(label);
+    expect(html).toContain('data-testid="brand-interval"');
+    expect(html).toContain('data-testid="brand-visible"');
+    expect(html).toContain(es.Builder.brandFlag.intervalHint);
+  });
+
+  it("off: only the switch and the explanation", () => {
+    const html = group(panel({ ...DEFAULT_OVERLAY_CONFIG }));
+    expect(html).toContain(es.Builder.brandFlag.summary);
+    expect(html).not.toContain('data-testid="brand-interval"');
+    expect(html).not.toContain("Posición");
+  });
+
+  it("static badge hides frequency, visible time and animation", () => {
+    const html = group(panel(cfg({ mode: "static-badge" })));
+    expect(html).not.toContain('data-testid="brand-interval"');
+    expect(html).not.toContain('data-testid="brand-visible"');
+    expect(html).toContain(es.Builder.brandFlag.modes["static-badge"].hint);
+  });
+
+  it("animations off: explains the instant reveal", () => {
+    expect(group(panel(cfg({}, { animations: false })))).toContain(
+      'data-testid="brand-instant-note"',
+    );
+    expect(group(panel(cfg()))).not.toContain('data-testid="brand-instant-note"');
+  });
+
+  it("Free: disabled with the requirement; a stored flag is covered by the ONE notice", () => {
+    const html = panel(cfg(), false);
+    expect(html).toMatch(/<fieldset[^>]*disabled=""[^>]*data-testid="creator-brand-flag"/);
+    expect(html).toContain(es.Builder.brandFlag.requiresCreator);
+    expect(html.match(/data-testid="creator-notice"/g)?.length).toBe(1);
+  });
+
+  it("the preview offers “Probar aparición” only with an effective periodic tab", () => {
+    const builder = (access: typeof FREE, config: OverlayConfig) =>
+      wrap(
+        "es",
+        <OverlayBuilder
+          overlayId="00000000-0000-4000-8000-0000000000aa"
+          initialName="Overlay"
+          initialConfig={config}
+          url="https://sst.example/overlay/tok"
+          access={access}
+          presets={[]}
+        />,
+      );
+    expect(builder(CREATOR, cfg())).toContain('data-testid="brand-reveal"');
+    expect(builder(CREATOR, cfg())).toContain("Probar aparición");
+    expect(builder(CREATOR, cfg({ mode: "static-badge" }))).not.toContain(
+      'data-testid="brand-reveal"',
+    );
+    // Free: the effective config has no flag ⇒ no button and nothing rendered in the preview.
+    const free = builder(FREE, cfg());
+    expect(free).not.toContain('data-testid="brand-reveal"');
+    expect(free).not.toContain("ov-brand-row");
   });
 });

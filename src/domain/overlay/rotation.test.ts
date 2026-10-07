@@ -78,6 +78,7 @@ const CREATOR_ENT = {
     premiumThemes: true,
     motionEffects: true,
     characterRotation: true,
+    brandFlag: true,
   },
 };
 const FREE_ENT = {
@@ -86,6 +87,7 @@ const FREE_ENT = {
     premiumThemes: false,
     motionEffects: false,
     characterRotation: false,
+    brandFlag: false,
   },
 };
 const ROTATION_ON = { ...DEFAULT_CHARACTER_ROTATION, enabled: true };
@@ -337,14 +339,16 @@ describe("entitlements: stored vs effective (55–60, 63)", () => {
 
   it("independent of motionEffects and advancedCustomization", () => {
     const onlyRotation = {
-      overlays: { ...FREE_ENT.overlays, characterRotation: true },
+      overlays: { ...FREE_ENT.overlays, characterRotation: true, brandFlag: true },
     };
     const eff = getEffectiveOverlayConfig(withRotation(), onlyRotation);
     expect(eff.creator).toEqual({
       ...DEFAULT_CREATOR_CUSTOMIZATION,
       characterRotation: ROTATION_ON,
     });
-    const noRotation = { overlays: { ...CREATOR_ENT.overlays, characterRotation: false } };
+    const noRotation = {
+      overlays: { ...CREATOR_ENT.overlays, characterRotation: false, brandFlag: false },
+    };
     const both = withRotation();
     const withMotion = {
       ...both,

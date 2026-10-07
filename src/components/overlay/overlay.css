@@ -1305,3 +1305,109 @@
     animation: none;
   }
 }
+
+/* ── SST Brand Flag (Phase 5.3B) ─────────────────────────────────────
+   Present only with the flag enabled (entitled EFFECTIVE config). Layout: [panel][slot] in one
+   row (row-reverse on the left). The SLOT is static reserved space, measured by fit-to-box
+   together with the panel, so panel + flag always fit the canvas and nothing is ever covered.
+   The TAB inside it moves with transform/opacity only; while retracted it sits behind the
+   panel's edge (the slot clips it), so it emerges from the overlay itself. Shared tokens: the
+   panel background, border and text colour; the accent edge is the theme accent or, in
+   "creator-accent" mode, the Creator secondary accent (falls back to the theme accent). */
+.ov-brand-row {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+}
+.ov-brand-row[data-brand-position="left"] {
+  flex-direction: row-reverse;
+}
+.ov-brand-slot {
+  --ov-brand-accent: var(--ov-accent);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  width: 3.3em;
+}
+.ov-brand-slot[data-logo="full"] {
+  width: 8.4em;
+}
+.ov-brand-slot[data-color="creator-accent"] {
+  --ov-brand-accent: var(--ov-secondary, var(--ov-accent));
+}
+.ov-brand-flag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 72%;
+  min-height: min(1.5em, 100%);
+  max-height: 3.1em;
+  padding: 0 0.7em 0 0.45em;
+  background: var(--ov-bg);
+  color: var(--ov-text);
+  /* Accent edge on top, like a broadcast tab; the slanted outer cut follows the SST slant. */
+  box-shadow: inset 0 0.14em 0 var(--ov-brand-accent);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 0.42em) 100%, 0 100%);
+  transition:
+    transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 320ms ease-out;
+}
+.ov-brand-row[data-brand-position="left"] .ov-brand-flag {
+  padding: 0 0.45em 0 0.7em;
+  clip-path: polygon(0.42em 0, 100% 0, 100% 100%, 0 100%);
+}
+.ov-brand-flag[data-state="shown"] {
+  transform: none;
+  opacity: 1;
+}
+/* Retracted: tucked behind the panel's edge (slide) or simply transparent (fade). */
+.ov-brand-flag[data-anim="slide"][data-state="hidden"] {
+  transform: translateX(-102%);
+}
+.ov-brand-row[data-brand-position="left"] .ov-brand-flag[data-anim="slide"][data-state="hidden"] {
+  transform: translateX(102%);
+}
+.ov-brand-flag[data-anim="fade"][data-state="hidden"],
+.ov-brand-flag[data-anim="instant"][data-state="hidden"] {
+  opacity: 0;
+}
+.ov-brand-flag[data-anim="instant"] {
+  transition: none;
+}
+.ov-brand-mark {
+  display: block;
+  flex-shrink: 0;
+  width: auto;
+  height: 0.95em;
+}
+.ov-brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.ov-brand-divider {
+  align-self: stretch;
+  width: 0.06em;
+  margin: 0.15em 0;
+  background: currentColor;
+  opacity: 0.35;
+}
+.ov-brand-words {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--ovf-barlow-condensed), "Barlow Condensed", "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: 0.34em;
+  letter-spacing: 0.28em;
+  line-height: 1.15;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ov-brand-flag {
+    transition: none;
+  }
+}

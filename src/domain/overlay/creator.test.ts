@@ -23,6 +23,7 @@ const FREE = {
     premiumThemes: false,
     motionEffects: false,
     characterRotation: false,
+    brandFlag: false,
   },
 };
 const CREATOR = {
@@ -31,6 +32,7 @@ const CREATOR = {
     premiumThemes: true,
     motionEffects: true,
     characterRotation: true,
+    brandFlag: true,
   },
 };
 const custom: CreatorCustomization = {
@@ -297,6 +299,7 @@ describe("Phase 5.0: Creator motion (overlays.motionEffects)", () => {
       premiumThemes: true,
       motionEffects: true,
       characterRotation: true,
+      brandFlag: true,
     },
   };
   const NONE = {
@@ -305,6 +308,7 @@ describe("Phase 5.0: Creator motion (overlays.motionEffects)", () => {
       premiumThemes: false,
       motionEffects: false,
       characterRotation: false,
+      brandFlag: false,
     },
   };
   const STYLE_ONLY = {
@@ -313,6 +317,7 @@ describe("Phase 5.0: Creator motion (overlays.motionEffects)", () => {
       premiumThemes: true,
       motionEffects: false,
       characterRotation: false,
+      brandFlag: false,
     },
   };
   const MOTION_ONLY = {
@@ -321,6 +326,7 @@ describe("Phase 5.0: Creator motion (overlays.motionEffects)", () => {
       premiumThemes: false,
       motionEffects: true,
       characterRotation: true,
+      brandFlag: true,
     },
   };
 

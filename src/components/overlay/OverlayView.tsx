@@ -33,6 +33,12 @@ import {
   type PresentationView,
 } from "@/domain/overlay/rotation";
 import { useCharacterRotation } from "./rotation";
+import { BrandSlot, useBrandFlag } from "./brand-flag";
+import {
+  effectiveBrandAnimation,
+  type BrandFlag,
+  type BrandFlagAnimation,
+} from "@/domain/overlay/brand-flag";
 import { formatWinRate } from "@/domain/format";
 import { BroadcastTheme, PrestigeTheme, RankCardTheme } from "./creator-themes";
 import {
@@ -423,6 +429,8 @@ export interface OverlayViewProps {
   config: OverlayConfig;
   live: PlayerLiveState;
   sizing: OverlaySizing;
+  /** Builder preview only ("Probar aparición"): each increment reveals the SST flag once. */
+  brandRevealSignal?: number;
 }
 
 /**
@@ -438,10 +446,25 @@ export interface OverlayViewProps {
  * element being animated.
  */
 function fitTarget(root: HTMLElement | null): HTMLElement | null {
-  const first = root?.firstElementChild as HTMLElement | null | undefined;
+  let first = root?.firstElementChild as HTMLElement | null | undefined;
+  // SST Brand Flag (Phase 5.3B): the panel sits in a row next to the flag's slot.
+  if (first?.classList.contains("ov-brand-row")) {
+    first = first.firstElementChild as HTMLElement | null | undefined;
+  }
   if (!first) return null;
   if (!first.classList.contains("ov-rot-stage")) return first;
   return (first.firstElementChild?.firstElementChild as HTMLElement | null | undefined) ?? first;
+}
+
+/**
+ * Space reserved beside the panel for the SST Brand Flag (0 without it). Fit-to-box adds it to
+ * the panel's natural width, so panel + flag always fit the canvas together: the flag is never
+ * clipped and never covers a statistic. The slot is static (only the tab inside it moves), so
+ * the measurement never changes while the flag animates.
+ */
+function brandSlotSize(root: HTMLElement): { w: number; h: number } {
+  const slot = root.querySelector<HTMLElement>(":scope > .ov-brand-row > .ov-brand-slot");
+  return slot ? { w: slot.offsetWidth, h: slot.offsetHeight } : { w: 0, h: 0 };
 }
 
 function useFitToBox() {
@@ -459,8 +482,9 @@ function useFitToBox() {
     const availW = root.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     const availH = root.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
     // Natural (fit = 1) size of the content, derived from its current size.
-    const w = content.scrollWidth / fitRef.current;
-    const h = content.scrollHeight / fitRef.current;
+    const slot = brandSlotSize(root);
+    const w = (content.scrollWidth + slot.w) / fitRef.current;
+    const h = Math.max(content.scrollHeight, slot.h) / fitRef.current;
     if (w <= 0 || h <= 0 || availW <= 0 || availH <= 0) return;
     const next = Math.max(0.2, Math.floor(Math.min(1, availW / w, availH / h) * 1000) / 1000);
     if (Math.abs(next - fitRef.current) > 0.004) {
@@ -572,6 +596,30 @@ function sessionLabel(locale: OverlayConfig["locale"]): string {
   return typeof strings === "object" && typeof strings.session === "string" ? strings.session : "";
 }
 
+/**
+ * With the SST Brand Flag, the panel (or rotation stage) and the flag's slot share one row
+ * (`[panel][flag]`, or `[flag][panel]` on the left); without it the DOM is exactly as before.
+ */
+function BrandRow({
+  flag,
+  shown,
+  animation,
+  children,
+}: {
+  flag: BrandFlag | undefined;
+  shown: boolean;
+  animation: BrandFlagAnimation;
+  children: ReactNode;
+}) {
+  if (!flag) return <>{children}</>;
+  return (
+    <div className="ov-brand-row" data-brand-position={flag.position}>
+      {children}
+      <BrandSlot flag={flag} shown={shown} animation={animation} />
+    </div>
+  );
+}
+
 function ThemeView({ config, live, viewLabel }: ThemeProps) {
   switch (config.theme) {
     case "minimal":
@@ -590,7 +638,7 @@ function ThemeView({ config, live, viewLabel }: ThemeProps) {
   }
 }
 
-export function OverlayView({ config, live, sizing }: OverlayViewProps) {
+export function OverlayView({ config, live, sizing, brandRevealSignal = 0 }: OverlayViewProps) {
   const { rootRef, fit } = useFitToBox();
   // Creator motion (Phase 5.0): only an entitled owner's EFFECTIVE config carries `motion`;
   // Free, animations off and reduced motion all resolve to no profile (nothing extra renders).
@@ -619,6 +667,13 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
     overlaySummary(live, config, display, stats, rotating, rotation?.view ?? null),
     profile?.clearAfterMs ?? null,
   );
+  // Phase 5.3B: SST Brand Flag (only in an entitled owner's EFFECTIVE config). Its own schedule,
+  // independent of the live data, rotation and Creator Motion.
+  const brandFlag = config.creator?.brandFlag;
+  const brand = useBrandFlag(brandFlag, brandRevealSignal);
+  const brandAnimation = brandFlag
+    ? effectiveBrandAnimation(brandFlag.animation, { animations: config.animations, reducedMotion })
+    : "instant";
   const transition =
     rotation && rotationConfig
       ? effectiveTransition(rotationConfig.transition, {
@@ -671,24 +726,30 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
         {...motionAttrs}
       >
         <MotionProvider value={{ update, sweep: profile?.accent === "sweep" }}>
-          {rotation ? (
-            // Rotation stage: static (fit-to-box measures the panel inside it); the inner frame is
-            // re-keyed per VIEW, so the transition runs once on the new content and no old DOM
-            // stays. A repeated view (e.g. priority restarted) keeps the same element.
-            <div className="ov-rot-stage">
-              <div
-                key={viewKey(rotation.view)}
-                className="ov-rot-frame"
-                data-rot-transition={rotation.seq > 0 ? (transition ?? "instant") : undefined}
-                data-rot-direction={rotation.seq > 0 ? direction : undefined}
-                data-view={rotation.view.kind}
-              >
-                <ThemeView config={display} live={shown} viewLabel={viewLabel} />
+          <BrandRow
+            flag={brand ? brandFlag : undefined}
+            shown={brand?.shown ?? false}
+            animation={brandAnimation}
+          >
+            {rotation ? (
+              // Rotation stage: static (fit-to-box measures the panel inside it); the inner frame is
+              // re-keyed per VIEW, so the transition runs once on the new content and no old DOM
+              // stays. A repeated view (e.g. priority restarted) keeps the same element.
+              <div className="ov-rot-stage">
+                <div
+                  key={viewKey(rotation.view)}
+                  className="ov-rot-frame"
+                  data-rot-transition={rotation.seq > 0 ? (transition ?? "instant") : undefined}
+                  data-rot-direction={rotation.seq > 0 ? direction : undefined}
+                  data-view={rotation.view.kind}
+                >
+                  <ThemeView config={display} live={shown} viewLabel={viewLabel} />
+                </div>
               </div>
-            </div>
-          ) : (
-            <ThemeView config={display} live={shown} />
-          )}
+            ) : (
+              <ThemeView config={display} live={shown} />
+            )}
+          </BrandRow>
         </MotionProvider>
       </div>
     </NextIntlClientProvider>

@@ -61,6 +61,7 @@ describe("Creator renderer hooks", () => {
             premiumThemes: false,
             motionEffects: false,
             characterRotation: false,
+            brandFlag: false,
           },
         }),
       );
@@ -75,6 +76,7 @@ describe("Creator renderer hooks", () => {
             premiumThemes: true,
             motionEffects: true,
             characterRotation: true,
+            brandFlag: true,
           },
         }),
       );

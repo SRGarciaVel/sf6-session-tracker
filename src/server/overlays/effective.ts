@@ -41,6 +41,7 @@ const NOT_ENTITLED = {
     premiumThemes: false,
     motionEffects: false,
     characterRotation: false,
+    brandFlag: false,
   },
 } as const;
 

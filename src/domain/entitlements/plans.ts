@@ -63,6 +63,11 @@ export interface Entitlements {
      * including Phase 5.1 character-scoped statistics.
      */
     characterRotation: boolean;
+    /**
+     * SST Brand Flag (Phase 5.3B, domain/overlay/brand-flag.ts): optional SST branding tab on
+     * overlays. Independent of motionEffects and characterRotation.
+     */
+    brandFlag: boolean;
   };
   history: {
     /**
@@ -96,6 +101,7 @@ export const PLAN_ENTITLEMENTS: DeepReadonly<Record<PlanId, Entitlements>> = dee
       creatorPresets: false,
       motionEffects: false,
       characterRotation: false,
+      brandFlag: false,
     },
     history: { retentionDays: null },
   },
@@ -108,6 +114,7 @@ export const PLAN_ENTITLEMENTS: DeepReadonly<Record<PlanId, Entitlements>> = dee
       creatorPresets: true,
       motionEffects: true,
       characterRotation: true,
+      brandFlag: true,
     },
     history: { retentionDays: null },
   },
