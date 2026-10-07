@@ -17,6 +17,7 @@
 import { z } from "zod";
 import { FONT_IDS } from "./fonts";
 import { creatorMotionSchema, parseCreatorMotion } from "./motion";
+import { brandFlagSchema, parseBrandFlag } from "./brand-flag";
 import { characterRotationSchema, parseCharacterRotation } from "./rotation";
 import {
   THEME_REGISTRY,
@@ -60,6 +61,8 @@ export const creatorCustomizationSchema = z.strictObject({
    * advancedCustomization).
    */
   characterRotation: characterRotationSchema.optional(),
+  /** SST Brand Flag (Phase 5.3B, brand-flag.ts). Gated by `overlays.brandFlag` (independent). */
+  brandFlag: brandFlagSchema.optional(),
 });
 
 export type CreatorCustomization = z.infer<typeof creatorCustomizationSchema>;
@@ -81,19 +84,23 @@ export function parseCreatorCustomization(raw: unknown): CreatorCustomization | 
   // or defaulted field by field (rotation), never the whole customization.
   const motion = parseCreatorMotion(obj.motion);
   const characterRotation = parseCharacterRotation(obj.characterRotation);
+  const brandFlag = parseBrandFlag(obj.brandFlag);
   const parsed = creatorCustomizationSchema.safeParse({
     ...DEFAULT_CREATOR_CUSTOMIZATION,
     ...obj,
     show: { ...DEFAULT_CREATOR_CUSTOMIZATION.show, ...show },
     motion: undefined,
     characterRotation: undefined,
+    brandFlag: undefined,
   });
   if (!parsed.success) return undefined;
   const out: CreatorCustomization = { ...parsed.data };
   delete out.motion;
   delete out.characterRotation;
+  delete out.brandFlag;
   if (motion !== undefined) out.motion = motion;
   if (characterRotation !== undefined) out.characterRotation = characterRotation;
+  if (brandFlag !== undefined) out.brandFlag = brandFlag;
   return out;
 }
 
@@ -104,6 +111,7 @@ export interface OverlayCustomizationEntitlement {
     premiumThemes: boolean;
     motionEffects: boolean;
     characterRotation: boolean;
+    brandFlag: boolean;
   };
 }
 
@@ -150,6 +158,7 @@ export function getEffectiveOverlayConfig<C extends CreatorAwareConfig>(
 const GATED_BLOCKS = [
   { key: "motion", entitlement: "motionEffects" },
   { key: "characterRotation", entitlement: "characterRotation" },
+  { key: "brandFlag", entitlement: "brandFlag" },
 ] as const;
 
 /**
@@ -171,12 +180,14 @@ function effectiveCreator(
     : { ...DEFAULT_CREATOR_CUSTOMIZATION };
   delete base.motion;
   delete base.characterRotation;
+  delete base.brandFlag;
   let kept = false;
   for (const b of GATED_BLOCKS) {
     if (stored[b.key] !== undefined && ent[b.entitlement]) {
       kept = true;
       if (b.key === "motion") base.motion = stored.motion;
-      else base.characterRotation = stored.characterRotation;
+      else if (b.key === "characterRotation") base.characterRotation = stored.characterRotation;
+      else base.brandFlag = stored.brandFlag;
     }
   }
   return ent.advancedCustomization || kept ? base : undefined;
@@ -197,22 +208,25 @@ export function mergeOverlayConfigForSave<C extends CreatorAwareConfig>(
   incoming: C,
   entitlements: OverlayCustomizationEntitlement,
 ): C {
-  const { advancedCustomization, premiumThemes, motionEffects, characterRotation } =
+  const { advancedCustomization, premiumThemes, motionEffects, characterRotation, brandFlag } =
     entitlements.overlays;
-  // Customization, motion and rotation are merged independently: each comes from the request
+  // Customization, motion, rotation and the brand flag are merged independently: each comes from the request
   // only when the owner holds its entitlement, otherwise the stored value is kept untouched.
   const base = advancedCustomization ? incoming.creator : stored.creator;
   const motion = motionEffects ? incoming.creator?.motion : stored.creator?.motion;
   const rotation = characterRotation
     ? incoming.creator?.characterRotation
     : stored.creator?.characterRotation;
+  const flag = brandFlag ? incoming.creator?.brandFlag : stored.creator?.brandFlag;
   let creator: CreatorCustomization | undefined;
-  if (base !== undefined || motion !== undefined || rotation !== undefined) {
+  if (base !== undefined || motion !== undefined || rotation !== undefined || flag !== undefined) {
     creator = { ...(base ?? DEFAULT_CREATOR_CUSTOMIZATION) };
     delete creator.motion;
     delete creator.characterRotation;
+    delete creator.brandFlag;
     if (motion !== undefined) creator.motion = motion;
     if (rotation !== undefined) creator.characterRotation = rotation;
+    if (flag !== undefined) creator.brandFlag = flag;
   }
   const variants = premiumThemes ? (incoming.variants ?? stored.variants) : stored.variants;
   let theme = incoming.theme;

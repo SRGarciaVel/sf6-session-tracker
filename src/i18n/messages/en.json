@@ -846,6 +846,56 @@
         "win": "Simulation: win with {character}.",
         "loss": "Simulation: loss with {character}."
       }
+    },
+    "brandFlag": {
+      "title": "SST branding",
+      "enabled": "Show the SST logo",
+      "requiresCreator": "Creator Beta required.",
+      "summary": "A small tab with the official SST logo attached to the side of the overlay. It never covers a statistic: the overlay reserves its space.",
+      "mode": "Appearance style",
+      "modes": {
+        "timed-tab": {
+          "label": "Periodic tab",
+          "hint": "Slides out from the overlay's edge every so often, stays a few seconds and retracts."
+        },
+        "static-badge": {
+          "label": "Fixed badge",
+          "hint": "Always visible next to the overlay, with no animation or timer."
+        }
+      },
+      "position": "Position",
+      "positions": {
+        "left": "Left",
+        "right": "Right"
+      },
+      "interval": "Frequency",
+      "intervalHint": "Time from the start of one appearance to the start of the next.",
+      "visible": "Visible time",
+      "seconds": "{n} s",
+      "minutes": "{n} min",
+      "animation": "Animation",
+      "animations": {
+        "slide": "Slide",
+        "fade": "Fade",
+        "instant": "Instant"
+      },
+      "animationsOff": "Overlay animations are off: the tab appears and retracts instantly.",
+      "logo": "Logo",
+      "logos": {
+        "monogram": "Monogram",
+        "full": "Full logo"
+      },
+      "color": "Color",
+      "colors": {
+        "theme": "Theme",
+        "creator-accent": "Creator accent"
+      },
+      "colorHint": "Colour of the tab's edge. The logo uses the overlay's text colour so it's always legible.",
+      "spaceHint": "The overlay fits itself to leave room for the tab, even while it's retracted, so it never leaves the OBS canvas."
+    },
+    "brandTest": {
+      "reveal": "Test appearance",
+      "hint": "Shows the tab once in the preview. Nothing is saved."
     }
   },
   "NotFound": {

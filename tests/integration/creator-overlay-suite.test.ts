@@ -622,6 +622,93 @@ describe.skipIf(!TEST_DB)("Phase 5.3A: presentation modes lifecycle (integration
   });
 });
 
+describe.skipIf(!TEST_DB)("Phase 5.3B: SST brand flag lifecycle (integration)", () => {
+  const db = TEST_DB ? getDb() : (null as never);
+  it("Free can't enable it; Creator → public payload; expiry drops it (kept); forged Free ignored; renewal restores", async () => {
+    const userId = randomUUID();
+    await db.insert(authUser).values({ id: userId, name: "B", email: `${userId}@test.local` });
+    const mock = new MockSF6DataProvider(db);
+    const cfn = String(8_000_000_000 + Math.floor(Math.random() * 999_999_999));
+    const player = await upsertPlayerForUser(db, userId, await mock.getPlayerProfile(cfn));
+    const [ov] = await listOverlays(db, player.id);
+    if (!ov) throw new Error("no overlay");
+    const flag = {
+      enabled: true,
+      mode: "timed-tab" as const,
+      position: "left" as const,
+      intervalSeconds: 120 as const,
+      visibleSeconds: 5 as const,
+      animation: "fade" as const,
+      logoVariant: "full" as const,
+      colorMode: "creator-accent" as const,
+    };
+    const current = async () => {
+      const v = await getOverlayById(db, ov.id);
+      if (!v) throw new Error("gone");
+      return v;
+    };
+    const save = async (edit: Partial<OverlayConfig>) => {
+      const v = await current();
+      const merged = await prepareOverlayConfigForSave(db, {
+        userId,
+        stored: v.config,
+        incoming: { ...v.config, ...edit },
+      });
+      await updateOverlay(db, v, { config: merged });
+    };
+    const payload = async () => (await loadOverlayPayload((await current()).publicToken))?.payload;
+    const withFlag = (f: typeof flag) => ({
+      creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, brandFlag: f },
+    });
+
+    await save(withFlag(flag)); // Free, forged
+    expect((await current()).config.creator?.brandFlag).toBeUndefined();
+    expect((await payload())?.config.creator?.brandFlag).toBeUndefined();
+
+    const [g] = await db
+      .insert(entitlementGrant)
+      .values({
+        userId,
+        plan: "creator_beta",
+        source: "operator",
+        expiresAt: new Date(Date.now() + 90 * 86_400_000),
+      })
+      .returning({ id: entitlementGrant.id });
+    await save(withFlag(flag));
+    expect((await payload())?.config.creator?.brandFlag).toEqual(flag);
+    const preset = await presets.createPreset(db, {
+      userId,
+      name: "Brand",
+      config: (await current()).config,
+    });
+    if (!preset.ok) throw new Error(preset.error);
+    expect(preset.value.appearance?.creator?.brandFlag).toEqual(flag);
+
+    await db
+      .update(entitlementGrant)
+      .set({
+        startsAt: new Date(Date.now() - 2 * 3_600_000),
+        expiresAt: new Date(Date.now() - 3_600_000),
+      })
+      .where(eq(entitlementGrant.id, g?.id ?? ""));
+    const expired = await payload();
+    expect(expired?.config.creator?.brandFlag).toBeUndefined();
+    expect(JSON.stringify(expired)).not.toMatch(/brandFlag|creator_beta/);
+    await save({ title: "FREE EDIT", creator: undefined });
+    await save(withFlag({ ...flag, mode: "static-badge" as never }));
+    expect((await current()).config).toMatchObject({ title: "FREE EDIT" });
+    expect((await current()).config.creator?.brandFlag).toEqual(flag);
+
+    await db.insert(entitlementGrant).values({
+      userId,
+      plan: "creator_beta",
+      source: "operator",
+      expiresAt: new Date(Date.now() + 90 * 86_400_000),
+    });
+    expect((await payload())?.config.creator?.brandFlag).toEqual(flag);
+  });
+});
+
 afterAll(async () => {
   if (TEST_DB) await closeDb();
 });

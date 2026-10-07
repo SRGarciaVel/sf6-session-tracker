@@ -520,6 +520,123 @@ even when the view changed in between (tested with a mutation check).
 - **Rollback:** older code reads unknown `mode` / `direction` / `wipe` leniently (Phase 5.2's
   per-field parser falls back to defaults), so no SQL is needed.
 
+## SST Brand Flag (Phase 5.3B; `overlays.brandFlag`)
+
+A compact broadcast-style tab with the **official SST mark**, physically attached to the side of
+the overlay: `[ OVERLAY ][ SST ]` or `[ SST ][ OVERLAY ]`. Creator Beta, behind its own
+entitlement (`overlays.brandFlag`: Free `false`, Creator Beta `true`), independent of motion and
+rotation. It is presentation only and never touches statistics, the presentation view, latest-match
+priority, Creator Motion, session identity or match detection.
+
+**Configuration:** `config.creator.brandFlag`, optional and strict (`domain/overlay/brand-flag.ts`).
+There are no URLs, uploads, custom text or CSS.
+
+| Key               | Values                   | Default   |
+| ----------------- | ------------------------ | --------- |
+| `enabled`         | boolean                  | false     |
+| `mode`            | timed-tab · static-badge | timed-tab |
+| `position`        | left · right             | right     |
+| `intervalSeconds` | 30 · 60 · 120 · 300      | 60        |
+| `visibleSeconds`  | 2 · 3 · 5                | 3         |
+| `animation`       | slide · fade · instant   | slide     |
+| `logoVariant`     | monogram · full          | monogram  |
+| `colorMode`       | theme · creator-accent   | theme     |
+
+Writes reject anything else. Reads of old or corrupt JSON fall back field by field, and a bad
+flag never drops the Creator block.
+
+**Official assets only.** The mark is the shared brand geometry (`components/brand/geometry.ts`,
+the same source as `public/brand/*.svg`):
+
+- `monogram`: `<Monogram>`;
+- `full`: the official lockup composition, monogram + divider + "Session Stats Tracker" in
+  Barlow Condensed (as `<BrandMark variant="lockup">` and `public/brand/sst-lockup.svg`), drawn
+  with overlay CSS because the dashboard component uses Tailwind, which isn't CEF-safe.
+
+It is inline vector: no image request, no base64, sharp at any size. The logo uses the official
+**monochrome** form (letters only, "the letters alone are the mark") in the overlay's text colour,
+so it is legible on any background a streamer chooses. `colorMode` tints the tab's accent edge:
+the theme accent, or the Creator secondary accent (falling back to the theme accent).
+
+**Modes.**
+
+- **timed-tab:** every `intervalSeconds` the tab slides out from behind the overlay's edge,
+  stays `visibleSeconds` and retracts.
+  - **Timing definition:** `intervalSeconds` is the time **between the starts of two
+    consecutive reveals**. The first reveal starts one full interval after the overlay
+    appears, then it's hidden for interval − visible. Every interval is longer than every
+    visible time.
+- **static-badge:** always out. No timer.
+
+**Geometry and OBS containment.**
+
+- **Structure:** `root > .ov-brand-row > [panel | rotation stage] + .ov-brand-slot >
+.ov-brand-flag`. The row only exists with the flag enabled; otherwise the DOM is exactly the
+  pre-5.3B structure.
+- **The slot** is static space reserved beside the panel (3.3em for the monogram, 8.4em for the
+  full logo, in em so it scales with the overlay). It stays reserved while the tab is retracted.
+- **Fit-to-box** still measures the panel (the 5.2 fix is preserved) and adds the slot's width,
+  so panel + flag always fit the canvas together. The flag is never clipped by the Browser
+  Source and never covers a statistic; it is beside the panel, never over it.
+- **The tab** moves with `transform`/`opacity` only, clipped by its slot while retracted. The
+  measurement never changes while it animates: no layout shift and no re-fit loop.
+- **Trade-off:** the reserved space makes the panel slightly smaller (it shares the canvas with
+  the flag), and with centre alignment the pair, not the panel alone, is centred.
+
+**Animation.**
+
+- slide: from behind the panel's edge, 320 ms.
+- fade: 320 ms.
+- instant.
+- Animations off or `prefers-reduced-motion` ⇒ instant (also in CSS); the schedule is
+  unchanged.
+- The tab has a slanted outer cut following the SST slant, and an accent edge on top.
+
+**Controller** (`components/overlay/brand-flag.tsx`, `useBrandFlag`):
+
+- One `setTimeout` chain at most; no `setInterval` or rAF.
+- It doesn't depend on the live data, so snapshots, SSE reconnects, matches, rotation and motion
+  never restart it.
+- A schedule change (enable, mode, interval, visible time) restarts from hidden. Cosmetic
+  changes (position, logo, colour, animation) don't.
+- Unmount and disable clear the timer.
+
+**Stored vs effective.** This is the same pipeline as the other Creator blocks.
+
+- Without `brandFlag` the effective config (OBS, `/state`, SSE, builder preview) has no flag.
+- A forged Free save can't add, change or remove it.
+- Downgrade keeps the stored preferences; renewal restores them.
+- Presets carry it inside the Creator block (`statsScope` stays out).
+- Integration-tested against Postgres.
+
+**Measured** (production build, Chromium):
+
+- **Geometry:** six themes × supported canvases (600×120, 800×180, 900×240) × right/monogram,
+  left/full (Creator accent) and right/full, at 100 % zoom: **0 issues**.
+  - Panel and slot always inside the canvas, the tab inside its slot, 0 px overlap with the
+    panel, mark height ≥ 12 px.
+  - The 1–3 px `scrollWidth` excess is the existing fit-to-box tolerance.
+- **Preview reveal:** root font-size 27.6 → 27.6 → 27.6 px and panel width 695 → 695 → 695 px
+  before, during and after.
+- **Long runs** (Playwright clock, advanced in 1 s steps so React commits between them; CDP
+  after forced GC):
+  - **Without rotation:** 110 reveals in 3300 s with an exact 30 s period between starts
+    (min = max = 30 s). JS listeners 497 → 497, overlay DOM 51 → 51, one tab, heap 5.89 → 7.08 MB.
+  - **With session-all rotation:** 109 reveals in the same window (first at 31 s), again an exact
+    30 s period. Overlay DOM 53 → 53.
+
+**Known limitations.**
+
+- Each Browser Source runs its own schedule (copies aren't synchronized).
+- The reserved space reduces the panel's share of very narrow canvases. Content still shrinks
+  together (fit-to-box), never clipped.
+- **Rollback:** older code parses the Creator block strictly, so an unknown `brandFlag` key drops
+  the whole block on read. Strip it first:
+
+  ```sql
+  update overlay set config = config #- '{creator,brandFlag}' where config->'creator' ? 'brandFlag';
+  ```
+
 ## Stored vs effective config
 
 ```

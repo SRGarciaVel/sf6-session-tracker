@@ -13,6 +13,7 @@ import {
 import { DEFAULT_CREATOR_CUSTOMIZATION, type CreatorCustomization } from "@/domain/overlay/creator";
 import { DEFAULT_CREATOR_MOTION, type CreatorMotion } from "@/domain/overlay/motion";
 import { DEFAULT_CHARACTER_ROTATION, type CharacterRotation } from "@/domain/overlay/rotation";
+import { DEFAULT_BRAND_FLAG, type BrandFlag } from "@/domain/overlay/brand-flag";
 
 /** JSON with sorted keys and without `undefined` members: key order never makes a config "dirty". */
 export function canonicalJson(value: unknown): string {
@@ -106,6 +107,13 @@ export function patchRotation(
       ...(config.creator?.characterRotation ?? DEFAULT_CHARACTER_ROTATION),
       ...patch,
     },
+  });
+}
+
+/** SST Brand Flag (Phase 5.3B): patch the block, creating it from the defaults. */
+export function patchBrandFlag(config: OverlayConfig, patch: Partial<BrandFlag>): OverlayConfig {
+  return patchCreator(config, {
+    brandFlag: { ...(config.creator?.brandFlag ?? DEFAULT_BRAND_FLAG), ...patch },
   });
 }
 

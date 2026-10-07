@@ -123,6 +123,9 @@ export function PreviewPane({
   // "Probar rotación": the multi-character sample + simulated matches (engine-built), local only.
   const [rotationTest, setRotationTest] = useState<{ extra: SampleExtraMatch[] } | null>(null);
   const [simCharacter, setSimCharacter] = useState<SampleCharacterKey>("jamie");
+  // "Probar aparición" (Phase 5.3B): each click asks the REAL brand-flag controller inside the
+  // overlay for one reveal. Local only: nothing is saved, sent or scheduled elsewhere.
+  const [brandSignal, setBrandSignal] = useState(0);
   const reducedMotion = usePrefersReducedMotion();
   const { ref, width } = usePaneWidth();
 
@@ -245,6 +248,7 @@ export function PreviewPane({
               data-testid="overlay-preview"
             >
               <OverlayView
+                brandRevealSignal={brandSignal}
                 config={previewConfig}
                 live={live}
                 sizing={{ mode: "box", width: boxWidth, height: boxHeight }}
@@ -374,6 +378,23 @@ export function PreviewPane({
                 : ""}
           </span>
         </div>
+        {config.creator?.brandFlag?.enabled === true &&
+          config.creator.brandFlag.mode === "timed-tab" && (
+            <div
+              className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line pt-3"
+              data-testid="brand-preview"
+            >
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setBrandSignal((n) => n + 1)}
+                data-testid="brand-reveal"
+              >
+                {`▶ ${t("brandTest.reveal")}`}
+              </Button>
+              <span className="text-xs text-faint">{t("brandTest.hint")}</span>
+            </div>
+          )}
         {rotationAvailable && (
           <div
             className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line pt-3"

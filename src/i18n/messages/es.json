@@ -846,6 +846,56 @@
         "win": "Simulación: victoria con {character}.",
         "loss": "Simulación: derrota con {character}."
       }
+    },
+    "brandFlag": {
+      "title": "Marca SST",
+      "enabled": "Mostrar logo SST",
+      "requiresCreator": "Creator Beta requerido.",
+      "summary": "Una pequeña pestaña con el logo oficial de SST unida al lateral del overlay. No tapa ninguna estadística: el overlay le reserva su espacio.",
+      "mode": "Estilo de aparición",
+      "modes": {
+        "timed-tab": {
+          "label": "Pestaña periódica",
+          "hint": "Sale del borde del overlay cada cierto tiempo, se muestra unos segundos y se recoge."
+        },
+        "static-badge": {
+          "label": "Insignia fija",
+          "hint": "Siempre visible junto al overlay, sin animación ni temporizador."
+        }
+      },
+      "position": "Posición",
+      "positions": {
+        "left": "Izquierda",
+        "right": "Derecha"
+      },
+      "interval": "Frecuencia",
+      "intervalHint": "Tiempo entre el inicio de una aparición y el de la siguiente.",
+      "visible": "Tiempo visible",
+      "seconds": "{n} s",
+      "minutes": "{n} min",
+      "animation": "Animación",
+      "animations": {
+        "slide": "Deslizar",
+        "fade": "Fundido",
+        "instant": "Instantánea"
+      },
+      "animationsOff": "Las animaciones del overlay están desactivadas: la pestaña aparece y se recoge al instante.",
+      "logo": "Logo",
+      "logos": {
+        "monogram": "Monograma",
+        "full": "Logo completo"
+      },
+      "color": "Color",
+      "colors": {
+        "theme": "Del tema",
+        "creator-accent": "Acento Creator"
+      },
+      "colorHint": "Color del borde de la pestaña. El logo usa el color del texto del overlay para que siempre se lea.",
+      "spaceHint": "El overlay se ajusta para dejar sitio a la pestaña, incluso mientras está recogida, así nunca se sale del lienzo de OBS."
+    },
+    "brandTest": {
+      "reveal": "Probar aparición",
+      "hint": "Muestra la pestaña una vez en la vista previa. No guarda nada."
     }
   },
   "NotFound": {

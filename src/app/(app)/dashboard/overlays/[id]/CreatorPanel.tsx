@@ -45,7 +45,20 @@ import {
 } from "@/domain/overlay/rotation";
 import { THEME_REGISTRY } from "@/domain/overlay/themes";
 import {
+  BRAND_FLAG_ANIMATIONS,
+  BRAND_FLAG_COLORS,
+  BRAND_FLAG_INTERVALS,
+  BRAND_FLAG_LOGOS,
+  BRAND_FLAG_MODES,
+  BRAND_FLAG_POSITIONS,
+  BRAND_FLAG_VISIBLE,
+  DEFAULT_BRAND_FLAG,
+  type BrandFlagInterval,
+  type BrandFlagVisible,
+} from "@/domain/overlay/brand-flag";
+import {
   canonicalJson,
+  patchBrandFlag,
   patchCreator,
   patchMotion,
   patchRotation,
@@ -69,6 +82,7 @@ export function CreatorPanel({
   creatorPresets,
   motionEffects,
   characterRotation,
+  brandFlag,
   rotationViews,
   overlayId,
   presets,
@@ -81,6 +95,7 @@ export function CreatorPanel({
   creatorPresets: boolean;
   motionEffects: boolean;
   characterRotation: boolean;
+  brandFlag: boolean;
   /** One cycle of views (null = session) the overlay would show now (live, else the sample). */
   rotationViews: { views: Array<string | null>; sample: boolean };
   overlayId: string;
@@ -92,13 +107,15 @@ export function CreatorPanel({
   const tp = useTranslations("Builder.presetsCreator");
   const current = config.creator ?? DEFAULT_CREATOR_CUSTOMIZATION;
   const notInTheme = NOT_IN_THEME[config.theme] ?? [];
-  const entitled = advancedCustomization && creatorPresets && motionEffects && characterRotation;
+  const entitled =
+    advancedCustomization && creatorPresets && motionEffects && characterRotation && brandFlag;
   // One message for any stored Creator styling the owner can't use right now (incl. motion
   // and rotation).
   const storedCustomization =
     (!advancedCustomization && config.creator !== undefined) ||
     (!motionEffects && config.creator?.motion !== undefined) ||
-    (!characterRotation && config.creator?.characterRotation?.enabled === true);
+    (!characterRotation && config.creator?.characterRotation?.enabled === true) ||
+    (!brandFlag && config.creator?.brandFlag?.enabled === true);
   const storedPresets = !creatorPresets && presets.length > 0;
 
   return (
@@ -220,6 +237,8 @@ export function CreatorPanel({
         views={rotationViews}
       />
 
+      <BrandFlagGroup config={config} update={update} enabled={brandFlag} />
+
       <fieldset
         disabled={!advancedCustomization}
         className="min-w-0 border-t border-line pt-4 disabled:opacity-50"
@@ -230,15 +249,17 @@ export function CreatorPanel({
           size="sm"
           onClick={() =>
             update((c) => {
-              // Resets the styling only; Movement and rotation have their own switches.
+              // Resets the styling only; Movement, rotation and branding have their own switches.
               const next = { ...c };
               delete next.creator;
               const motion = c.creator?.motion;
               const characterRotation = c.creator?.characterRotation;
-              if (!motion && !characterRotation) return next;
+              const brandFlag = c.creator?.brandFlag;
+              if (!motion && !characterRotation && !brandFlag) return next;
               const creator = { ...DEFAULT_CREATOR_CUSTOMIZATION };
               if (motion) creator.motion = motion;
               if (characterRotation) creator.characterRotation = characterRotation;
+              if (brandFlag) creator.brandFlag = brandFlag;
               return { ...next, creator };
             })
           }
@@ -248,6 +269,7 @@ export function CreatorPanel({
               ...config.creator,
               motion: undefined,
               characterRotation: undefined,
+              brandFlag: undefined,
             }) === canonicalJson(DEFAULT_CREATOR_CUSTOMIZATION)
           }
         >
@@ -544,6 +566,154 @@ function RotationGroup({
                 {t("pinnedNote")}
               </p>
             )}
+          </>
+        )}
+      </Group>
+    </fieldset>
+  );
+}
+
+/**
+ * SST branding (Phase 5.3B): Creator option gated by overlays.brandFlag. Progressive disclosure:
+ * only the switch while it's off; frequency and visible time only for the periodic tab.
+ */
+function BrandFlagGroup({
+  config,
+  update,
+  enabled,
+}: {
+  config: OverlayConfig;
+  update: Update;
+  enabled: boolean;
+}) {
+  const t = useTranslations("Builder.brandFlag");
+  const flag = config.creator?.brandFlag ?? DEFAULT_BRAND_FLAG;
+  const on = config.creator?.brandFlag?.enabled === true;
+  const timed = flag.mode === "timed-tab";
+  return (
+    <fieldset
+      disabled={!enabled}
+      className="min-w-0 space-y-4 border-t border-line pt-5 disabled:opacity-50"
+      data-testid="creator-brand-flag"
+    >
+      <legend className="sr-only">{t("title")}</legend>
+      <Group title={t("title")}>
+        <Toggle
+          label={t("enabled")}
+          checked={on}
+          onChange={(v) => update((c) => patchBrandFlag(c, { enabled: v }))}
+        />
+        {!enabled && <p className="text-xs text-faint">{t("requiresCreator")}</p>}
+        <p className="text-xs text-faint">{t("summary")}</p>
+        {on && (
+          <>
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span>{t("mode")}</span>
+                <Segmented
+                  value={flag.mode}
+                  onChange={(mode) => update((c) => patchBrandFlag(c, { mode }))}
+                  options={BRAND_FLAG_MODES.map((m) => ({
+                    value: m,
+                    label: t(`modes.${m}.label`),
+                  }))}
+                />
+              </div>
+              <p className="text-xs text-faint">{t(`modes.${flag.mode}.hint`)}</p>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span>{t("position")}</span>
+              <Segmented
+                value={flag.position}
+                onChange={(position) => update((c) => patchBrandFlag(c, { position }))}
+                options={BRAND_FLAG_POSITIONS.map((v) => ({
+                  value: v,
+                  label: t(`positions.${v}`),
+                }))}
+              />
+            </div>
+            {timed && (
+              <>
+                <label className="flex items-center justify-between gap-3 text-sm">
+                  <span>{t("interval")}</span>
+                  <select
+                    value={flag.intervalSeconds}
+                    onChange={(e) => {
+                      const intervalSeconds = Number(e.target.value) as BrandFlagInterval;
+                      update((c) => patchBrandFlag(c, { intervalSeconds }));
+                    }}
+                    className={`${selectClass} max-w-40`}
+                    aria-describedby="brand-interval-hint"
+                    data-testid="brand-interval"
+                  >
+                    {BRAND_FLAG_INTERVALS.map((n) => (
+                      <option key={n} value={n}>
+                        {n < 60 ? t("seconds", { n }) : t("minutes", { n: n / 60 })}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p id="brand-interval-hint" className="-mt-2 text-xs text-faint">
+                  {t("intervalHint")}
+                </p>
+                <label className="flex items-center justify-between gap-3 text-sm">
+                  <span>{t("visible")}</span>
+                  <select
+                    value={flag.visibleSeconds}
+                    onChange={(e) => {
+                      const visibleSeconds = Number(e.target.value) as BrandFlagVisible;
+                      update((c) => patchBrandFlag(c, { visibleSeconds }));
+                    }}
+                    className={`${selectClass} max-w-40`}
+                    data-testid="brand-visible"
+                  >
+                    {BRAND_FLAG_VISIBLE.map((n) => (
+                      <option key={n} value={n}>
+                        {t("seconds", { n })}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                    <span>{t("animation")}</span>
+                    <Segmented
+                      value={flag.animation}
+                      onChange={(animation) => update((c) => patchBrandFlag(c, { animation }))}
+                      options={BRAND_FLAG_ANIMATIONS.map((v) => ({
+                        value: v,
+                        label: t(`animations.${v}`),
+                      }))}
+                    />
+                  </div>
+                  {!config.animations && (
+                    <p className="text-xs text-faint" data-testid="brand-instant-note">
+                      {t("animationsOff")}
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span>{t("logo")}</span>
+              <Segmented
+                value={flag.logoVariant}
+                onChange={(logoVariant) => update((c) => patchBrandFlag(c, { logoVariant }))}
+                options={BRAND_FLAG_LOGOS.map((v) => ({ value: v, label: t(`logos.${v}`) }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span>{t("color")}</span>
+                <Segmented
+                  value={flag.colorMode}
+                  onChange={(colorMode) => update((c) => patchBrandFlag(c, { colorMode }))}
+                  options={BRAND_FLAG_COLORS.map((v) => ({ value: v, label: t(`colors.${v}`) }))}
+                />
+              </div>
+              <p className="text-xs text-faint">{t("colorHint")}</p>
+            </div>
+            <p className="text-xs text-faint">{t("spaceHint")}</p>
           </>
         )}
       </Group>

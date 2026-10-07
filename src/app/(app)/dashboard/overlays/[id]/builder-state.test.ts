@@ -12,6 +12,7 @@ import {
   FIELD_GROUPS,
   canonicalJson,
   isDirty,
+  patchBrandFlag,
   patchCreator,
   patchRotation,
   setAllFields,
@@ -81,6 +82,28 @@ describe("Phase 5.3A: presentation edits", () => {
       expect(isDirty(snap(edited), snap(edited))).toBe(false);
       expect(edited.statsScope).toBe(on.statsScope);
     }
+  });
+});
+
+describe("Phase 5.3B: brand flag edits", () => {
+  it("every option marks dirty; saving clears it; turning it off keeps preferences", () => {
+    const on = patchBrandFlag(base, { enabled: true });
+    expect(isDirty(snap(base), snap(on))).toBe(true);
+    for (const patch of [
+      { mode: "static-badge" },
+      { position: "left" },
+      { intervalSeconds: 300 },
+      { visibleSeconds: 5 },
+      { animation: "fade" },
+      { logoVariant: "full" },
+      { colorMode: "creator-accent" },
+    ] as const) {
+      const edited = patchBrandFlag(on, patch);
+      expect(isDirty(snap(on), snap(edited))).toBe(true);
+      expect(isDirty(snap(edited), snap(edited))).toBe(false);
+    }
+    const off = patchBrandFlag(patchBrandFlag(on, { position: "left" }), { enabled: false });
+    expect(off.creator?.brandFlag).toMatchObject({ enabled: false, position: "left" });
   });
 });
 

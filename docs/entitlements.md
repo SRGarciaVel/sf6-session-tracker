@@ -54,13 +54,15 @@ never deleted to downgrade: they expire or get revoked, which keeps the audit tr
 | `overlays.creatorPresets`        | false | **true**     | Phase 4.5: saved appearance presets ([creator-presets.md](creator-presets.md))                   |
 | `overlays.motionEffects`         | false | **true**     | Phase 5.0: Creator motion & broadcast effects (additive; Free animations unchanged)              |
 | `overlays.characterRotation`     | false | **true**     | Phase 5.2: character rotation & latest-match priority (presentation only; independent of motion) |
+| `overlays.brandFlag`             | false | **true**     | Phase 5.3B: SST Brand Flag (official mark tab; independent of motion and rotation)               |
 | `history.retentionDays`          | null  | null         | `null` = no retention policy (current behaviour: nothing is ever purged). Not enforced yet.      |
 
 Phases 2–3: both plans were identical. **Phase 4** adds the first difference,
 `overlays.advancedCustomization`. **Phase 4.5** adds `overlays.premiumThemes` and
 `overlays.creatorPresets`. All three gate **new** capabilities only: every overlay option, theme
 and canvas that existed before stays Free, `overlays.max` stays 10 for both plans, and Free is
-never lowered. Phase 5.0 adds `overlays.motionEffects` and Phase 5.2 `overlays.characterRotation`,
+never lowered. Phase 5.0 adds `overlays.motionEffects`, Phase 5.2 `overlays.characterRotation`
+and Phase 5.3B `overlays.brandFlag`,
 each gating only its own block (`creator.motion`, `creator.characterRotation`) in the effective
 config. Phase 5.1 character-scoped statistics stay Free. The final Free limits are decided from beta usage data (RFC §11.4).
 

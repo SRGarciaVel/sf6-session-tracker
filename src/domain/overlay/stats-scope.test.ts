@@ -19,6 +19,7 @@ const FREE = {
     premiumThemes: false,
     motionEffects: false,
     characterRotation: false,
+    brandFlag: false,
   },
 };
 const session = sampleMultiCharacterState().session;

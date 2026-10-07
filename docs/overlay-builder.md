@@ -75,6 +75,26 @@ Every option marks unsaved changes; saving clears them. The 5.2 controls below r
   is covered by the tab's single notice and kept (server merge).
 - **Dirty state:** every option marks unsaved changes, and saving clears them.
 
+**Marca SST** (Phase 5.3B, Creator tab, `overlays.brandFlag`):
+
+- **Mostrar logo SST:** while it's off, only the switch and a one-line explanation show.
+- **When on:**
+  - Estilo de aparición: Pestaña periódica · Insignia fija;
+  - Posición: Izquierda · Derecha;
+  - for the periodic tab only: Frecuencia (with the "time between appearances" definition),
+    Tiempo visible and Animación. With overlay animations off, a note says the reveal is
+    instant;
+  - Logo (Monograma · Logo completo, both official) and Color (Del tema · Acento Creator);
+  - a note that the overlay reserves the tab's space so it never leaves the canvas.
+- **Free:** the group is disabled with "Creator Beta requerido". A stored flag is covered by the
+  tab's single notice and kept.
+- **Dirty state:** every option marks unsaved changes.
+
+**Probar aparición** (preview, preview-only) appears when the effective config has a periodic
+tab. Each click increments a local signal the **real** controller in the overlay consumes: one
+reveal now, retract after the visible time, then the normal cycle. No API, save, session or SSE
+is involved, and there's no second animation implementation.
+
 **Probar presentación** (formerly "Probar rotación"; preview, Creator only, preview-only) uses the Phase 5.1 multi-character
 sample: Chun-Li, Jamie and Ryu rotate; Cammy (0 games) doesn't.
 
@@ -284,3 +304,19 @@ disabled controls are a convenience.
 - Builder UI and dirty state, plus integration: views built from the **public** payload of a
   real ingested session, per-view stats, priority via `sessionIdentity`, and the
   mixed-mode entitlement lifecycle.
+
+## SST Brand Flag tests (Phase 5.3B)
+
+- `domain/overlay/brand-flag.test.ts`: defaults, strict writes, every option, lenient reads, old
+  configs, timer semantics, entitlements (independent), forged Free saves, downgrade/renewal and
+  presets.
+- `components/overlay/brand-flag-runtime.test.tsx` (happy-dom, fake timers):
+  - controller: hidden → reveal at one interval → visible time → repeat, one timer, cleanup,
+    static badge, mode/interval changes, cosmetic changes not restarting, repeated snapshots and
+    matches, preview reveal, reduced motion / animations off;
+  - renderer: official geometry and lockup, positions, slot beside the panel, colour modes, all
+    six themes, no flag ⇒ the old DOM;
+  - independence: rotation off/characters/session-active/session-all, Creator Motion and
+    priority, the real OBS public payload with repeated and stale snapshots, a 120-cycle long run.
+- Builder UI, dirty state and the integration lifecycle (Free forged request, Creator, preset,
+  expiry, Free edit, renewal).

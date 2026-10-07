@@ -47,6 +47,7 @@ export default async function OverlayBuilderPage({
           creatorPresets: entitlements.overlays.creatorPresets,
           motionEffects: entitlements.overlays.motionEffects,
           characterRotation: entitlements.overlays.characterRotation,
+          brandFlag: entitlements.overlays.brandFlag,
         }}
         presets={presets.map((p) => ({
           id: p.id,

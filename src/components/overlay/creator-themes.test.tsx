@@ -17,6 +17,7 @@ const FREE = {
     premiumThemes: false,
     motionEffects: false,
     characterRotation: false,
+    brandFlag: false,
   },
 };
 const CREATOR = {
@@ -25,6 +26,7 @@ const CREATOR = {
     premiumThemes: true,
     motionEffects: true,
     characterRotation: true,
+    brandFlag: true,
   },
 };
 const allFields = Object.fromEntries(

@@ -46,6 +46,7 @@ export interface BuilderAccess {
   creatorPresets: boolean;
   motionEffects: boolean;
   characterRotation: boolean;
+  brandFlag: boolean;
 }
 
 type SaveState = "saved" | "unsaved" | "saving" | "failed";
@@ -351,6 +352,7 @@ export function OverlayBuilder({
                   creatorPresets={access.creatorPresets}
                   motionEffects={access.motionEffects}
                   characterRotation={access.characterRotation}
+                  brandFlag={access.brandFlag}
                   rotationViews={rotationViewSequence(
                     state.live.session,
                     config.creator?.characterRotation ?? DEFAULT_CHARACTER_ROTATION,
