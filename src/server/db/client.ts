@@ -21,7 +21,7 @@ export function getSql(): Sql {
   if (!g.__sf6Sql) {
     const env = getEnv();
     g.__sf6Sql = postgres(env.DATABASE_URL, {
-      max: env.NODE_ENV === "production" ? 10 : 5,
+      max: 5,
       idle_timeout: 30,
       connect_timeout: 10,
       onnotice: () => {},
