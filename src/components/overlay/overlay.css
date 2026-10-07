@@ -1172,3 +1172,44 @@
     filter: drop-shadow(0 0 var(--ovm-glow) var(--ov-tier, var(--ov-accent)));
   }
 }
+
+/* ── Creator character rotation (Phase 5.2) ──────────────────────────
+   Present only while rotation runs (entitled EFFECTIVE config). The stage is static and is
+   what fit-to-box measures; only the inner frame animates (opacity + transform), once, when a
+   new character mounts. The slide comes from the LEFT: negative offsets never add scrollable
+   overflow, so the measured size never changes mid-transition. No infinite animations. */
+.ov-rot-stage,
+.ov-rot-frame {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.ov-rot-frame[data-rot-transition="fade"] {
+  animation: ov-rot-fade 320ms ease-out both;
+}
+.ov-rot-frame[data-rot-transition="slide"] {
+  animation: ov-rot-slide 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes ov-rot-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes ov-rot-slide {
+  from {
+    opacity: 0;
+    transform: translateX(-0.75em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ov-rot-frame[data-rot-transition] {
+    animation: none;
+  }
+}

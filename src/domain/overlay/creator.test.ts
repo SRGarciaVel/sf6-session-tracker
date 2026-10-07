@@ -18,10 +18,20 @@ import { CREATOR_THEME_IDS, FREE_THEME_IDS, THEME_REGISTRY } from "./themes";
 import { DEFAULT_THEME_VARIANTS } from "./variants";
 
 const FREE = {
-  overlays: { advancedCustomization: false, premiumThemes: false, motionEffects: false },
+  overlays: {
+    advancedCustomization: false,
+    premiumThemes: false,
+    motionEffects: false,
+    characterRotation: false,
+  },
 };
 const CREATOR = {
-  overlays: { advancedCustomization: true, premiumThemes: true, motionEffects: true },
+  overlays: {
+    advancedCustomization: true,
+    premiumThemes: true,
+    motionEffects: true,
+    characterRotation: true,
+  },
 };
 const custom: CreatorCustomization = {
   secondaryAccent: "#ffb000",
@@ -282,16 +292,36 @@ describe("Phase 5.0: Creator motion (overlays.motionEffects)", () => {
     creator: { ...custom, motion },
   };
   const ALL = {
-    overlays: { advancedCustomization: true, premiumThemes: true, motionEffects: true },
+    overlays: {
+      advancedCustomization: true,
+      premiumThemes: true,
+      motionEffects: true,
+      characterRotation: true,
+    },
   };
   const NONE = {
-    overlays: { advancedCustomization: false, premiumThemes: false, motionEffects: false },
+    overlays: {
+      advancedCustomization: false,
+      premiumThemes: false,
+      motionEffects: false,
+      characterRotation: false,
+    },
   };
   const STYLE_ONLY = {
-    overlays: { advancedCustomization: true, premiumThemes: true, motionEffects: false },
+    overlays: {
+      advancedCustomization: true,
+      premiumThemes: true,
+      motionEffects: false,
+      characterRotation: false,
+    },
   };
   const MOTION_ONLY = {
-    overlays: { advancedCustomization: false, premiumThemes: false, motionEffects: true },
+    overlays: {
+      advancedCustomization: false,
+      premiumThemes: false,
+      motionEffects: true,
+      characterRotation: true,
+    },
   };
 
   it("entitled ⇒ motion renders; Free ⇒ effective config has no motion; stored untouched", () => {

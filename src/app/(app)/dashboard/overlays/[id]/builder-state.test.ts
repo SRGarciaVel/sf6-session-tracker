@@ -13,6 +13,7 @@ import {
   canonicalJson,
   isDirty,
   patchCreator,
+  patchRotation,
   setAllFields,
   stepZoom,
   themeDefault,
@@ -37,6 +38,33 @@ describe("dirty state", () => {
     expect(isDirty(snap(base), snap(base, "Renamed"))).toBe(true);
     // "save" = the saved snapshot becomes the current state
     expect(isDirty(snap(edited), snap(edited))).toBe(false);
+  });
+});
+
+describe("Phase 5.2: rotation edits (69–73)", () => {
+  it("every rotation option marks dirty; saving that state clears it; off keeps preferences", () => {
+    const on = patchRotation(base, { enabled: true });
+    expect(isDirty(snap(base), snap(on))).toBe(true);
+    for (const patch of [
+      { intervalSeconds: 5 },
+      { transition: "slide" },
+      { prioritizeLatestMatch: false },
+      { prioritySeconds: 60 },
+      { order: "alphabetical" },
+    ] as const) {
+      const edited = patchRotation(on, patch);
+      expect(isDirty(snap(on), snap(edited))).toBe(true);
+      expect(isDirty(snap(edited), snap(edited))).toBe(false);
+    }
+    const tuned = patchRotation(on, { intervalSeconds: 30, order: "mostPlayed" });
+    const off = patchRotation(tuned, { enabled: false });
+    expect(off.creator?.characterRotation).toMatchObject({
+      intervalSeconds: 30,
+      order: "mostPlayed",
+    });
+    expect(patchRotation(off, { enabled: true }).creator?.characterRotation?.intervalSeconds).toBe(
+      30,
+    );
   });
 });
 

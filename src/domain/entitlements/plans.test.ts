@@ -42,6 +42,7 @@ describe("plans", () => {
         premiumThemes: false,
         creatorPresets: false,
         motionEffects: false,
+        characterRotation: false,
       },
       history: { retentionDays: null },
     });
@@ -67,6 +68,7 @@ describe("plans", () => {
         premiumThemes: false,
         creatorPresets: false,
         motionEffects: false,
+        characterRotation: false,
       },
     }).toEqual(PLAN_ENTITLEMENTS.free);
   });

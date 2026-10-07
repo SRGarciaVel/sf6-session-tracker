@@ -12,10 +12,20 @@ import { DEFAULT_THEME_VARIANTS } from "@/domain/overlay/variants";
 import { OverlayView } from "./OverlayView";
 
 const FREE = {
-  overlays: { advancedCustomization: false, premiumThemes: false, motionEffects: false },
+  overlays: {
+    advancedCustomization: false,
+    premiumThemes: false,
+    motionEffects: false,
+    characterRotation: false,
+  },
 };
 const CREATOR = {
-  overlays: { advancedCustomization: true, premiumThemes: true, motionEffects: true },
+  overlays: {
+    advancedCustomization: true,
+    premiumThemes: true,
+    motionEffects: true,
+    characterRotation: true,
+  },
 };
 const allFields = Object.fromEntries(
   Object.keys(DEFAULT_OVERLAY_CONFIG.fields).map((k) => [k, true]),

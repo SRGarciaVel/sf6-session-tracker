@@ -67,6 +67,7 @@ describe.skipIf(!TEST_DB)("plans & entitlements (integration)", () => {
       premiumThemes: true,
       creatorPresets: true,
       motionEffects: true,
+      characterRotation: true,
     });
     expect((await getEntitlements(db, free)).overlays).toEqual({
       max: 10,
@@ -74,6 +75,7 @@ describe.skipIf(!TEST_DB)("plans & entitlements (integration)", () => {
       premiumThemes: false,
       creatorPresets: false,
       motionEffects: false,
+      characterRotation: false,
     });
   });
 

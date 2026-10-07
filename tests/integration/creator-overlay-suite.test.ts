@@ -445,6 +445,107 @@ describe.skipIf(!TEST_DB)("Phase 5.0: Creator motion lifecycle (integration)", (
   });
 });
 
+describe.skipIf(!TEST_DB)("Phase 5.2: character rotation lifecycle (integration)", () => {
+  const db = TEST_DB ? getDb() : (null as never);
+  const rotation = {
+    enabled: true,
+    intervalSeconds: 15 as const,
+    transition: "slide" as const,
+    prioritizeLatestMatch: true,
+    prioritySeconds: 30 as const,
+    order: "mostPlayed" as const,
+  };
+
+  it("Creator enables → OBS gets it → expiry drops it (stored kept) → Free edit/crafted ignored → renew restores → revocation drops; presets carry it", async () => {
+    const userId = randomUUID();
+    await db.insert(authUser).values({ id: userId, name: "R", email: `${userId}@test.local` });
+    const mock = new MockSF6DataProvider(db);
+    const cfn = String(8_000_000_000 + Math.floor(Math.random() * 999_999_999));
+    const player = await upsertPlayerForUser(db, userId, await mock.getPlayerProfile(cfn));
+    const [ov] = await listOverlays(db, player.id);
+    if (!ov) throw new Error("no overlay");
+    const current = async () => {
+      const v = await getOverlayById(db, ov.id);
+      if (!v) throw new Error("gone");
+      return v;
+    };
+    const save = async (edit: Partial<OverlayConfig>) => {
+      const v = await current();
+      const merged = await prepareOverlayConfigForSave(db, {
+        userId,
+        stored: v.config,
+        incoming: { ...v.config, ...edit },
+      });
+      await updateOverlay(db, v, { config: merged });
+    };
+    const payload = async () => (await loadOverlayPayload((await current()).publicToken))?.payload;
+    const withRotation = (r: typeof rotation) => ({
+      creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, characterRotation: r },
+    });
+
+    // Free (no grant) cannot enable it, even with a crafted request.
+    await save(withRotation(rotation));
+    expect((await current()).config.creator?.characterRotation).toBeUndefined();
+    expect((await payload())?.config.creator?.characterRotation).toBeUndefined();
+
+    const [g] = await db
+      .insert(entitlementGrant)
+      .values({
+        userId,
+        plan: "creator_beta",
+        source: "operator",
+        expiresAt: new Date(Date.now() + 90 * 86_400_000),
+      })
+      .returning({ id: entitlementGrant.id });
+    await save(withRotation(rotation));
+    expect((await payload())?.config.creator?.characterRotation).toEqual(rotation);
+    const preset = await presets.createPreset(db, {
+      userId,
+      name: "Rotation",
+      config: (await current()).config,
+    });
+    if (!preset.ok) throw new Error(preset.error);
+    expect(preset.value.appearance?.creator?.characterRotation).toEqual(rotation);
+    expect(preset.value.appearance).not.toHaveProperty("statsScope");
+
+    // Expiry: the public overlay stops rotating; nothing is deleted.
+    await db
+      .update(entitlementGrant)
+      .set({
+        startsAt: new Date(Date.now() - 2 * 3_600_000),
+        expiresAt: new Date(Date.now() - 3_600_000),
+      })
+      .where(eq(entitlementGrant.id, g?.id ?? ""));
+    const expired = await payload();
+    expect(expired?.config.creator?.characterRotation).toBeUndefined();
+    expect(JSON.stringify(expired)).not.toMatch(/characterRotation|creator_beta/);
+    await save({ title: "FREE EDIT", creator: undefined });
+    await save(withRotation({ ...rotation, intervalSeconds: 5 as never, enabled: false }));
+    expect((await current()).config).toMatchObject({ title: "FREE EDIT" });
+    expect((await current()).config.creator?.characterRotation).toEqual(rotation);
+
+    // Renewal restores it exactly.
+    const [g2] = await db
+      .insert(entitlementGrant)
+      .values({
+        userId,
+        plan: "creator_beta",
+        source: "operator",
+        expiresAt: new Date(Date.now() + 90 * 86_400_000),
+      })
+      .returning({ id: entitlementGrant.id });
+    expect((await payload())?.config.creator?.characterRotation).toEqual(rotation);
+
+    // Revocation is immediate.
+    await db
+      .update(entitlementGrant)
+      .set({ revokedAt: new Date() })
+      .where(eq(entitlementGrant.id, g2?.id ?? ""));
+    expect((await payload())?.config.creator?.characterRotation).toBeUndefined();
+    expect((await current()).config.creator?.characterRotation).toEqual(rotation);
+  });
+});
+
 afterAll(async () => {
   if (TEST_DB) await closeDb();
 });

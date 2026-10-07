@@ -25,12 +25,12 @@ capabilities: the same options, themes, entitlements and server actions.
 
 ## Information architecture
 
-| Tab            | Contents                                                                                                                                                                                                                                  |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Apariencia** | theme picker, then the selected Creator theme's **variants** right below it (contextual)                                                                                                                                                  |
-| **Contenido**  | visible stats (Session: W, L, win rate, games, streak, best, recent form · Rating & rank: MR/LP, change, rank) with show all / hide all; title + visibility; **session statistics** (shown stats + displayed character); overlay language |
-| **Estilo**     | text font; core colours (text, labels, accent); results (win, loss); background (colour + opacity); border (toggle, colour, width, radius); size & layout (scale, spacing, alignment, animations); "reset the theme's style"              |
-| **Creator**    | one Creator Beta badge, one entitlement/renewal notice, **presets** first, then advanced styling: number typography (font, size) · accent (secondary colour) · visibility (labels, units, character name, decorations)                    |
+| Tab            | Contents                                                                                                                                                                                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Apariencia** | theme picker, then the selected Creator theme's **variants** right below it (contextual)                                                                                                                                                                   |
+| **Contenido**  | visible stats (Session: W, L, win rate, games, streak, best, recent form · Rating & rank: MR/LP, change, rank) with show all / hide all; title + visibility; **session statistics** (shown stats + displayed character); overlay language                  |
+| **Estilo**     | text font; core colours (text, labels, accent); results (win, loss); background (colour + opacity); border (toggle, colour, width, radius); size & layout (scale, spacing, alignment, animations); "reset the theme's style"                               |
+| **Creator**    | one Creator Beta badge, one entitlement/renewal notice, **presets** first, then advanced styling: number typography (font, size) · accent (secondary colour) · visibility (labels, units, character name, decorations) · Movement · **Character rotation** |
 
 **Movement** (Phase 5.0, Creator tab) holds:
 
@@ -40,6 +40,39 @@ capabilities: the same options, themes, entitlements and server actions.
 Rank reaction is disabled with a note on themes without the emblem. The group is disabled without
 `overlays.motionEffects`; stored values stay visible and are kept. The tab's single notice covers
 it.
+
+**Rotación de personajes** (Phase 5.2, Creator tab, `overlays.characterRotation`) holds:
+
+- **Rotación automática.** While it's off, only the switch and a one-line summary show
+  (progressive disclosure).
+- **When on:**
+  - interval (5–30 s);
+  - transition (Fundido · Deslizamiento · Instantánea);
+  - order (más recientes · más jugados · alfabético);
+  - "Priorizar personaje de la última partida", plus its duration (10–60 s). The duration is
+    disabled with an explanation when priority is off.
+- **Personajes incluidos:** the characters that would rotate now, from the live state, else the
+  sample, which is labelled. 0-game characters never appear; with none, an explicit empty state
+  shows.
+- **Pinned character:** when one is pinned, a note explains that rotation replaces it temporarily
+  and that turning rotation off brings it back. Contenido's character selector shows the same
+  hint while rotation is effective.
+- **Free:** the group is visible but disabled, with "Creator Beta requerido". A stored rotation
+  is covered by the tab's single notice and kept (server merge).
+- **Dirty state:** every option marks unsaved changes, and saving clears them.
+
+**Probar rotación** (preview, Creator only, preview-only) uses the Phase 5.1 multi-character
+sample: Chun-Li, Jamie and Ryu rotate; Cammy (0 games) doesn't.
+
+- **Simulating a match:** in test mode, the Phase 5.0 Victoria | Derrota control gets a
+  "Personaje" select and "Simular partida". Each click appends a match to the sample, which is
+  re-run through the engine. Totals, the active character, the recent order and the rating all
+  update, and priority plus Creator Motion behave as with a real match.
+- **Exiting:** "Salir de la prueba" (or the sample-data switch) ends the test, and the rotation
+  timers stop with it.
+- **Isolation:** no API, DB, SSE, session or config write.
+- **Without the test:** an entitled overlay with rotation enabled already rotates in the preview
+  (effective config), so edits show immediately.
 
 **Estadísticas de sesión** (Phase 5.1, Contenido tab, Free) holds:
 
@@ -186,3 +219,26 @@ disabled controls are a convenience.
 | Presets                     | Not stored in presets (content, like the rating character). Applying a preset keeps the overlay's scope.                                    |
 | Creator Motion              | Changing scope, character, theme, locale, canvas or font plays nothing. Real matches still play, in either scope.                           |
 | Phase 5.2 (rotation)        | Rotation will only change which character is projected. `resolveOverlayStats` already takes any character, so no new stats logic is needed. |
+
+## Character rotation tests (Phase 5.2)
+
+- `domain/overlay/rotation.test.ts` (pure): eligibility, the three orders and tie-breaks,
+  next/wrap, roster add/remove, resume, the match signal, schema strict/lenient, stored vs
+  effective, save merge, presets, stats coherence and the Motion detector in rotation mode.
+- `components/overlay/rotation-controller.test.tsx` (happy-dom, fake timers):
+  - timers: one at most, no restarts on repeated snapshots, cleanup on off/unmount, none with
+    0–1 characters;
+  - priority: start, restart, replace, disabled, resume;
+  - session restart, stale → current snapshots (also during priority; `LiveOverlay` included);
+  - coherence: stats, rating, rank and delta;
+  - Creator Motion events;
+  - instant with animations off or reduced motion;
+  - all six themes;
+  - a 150-step long run with constant DOM and one timer.
+- `creator-suite-ui.test.tsx` / `builder-state.test.ts`: the group (Free disabled, Creator
+  enabled, progressive disclosure, priority dependency, pinned note, empty state), "Probar
+  rotación" for Creator only, the preview's no-server source check, and dirty state for every
+  option.
+- Integration (`creator-overlay-suite`, `multi-character`): the entitlement lifecycle (Free
+  crafted request, enable, expiry, Free edit, renewal, revocation, presets) and rotation inputs
+  from real ingestion (eligible characters, order, priority signal, global vs individual stats).

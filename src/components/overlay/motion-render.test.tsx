@@ -12,10 +12,20 @@ import { sampleLiveState } from "@/domain/overlay/state";
 import { OverlayView } from "./OverlayView";
 
 const FREE = {
-  overlays: { advancedCustomization: false, premiumThemes: false, motionEffects: false },
+  overlays: {
+    advancedCustomization: false,
+    premiumThemes: false,
+    motionEffects: false,
+    characterRotation: false,
+  },
 };
 const CREATOR = {
-  overlays: { advancedCustomization: true, premiumThemes: true, motionEffects: true },
+  overlays: {
+    advancedCustomization: true,
+    premiumThemes: true,
+    motionEffects: true,
+    characterRotation: true,
+  },
 };
 const render = (config: OverlayConfig) =>
   renderToStaticMarkup(

@@ -17,6 +17,7 @@
 import { z } from "zod";
 import { FONT_IDS } from "./fonts";
 import { creatorMotionSchema, parseCreatorMotion } from "./motion";
+import { characterRotationSchema, parseCharacterRotation } from "./rotation";
 import {
   THEME_REGISTRY,
   isCreatorTheme,
@@ -53,6 +54,12 @@ export const creatorCustomizationSchema = z.strictObject({
    * `overlays.motionEffects` (independent of advancedCustomization).
    */
   motion: creatorMotionSchema.optional(),
+  /**
+   * Character rotation & latest-match priority (Phase 5.2, rotation.ts). Optional: absent =
+   * no rotation. Gated by `overlays.characterRotation` (independent of motion and
+   * advancedCustomization).
+   */
+  characterRotation: characterRotationSchema.optional(),
 });
 
 export type CreatorCustomization = z.infer<typeof creatorCustomizationSchema>;
@@ -70,21 +77,34 @@ export function parseCreatorCustomization(raw: unknown): CreatorCustomization | 
   if (raw === null || typeof raw !== "object") return undefined;
   const obj = raw as Record<string, unknown>;
   const show = obj.show !== null && typeof obj.show === "object" ? (obj.show as object) : {};
-  // Motion is parsed on its own: an unusable motion block is dropped, never the customization.
+  // Motion and rotation are parsed on their own: an unusable optional block is dropped (motion)
+  // or defaulted field by field (rotation), never the whole customization.
   const motion = parseCreatorMotion(obj.motion);
+  const characterRotation = parseCharacterRotation(obj.characterRotation);
   const parsed = creatorCustomizationSchema.safeParse({
     ...DEFAULT_CREATOR_CUSTOMIZATION,
     ...obj,
     show: { ...DEFAULT_CREATOR_CUSTOMIZATION.show, ...show },
     motion: undefined,
+    characterRotation: undefined,
   });
   if (!parsed.success) return undefined;
-  return motion === undefined ? parsed.data : { ...parsed.data, motion };
+  const out: CreatorCustomization = { ...parsed.data };
+  delete out.motion;
+  delete out.characterRotation;
+  if (motion !== undefined) out.motion = motion;
+  if (characterRotation !== undefined) out.characterRotation = characterRotation;
+  return out;
 }
 
 /** The Creator entitlements overlays need. */
 export interface OverlayCustomizationEntitlement {
-  overlays: { advancedCustomization: boolean; premiumThemes: boolean; motionEffects: boolean };
+  overlays: {
+    advancedCustomization: boolean;
+    premiumThemes: boolean;
+    motionEffects: boolean;
+    characterRotation: boolean;
+  };
 }
 
 /** Fields of the overlay config this module reads (structural: avoids a cycle with config.ts). */
@@ -107,8 +127,8 @@ export function getEffectiveOverlayConfig<C extends CreatorAwareConfig>(
   stored: C,
   entitlements: OverlayCustomizationEntitlement,
 ): C {
-  const { advancedCustomization, premiumThemes, motionEffects } = entitlements.overlays;
-  const creator = effectiveCreator(stored.creator, advancedCustomization, motionEffects);
+  const { premiumThemes } = entitlements.overlays;
+  const creator = effectiveCreator(stored.creator, entitlements);
   const premium = isCreatorTheme(stored.theme);
   const fallback = premium && !premiumThemes;
   const preset =
@@ -126,25 +146,40 @@ export function getEffectiveOverlayConfig<C extends CreatorAwareConfig>(
   return effective;
 }
 
+/** Optional Creator blocks, each behind its own entitlement (independent of the others). */
+const GATED_BLOCKS = [
+  { key: "motion", entitlement: "motionEffects" },
+  { key: "characterRotation", entitlement: "characterRotation" },
+] as const;
+
 /**
  * The Creator block a renderer may use. Customization needs advancedCustomization; motion needs
- * motionEffects (independent). Without customization, motion rides on neutral defaults, which
- * render exactly like no customization. Same object back when nothing is dropped.
+ * motionEffects; rotation needs characterRotation (all independent). Without customization, a
+ * kept block rides on neutral defaults, which render exactly like no customization. Same object
+ * back when nothing is dropped.
  */
 function effectiveCreator(
   stored: CreatorCustomization | undefined,
-  advancedCustomization: boolean,
-  motionEffects: boolean,
+  entitlements: OverlayCustomizationEntitlement,
 ): CreatorCustomization | undefined {
   if (stored === undefined) return undefined;
-  const keepMotion = motionEffects && stored.motion !== undefined;
-  if (advancedCustomization) {
-    if (keepMotion || stored.motion === undefined) return stored;
-    const withoutMotion = { ...stored };
-    delete withoutMotion.motion;
-    return withoutMotion;
+  const ent = entitlements.overlays;
+  const dropped = GATED_BLOCKS.filter((b) => stored[b.key] !== undefined && !ent[b.entitlement]);
+  if (ent.advancedCustomization && dropped.length === 0) return stored;
+  const base: CreatorCustomization = ent.advancedCustomization
+    ? { ...stored }
+    : { ...DEFAULT_CREATOR_CUSTOMIZATION };
+  delete base.motion;
+  delete base.characterRotation;
+  let kept = false;
+  for (const b of GATED_BLOCKS) {
+    if (stored[b.key] !== undefined && ent[b.entitlement]) {
+      kept = true;
+      if (b.key === "motion") base.motion = stored.motion;
+      else base.characterRotation = stored.characterRotation;
+    }
   }
-  return keepMotion ? { ...DEFAULT_CREATOR_CUSTOMIZATION, motion: stored.motion } : undefined;
+  return ent.advancedCustomization || kept ? base : undefined;
 }
 
 /**
@@ -162,18 +197,22 @@ export function mergeOverlayConfigForSave<C extends CreatorAwareConfig>(
   incoming: C,
   entitlements: OverlayCustomizationEntitlement,
 ): C {
-  const { advancedCustomization, premiumThemes, motionEffects } = entitlements.overlays;
-  // Customization and motion are merged independently: each comes from the request only when
-  // the owner holds its entitlement, otherwise the stored value is kept untouched.
+  const { advancedCustomization, premiumThemes, motionEffects, characterRotation } =
+    entitlements.overlays;
+  // Customization, motion and rotation are merged independently: each comes from the request
+  // only when the owner holds its entitlement, otherwise the stored value is kept untouched.
   const base = advancedCustomization ? incoming.creator : stored.creator;
   const motion = motionEffects ? incoming.creator?.motion : stored.creator?.motion;
+  const rotation = characterRotation
+    ? incoming.creator?.characterRotation
+    : stored.creator?.characterRotation;
   let creator: CreatorCustomization | undefined;
-  if (base !== undefined) {
-    creator = { ...base };
+  if (base !== undefined || motion !== undefined || rotation !== undefined) {
+    creator = { ...(base ?? DEFAULT_CREATOR_CUSTOMIZATION) };
     delete creator.motion;
+    delete creator.characterRotation;
     if (motion !== undefined) creator.motion = motion;
-  } else if (motion !== undefined) {
-    creator = { ...DEFAULT_CREATOR_CUSTOMIZATION, motion };
+    if (rotation !== undefined) creator.characterRotation = rotation;
   }
   const variants = premiumThemes ? (incoming.variants ?? stored.variants) : stored.variants;
   let theme = incoming.theme;

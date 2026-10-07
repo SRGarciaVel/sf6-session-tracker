@@ -9,6 +9,7 @@ import {
 } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION } from "@/domain/overlay/creator";
 import { DEFAULT_CREATOR_MOTION } from "@/domain/overlay/motion";
+import { DEFAULT_CHARACTER_ROTATION } from "@/domain/overlay/rotation";
 import { sampleLiveState } from "@/domain/overlay/state";
 import { OVERLAY_THEMES } from "@/domain/overlay/config";
 import en from "@/i18n/messages/en.json";
@@ -54,12 +55,14 @@ const FREE = {
   premiumThemes: false,
   creatorPresets: false,
   motionEffects: false,
+  characterRotation: false,
 };
 const CREATOR = {
   advancedCustomization: true,
   premiumThemes: true,
   creatorPresets: true,
   motionEffects: true,
+  characterRotation: true,
 };
 
 describe("ThemePicker", () => {
@@ -131,6 +134,7 @@ describe("CreatorPanel", () => {
     overlayId: "00000000-0000-4000-8000-0000000000aa",
     dirty: false,
     onPresetApplied: () => {},
+    rotationCharacters: { names: ["Ryu", "Chun-Li", "Jamie"], sample: true },
   };
   it("Free with stored Creator data: ONE notice with both saved messages; controls disabled", () => {
     const config: OverlayConfig = {
@@ -146,6 +150,7 @@ describe("CreatorPanel", () => {
         advancedCustomization={false}
         creatorPresets={false}
         motionEffects={false}
+        characterRotation={false}
       />,
     );
     expect(html.match(/data-testid="creator-notice"/g)?.length).toBe(1);
@@ -175,6 +180,7 @@ describe("CreatorPanel", () => {
         advancedCustomization={false}
         creatorPresets={false}
         motionEffects={false}
+        characterRotation={false}
       />,
     );
     expect(html.match(/data-testid="creator-notice"/g)?.length).toBe(1);
@@ -197,6 +203,7 @@ describe("CreatorPanel", () => {
           advancedCustomization
           creatorPresets
           motionEffects
+          characterRotation
         />,
       );
     const minimal = render("minimal");
@@ -218,6 +225,7 @@ describe("CreatorPanel", () => {
         advancedCustomization
         creatorPresets
         motionEffects
+        characterRotation
       />,
     );
     expect(html).not.toContain("creator-notice");
@@ -315,5 +323,142 @@ describe("OverlayBuilder", () => {
     // Live data with games ⇒ sample mode off ⇒ no sample-character picker (it lives with sample data).
     expect(html).not.toContain('data-testid="sample-character"');
     expect(Object.keys(DEFAULT_OVERLAY_CONFIG)).not.toContain("sampleCharacter");
+  });
+});
+
+describe("Phase 5.2: character rotation (builder)", () => {
+  const base = {
+    update: () => {},
+    overlayId: "00000000-0000-4000-8000-0000000000aa",
+    dirty: false,
+    onPresetApplied: () => {},
+    presets: [],
+    rotationCharacters: { names: ["Ryu", "Chun-Li", "Jamie"], sample: true },
+  };
+  const withRotation = (over: Partial<typeof DEFAULT_CHARACTER_ROTATION> = {}): OverlayConfig => ({
+    ...DEFAULT_OVERLAY_CONFIG,
+    creator: {
+      ...DEFAULT_CREATOR_CUSTOMIZATION,
+      characterRotation: { ...DEFAULT_CHARACTER_ROTATION, enabled: true, ...over },
+    },
+  });
+  const panel = (config: OverlayConfig, entitled: boolean) =>
+    wrap(
+      "es",
+      <CreatorPanel
+        {...base}
+        config={config}
+        advancedCustomization={entitled}
+        creatorPresets={entitled}
+        motionEffects={entitled}
+        characterRotation={entitled}
+      />,
+    );
+  const group = (html: string) =>
+    html.slice(html.indexOf('data-testid="creator-rotation"'), html.lastIndexOf("</fieldset>"));
+
+  it("64/66. Creator tab shows the rotation group, enabled for Creator", () => {
+    const html = panel(DEFAULT_OVERLAY_CONFIG, true);
+    expect(html).toContain("Rotación de personajes");
+    expect(html).toContain("Rotación automática");
+    expect(html).not.toMatch(/<fieldset[^>]*disabled=""[^>]*data-testid="creator-rotation"/);
+    expect(html).not.toContain("Creator Beta requerido");
+  });
+
+  it("65. Free: group disabled with the requirement; stored rotation covered by the ONE notice", () => {
+    const html = panel(withRotation(), false);
+    expect(html).toMatch(/<fieldset[^>]*disabled=""[^>]*data-testid="creator-rotation"/);
+    expect(html).toContain("Creator Beta requerido.");
+    expect(html.match(/data-testid="creator-notice"/g)?.length).toBe(1);
+    expect(html).toContain(es.Builder.creator.savedButInactive);
+  });
+
+  it("68. off: progressive disclosure — only the switch", () => {
+    const html = group(panel(DEFAULT_OVERLAY_CONFIG, true));
+    expect(html).not.toContain('data-testid="rotation-interval"');
+    expect(html).not.toContain('data-testid="rotation-order"');
+    expect(html).not.toContain('data-testid="rotation-priority"');
+  });
+
+  it("67. on: interval, transition, order, priority and included characters (no Cammy)", () => {
+    const html = group(panel(withRotation(), true));
+    const interval =
+      html.match(/<select[^>]*data-testid="rotation-interval"[\s\S]*?<\/select>/)?.[0] ?? "";
+    expect(interval.match(/<option/g)?.length).toBe(5);
+    expect(interval).toContain('value="10" selected=""');
+    expect(html).toContain("Fundido");
+    expect(html).toContain("Deslizamiento");
+    expect(html).toContain("Instantánea");
+    const order =
+      html.match(/<select[^>]*data-testid="rotation-order"[\s\S]*?<\/select>/)?.[0] ?? "";
+    expect(order).toContain("Más recientes primero");
+    expect(order).toContain("Más jugados primero");
+    expect(order).toContain("Alfabético");
+    const priority = html.match(/<select[^>]*data-testid="rotation-priority"[^>]*>/)?.[0] ?? "";
+    expect(priority).not.toContain(`disabled=""`);
+    expect(html).toContain("Priorizar personaje de la última partida");
+    expect(html).toContain("Ryu · Chun-Li · Jamie (datos de ejemplo)");
+    expect(html).not.toContain("Cammy");
+  });
+
+  it("priority off ⇒ its duration is disabled with an explanation", () => {
+    const html = group(panel(withRotation({ prioritizeLatestMatch: false }), true));
+    expect(html).toMatch(/<select[^>]*disabled=""[^>]*data-testid="rotation-priority"/);
+    expect(html).toContain(es.Builder.rotation.priorityOffHint);
+  });
+
+  it("pinned character + rotation: the precedence is explained (both places)", () => {
+    const pinned = { ...withRotation(), ratingCharacterKey: "jamie" };
+    expect(group(panel(pinned, true))).toContain(es.Builder.rotation.pinnedNote);
+    expect(group(panel(withRotation(), true))).not.toContain("rotation-pinned-note");
+  });
+
+  it("no eligible characters ⇒ explicit empty state", () => {
+    const html = wrap(
+      "en",
+      <CreatorPanel
+        {...base}
+        rotationCharacters={{ names: [], sample: false }}
+        config={withRotation()}
+        advancedCustomization
+        creatorPresets
+        motionEffects
+        characterRotation
+      />,
+    );
+    expect(html).toContain(en.Builder.rotation.noCharacters);
+  });
+
+  it("74. the preview offers “Probar rotación” to Creator only; Content explains the override", () => {
+    const builder = (access: typeof FREE, config: OverlayConfig) =>
+      wrap(
+        "es",
+        <OverlayBuilder
+          overlayId="00000000-0000-4000-8000-0000000000aa"
+          initialName="Overlay"
+          initialConfig={config}
+          url="https://sst.example/overlay/tok"
+          access={access}
+          presets={[]}
+        />,
+      );
+    const creator = builder(CREATOR, withRotation());
+    expect(creator).toContain('data-testid="rotation-test"');
+    expect(creator).toContain("Probar rotación");
+    expect(creator).toContain('data-testid="rotation-overrides-hint"');
+    const free = builder(FREE, withRotation());
+    expect(free).not.toContain('data-testid="rotation-test"');
+    // Free: effective config has no rotation ⇒ no override hint, overlay renders normally.
+    expect(free).not.toContain('data-testid="rotation-overrides-hint"');
+    expect(free).not.toContain("ov-rot-stage");
+  });
+
+  it("75–76. the preview has no server, DB or SSE path (source check)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    for (const f of ["./PreviewPane.tsx", "./rotation-preview.ts"]) {
+      const src = readFileSync(fileURLToPath(new URL(f, import.meta.url)), "utf8");
+      expect(src).not.toMatch(/actions|fetch\(|EventSource|@\/server\//);
+    }
   });
 });

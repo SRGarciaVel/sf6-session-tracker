@@ -776,7 +776,50 @@
       }
     },
     "ratingCharacterHintScoped": "Este personaje decide el rating, el rango y las estadísticas del overlay. Si no tiene partidas en la sesión, se muestran a cero.",
-    "sampleCharacter": "Personaje de ejemplo"
+    "sampleCharacter": "Personaje de ejemplo",
+    "rotation": {
+      "title": "Rotación de personajes",
+      "enabled": "Rotación automática",
+      "requiresCreator": "Creator Beta requerido.",
+      "summary": "Muestra por turnos los personajes jugados en la sesión, cada uno con su rating y rango (y sus estadísticas si «Estadísticas mostradas» es «Personaje mostrado»).",
+      "interval": "Intervalo entre personajes",
+      "seconds": "{n} segundos",
+      "transition": "Transición",
+      "transitions": {
+        "fade": "Fundido",
+        "slide": "Deslizamiento",
+        "instant": "Instantánea"
+      },
+      "order": "Orden de rotación",
+      "orders": {
+        "recent": "Más recientes primero",
+        "mostPlayed": "Más jugados primero",
+        "alphabetical": "Alfabético"
+      },
+      "prioritize": "Priorizar personaje de la última partida",
+      "priorityDuration": "Tiempo de prioridad",
+      "priorityHint": "Tras una partida nueva se muestra su personaje durante este tiempo; después se reanuda la rotación.",
+      "priorityOffHint": "Las partidas nuevas actualizan las cifras sin interrumpir la rotación.",
+      "included": "Personajes incluidos",
+      "sample": "datos de ejemplo",
+      "noCharacters": "Sin personajes disponibles: la rotación empieza cuando juegues partidas en la sesión.",
+      "pinnedNote": "Durante la rotación se muestran los personajes de la sesión. Al desactivarla se recupera el personaje fijado.",
+      "overridesCharacter": "La rotación de personajes (Creator) está activa: sustituye temporalmente esta elección en el overlay.",
+      "resume": "Reanudar"
+    },
+    "rotationTest": {
+      "start": "Probar rotación",
+      "stop": "Salir de la prueba",
+      "intro": "Prueba la rotación con datos de ejemplo (Chun-Li, Jamie, Ryu). No guarda nada.",
+      "active": "Probando la rotación con datos de ejemplo.",
+      "hint": "Cambia cada {interval} s. Una partida simulada prioriza su personaje {priority} s y después se reanuda la rotación.",
+      "character": "Personaje",
+      "simulate": "Simular partida",
+      "done": {
+        "win": "Simulación: victoria con {character}.",
+        "loss": "Simulación: derrota con {character}."
+      }
+    }
   },
   "NotFound": {
     "title": "Página no encontrada",

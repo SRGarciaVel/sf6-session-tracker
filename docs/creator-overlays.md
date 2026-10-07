@@ -161,14 +161,14 @@ no durations, CSS or free-form values.
 **When it plays.** `detectOverlayChange(prev, next)` compares data only: session id, displayed
 character, games, wins, losses, rating, rank and streak.
 
-| Case                                                                                                    | Event                                                                                                                                        |
-| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| First render, identical data (any re-render, resize, fit-to-box pass, locale)                           | none                                                                                                                                         |
-| Theme, colour, font, canvas or other config edits                                                       | none                                                                                                                                         |
-| New session, different displayed character, fewer games                                                 | none: shown, nothing plays                                                                                                                   |
-| Games grew                                                                                              | a **match** event: win if wins grew, loss if losses grew, else draw                                                                          |
-| Rating/rank changed without a new match                                                                 | an update without result emphasis                                                                                                            |
-| Stale snapshot (same session and displayed character, fewer games), or the current data again after one | none: the baseline is kept (never replaced by an older snapshot), so an already processed match never replays and a running effect isn't cut |
+| Case                                                                                                                                            | Event                                                                                                                                        |
+| ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| First render, identical data (any re-render, resize, fit-to-box pass, locale)                                                                   | none                                                                                                                                         |
+| Theme, colour, font, canvas or other config edits                                                                                               | none                                                                                                                                         |
+| New session, different displayed character, fewer games                                                                                         | none: shown, nothing plays                                                                                                                   |
+| Games grew                                                                                                                                      | a **match** event: win if wins grew, loss if losses grew, else draw                                                                          |
+| Rating/rank changed without a new match                                                                                                         | an update without result emphasis                                                                                                            |
+| Stale snapshot (same session, scope and mode — and, in fixed mode, displayed character — with fewer games), or the current data again after one | none: the baseline is kept (never replaced by an older snapshot), so an already processed match never replays and a running effect isn't cut |
 
 Results come only from counters the backend already sends; nothing is inferred from colour or
 MR alone. Events are derived during render (no effect loop), cleared after the effect by one
@@ -222,6 +222,189 @@ update overlay set config = config #- '{creator,motion}' where config->'creator'
 **Measured:** 60 consecutive simulated updates in one preview kept the DOM at 755 → 755 nodes and
 the heap at 7.7 → 8.0 MB, with no leftover `data-update` or sweep element. Builder previews at
 600×120, 800×180 and 900×240 showed no clipping.
+
+## Character rotation & latest-match priority (Phase 5.2; `overlays.characterRotation`)
+
+Rotation shows the characters played in the current session **one after another**, and can
+briefly prioritize the character of a match that just finished. It is a new, independent
+entitlement (`overlays.characterRotation`: Free `false`, Creator Beta `true`). It doesn't reuse
+`motionEffects`: an owner could have rotation without Creator motion, and the reverse.
+
+**Presentation state only.** Rotation decides which character the overlay **represents** for a
+while. It never changes wins, losses, streaks, ratings, matches, sessions, history, the
+authoritative active character or the stored `ratingCharacterKey`. Nothing about it is persisted
+(no index, no timer state), and there are no server timers, cron jobs or worker changes. Every
+Browser Source runs its own local timer, and copies don't need to agree to the millisecond.
+
+**Schema:** `config.creator.characterRotation`, optional and strict
+(`domain/overlay/rotation.ts`), stored inside the Creator block like `motion`.
+
+| Key                     | Values                             | Default |
+| ----------------------- | ---------------------------------- | ------- |
+| `enabled`               | boolean                            | false   |
+| `intervalSeconds`       | 5 · 10 · 15 · 20 · 30              | 10      |
+| `transition`            | fade · slide · instant             | fade    |
+| `prioritizeLatestMatch` | boolean                            | true    |
+| `prioritySeconds`       | 10 · 15 · 20 · 30 · 60             | 20      |
+| `order`                 | recent · mostPlayed · alphabetical | recent  |
+
+- **Writes** reject anything else: the literal sets, booleans and the strict object accept no
+  extra keys, CSS or free-form strings.
+- **Reads** of old or partially corrupt JSON fall back **field by field** to these defaults.
+- Turning rotation off keeps the other preferences (`enabled: false`).
+
+**Eligible characters.** Only characters actually played in the session (`games > 0`) rotate. The
+rest of the CFN roster and characters known only from a rating baseline never do. Rotation runs
+only for an **active** session; ended sessions and "no session" keep today's behaviour (the final
+summary or the fallback).
+
+| Eligible | Behaviour                                                                         |
+| -------- | --------------------------------------------------------------------------------- |
+| 0        | the normal overlay; no timer                                                      |
+| 1        | that character, no transition and no periodic work (no timer at all)              |
+| ≥ 2      | cycle: each character stays for `intervalSeconds`, then the next, wrapping around |
+
+**Order** (all total, so every viewer computes the same order):
+
+- **recent:** latest counted match first. This is `lastPlayedAt`, the engine's time of that
+  character's latest match (not a rating snapshot, not roster position). Ties go by key.
+- **mostPlayed:** most games first. Ties go to the most recent, then the key.
+- **alphabetical:** displayed name (fixed `en` collation). Ties go by key.
+
+**Latest-match priority.** A new match is detected **only** from authoritative data:
+
+- the same, non-null `sessionId`;
+- `totalGames` grew;
+- the character of the latest counted match (`activeCharacterKey`) is eligible.
+
+None of these is a match: the first render, a new session, repeated snapshots, SSE reconnects,
+config or theme edits, a profile or rating refresh, or `activeCharacterKey` changing alone. With
+`prioritizeLatestMatch` on, a new match:
+
+1. shows that character immediately;
+2. pauses the cycle for `prioritySeconds`;
+3. then **resumes with the character that follows it** in the current order. Example: with
+   Chun-Li → Jamie → Ryu → A.K.I., Jamie is prioritized, then Ryu → A.K.I. → Chun-Li → …
+
+Another match with the same character restarts the period (no transition). A match with a
+different character replaces the priority at once; nothing is queued. With priority off, matches
+update the numbers without interrupting the cycle.
+
+**Detection limits.** The live state carries totals and the latest match's character, not a
+per-match list.
+
+- Several matches in one snapshot, or a late older match, produce **one** signal for the
+  character of the latest counted match. The character of each intermediate match is never
+  invented.
+- A late match that is older than the current latest match therefore prioritizes the latest
+  match's character, not the late one's.
+- **Stale snapshots.** The OBS client (`LiveOverlay`) already drops snapshots with an older
+  `generatedAt`. The dashboard client also accepts an older snapshot when only
+  `overlayConnections` changed, so the controller doesn't rely on that filter:
+  - the match baseline is **monotonic within a session**: it keeps the highest `totalGames`
+    seen;
+  - a snapshot with fewer games is ignored entirely. It can't lower the baseline, cancel a
+    priority or replace the visible character with its possibly outdated roster;
+  - the current snapshot arriving again after a stale one is therefore **not** a new match;
+  - the baseline resets only when `sessionId` changes.
+- **Trade-off:** a genuine decrease in games within the same session (not something ingestion
+  produces) would need to grow past the previous maximum before priority fires again.
+
+**Roster changes.**
+
+- A character played for the first time joins the order without resetting what is visible.
+- A visible or prioritized character that stops being eligible is replaced by the first one in
+  the order.
+- A new `sessionId` restarts the cycle, clears any priority and is a baseline, never a match.
+
+**Pinned character (`ratingCharacterKey`).** With rotation off it applies as always. With rotation
+on, the rotated character replaces it **for rendering only**. Nothing is written, so turning
+rotation off (or the entitlement ending) brings the pinned character back immediately. The
+builder explains this in both places.
+
+**Statistics coherence.** OverlayView derives one presentation config whose `ratingCharacterKey` is
+the rotated character. That single config feeds `resolveOverlayStats` and `ratingParts`, so the
+name, rating, rank, delta, emblem and (in character scope) W/L, win rate, streaks and recent form
+always belong to the **same** character in all six themes. No theme has rotation code.
+
+| `statsScope` | While rotating                                                                         |
+| ------------ | -------------------------------------------------------------------------------------- |
+| session      | character, rating and rank change; W/L stay global (e.g. 14-14 for everyone)           |
+| character    | everything follows the shown character (Chun-Li 2-1, Jamie 3-5, Ryu 9-8 in the sample) |
+
+**Creator Motion.** Match detection is separated from character selection with a summary
+`mode` (`motion.ts`):
+
+- **fixed** (no rotation): the 5.0/5.1 rules are unchanged.
+- **rotation:** the summary counters are the global session counters, so they never depend on
+  which character is on screen. Then:
+  - A character change **without** new games is a rotation step: no result, rank or match effect,
+    only the rotation transition.
+  - A change **with** new games is the priority switch caused by a real match: its result plays,
+    with win/loss coming from the global counters. Rating and rank flags stay off, because two
+    different characters' values are never compared.
+  - A match of the visible character plays exactly as before.
+- Switching rotation on or off is a config edit: nothing plays.
+- **Stale snapshots in rotation mode:** the motion baseline (`isStaleSummary`) ignores the
+  displayed character. Rotation counters are global, so a stale snapshot is recognized even when
+  another character has rotated in meanwhile. The current data arriving again never replays the
+  match. In fixed mode a different displayed character is still a new baseline.
+
+**Transitions** (`overlay.css`, OBS/CEF-safe):
+
+- **Structure:** with rotation on, the theme sits in a static `.ov-rot-stage` and a
+  `.ov-rot-frame`. The frame is re-keyed per character, so the one-shot animation runs on the new
+  content and no old DOM stays. There's no permanent duplicate DOM.
+- **Animations:**
+  - fade: an opacity fade-in, 320 ms;
+  - slide: opacity plus `translateX(-0.75em → 0)`, 380 ms, entering from the left;
+  - instant: no animation.
+
+  Only `opacity` and `transform` change, with no loops, rAF, canvas or WebGL.
+
+- **Fit-to-box** still measures the theme panel itself, so the fit is identical to an overlay
+  without rotation and never measures the animated element.
+- **Accessibility:** the overlay root has no live region, so transitions are never announced.
+- **Animations off / reduced motion:** rotation keeps working, with instant changes. The CSS is
+  also disabled under `prefers-reduced-motion: reduce`. Creator Motion isn't required for
+  rotation.
+
+**Controller** (`components/overlay/rotation.tsx`, `useCharacterRotation`):
+
+- It runs the pure state machine (`syncRotation`, `advanceRotation`, `rotationDelayMs`).
+- It reconciles each snapshot during render. Repeated snapshots return the same state, so
+  nothing restarts.
+- It keeps **at most one** `setTimeout`, keyed on the state's epoch and the delay. The timer is
+  replaced when the visible character or the priority changes, and cleared on unmount, when
+  rotation turns off, or with fewer than two eligible characters.
+
+**Stored vs effective.** This is the same pipeline as motion.
+
+- Without `characterRotation`, `getEffectiveOverlayConfig` drops the block, so OBS, `/state` and
+  SSE never rotate for a non-entitled owner, whatever the stored JSON says.
+- The save merge keeps the stored block for non-entitled saves. A crafted Free request can't add,
+  change or remove it.
+- **Lifecycle:** expiry or revocation stops rotation on the next payload with nothing deleted;
+  renewal restores it exactly. This is integration-tested against Postgres.
+- **Presets** carry rotation inside the Creator block (a Creator presentation option, like
+  motion). `statsScope` stays out of presets (Phase 5.1 decision). Applying a preset goes through
+  the same entitled save rules.
+
+**Rollback.** Older code parses `creator` strictly, so an unknown `characterRotation` key drops the
+whole stored Creator block **on read**. Strip it first if rolling back:
+
+```sql
+update overlay set config = config #- '{creator,characterRotation}'
+  where config->'creator' ? 'characterRotation';
+```
+
+**Measured** (production build, Chromium, Playwright clock):
+
+- 90 steps (76 transitions and 15 simulated matches, with motion on): JS event listeners 489 →
+  489, overlay DOM 44 → 44 nodes, one `.ov-rot-frame` and no leftover sweep.
+- Heap 6.05 → 7.01 MB after forced GC, flattening.
+- 15/15 matches got priority and a motion event.
+- No pending timer beyond the rotation timer (plus at most one motion clear).
 
 ## Stored vs effective config
 

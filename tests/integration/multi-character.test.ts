@@ -295,4 +295,51 @@ describe.skipIf(!TEST_DB)("per-character ratings (integration)", () => {
     // The global numbers in the payload are unchanged (projection is presentation only).
     expect(payload?.live.session).toMatchObject({ wins: 3, losses: 1 });
   });
+
+  it("Phase 5.2: rotation inputs from real ingestion — eligible characters, order, priority signal", async () => {
+    const { rotationOrder, initRotation, syncRotation } = await import("@/domain/overlay/rotation");
+    const inputOf = (x: Awaited<ReturnType<typeof live>>) => ({
+      sessionId: x.sessionId,
+      totalGames: x.totalGames,
+      activeCharacterKey: x.activeCharacterKey,
+      order: rotationOrder(x.characters, "recent"),
+      prioritizeLatestMatch: true,
+    });
+    await startSession(db, provider, await player());
+    await mock.simulateMatch(cfn, { result: "win" }); // A.K.I.
+    await mock.setCharacter(cfn, "kimberly");
+    await mock.simulateMatch(cfn, { result: "loss" }); // Kimberly
+    await mock.simulateMatch(cfn, { result: "loss" }); // Kimberly
+    await poll();
+
+    const first = await live();
+    // Only characters played in the session rotate (Cammy is roster-only), latest first.
+    expect(rotationOrder(first.characters, "recent")).toEqual(["kimberly", "aki"]);
+    expect(rotationOrder(first.characters, "mostPlayed")).toEqual(["kimberly", "aki"]);
+    expect(first.characters.find((c) => c.characterKey === "cammy")?.lastPlayedAt).toBeNull();
+    let state = initRotation(inputOf(first));
+    expect(state.visible).toBe("kimberly");
+    // Re-polling (no new match) is not a new match.
+    await poll();
+    expect(syncRotation(state, inputOf(await live()))).toBe(state);
+
+    await mock.setCharacter(cfn, "aki");
+    await mock.simulateMatch(cfn, { result: "win" }); // A.K.I.
+    await poll();
+    const after = await live();
+    state = syncRotation(state, inputOf(after));
+    expect(state).toMatchObject({ visible: "aki", priority: "aki" });
+    expect(rotationOrder(after.characters, "recent")).toEqual(["aki", "kimberly"]);
+    // Global stats stay global; A.K.I.'s own stats are its own (rotation changes neither).
+    expect(after).toMatchObject({ wins: 2, losses: 2, totalGames: 4 });
+    expect(char(after, "aki")).toMatchObject({ wins: 2, losses: 0, games: 2, currentWinStreak: 2 });
+
+    // The public payload carries everything rotation needs (no new endpoint or SSE field).
+    const [overlay] = await listOverlays(db, playerId);
+    if (!overlay) throw new Error("no overlay");
+    const payload = (await loadOverlayPayload(overlay.publicToken))?.payload;
+    expect(
+      payload?.live.session.characters.find((c) => c.characterKey === "aki")?.lastPlayedAt,
+    ).toEqual(expect.any(String));
+  });
 });
