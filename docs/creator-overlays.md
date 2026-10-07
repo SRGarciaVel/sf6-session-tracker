@@ -138,6 +138,90 @@ The LoL/TFT overlays, LoL rank cards and the SF6 rank-pyramid images shared for 
   pixel-snapped borders made Prestige ping-pong and crash; a regression check covers 140×32 to
   1920×1080 for all six themes.
 
+## Creator motion & broadcast effects (Phase 5.0; `overlays.motionEffects`)
+
+Motion makes the overlay react **once** to a meaningful data change, as broadcast polish rather
+than effects spam. It's a new, independent entitlement (`overlays.motionEffects`: Free `false`,
+Creator Beta `true`), not reused from `advancedCustomization`.
+
+**Free keeps every animation it had.** Numbers still tick and glow on change under the Free
+"Animate changes" switch. Creator motion is purely additive.
+
+**Schema:** `config.creator.motion`, optional and strict (`domain/overlay/motion.ts`). There are
+no durations, CSS or free-form values.
+
+| Key              | Values                     | Default | Effect                                                                                                                               |
+| ---------------- | -------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `updateStyle`    | snappy · smooth · impact   | snappy  | pace and easing of the number tick and every one-shot effect (260 / 520 / 620 ms)                                                    |
+| `intensity`      | subtle · normal · strong   | normal  | magnitude only: lift, scale (≤ 1.12), glow, sweep opacity                                                                            |
+| `resultEmphasis` | boolean                    | true    | after a completed match the MR/LP delta lifts and glows once in the win/loss colour (the value, sign and arrow stay the information) |
+| `accentMotion`   | static · pulse · sweep     | pulse   | pulse = the theme's accent element brightens once; sweep = one band crosses the panel                                                |
+| `rankMotion`     | none · subtle · emphasized | subtle  | the SST rank emblem scales and glows once when rating/rank changed (themes with an emblem: Rank Card, Prestige)                      |
+
+**When it plays.** `detectOverlayChange(prev, next)` compares data only: session id, displayed
+character, games, wins, losses, rating, rank and streak.
+
+| Case                                                                          | Event                                                               |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| First render, identical data (any re-render, resize, fit-to-box pass, locale) | none                                                                |
+| Theme, colour, font, canvas or other config edits                             | none                                                                |
+| New session, different displayed character, fewer games                       | none: shown, nothing plays                                          |
+| Games grew                                                                    | a **match** event: win if wins grew, loss if losses grew, else draw |
+| Rating/rank changed without a new match                                       | an update without result emphasis                                   |
+
+Results come only from counters the backend already sends; nothing is inferred from colour or
+MR alone. Events are derived during render (no effect loop), cleared after the effect by one
+timer, and identified by a stable data key, so the same data never plays twice. SSE is unchanged
+because consecutive states are enough.
+
+**Per theme** (shared CSS rules, different targets):
+
+| Theme       | Behaviour                                                                   |
+| ----------- | --------------------------------------------------------------------------- |
+| Minimal     | number ticks + accent bar pulse                                             |
+| Competitive | HUD snap + tag pulse / panel sweep                                          |
+| Street      | slash pulse, badge emphasis                                                 |
+| Rank Card   | emblem reaction + rating emphasis + band pulse                              |
+| Broadcast   | title-tab pulse or clean sweep                                              |
+| Prestige    | emblem + top-rule pulse (its optional sheen loop is separate and unchanged) |
+
+**Implementation (OBS-safe).**
+
+- CSS one-shots animate `transform`, `opacity` and `filter` on small inner elements, never the
+  measured fit-to-box root.
+- The sweep is one absolutely positioned `aria-hidden` element per update, re-mounted per event.
+- Persistent elements alternate between two identical keyframe names per update, so a new update
+  restarts them.
+- There are no loops, rAF, canvas or WebGL.
+- Root `data-motion-*` / `data-update` attributes and fixed `--ovm-*` token variables drive
+  everything.
+
+**Reduced motion / animations off.** `motionProfile()` returns nothing, so no attributes and no
+effects render, but data updates immediately. The CSS is additionally wrapped in
+`prefers-reduced-motion: no-preference`.
+
+**Stored vs effective.** This is the same pipeline as everything else.
+
+- Without `motionEffects`, `getEffectiveOverlayConfig` drops `creator.motion` (customization and
+  motion are gated independently).
+- The save merge keeps the stored motion for Free saves (a crafted Free request can't add or
+  change it) and takes it from the request only for entitled owners.
+- Presets carry motion as part of the Creator block. Apply is refused without the entitlement.
+- **Lifecycle:** expiry → OBS shows no motion on the next payload; a Free edit keeps the stored
+  motion; renewal restores it. This is integration-tested against Postgres.
+
+**Rollback.** Older code parses `creator` with a strict schema. An unknown `motion` key makes the
+old parser drop the whole stored Creator block **on read** (no write happens until a save). Map
+it out first if rolling back after users saved motion:
+
+```sql
+update overlay set config = config #- '{creator,motion}' where config->'creator' ? 'motion';
+```
+
+**Measured:** 60 consecutive simulated updates in one preview kept the DOM at 755 → 755 nodes and
+the heap at 7.7 → 8.0 MB, with no leftover `data-update` or sweep element. Builder previews at
+600×120, 800×180 and 900×240 showed no clipping.
+
 ## Stored vs effective config
 
 ```

@@ -28,14 +28,12 @@ const { loadOverlayPayload } = await import("@/server/overlays/public");
 const presets = await import("@/server/overlays/presets");
 const { DEFAULT_THEME_VARIANTS } = await import("@/domain/overlay/variants");
 const { PRESETS_PER_ACCOUNT_MAX } = await import("@/domain/overlay/presets");
+const { DEFAULT_CREATOR_CUSTOMIZATION } = await import("@/domain/overlay/creator");
 
 const DAY = 86_400_000;
 
 describe.skipIf(!TEST_DB)("Creator Overlay Suite (integration)", () => {
   const db = TEST_DB ? getDb() : (null as never);
-  afterAll(async () => {
-    await closeDb();
-  });
 
   async function owner() {
     const userId = randomUUID();
@@ -358,4 +356,95 @@ describe.skipIf(!TEST_DB)("Creator Overlay Suite (integration)", () => {
       await db.select().from(creatorOverlayPreset).where(eq(creatorOverlayPreset.userId, userId)),
     ).toEqual([]);
   });
+});
+
+describe.skipIf(!TEST_DB)("Phase 5.0: Creator motion lifecycle (integration)", () => {
+  const db = TEST_DB ? getDb() : (null as never);
+  const motion = {
+    updateStyle: "impact" as const,
+    intensity: "strong" as const,
+    resultEmphasis: true,
+    accentMotion: "sweep" as const,
+    rankMotion: "emphasized" as const,
+  };
+
+  it("save → expire (no motion in OBS) → Free edit keeps it → renew → restored; presets carry it", async () => {
+    const userId = randomUUID();
+    await db.insert(authUser).values({ id: userId, name: "M", email: `${userId}@test.local` });
+    const mock = new MockSF6DataProvider(db);
+    const cfn = String(8_000_000_000 + Math.floor(Math.random() * 999_999_999));
+    const player = await upsertPlayerForUser(db, userId, await mock.getPlayerProfile(cfn));
+    const [ov] = await listOverlays(db, player.id);
+    if (!ov) throw new Error("no overlay");
+    const [g] = await db
+      .insert(entitlementGrant)
+      .values({
+        userId,
+        plan: "creator_beta",
+        source: "operator",
+        expiresAt: new Date(Date.now() + 90 * 86_400_000),
+      })
+      .returning({ id: entitlementGrant.id });
+    const current = async () => {
+      const v = await getOverlayById(db, ov.id);
+      if (!v) throw new Error("gone");
+      return v;
+    };
+    const save = async (edit: Partial<OverlayConfig>) => {
+      const v = await current();
+      const merged = await prepareOverlayConfigForSave(db, {
+        userId,
+        stored: v.config,
+        incoming: { ...v.config, ...edit },
+      });
+      await updateOverlay(db, v, { config: merged });
+    };
+    const payload = async () => (await loadOverlayPayload((await current()).publicToken))?.payload;
+
+    await save({ creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, motion } });
+    expect((await payload())?.config.creator?.motion).toEqual(motion);
+    const preset = await presets.createPreset(db, {
+      userId,
+      name: "Motion",
+      config: (await current()).config,
+    });
+    if (!preset.ok) throw new Error(preset.error);
+    expect(preset.value.appearance?.creator?.motion).toEqual(motion);
+
+    await db
+      .update(entitlementGrant)
+      .set({ revokedAt: new Date() })
+      .where(eq(entitlementGrant.id, g?.id ?? ""));
+    const free = await payload();
+    expect(free?.config.creator?.motion).toBeUndefined();
+    expect(JSON.stringify(free)).not.toMatch(/motionEffects|impact|creator_beta/);
+
+    await save({ title: "FREE EDIT", creator: undefined });
+    expect((await current()).config.title).toBe("FREE EDIT");
+    expect((await current()).config.creator?.motion).toEqual(motion);
+    // A crafted Free change is ignored.
+    await save({
+      creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, motion: { ...motion, intensity: "subtle" } },
+    });
+    expect((await current()).config.creator?.motion).toEqual(motion);
+    expect(
+      await presets.applyPresetToOverlay(db, {
+        userId,
+        presetId: preset.value.id,
+        overlayId: ov.id,
+      }),
+    ).toEqual({ ok: false, error: "not_entitled" });
+
+    await db.insert(entitlementGrant).values({
+      userId,
+      plan: "creator_beta",
+      source: "operator",
+      expiresAt: new Date(Date.now() + 90 * 86_400_000),
+    });
+    expect((await payload())?.config.creator?.motion).toEqual(motion);
+  });
+});
+
+afterAll(async () => {
+  if (TEST_DB) await closeDb();
 });

@@ -719,7 +719,50 @@
     "openOverlay": "Abrir overlay ↗",
     "obsHint": "En OBS: Fuente de navegador → pega la URL → {width} × {height}.",
     "dangerZone": "Más acciones",
-    "saveNetworkError": "No hay conexión con el servidor."
+    "saveNetworkError": "No hay conexión con el servidor.",
+    "motion": {
+      "title": "Movimiento",
+      "enabled": "Usar movimiento Creator",
+      "updateStyle": "Estilo de actualización",
+      "styles": {
+        "snappy": "Rápido",
+        "smooth": "Suave",
+        "impact": "Impacto"
+      },
+      "intensity": "Intensidad",
+      "intensities": {
+        "subtle": "Sutil",
+        "normal": "Normal",
+        "strong": "Intensa"
+      },
+      "resultEmphasis": "Resaltar el resultado",
+      "accentMotion": "Acento",
+      "accents": {
+        "static": "Estático",
+        "pulse": "Pulso",
+        "sweep": "Barrido"
+      },
+      "rankMotion": "Reacción del rango",
+      "ranks": {
+        "none": "Ninguna",
+        "subtle": "Sutil",
+        "emphasized": "Destacada"
+      },
+      "rankNotInTheme": "Este tema no muestra el emblema de rango.",
+      "hint": "Solo reacciona a partidas y cambios de rating reales, una vez por actualización. Respeta «reducir movimiento» y el interruptor de animaciones."
+    },
+    "simulation": {
+      "label": "Simular una actualización",
+      "win": "Victoria",
+      "loss": "Derrota",
+      "play": "Reproducir actualización",
+      "exit": "Salir de la simulación",
+      "active": "Simulación local: no cambia tu sesión ni tu overlay.",
+      "done": {
+        "win": "Simulación: victoria, 11-5 → 12-5, +96 MR.",
+        "loss": "Simulación: derrota, 11-5 → 11-6, −72 MR."
+      }
+    }
   },
   "NotFound": {
     "title": "Página no encontrada",
