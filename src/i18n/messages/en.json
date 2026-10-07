@@ -574,7 +574,7 @@
       "totalGames": "Total games",
       "recentForm": "Recent form"
     },
-    "ratingCharacter": "Rating shown",
+    "ratingCharacter": "Displayed character",
     "ratingCharacterActive": "Active character (latest Ranked match)",
     "creator": {
       "title": "Advanced customization",
@@ -689,7 +689,7 @@
     "showAll": "Show all",
     "hideAll": "Hide all",
     "titleGroup": "Title",
-    "languageGroup": "Language & character",
+    "languageGroup": "Language",
     "ratingCharacterHint": "Rating and rank always belong to a single character.",
     "typography": "Typography",
     "moreTypography": "Number font and size → Creator",
@@ -762,7 +762,21 @@
         "win": "Simulation: win, 11-5 → 12-5, +96 MR.",
         "loss": "Simulation: loss, 11-5 → 11-6, −72 MR."
       }
-    }
+    },
+    "sessionStatsGroup": "Session statistics",
+    "statsScope": "Statistics shown",
+    "statsScopes": {
+      "session": {
+        "label": "Whole session",
+        "hint": "Shows the wins, losses and streaks of the whole session."
+      },
+      "character": {
+        "label": "Displayed character",
+        "hint": "Shows the stats of the character selected in this overlay: its own wins, losses, streaks and recent results."
+      }
+    },
+    "ratingCharacterHintScoped": "This character sets the overlay's rating, rank and statistics. With no matches in the session, they show as zero.",
+    "sampleCharacter": "Sample character"
   },
   "NotFound": {
     "title": "Page not found",

@@ -500,3 +500,132 @@ describe("restart / new session", () => {
     expect(computeSessionStats(secondMatches)).toMatchObject({ wins: 0, losses: 1 });
   });
 });
+
+describe("Phase 5.1: character-scoped session statistics", () => {
+  const progress = (matches: SessionMatch[], baselines: CharacterBaseline[] = []) =>
+    computeCharacterProgress({ baselines, matches, current: [] });
+
+  it("1. single character: its stats equal the session's", () => {
+    const ms = [match("win", 1), match("loss", 2), match("win", 3)];
+    const [ryu] = progress(ms);
+    const session = computeSessionStats(ms);
+    const statKeys = Object.keys(session) as Array<keyof typeof session>;
+    expect(Object.fromEntries(statKeys.map((k) => [k, ryu?.[k]]))).toEqual(session);
+    expect(ryu?.games).toBe(3);
+  });
+
+  it("2–9, 17–18. several characters: correct global + per-character stats; other characters never break a streak", () => {
+    // Chun-Li W, Chun-Li W, Jamie L, Chun-Li W (the spec example)
+    const ms = [
+      match("win", 1, { char: "chunli" }),
+      match("win", 2, { char: "chunli" }),
+      match("loss", 3, { char: "jamie" }),
+      match("win", 4, { char: "chunli" }),
+    ];
+    const global = computeSessionStats(ms);
+    expect([global.wins, global.losses, global.currentWinStreak, global.bestWinStreak]).toEqual([
+      3, 1, 1, 2,
+    ]);
+    const list = progress(ms);
+    const chun = byKey(list, "chunli");
+    const jamie = byKey(list, "jamie");
+    expect(chun).toMatchObject({
+      wins: 3,
+      losses: 0,
+      games: 3,
+      winRate: 100,
+      currentWinStreak: 3,
+      bestWinStreak: 3,
+      currentLossStreak: 0,
+    });
+    expect(chun.recentResults).toEqual(["win", "win", "win"]);
+    expect(jamie).toMatchObject({
+      wins: 0,
+      losses: 1,
+      games: 1,
+      winRate: 0,
+      currentWinStreak: 0,
+      currentLossStreak: 1,
+    });
+    expect(jamie.recentResults).toEqual(["loss"]);
+    // 17. global = sum of played characters
+    expect(list.reduce((n, c) => n + c.wins, 0)).toBe(global.wins);
+    expect(list.reduce((n, c) => n + c.losses, 0)).toBe(global.losses);
+    expect(list.reduce((n, c) => n + c.games, 0)).toBe(global.totalGames);
+  });
+
+  it("7. per-character loss streak and win rate", () => {
+    const ms = [
+      match("loss", 1, { char: "jamie" }),
+      match("win", 2, { char: "ryu" }),
+      match("loss", 3, { char: "jamie" }),
+      match("loss", 4, { char: "jamie" }),
+    ];
+    const jamie = byKey(progress(ms), "jamie");
+    expect(jamie).toMatchObject({ losses: 3, currentLossStreak: 3, winRate: 0 });
+  });
+
+  it("9. recent results: only this character's, chronological, capped like the session's", () => {
+    const ms: SessionMatch[] = [];
+    for (let i = 0; i < 14; i++)
+      ms.push(match(i % 3 === 0 ? "loss" : "win", i * 2, { char: "ryu" }));
+    ms.push(match("loss", 100, { char: "chunli" }));
+    const ryu = byKey(progress(ms), "ryu");
+    expect(ryu.recentResults).toHaveLength(10);
+    expect(ryu.recentResults).toEqual(
+      computeSessionStats(ms.filter((m) => m.characterKey === "ryu")).recentResults,
+    );
+    expect(byKey(progress(ms), "chunli").recentResults).toEqual(["loss"]);
+  });
+
+  it("10. draws: not in win rate, break streaks, count as games, appear in recent form", () => {
+    const ms = [match("win", 1), match("win", 2), match("draw", 3), match("win", 4)];
+    const ryu = byKey(progress(ms), "ryu");
+    expect(ryu).toMatchObject({
+      wins: 3,
+      draws: 1,
+      games: 4,
+      winRate: 100,
+      currentWinStreak: 1,
+      bestWinStreak: 2,
+    });
+    expect(ryu.recentResults).toEqual(["win", "win", "draw", "win"]);
+  });
+
+  it("11–13. duplicates ignored; out-of-order and late (older) matches placed chronologically", () => {
+    const a = match("win", 1, { char: "chunli" });
+    const b = match("loss", 2, { char: "chunli" });
+    const c = match("win", 3, { char: "chunli" });
+    const inOrder = byKey(progress([a, b, c]), "chunli");
+    const shuffledWithDupes = byKey(progress([c, a, c, b, a]), "chunli");
+    expect(shuffledWithDupes).toEqual(inOrder);
+    // A late older loss (minute 0) arriving after: streak still ends with the latest win.
+    const late = byKey(progress([a, b, c, match("loss", 0, { char: "chunli" })]), "chunli");
+    expect(late).toMatchObject({ wins: 2, losses: 2, currentWinStreak: 1 });
+    expect(late.recentResults).toEqual(["loss", "win", "loss", "win"]);
+  });
+
+  it("14–15. character known from the roster with 0 games: zeros (no invented matches); no rating ⇒ null", () => {
+    const list = progress(
+      [match("win", 1, { char: "ryu" })],
+      [start("cammy", lp(9200, "Gold 1")), start("aki", null)],
+    );
+    const cammy = byKey(list, "cammy");
+    expect(cammy).toMatchObject({
+      games: 0,
+      wins: 0,
+      losses: 0,
+      winRate: 0,
+      currentWinStreak: 0,
+      bestWinStreak: 0,
+      recentResults: [],
+    });
+    expect(cammy.current?.value).toBe(9200);
+    expect(byKey(list, "aki")).toMatchObject({ games: 0, current: null, delta: null });
+  });
+
+  it("16. empty session: no played character, global stats empty", () => {
+    expect(progress([], [start("ryu", mr(1500))]).every((c) => c.games === 0)).toBe(true);
+    expect(computeSessionStats([]).totalGames).toBe(0);
+  });
+});

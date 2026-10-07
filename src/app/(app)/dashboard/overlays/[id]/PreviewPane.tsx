@@ -14,7 +14,12 @@ import { OverlayView } from "@/components/overlay/OverlayView";
 import { usePrefersReducedMotion } from "@/components/overlay/motion";
 import { Button, cx } from "@/components/ui/primitives";
 import { OVERLAY_PRESETS, type OverlayConfig, type OverlayPresetId } from "@/domain/overlay/config";
-import { sampleLiveState, type PlayerLiveState, type SampleRank } from "@/domain/overlay/state";
+import {
+  SAMPLE_CHARACTER_KEYS,
+  sampleMultiCharacterState,
+  type SampleCharacterKey,
+} from "@/domain/overlay/sample-session";
+import type { PlayerLiveState, SampleRank } from "@/domain/overlay/state";
 import {
   SIMULATION_LEAD_MS,
   simulationState,
@@ -38,6 +43,14 @@ const SAMPLE_RANKS: SampleRank[] = [
   { rank: "Grand Master", system: "mr", value: 1_845 },
   { rank: "Ultimate Master", system: "mr", value: 2_030 },
 ];
+
+/** Names and records for the sample-character picker (computed once from the engine sample). */
+const SAMPLE_CHARACTERS = (() => {
+  const session = sampleMultiCharacterState().session;
+  return SAMPLE_CHARACTER_KEYS.map(
+    (k) => session.characters.find((c) => c.characterKey === k) ?? null,
+  ).filter((c) => c !== null);
+})();
 
 const PREVIEW_BG: Record<PreviewBg, string> = {
   dark: "bg-[radial-gradient(ellipse_at_30%_20%,#3b2a4d_0%,#141824_45%,#0a0b0e_100%)]",
@@ -75,6 +88,8 @@ export function PreviewPane({
   const [zoom, setZoom] = useState<PreviewZoom>(null);
   const [useSample, setUseSample] = useState(liveState.session.totalGames === 0);
   const [sampleRank, setSampleRank] = useState(4); // Master
+  // Preview-only: which sample character is "active" (multi-character sample, Phase 5.1).
+  const [sampleCharacter, setSampleCharacter] = useState<SampleCharacterKey>("ryu");
   // "Play update": local before → after simulation (never touches config, session or API).
   const [simResult, setSimResult] = useState<SimulatedResult>("win");
   const [sim, setSim] = useState<{
@@ -103,6 +118,7 @@ export function PreviewPane({
     }));
 
   const theme = THEME_REGISTRY[config.theme];
+  const sampleCharacters = SAMPLE_CHARACTERS;
   const canvas = OVERLAY_PRESETS[config.preset];
   const fitScale = width / canvas.width;
   const scale = zoom ?? fitScale;
@@ -111,7 +127,10 @@ export function PreviewPane({
   const live = sim
     ? simulationState(sim.result, sim.phase)
     : useSample
-      ? sampleLiveState(SAMPLE_RANKS[sampleRank])
+      ? sampleMultiCharacterState(
+          sampleCharacter,
+          theme.rankAware ? SAMPLE_RANKS[sampleRank] : undefined,
+        )
       : liveState;
 
   return (
@@ -209,6 +228,23 @@ export function PreviewPane({
               setSim(null);
             }}
           />
+          {useSample && !sim && (
+            <label className="flex items-center gap-2 text-sm">
+              <span>{t("sampleCharacter")}</span>
+              <select
+                value={sampleCharacter}
+                onChange={(e) => setSampleCharacter(e.target.value as SampleCharacterKey)}
+                className="h-8 border border-line-strong bg-surface-2 px-2 text-sm focus:border-cyan focus:outline-none"
+                data-testid="sample-character"
+              >
+                {sampleCharacters.map((c) => (
+                  <option key={c.characterKey} value={c.characterKey}>
+                    {`${c.characterName} · ${c.wins}-${c.losses}`}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {useSample && !sim && theme.rankAware && (
             <label className="flex items-center gap-2 text-sm">
               <span>{t("sampleRank")}</span>

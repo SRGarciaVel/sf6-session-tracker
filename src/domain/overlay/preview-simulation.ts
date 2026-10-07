@@ -75,6 +75,11 @@ export function simulationState(result: SimulatedResult, phase: SimulationPhase)
               wins: s.wins,
               losses: s.losses,
               games: s.wins + s.losses,
+              // Single character: its own stats equal the session's.
+              winRate: s.winRate,
+              currentWinStreak: s.streak,
+              currentLossStreak: s.streak === 0 ? 1 : 0,
+              recentResults: s.recent,
               initial: { system: "mr", value: BEFORE.rating, rank: "Master" },
               current: { system: "mr", value: s.rating, rank: "Master" },
               delta: s.delta,

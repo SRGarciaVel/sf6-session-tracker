@@ -293,4 +293,27 @@ describe("OverlayBuilder", () => {
     expect(preview).toContain("ov-theme-competitive");
     expect(preview.slice(0, 2000)).not.toContain("ov-theme-rank-card");
   });
+
+  it("Phase 5.1: Contenido has a session-stats group: scope select (2 options + hint) and the character select", () => {
+    const html = render(FREE);
+    const content = html.slice(html.indexOf('id="panel-content"'));
+    expect(content).toContain("Estadísticas de sesión");
+    const select =
+      content.match(/<select[^>]*data-testid="stats-scope"[\s\S]*?<\/select>/)?.[0] ?? "";
+    expect(select.match(/<option/g)?.length).toBe(2);
+    expect(select).toContain("Sesión completa");
+    expect(select).toContain("Personaje mostrado");
+    expect(select).toMatch(/aria-describedby="[^"]+"/);
+    expect(content).toContain(es.Builder.statsScopes.session.hint);
+    expect(content).toContain('data-testid="rating-character"');
+  });
+
+  it("Phase 5.1: character scope switches the hints; sample-character picker is preview-only", () => {
+    const html = render(FREE, { ...DEFAULT_OVERLAY_CONFIG, statsScope: "character" });
+    expect(html).toContain(es.Builder.statsScopes.character.hint);
+    expect(html).toContain(es.Builder.ratingCharacterHintScoped);
+    // Live data with games ⇒ sample mode off ⇒ no sample-character picker (it lives with sample data).
+    expect(html).not.toContain('data-testid="sample-character"');
+    expect(Object.keys(DEFAULT_OVERLAY_CONFIG)).not.toContain("sampleCharacter");
+  });
 });

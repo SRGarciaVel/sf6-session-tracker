@@ -16,7 +16,12 @@ import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { OVERLAY_PRESETS, hexToRgba, type OverlayConfig } from "@/domain/overlay/config";
 import { creatorClassNames, creatorCssVars } from "./creator-style";
 import { getOverlayMessages } from "@/i18n/overlay-messages";
-import { pickRatingCharacter, type PlayerLiveState } from "@/domain/overlay/state";
+import {
+  pickRatingCharacter,
+  resolveOverlayStats,
+  type OverlayStats,
+  type PlayerLiveState,
+} from "@/domain/overlay/state";
 import { motionProfile, type OverlaySummary } from "@/domain/overlay/motion";
 import { MotionFx, MotionProvider, useOverlayUpdate, usePrefersReducedMotion } from "./motion";
 import { formatWinRate } from "@/domain/format";
@@ -473,18 +478,46 @@ function useFitToBox() {
 }
 
 /** Data-only summary for update detection (never config: edits must not "play" an update). */
-function overlaySummary(live: PlayerLiveState, config: OverlayConfig): OverlaySummary {
-  const s = live.session;
-  const c = pickRatingCharacter(s, config.ratingCharacterKey);
+function overlaySummary(
+  live: PlayerLiveState,
+  config: OverlayConfig,
+  stats: OverlayStats,
+): OverlaySummary {
+  const c = pickRatingCharacter(live.session, config.ratingCharacterKey);
   return {
-    sessionId: s.sessionId,
+    sessionId: live.session.sessionId,
+    // The statistics being shown (scope + their counters): switching scope is a new baseline.
+    scope: stats.scope,
     character: c?.characterKey ?? null,
-    totalGames: s.totalGames,
-    wins: s.wins,
-    losses: s.losses,
+    totalGames: stats.totalGames,
+    wins: stats.wins,
+    losses: stats.losses,
     rating: c?.current?.value ?? null,
     rank: c?.current?.rank ?? null,
-    streak: s.currentWinStreak,
+    streak: stats.currentWinStreak,
+  };
+}
+
+/**
+ * The live state themes render: session counters replaced by the projected statistics
+ * (resolveOverlayStats). Themes keep reading `live.session.*` and never decide scope themselves.
+ */
+function withDisplayedStats(live: PlayerLiveState, stats: OverlayStats): PlayerLiveState {
+  if (stats.scope === "session") return live;
+  return {
+    ...live,
+    session: {
+      ...live.session,
+      wins: stats.wins,
+      losses: stats.losses,
+      draws: stats.draws,
+      totalGames: stats.totalGames,
+      winRate: stats.winRate,
+      currentWinStreak: stats.currentWinStreak,
+      currentLossStreak: stats.currentLossStreak,
+      bestWinStreak: stats.bestWinStreak,
+      recentResults: stats.recentResults,
+    },
   };
 }
 
@@ -497,7 +530,13 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
     animations: config.animations,
     reducedMotion,
   });
-  const update = useOverlayUpdate(overlaySummary(live, config), profile?.clearAfterMs ?? null);
+  // Phase 5.1: the ONE projection of the statistics this overlay shows (session or character).
+  const stats = resolveOverlayStats(live.session, config);
+  const shown = withDisplayedStats(live, stats);
+  const update = useOverlayUpdate(
+    overlaySummary(live, config, stats),
+    profile?.clearAfterMs ?? null,
+  );
   const motionAttrs = profile
     ? {
         "data-motion-style": profile.style,
@@ -539,13 +578,13 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
         {...motionAttrs}
       >
         <MotionProvider value={{ update, sweep: profile?.accent === "sweep" }}>
-          {config.theme === "minimal" && <MinimalTheme config={config} live={live} />}
-          {config.theme === "competitive" && <CompetitiveTheme config={config} live={live} />}
-          {config.theme === "fighter" && <FighterTheme config={config} live={live} />}
+          {config.theme === "minimal" && <MinimalTheme config={config} live={shown} />}
+          {config.theme === "competitive" && <CompetitiveTheme config={config} live={shown} />}
+          {config.theme === "fighter" && <FighterTheme config={config} live={shown} />}
           {/* Creator themes: only reachable via an entitled owner's EFFECTIVE config. */}
-          {config.theme === "rank-card" && <RankCardTheme config={config} live={live} />}
-          {config.theme === "broadcast" && <BroadcastTheme config={config} live={live} />}
-          {config.theme === "prestige" && <PrestigeTheme config={config} live={live} />}
+          {config.theme === "rank-card" && <RankCardTheme config={config} live={shown} />}
+          {config.theme === "broadcast" && <BroadcastTheme config={config} live={shown} />}
+          {config.theme === "prestige" && <PrestigeTheme config={config} live={shown} />}
         </MotionProvider>
       </div>
     </NextIntlClientProvider>

@@ -24,7 +24,7 @@ const { buildPlayerLiveState, endSession, listSessionHistory, startSession } =
   await import("@/server/sessions/service");
 const { loadOverlayPayload } = await import("@/server/overlays/public");
 const { listOverlays, updateOverlay } = await import("@/server/overlays/service");
-const { pickRatingCharacter } = await import("@/domain/overlay/state");
+const { pickRatingCharacter, resolveOverlayStats } = await import("@/domain/overlay/state");
 const { MockSF6DataProvider } = await import("@/server/sf6/providers/mock");
 const { ResilientProvider } = await import("@/server/sf6/resilient");
 const { claimDuePlayers, pollPlayer } = await import("@/server/tracking/tracker");
@@ -238,5 +238,61 @@ describe.skipIf(!TEST_DB)("per-character ratings (integration)", () => {
     await expect(
       updatePlayerProfile(db, playerId, { ...profile, characters: [...profile.characters, first] }),
     ).resolves.toBeTypeOf("boolean");
+  });
+
+  it("Phase 5.1: per-character stats through real ingestion; overlay payload projects either scope", async () => {
+    await startSession(db, provider, await player());
+    await mock.simulateMatch(cfn, { result: "win" }); // A.K.I.
+    await mock.simulateMatch(cfn, { result: "win" }); // A.K.I.
+    await mock.setCharacter(cfn, "kimberly");
+    await mock.simulateMatch(cfn, { result: "loss" }); // Kimberly
+    await mock.setCharacter(cfn, "aki");
+    await mock.simulateMatch(cfn, { result: "win" }); // A.K.I.
+    await poll();
+    await poll(); // re-polling the same matches never counts them twice
+
+    const s = await live();
+    expect(s).toMatchObject({ wins: 3, losses: 1, totalGames: 4, currentWinStreak: 1 });
+    // Kimberly's loss doesn't interrupt A.K.I.'s own streak.
+    expect(char(s, "aki")).toMatchObject({
+      wins: 3,
+      losses: 0,
+      games: 3,
+      winRate: 100,
+      currentWinStreak: 3,
+      bestWinStreak: 3,
+      recentResults: ["win", "win", "win"],
+    });
+    expect(char(s, "kimberly")).toMatchObject({
+      wins: 0,
+      losses: 1,
+      currentLossStreak: 1,
+      recentResults: ["loss"],
+    });
+    expect(char(s, "cammy")).toMatchObject({ games: 0, wins: 0, recentResults: [] });
+    const played = s.characters.filter((c) => c.games > 0);
+    expect(played.reduce((n, c) => n + c.games, 0)).toBe(s.totalGames);
+
+    const [overlay] = await listOverlays(db, playerId);
+    if (!overlay) throw new Error("no overlay");
+    let payload = (await loadOverlayPayload(overlay.publicToken))?.payload;
+    expect(resolveOverlayStats(payload!.live.session, payload!.config)).toMatchObject({
+      scope: "session",
+      wins: 3,
+      losses: 1,
+    });
+    await updateOverlay(db, overlay, {
+      config: { ...overlay.config, statsScope: "character", ratingCharacterKey: "kimberly" },
+    });
+    payload = (await loadOverlayPayload(overlay.publicToken))?.payload;
+    expect(payload?.config.statsScope).toBe("character");
+    expect(resolveOverlayStats(payload!.live.session, payload!.config)).toMatchObject({
+      scope: "character",
+      characterKey: "kimberly",
+      wins: 0,
+      losses: 1,
+    });
+    // The global numbers in the payload are unchanged (projection is presentation only).
+    expect(payload?.live.session).toMatchObject({ wins: 3, losses: 1 });
   });
 });
