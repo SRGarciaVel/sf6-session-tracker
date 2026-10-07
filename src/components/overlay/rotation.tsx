@@ -24,7 +24,7 @@ import {
   type RotationInput,
   type RotationState,
 } from "@/domain/overlay/rotation";
-import type { LiveSessionState } from "@/domain/overlay/state";
+import { sessionIdentity, type LiveSessionState } from "@/domain/overlay/state";
 import type { CharacterKey } from "@/domain/sf6/types";
 
 export interface RotationView {
@@ -51,7 +51,8 @@ export function useCharacterRotation(
   const active = isRotationActive(session, rotation);
   const order = active ? rotationOrder(session.characters, rotation.order) : [];
   const input: RotationInput = {
-    sessionId: session.sessionId,
+    // The public (OBS) payload has no sessionId: identify the session by what it does carry.
+    sessionId: sessionIdentity(session),
     totalGames: session.totalGames,
     activeCharacterKey: session.activeCharacterKey,
     order,

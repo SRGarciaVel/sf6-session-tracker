@@ -19,6 +19,7 @@ import { getOverlayMessages } from "@/i18n/overlay-messages";
 import {
   pickRatingCharacter,
   resolveOverlayStats,
+  sessionIdentity,
   type OverlayStats,
   type PlayerLiveState,
 } from "@/domain/overlay/state";
@@ -509,7 +510,8 @@ function overlaySummary(
   const c = pickRatingCharacter(live.session, display.ratingCharacterKey);
   const counters = rotating ? live.session : stats;
   return {
-    sessionId: live.session.sessionId,
+    // Session identity also on the public (OBS) payload, which has no sessionId.
+    sessionId: sessionIdentity(live.session),
     // The statistics being shown (scope + their counters): switching scope is a new baseline.
     scope: stats.scope,
     mode: rotating ? "rotation" : "fixed",
