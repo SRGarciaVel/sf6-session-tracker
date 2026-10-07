@@ -7,12 +7,15 @@
  *   useOverlayUpdate  derives at most one event per new data summary (adjusting state during
  *                     render, like Animated): re-renders, resizes, fit-to-box passes, locale,
  *                     theme or other config edits never produce an event. The event is cleared
- *                     after the effect so nothing replays when elements re-mount later.
+ *                     after the effect so nothing replays when elements re-mount later. An
+ *                     out-of-order (stale) snapshot never replaces the baseline, so the current
+ *                     data arriving again can't replay an already processed match.
  *   MotionFx          one keyed, aria-hidden sweep element per event (re-mount restarts it).
  */
 import { createContext, useContext, useEffect, useState, useSyncExternalStore } from "react";
 import {
   detectOverlayChange,
+  isStaleSummary,
   summaryKey,
   type OverlayUpdate,
   type OverlaySummary,
@@ -33,9 +36,15 @@ export function useOverlayUpdate(summary: OverlaySummary, clearAfterMs: number |
   }>({ key, summary, update: null, seq: 0 });
 
   if (tracked.key !== key) {
-    const change = detectOverlayChange(tracked.summary, summary);
-    const seq = change ? tracked.seq + 1 : tracked.seq;
-    setTracked({ key, summary, seq, update: change ? { ...change, seq } : null });
+    if (isStaleSummary(tracked.summary, summary) || summaryKey(tracked.summary) === key) {
+      // Out-of-order snapshot (or the baseline's own data again after one): keep the baseline
+      // and any running effect. Only the key is recorded, so this runs once per new snapshot.
+      setTracked({ ...tracked, key });
+    } else {
+      const change = detectOverlayChange(tracked.summary, summary);
+      const seq = change ? tracked.seq + 1 : tracked.seq;
+      setTracked({ key, summary, seq, update: change ? { ...change, seq } : null });
+    }
   }
 
   // One timer per event; cleared on the next event or unmount (no accumulation).
