@@ -719,50 +719,7 @@
     "openOverlay": "Open overlay ↗",
     "obsHint": "In OBS: Browser Source → paste the URL → {width} × {height}.",
     "dangerZone": "More actions",
-    "saveNetworkError": "The server couldn't be reached.",
-    "motion": {
-      "title": "Movement",
-      "enabled": "Use Creator motion",
-      "updateStyle": "Motion style",
-      "styles": {
-        "snappy": "Snappy",
-        "smooth": "Smooth",
-        "impact": "Impact"
-      },
-      "intensity": "Intensity",
-      "intensities": {
-        "subtle": "Subtle",
-        "normal": "Normal",
-        "strong": "Strong"
-      },
-      "resultEmphasis": "Result emphasis",
-      "accentMotion": "Accent motion",
-      "accents": {
-        "static": "Static",
-        "pulse": "Pulse",
-        "sweep": "Sweep"
-      },
-      "rankMotion": "Rank reaction",
-      "ranks": {
-        "none": "None",
-        "subtle": "Subtle",
-        "emphasized": "Emphasized"
-      },
-      "rankNotInTheme": "This theme doesn't show the rank emblem.",
-      "hint": "Reacts only to real matches and rating changes, once per update. Respects reduced motion and the animations switch."
-    },
-    "simulation": {
-      "label": "Simulate an update",
-      "win": "Victory",
-      "loss": "Loss",
-      "play": "Play update",
-      "exit": "Exit simulation",
-      "active": "Local simulation: your session and overlay don't change.",
-      "done": {
-        "win": "Simulation: win, 11-5 → 12-5, +96 MR.",
-        "loss": "Simulation: loss, 11-5 → 11-6, −72 MR."
-      }
-    }
+    "saveNetworkError": "The server couldn't be reached."
   },
   "NotFound": {
     "title": "Page not found",

@@ -16,9 +16,7 @@ import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { OVERLAY_PRESETS, hexToRgba, type OverlayConfig } from "@/domain/overlay/config";
 import { creatorClassNames, creatorCssVars } from "./creator-style";
 import { getOverlayMessages } from "@/i18n/overlay-messages";
-import { pickRatingCharacter, type PlayerLiveState } from "@/domain/overlay/state";
-import { motionProfile, type OverlaySummary } from "@/domain/overlay/motion";
-import { MotionFx, MotionProvider, useOverlayUpdate, usePrefersReducedMotion } from "./motion";
+import type { PlayerLiveState } from "@/domain/overlay/state";
 import { formatWinRate } from "@/domain/format";
 import { BroadcastTheme, PrestigeTheme, RankCardTheme } from "./creator-themes";
 import {
@@ -160,7 +158,6 @@ function MinimalTheme({ config, live }: ThemeProps) {
 
   return (
     <div className="ov-panel ov-minimal ov-shadow">
-      <MotionFx />
       <span className="ov-min-bar" aria-hidden />
       <span className="ov-min-items">
         {joinWith(items, (k) => (
@@ -271,7 +268,6 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
   const showTop = config.showTitle || f.rank;
   return (
     <div className="ov-panel ov-comp ov-shadow">
-      <MotionFx />
       {showTop && (
         <div className="ov-comp-top">
           {config.showTitle && <span className="ov-comp-tag">{config.title || t("session")}</span>}
@@ -301,7 +297,6 @@ function FighterTheme({ config, live }: ThemeProps) {
 
   return (
     <div className="ov-street ov-shadow">
-      <MotionFx />
       <span className="ov-st-slash" aria-hidden />
       {(showScore || f.winRate || f.totalGames) && (
         <div className="ov-st-block ov-st-main">
@@ -472,48 +467,8 @@ function useFitToBox() {
   return { rootRef, fit };
 }
 
-/** Data-only summary for update detection (never config: edits must not "play" an update). */
-function overlaySummary(live: PlayerLiveState, config: OverlayConfig): OverlaySummary {
-  const s = live.session;
-  const c = pickRatingCharacter(s, config.ratingCharacterKey);
-  return {
-    sessionId: s.sessionId,
-    character: c?.characterKey ?? null,
-    totalGames: s.totalGames,
-    wins: s.wins,
-    losses: s.losses,
-    rating: c?.current?.value ?? null,
-    rank: c?.current?.rank ?? null,
-    streak: s.currentWinStreak,
-  };
-}
-
 export function OverlayView({ config, live, sizing }: OverlayViewProps) {
   const { rootRef, fit } = useFitToBox();
-  // Creator motion (Phase 5.0): only an entitled owner's EFFECTIVE config carries `motion`;
-  // Free, animations off and reduced motion all resolve to no profile (nothing extra renders).
-  const reducedMotion = usePrefersReducedMotion();
-  const profile = motionProfile(config.creator?.motion, {
-    animations: config.animations,
-    reducedMotion,
-  });
-  const update = useOverlayUpdate(overlaySummary(live, config), profile?.clearAfterMs ?? null);
-  const motionAttrs = profile
-    ? {
-        "data-motion-style": profile.style,
-        "data-motion-intensity": profile.intensity,
-        "data-accent-motion": profile.accent,
-        "data-rank-motion": profile.rank,
-        "data-result-emphasis": profile.resultEmphasis ? "on" : "off",
-        ...(update
-          ? {
-              "data-update": update.result ?? "update",
-              "data-update-cycle": String(update.seq % 2),
-              "data-rating-changed": update.ratingChanged || update.rankChanged ? "yes" : "no",
-            }
-          : {}),
-      }
-    : {};
   const className = [
     "sf6-overlay",
     `ov-theme-${config.theme}`,
@@ -530,23 +485,16 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
         ref={rootRef}
         lang={config.locale}
         className={className}
-        style={{
-          ...overlayStyle(config, sizing, fit),
-          ...creatorCssVars(config.creator),
-          ...profile?.vars,
-        }}
+        style={{ ...overlayStyle(config, sizing, fit), ...creatorCssVars(config.creator) }}
         data-session-status={live.session.status}
-        {...motionAttrs}
       >
-        <MotionProvider value={{ update, sweep: profile?.accent === "sweep" }}>
-          {config.theme === "minimal" && <MinimalTheme config={config} live={live} />}
-          {config.theme === "competitive" && <CompetitiveTheme config={config} live={live} />}
-          {config.theme === "fighter" && <FighterTheme config={config} live={live} />}
-          {/* Creator themes: only reachable via an entitled owner's EFFECTIVE config. */}
-          {config.theme === "rank-card" && <RankCardTheme config={config} live={live} />}
-          {config.theme === "broadcast" && <BroadcastTheme config={config} live={live} />}
-          {config.theme === "prestige" && <PrestigeTheme config={config} live={live} />}
-        </MotionProvider>
+        {config.theme === "minimal" && <MinimalTheme config={config} live={live} />}
+        {config.theme === "competitive" && <CompetitiveTheme config={config} live={live} />}
+        {config.theme === "fighter" && <FighterTheme config={config} live={live} />}
+        {/* Creator themes: only reachable via an entitled owner's EFFECTIVE config. */}
+        {config.theme === "rank-card" && <RankCardTheme config={config} live={live} />}
+        {config.theme === "broadcast" && <BroadcastTheme config={config} live={live} />}
+        {config.theme === "prestige" && <PrestigeTheme config={config} live={live} />}
       </div>
     </NextIntlClientProvider>
   );

@@ -11,7 +11,6 @@ import {
   type OverlayFieldId,
 } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION, type CreatorCustomization } from "@/domain/overlay/creator";
-import { DEFAULT_CREATOR_MOTION, type CreatorMotion } from "@/domain/overlay/motion";
 
 /** JSON with sorted keys and without `undefined` members: key order never makes a config "dirty". */
 export function canonicalJson(value: unknown): string {
@@ -75,21 +74,6 @@ export function patchCreator(
   patch: Partial<CreatorCustomization>,
 ): OverlayConfig {
   return { ...config, creator: { ...(config.creator ?? DEFAULT_CREATOR_CUSTOMIZATION), ...patch } };
-}
-
-/** Turn Creator motion on (with the considered defaults) or off (removes only the motion block). */
-export function setMotionEnabled(config: OverlayConfig, on: boolean): OverlayConfig {
-  if (on) return patchCreator(config, { motion: config.creator?.motion ?? DEFAULT_CREATOR_MOTION });
-  if (!config.creator?.motion) return config;
-  const creator = { ...config.creator };
-  delete creator.motion;
-  return { ...config, creator };
-}
-
-export function patchMotion(config: OverlayConfig, patch: Partial<CreatorMotion>): OverlayConfig {
-  return patchCreator(config, {
-    motion: { ...(config.creator?.motion ?? DEFAULT_CREATOR_MOTION), ...patch },
-  });
 }
 
 /** Preview zoom: null = fit the pane; numbers = fraction of the real canvas size. */

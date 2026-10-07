@@ -8,7 +8,6 @@ import {
   type OverlayConfig,
 } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION } from "@/domain/overlay/creator";
-import { DEFAULT_CREATOR_MOTION } from "@/domain/overlay/motion";
 import { sampleLiveState } from "@/domain/overlay/state";
 import { OVERLAY_THEMES } from "@/domain/overlay/config";
 import en from "@/i18n/messages/en.json";
@@ -49,18 +48,8 @@ const presets = [
   { id: "00000000-0000-4000-8000-000000000001", name: "Gold look", theme: "prestige" as const },
   { id: "00000000-0000-4000-8000-000000000002", name: "Old", theme: null },
 ];
-const FREE = {
-  advancedCustomization: false,
-  premiumThemes: false,
-  creatorPresets: false,
-  motionEffects: false,
-};
-const CREATOR = {
-  advancedCustomization: true,
-  premiumThemes: true,
-  creatorPresets: true,
-  motionEffects: true,
-};
+const FREE = { advancedCustomization: false, premiumThemes: false, creatorPresets: false };
+const CREATOR = { advancedCustomization: true, premiumThemes: true, creatorPresets: true };
 
 describe("ThemePicker", () => {
   it("is a real radio group; every registered theme present once", () => {
@@ -145,7 +134,6 @@ describe("CreatorPanel", () => {
         presets={presets}
         advancedCustomization={false}
         creatorPresets={false}
-        motionEffects={false}
       />,
     );
     expect(html.match(/data-testid="creator-notice"/g)?.length).toBe(1);
@@ -154,59 +142,7 @@ describe("CreatorPanel", () => {
       "Your Creator presets are saved. Renew Creator access to use them again.",
     );
     expect(html).toMatch(/<fieldset[^>]*disabled=""[^>]*data-testid="creator-customization"/);
-    expect(html).toMatch(/<fieldset[^>]*disabled=""[^>]*data-testid="creator-motion"/);
     expect(html.match(/class="hud-tag[^"]*">Creator Beta</g)?.length).toBe(1); // one badge
-  });
-
-  it("Movement: stored motion stays visible (disabled) for Free; one notice covers it", () => {
-    const config: OverlayConfig = {
-      ...DEFAULT_OVERLAY_CONFIG,
-      creator: {
-        ...DEFAULT_CREATOR_CUSTOMIZATION,
-        motion: { ...DEFAULT_CREATOR_MOTION, updateStyle: "impact" },
-      },
-    };
-    const html = wrap(
-      "es",
-      <CreatorPanel
-        {...base}
-        config={config}
-        presets={[]}
-        advancedCustomization={false}
-        creatorPresets={false}
-        motionEffects={false}
-      />,
-    );
-    expect(html.match(/data-testid="creator-notice"/g)?.length).toBe(1);
-    expect(html).toContain("Movimiento");
-    expect(html).toMatch(/<option value="impact" selected="">Impacto<\/option>/);
-  });
-
-  it("Movement: rank reaction disabled with a note on themes without the emblem", () => {
-    const motionOn = (theme: OverlayConfig["theme"]): OverlayConfig => ({
-      ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, theme),
-      creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, motion: DEFAULT_CREATOR_MOTION },
-    });
-    const render = (theme: OverlayConfig["theme"]) =>
-      wrap(
-        "en",
-        <CreatorPanel
-          {...base}
-          config={motionOn(theme)}
-          presets={[]}
-          advancedCustomization
-          creatorPresets
-          motionEffects
-        />,
-      );
-    const minimal = render("minimal");
-    expect(minimal).toContain("This theme doesn&#x27;t show the rank emblem.");
-    expect(minimal).toMatch(
-      /aria-checked="false"[^>]*disabled=""[^>]*>Emphasized|disabled=""[^>]*>Emphasized/,
-    );
-    const rankCard = render("rank-card");
-    expect(rankCard).not.toContain("rank emblem.");
-    expect(rankCard).not.toMatch(/<fieldset[^>]*disabled=""[^>]*data-testid="creator-motion"/);
   });
   it("Creator: no notice, controls enabled", () => {
     const html = wrap(
@@ -217,7 +153,6 @@ describe("CreatorPanel", () => {
         presets={[]}
         advancedCustomization
         creatorPresets
-        motionEffects
       />,
     );
     expect(html).not.toContain("creator-notice");
@@ -251,13 +186,6 @@ describe("OverlayBuilder", () => {
     expect(html).toMatch(
       /href="https:\/\/sst\.example\/overlay\/tok"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/,
     );
-  });
-
-  it("preview offers a local Play update (Victory | Loss), outside the saved config", () => {
-    const html = render(FREE);
-    expect(html).toContain('data-testid="play-update"');
-    expect(html).toContain("Reproducir actualización");
-    expect(Object.keys(DEFAULT_OVERLAY_CONFIG)).not.toContain("simulation");
   });
 
   it("starts saved (not dirty), no mobile save bar", () => {
