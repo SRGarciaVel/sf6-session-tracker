@@ -161,14 +161,14 @@ no durations, CSS or free-form values.
 **When it plays.** `detectOverlayChange(prev, next)` compares data only: session id, displayed
 character, games, wins, losses, rating, rank and streak.
 
-| Case                                                                                                    | Event                                                                                                                                        |
-| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| First render, identical data (any re-render, resize, fit-to-box pass, locale)                           | none                                                                                                                                         |
-| Theme, colour, font, canvas or other config edits                                                       | none                                                                                                                                         |
-| New session, different displayed character, fewer games                                                 | none: shown, nothing plays                                                                                                                   |
-| Games grew                                                                                              | a **match** event: win if wins grew, loss if losses grew, else draw                                                                          |
-| Rating/rank changed without a new match                                                                 | an update without result emphasis                                                                                                            |
-| Stale snapshot (same session and displayed character, fewer games), or the current data again after one | none: the baseline is kept (never replaced by an older snapshot), so an already processed match never replays and a running effect isn't cut |
+| Case                                                                                                                                            | Event                                                                                                                                        |
+| ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| First render, identical data (any re-render, resize, fit-to-box pass, locale)                                                                   | none                                                                                                                                         |
+| Theme, colour, font, canvas or other config edits                                                                                               | none                                                                                                                                         |
+| New session, different displayed character, fewer games                                                                                         | none: shown, nothing plays                                                                                                                   |
+| Games grew                                                                                                                                      | a **match** event: win if wins grew, loss if losses grew, else draw                                                                          |
+| Rating/rank changed without a new match                                                                                                         | an update without result emphasis                                                                                                            |
+| Stale snapshot (same session, scope and mode — and, in fixed mode, displayed character — with fewer games), or the current data again after one | none: the baseline is kept (never replaced by an older snapshot), so an already processed match never replays and a running effect isn't cut |
 
 Results come only from counters the backend already sends; nothing is inferred from colour or
 MR alone. Events are derived during render (no effect loop), cleared after the effect by one
@@ -345,6 +345,10 @@ always belong to the **same** character in all six themes. No theme has rotation
     different characters' values are never compared.
   - A match of the visible character plays exactly as before.
 - Switching rotation on or off is a config edit: nothing plays.
+- **Stale snapshots in rotation mode:** the motion baseline (`isStaleSummary`) ignores the
+  displayed character. Rotation counters are global, so a stale snapshot is recognized even when
+  another character has rotated in meanwhile. The current data arriving again never replays the
+  match. In fixed mode a different displayed character is still a new baseline.
 
 **Transitions** (`overlay.css`, OBS/CEF-safe):
 

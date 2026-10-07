@@ -192,3 +192,24 @@ describe("isStaleSummary (out-of-order snapshots never become the baseline)", ()
     expect(isStaleSummary(none, { ...none, totalGames: 0 })).toBe(false);
   });
 });
+
+describe("isStaleSummary in rotation mode (Phase 5.2)", () => {
+  const rot: OverlaySummary = { ...base, mode: "rotation" };
+  it("rotation counters are global: a stale snapshot is stale whatever character is shown", () => {
+    expect(
+      isStaleSummary(rot, { ...rot, character: "jamie", totalGames: rot.totalGames - 1 }),
+    ).toBe(true);
+  });
+  it("switching mode (a config edit) is a new baseline, never stale", () => {
+    expect(isStaleSummary(base, { ...rot, totalGames: base.totalGames - 1 })).toBe(false);
+    expect(isStaleSummary(rot, { ...base, totalGames: base.totalGames - 1 })).toBe(false);
+  });
+  it("fixed mode still requires the same displayed character", () => {
+    expect(isStaleSummary(base, { ...base, character: "jamie", totalGames: 3 })).toBe(false);
+  });
+  it("a new session is never stale in rotation mode either", () => {
+    expect(
+      isStaleSummary(rot, { ...rot, sessionId: "s2", character: "jamie", totalGames: 1 }),
+    ).toBe(false);
+  });
+});

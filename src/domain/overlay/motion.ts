@@ -158,8 +158,8 @@ export function summaryKey(s: OverlaySummary): string {
 
 /**
  * True when `next` is an OLDER snapshot than the baseline: same (non-null) session, same
- * comparison basis (scope + displayed character, so the counters are comparable) and fewer
- * games. Such a snapshot must never become the baseline — otherwise the current snapshot
+ * comparison basis (scope + mode, and the displayed character in fixed mode — rotation counters
+ * are global, so there it doesn't matter) and fewer games. Such a snapshot must never become the baseline — otherwise the current snapshot
  * arriving again would look like a new match and replay its effect. A different session or
  * displayed character is a genuine new baseline, never "stale".
  */
@@ -168,7 +168,10 @@ export function isStaleSummary(baseline: OverlaySummary, next: OverlaySummary): 
     baseline.sessionId !== null &&
     baseline.sessionId === next.sessionId &&
     baseline.scope === next.scope &&
-    baseline.character === next.character &&
+    baseline.mode === next.mode &&
+    // Rotation counters are global (Phase 5.2): the character on screen doesn't affect whether
+    // two snapshots are comparable. In fixed mode a different character is a new baseline.
+    (next.mode === "rotation" || baseline.character === next.character) &&
     next.totalGames < baseline.totalGames
   );
 }

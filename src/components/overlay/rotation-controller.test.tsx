@@ -384,6 +384,43 @@ describe("Creator Motion with rotation (45–54)", () => {
     expect(overlay()?.dataset.update).toBe("win");
   });
 
+  it("stale → current while another character is rotated in never replays the match", () => {
+    const c = cfg({}, { prioritizeLatestMatch: false });
+    const current = sample([{ characterKey: "ryu", result: "win" }]);
+    render(c, sample());
+    render(c, current); // real match: plays once
+    expect(overlay()?.dataset.update).toBe("win");
+    tick(5_000); // rotation moves to another character
+    expect(shownName()).not.toBe("Ryu");
+    render(c, sample()); // stale snapshot (fewer games) while that character is shown
+    tick(5_000); // rotation moves on again
+    render(c, resend(current)); // current data again
+    // The first effect has long finished; no second event appears.
+    expect(overlay()?.dataset.update).toBeUndefined();
+    // A genuine match afterwards still plays exactly once.
+    render(
+      c,
+      sample([
+        { characterKey: "ryu", result: "win" },
+        { characterKey: "jamie", result: "loss" },
+      ]),
+    );
+    expect(overlay()?.dataset.update).toBe("loss");
+  });
+
+  it("stale → current during a priority switch keeps the single match event", () => {
+    const c = cfg({}, { prioritySeconds: 10 });
+    render(c, sample());
+    const jamie = sample([{ characterKey: "jamie", result: "win" }]);
+    render(c, jamie); // priority switch to Jamie + match event
+    expect(overlay()?.dataset.update).toBe("win");
+    const seq = overlay()?.dataset.updateCycle;
+    render(c, sample()); // stale
+    render(c, resend(jamie)); // current again
+    expect(overlay()?.dataset.updateCycle).toBe(seq);
+    expect(shownName()).toBe("Jamie");
+  });
+
   it("priority disabled: a match of another character still plays (real result)", () => {
     render(cfg({}, { prioritizeLatestMatch: false }), sample());
     render(
