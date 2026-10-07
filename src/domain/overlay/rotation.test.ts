@@ -17,6 +17,19 @@ import { presetAppearanceSchema } from "./presets";
 import {
   DEFAULT_CHARACTER_ROTATION,
   advanceRotation,
+  buildViews,
+  characterView,
+  characterView as cv,
+  distinctViewCount,
+  modeCharacters,
+  PRESENTATION_MODES,
+  ROTATION_TRANSITIONS,
+  SESSION_VIEW,
+  TRANSITION_DIRECTIONS,
+  sameView,
+  transitionHasDirection,
+  viewKey,
+  type PresentationMode,
   characterRotationSchema,
   detectNewMatch,
   effectiveTransition,
@@ -87,16 +100,16 @@ describe("eligible characters & order (1–8, 13)", () => {
     expect(order).toEqual([]);
     const s = initRotation(input({ order }));
     expect(s.visible).toBeNull();
-    expect(rotationDelayMs(s, order, ROTATION_ON)).toBeNull();
+    expect(rotationDelayMs(s, input({ order }), ROTATION_ON)).toBeNull();
   });
 
   it("2. one eligible character ⇒ shown, never scheduled", () => {
     const order = rotationOrder([c("ryu", 4, 5), c("cammy", 0, null)], "recent");
     const s = initRotation(input({ order }));
-    expect(s.visible).toBe("ryu");
-    expect(rotationDelayMs(s, order, ROTATION_ON)).toBeNull();
+    expect(s.visible).toEqual(cv("ryu"));
+    expect(rotationDelayMs(s, input({ order }), ROTATION_ON)).toBeNull();
     // Even the "advance" step stays on the same character (no transition).
-    expect(advanceRotation(s, order).shownSeq).toBe(s.shownSeq);
+    expect(advanceRotation(s, input({ order: order })).shownSeq).toBe(s.shownSeq);
   });
 
   it("3–4. several eligible characters; 0-game characters (roster/baseline only) excluded", () => {
@@ -129,7 +142,7 @@ describe("eligible characters & order (1–8, 13)", () => {
   });
 
   it("13. order updated (a new match moves a character first) keeps the visible character", () => {
-    const s = { ...initRotation(input()), visible: "chunli" };
+    const s = { ...initRotation(input()), visible: cv("chunli") };
     const reordered = syncRotation(s, input({ order: ["jamie", "ryu", "chunli"] }));
     expect(reordered).toBe(s); // same object: nothing to do
   });
@@ -150,26 +163,28 @@ describe("cycle (9–12, 14–15)", () => {
       s,
       input({ order: ["ryu", "jamie"], totalGames: 29, activeCharacterKey: "jamie" }),
     );
-    expect(s).toMatchObject({ visible: "jamie", priority: "jamie" });
+    expect(s).toMatchObject({ visible: cv("jamie"), priority: "jamie" });
     const after = syncRotation(s, input({ order: ["ryu"], totalGames: 29 }));
-    expect(after).toMatchObject({ visible: "ryu", priority: null });
+    expect(after).toMatchObject({ visible: cv("ryu"), priority: null });
   });
 
   it("12. added character joins the order without resetting the visible one", () => {
     let s = initRotation(input({ order: ["ryu", "jamie"] }));
-    s = advanceRotation(s, ["ryu", "jamie"]);
-    expect(s.visible).toBe("jamie");
+    s = advanceRotation(s, input({ order: ["ryu", "jamie"] }));
+    expect(s.visible).toEqual(cv("jamie"));
     const grown = syncRotation(s, input({ order: ["ryu", "jamie", "chunli"] }));
-    expect(grown.visible).toBe("jamie");
-    expect(advanceRotation(grown, ["ryu", "jamie", "chunli"]).visible).toBe("chunli");
+    expect(grown.visible).toEqual(cv("jamie"));
+    expect(advanceRotation(grown, input({ order: ["ryu", "jamie", "chunli"] })).visible).toEqual(
+      cv("chunli"),
+    );
   });
 
   it("14–15. resume after priority continues with the NEXT character, never the same", () => {
     expect(resumeAfterPriority(order, "jamie")).toBe("ryu");
     let s = initRotation(input({ order }));
     s = syncRotation(s, input({ order, totalGames: 29, activeCharacterKey: "jamie" }));
-    const resumed = advanceRotation(s, order);
-    expect(resumed).toMatchObject({ visible: "ryu", priority: null });
+    const resumed = advanceRotation(s, input({ order: order }));
+    expect(resumed).toMatchObject({ visible: cv("ryu"), priority: null });
     expect(resumed.shownSeq).toBe(s.shownSeq + 1);
   });
 });
@@ -213,7 +228,7 @@ describe("match signal & priority (pure)", () => {
       again,
       input({ order, totalGames: 31, activeCharacterKey: "chunli" }),
     );
-    expect(other).toMatchObject({ visible: "chunli", priority: "chunli" });
+    expect(other).toMatchObject({ visible: cv("chunli"), priority: "chunli" });
   });
 
   it("priority disabled: matches update the baseline but never interrupt", () => {
@@ -222,15 +237,15 @@ describe("match signal & priority (pure)", () => {
       s,
       input({ order, totalGames: 29, activeCharacterKey: "jamie", prioritizeLatestMatch: false }),
     );
-    expect(next).toMatchObject({ visible: "ryu", priority: null, games: 29 });
+    expect(next).toMatchObject({ visible: cv("ryu"), priority: null, games: 29 });
   });
 
   it("delays: interval normally, priority seconds while prioritized", () => {
     const cfg = { intervalSeconds: 15, prioritySeconds: 30 } as const;
     let s = initRotation(input({ order }));
-    expect(rotationDelayMs(s, order, cfg)).toBe(15_000);
+    expect(rotationDelayMs(s, input({ order }), cfg)).toBe(15_000);
     s = syncRotation(s, input({ order, totalGames: 29, activeCharacterKey: "jamie" }));
-    expect(rotationDelayMs(s, order, cfg)).toBe(30_000);
+    expect(rotationDelayMs(s, input({ order }), cfg)).toBe(30_000);
   });
 
   it("new session ⇒ fresh cycle, no priority, and it is a baseline (not a match)", () => {
@@ -240,7 +255,7 @@ describe("match signal & priority (pure)", () => {
       s,
       input({ order: ["ken"], sessionId: "s2", totalGames: 1, activeCharacterKey: "ken" }),
     );
-    expect(fresh).toMatchObject({ sessionId: "s2", visible: "ken", priority: null, games: 1 });
+    expect(fresh).toMatchObject({ sessionId: "s2", visible: cv("ken"), priority: null, games: 1 });
   });
 });
 
@@ -253,6 +268,8 @@ describe("config (16, 93–94, 100)", () => {
       prioritizeLatestMatch: true,
       prioritySeconds: 20,
       order: "recent",
+      mode: "characters",
+      direction: "left",
     });
   });
 
@@ -511,11 +528,11 @@ describe("stale snapshots (monotonic match baseline)", () => {
   it("during an active priority: stale + current neither restart nor replace it", () => {
     let s = initRotation(at(20, "ryu"));
     s = syncRotation(s, at(21, "jamie")); // legitimate match → priority once
-    expect(s).toMatchObject({ visible: "jamie", priority: "jamie", games: 21 });
+    expect(s).toMatchObject({ visible: cv("jamie"), priority: "jamie", games: 21 });
     const epoch = s.epoch;
     s = syncRotation(s, at(20, "ryu")); // stale snapshot (older active character too)
     s = syncRotation(s, at(21, "jamie")); // current again
-    expect(s).toMatchObject({ visible: "jamie", priority: "jamie", games: 21, epoch });
+    expect(s).toMatchObject({ visible: cv("jamie"), priority: "jamie", games: 21, epoch });
   });
 
   it("a legitimate new match after a stale snapshot triggers priority exactly once", () => {
@@ -535,5 +552,322 @@ describe("stale snapshots (monotonic match baseline)", () => {
     s = syncRotation(s, at(1, "ryu", "s2"));
     expect(s).toMatchObject({ sessionId: "s2", games: 1, priority: null });
     expect(syncRotation(s, at(2, "jamie", "s2"))).toMatchObject({ priority: "jamie", games: 2 });
+  });
+});
+
+describe("Phase 5.3A: presentation modes (pure)", () => {
+  const S = SESSION_VIEW;
+  const C = (k: string) => characterView(k);
+  const order = ["chunli", "jamie", "ryu"];
+  const at = (mode: PresentationMode, over: Partial<RotationInput> = {}): RotationInput => ({
+    sessionId: "s1",
+    totalGames: 28,
+    activeCharacterKey: "chunli",
+    order,
+    prioritizeLatestMatch: true,
+    mode,
+    ...over,
+  });
+  const walk = (input: RotationInput, steps: number) => {
+    let s = initRotation(input);
+    const seen = [s.visible ? viewKey(s.visible) : null];
+    for (let i = 0; i < steps; i++) {
+      s = advanceRotation(s, input);
+      seen.push(s.visible ? viewKey(s.visible) : null);
+    }
+    return seen;
+  };
+
+  it("1–3. each mode's cycle (characters / session-active / session-all)", () => {
+    expect(walk(at("characters"), 3)).toEqual([
+      "character:chunli",
+      "character:jamie",
+      "character:ryu",
+      "character:chunli",
+    ]);
+    expect(walk(at("session-active"), 3)).toEqual([
+      "session",
+      "character:chunli",
+      "session",
+      "character:chunli",
+    ]);
+    expect(walk(at("session-all"), 6)).toEqual([
+      "session",
+      "character:chunli",
+      "session",
+      "character:jamie",
+      "session",
+      "character:ryu",
+      "session",
+    ]);
+  });
+
+  it("4. buildViews per mode", () => {
+    expect(buildViews("characters", order)).toEqual(order.map(C));
+    expect(buildViews("session-active", ["jamie"])).toEqual([S, C("jamie")]);
+    expect(buildViews("session-all", ["a", "b"])).toEqual([S, C("a"), S, C("b")]);
+  });
+
+  it("5. view identity is explicit and stable (session ≠ the active character's view)", () => {
+    expect(viewKey(S)).toBe("session");
+    expect(viewKey(C("chunli"))).toBe("character:chunli");
+    expect(sameView(C("ryu"), characterView("ryu"))).toBe(true);
+    expect(sameView(S, C("session"))).toBe(false); // a key can't impersonate the session
+    expect(viewKey(C("session"))).not.toBe(viewKey(S));
+  });
+
+  it("6. session-only (no played character): one view, no timer; characters mode: nothing", () => {
+    for (const mode of ["session-active", "session-all"] as const) {
+      const input = at(mode, { order: [], activeCharacterKey: null });
+      const s = initRotation(input);
+      expect(s.visible).toEqual(S);
+      expect(rotationDelayMs(s, input, ROTATION_ON)).toBeNull();
+    }
+    const none = at("characters", { order: [] });
+    expect(initRotation(none).visible).toBeNull();
+  });
+
+  it("7. session + ONE character = two views ⇒ it rotates (timer)", () => {
+    for (const mode of ["session-active", "session-all"] as const) {
+      const input = at(mode, { order: ["ryu"], activeCharacterKey: "ryu" });
+      const s = initRotation(input);
+      expect(rotationDelayMs(s, input, ROTATION_ON)).toBe(10_000);
+      expect(advanceRotation(s, input).visible).toEqual(C("ryu"));
+    }
+    // ...whereas one character in "characters" mode is one view: no timer (Phase 5.2).
+    const one = at("characters", { order: ["ryu"] });
+    expect(rotationDelayMs(initRotation(one), one, ROTATION_ON)).toBeNull();
+  });
+
+  it("8. distinct view counts", () => {
+    expect(distinctViewCount("characters", order)).toBe(3);
+    expect(distinctViewCount("session-all", order)).toBe(4);
+    expect(
+      distinctViewCount("session-active", modeCharacters("session-active", order, "ryu")),
+    ).toBe(2);
+  });
+
+  it("9–11. the orders only sort character views; the session stays interleaved", () => {
+    const roster = [
+      c("ryu", 17, 50, "Ryu"),
+      c("chunli", 3, 40, "Chun-Li"),
+      c("jamie", 8, 10, "Jamie"),
+    ];
+    for (const [o, expected] of [
+      ["recent", ["ryu", "chunli", "jamie"]],
+      ["mostPlayed", ["ryu", "jamie", "chunli"]],
+      ["alphabetical", ["chunli", "jamie", "ryu"]],
+    ] as const) {
+      const views = buildViews("session-all", rotationOrder(roster, o));
+      expect(views.filter((v) => v.kind === "session")).toHaveLength(3);
+      expect(views.flatMap((v) => (v.kind === "character" ? [v.characterKey] : []))).toEqual(
+        expected,
+      );
+    }
+  });
+
+  it("12. wrap-around in session-all", () => {
+    const input = at("session-all", { order: ["a", "b"] });
+    expect(walk(input, 5).slice(-2)).toEqual(["session", "character:a"]);
+  });
+
+  it("13. a new character joins the cycle without resetting the visible view", () => {
+    let s = initRotation(at("session-all"));
+    s = advanceRotation(s, at("session-all")); // chunli
+    const grown = syncRotation(s, at("session-all", { order: [...order, "cammy"] }));
+    expect(grown).toBe(s);
+  });
+
+  it("14. a removed character's view falls back deterministically (session in mixed modes)", () => {
+    let s = initRotation(at("session-all"));
+    s = advanceRotation(s, at("session-all")); // chunli
+    const after = syncRotation(s, at("session-all", { order: ["jamie", "ryu"] }));
+    expect(after.visible).toEqual(S);
+    const chars = syncRotation(
+      initRotation(at("characters")),
+      at("characters", { order: ["ryu"] }),
+    );
+    expect(chars.visible).toEqual(C("ryu"));
+  });
+
+  it("15–16. session-active follows the active character; an outdated view falls back", () => {
+    const input = at("session-active", { prioritizeLatestMatch: false });
+    let s = advanceRotation(initRotation(input), input); // chunli view
+    expect(s.visible).toEqual(C("chunli"));
+    // Jamie's match (priority off): Chun-Li's view is no longer part of the cycle ⇒ session.
+    s = syncRotation(s, { ...input, totalGames: 29, activeCharacterKey: "jamie" });
+    expect(s.visible).toEqual(S);
+    s = advanceRotation(s, { ...input, totalGames: 29, activeCharacterKey: "jamie" });
+    expect(s.visible).toEqual(C("jamie")); // SESIÓN → JAMIE → SESIÓN …
+  });
+
+  it("17–18. priority shows the match character's view; resume continues the mode's cycle", () => {
+    // session-all: S → chunli → S → jamie(priority) ⇒ S, then ryu.
+    const input = at("session-all");
+    let s = initRotation(input);
+    s = advanceRotation(s, input); // chunli
+    s = advanceRotation(s, input); // session
+    s = syncRotation(s, { ...input, totalGames: 29, activeCharacterKey: "jamie" });
+    expect(s).toMatchObject({ visible: C("jamie"), priority: "jamie" });
+    expect(rotationDelayMs(s, input, { intervalSeconds: 10, prioritySeconds: 20 })).toBe(20_000);
+    s = advanceRotation(s, { ...input, totalGames: 29 });
+    expect(s).toMatchObject({ visible: S, priority: null });
+    s = advanceRotation(s, { ...input, totalGames: 29 });
+    expect(s.visible).toEqual(C("ryu"));
+    // session-active: priority on Jamie ⇒ SESIÓN → JAMIE.
+    const sa = at("session-active");
+    let a = syncRotation(initRotation(sa), { ...sa, totalGames: 29, activeCharacterKey: "jamie" });
+    expect(a.visible).toEqual(C("jamie"));
+    const after = { ...sa, totalGames: 29, activeCharacterKey: "jamie" };
+    a = advanceRotation(a, after);
+    expect(a.visible).toEqual(S);
+    expect(advanceRotation(a, after).visible).toEqual(C("jamie"));
+  });
+
+  it("19. the same character again restarts priority without a transition; another replaces it", () => {
+    const input = at("session-all");
+    let s = syncRotation(initRotation(input), {
+      ...input,
+      totalGames: 29,
+      activeCharacterKey: "jamie",
+    });
+    const seq = s.shownSeq;
+    const again = syncRotation(s, { ...input, totalGames: 30, activeCharacterKey: "jamie" });
+    expect(again.epoch).toBe(s.epoch + 1);
+    expect(again.shownSeq).toBe(seq);
+    s = syncRotation(again, { ...input, totalGames: 31, activeCharacterKey: "ryu" });
+    expect(s).toMatchObject({ visible: C("ryu"), priority: "ryu" });
+  });
+
+  it("20. a new session restarts at the mode's first view, no priority", () => {
+    const input = at("session-active");
+    let s = syncRotation(initRotation(input), {
+      ...input,
+      totalGames: 29,
+      activeCharacterKey: "jamie",
+    });
+    s = syncRotation(s, { ...input, sessionId: "s2", totalGames: 1, activeCharacterKey: "ryu" });
+    expect(s).toMatchObject({ visible: S, priority: null, games: 1, sessionId: "s2" });
+  });
+
+  it("stale snapshots keep the view, the baseline and the priority (all modes)", () => {
+    for (const mode of PRESENTATION_MODES) {
+      const input = at(mode);
+      let s = syncRotation(initRotation(input), {
+        ...input,
+        totalGames: 29,
+        activeCharacterKey: "jamie",
+      });
+      const before = s;
+      s = syncRotation(s, { ...input, totalGames: 27, activeCharacterKey: "ryu", order: ["ryu"] });
+      expect(s).toBe(before);
+      expect(syncRotation(s, { ...input, totalGames: 29, activeCharacterKey: "jamie" })).toBe(
+        before,
+      );
+    }
+  });
+
+  it("22. config: new fields default for old blocks; invalid values are rejected on write", () => {
+    const old = { ...DEFAULT_CHARACTER_ROTATION } as Record<string, unknown>;
+    delete old.mode;
+    delete old.direction;
+    expect(parseCharacterRotation({ ...old, enabled: true })).toMatchObject({
+      enabled: true,
+      mode: "characters",
+      direction: "left",
+    });
+    // Strict write: missing new fields default (older builder), invalid ones are rejected.
+    expect(characterRotationSchema.parse(old)).toMatchObject({
+      mode: "characters",
+      direction: "left",
+    });
+    expect(characterRotationSchema.safeParse({ ...old, mode: "global" }).success).toBe(false);
+    expect(characterRotationSchema.safeParse({ ...old, direction: "diagonal" }).success).toBe(
+      false,
+    );
+    expect(characterRotationSchema.safeParse({ ...old, transition: "zoom" }).success).toBe(false);
+    expect(characterRotationSchema.safeParse({ ...old, transition: "wipe" }).success).toBe(true);
+    expect(parseCharacterRotation({ ...old, mode: "global", direction: 3 })).toMatchObject({
+      mode: "characters",
+      direction: "left",
+    });
+    // The whole Creator block survives an old rotation block (no drop on read).
+    const creator = parseCreatorCustomization({
+      ...DEFAULT_CREATOR_CUSTOMIZATION,
+      secondaryAccent: "#ff00aa",
+      characterRotation: old,
+    });
+    expect(creator).toMatchObject({
+      secondaryAccent: "#ff00aa",
+      characterRotation: { mode: "characters" },
+    });
+  });
+
+  it("transitions with a direction: slide and wipe only", () => {
+    expect(ROTATION_TRANSITIONS.filter(transitionHasDirection)).toEqual(["slide", "wipe"]);
+    expect(TRANSITION_DIRECTIONS).toEqual(["left", "right", "up", "down"]);
+    expect(effectiveTransition("wipe", { animations: false, reducedMotion: false })).toBe(
+      "instant",
+    );
+  });
+});
+
+describe("Phase 5.3A: entitlements & compatibility (65–72)", () => {
+  const modes = {
+    ...ROTATION_ON,
+    mode: "session-all" as const,
+    transition: "wipe" as const,
+    direction: "up" as const,
+  };
+  it("65–66. Creator runs every mode; Free's effective config has no rotation", () => {
+    expect(
+      getEffectiveOverlayConfig(withRotation(modes), CREATOR_ENT).creator?.characterRotation,
+    ).toEqual(modes);
+    expect(
+      getEffectiveOverlayConfig(withRotation(modes), FREE_ENT).creator?.characterRotation,
+    ).toBeUndefined();
+  });
+
+  it("67–69. a crafted Free request can't change modes; downgrade keeps them; renewal restores", () => {
+    const stored = withRotation(modes);
+    const crafted = withRotation({ ...modes, mode: "characters", direction: "left" });
+    const merged = mergeOverlayConfigForSave(stored, crafted, FREE_ENT);
+    expect(merged.creator?.characterRotation).toEqual(modes);
+    expect(getEffectiveOverlayConfig(merged, CREATOR_ENT).creator?.characterRotation).toEqual(
+      modes,
+    );
+  });
+
+  it("70. presets carry the new fields inside the Creator block", () => {
+    const parsed = presetAppearanceSchema.safeParse({
+      ...Object.fromEntries(
+        Object.keys(presetAppearanceSchema.shape).map((k) => [
+          k,
+          (DEFAULT_OVERLAY_CONFIG as Record<string, unknown>)[k],
+        ]),
+      ),
+      creator: withRotation(modes).creator,
+    });
+    expect(parsed.success && parsed.data.creator?.characterRotation).toEqual(modes);
+  });
+
+  it("71. an old stored rotation block (no mode/direction) reads as Phase 5.2", () => {
+    const old = {
+      enabled: true,
+      intervalSeconds: 15,
+      transition: "slide",
+      prioritizeLatestMatch: true,
+      prioritySeconds: 20,
+      order: "recent",
+    };
+    const cfg = parseOverlayConfig({
+      ...DEFAULT_OVERLAY_CONFIG,
+      creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, characterRotation: old },
+    });
+    expect(cfg.creator?.characterRotation).toEqual({
+      ...old,
+      mode: "characters",
+      direction: "left",
+    });
   });
 });

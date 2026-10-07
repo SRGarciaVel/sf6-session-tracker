@@ -119,6 +119,13 @@ export interface OverlaySummary {
    * is on screen) and a match is detected from them alone. Switching mode is a config edit.
    */
   mode: "fixed" | "rotation";
+  /**
+   * Phase 5.3A: identity of the presentation view in rotation mode ("session",
+   * "character:<key>"); null/absent in fixed mode. Two summaries of different views never have
+   * their ratings compared (a session view showing the active character's rating is not that
+   * character's view).
+   */
+  view?: string | null;
   /** Character whose rating is shown (changing it — a config edit or a rotation — is not an update). */
   character: string | null;
   totalGames: number;
@@ -146,6 +153,7 @@ export function summaryKey(s: OverlaySummary): string {
     s.sessionId ?? "-",
     s.scope,
     s.mode,
+    s.view ?? "-",
     s.character ?? "-",
     s.totalGames,
     s.wins,
@@ -208,7 +216,8 @@ export function detectOverlayChange(
     return null;
   }
   const matchCompleted = next.totalGames > prev.totalGames;
-  const sameCharacter = prev.character === next.character;
+  const sameCharacter =
+    prev.character === next.character && (prev.view ?? null) === (next.view ?? null);
   if (!sameCharacter && (next.mode === "fixed" || !matchCompleted)) return null;
   const ratingChanged = sameCharacter && prev.rating !== next.rating;
   const rankChanged = sameCharacter && prev.rank !== next.rank;

@@ -224,6 +224,11 @@ close OBS mid-session and come back to correct stats. Each poll fetches recent m
     numbers and none recomputes anything. The live payload still carries the global stats plus
     every character's stats. The scope is part of the motion summary, so switching scope never
     plays a match effect.
+- **Presentation modes** (Phase 5.3A) generalize rotation to **views**: a session view or a
+  character view, a discriminated `PresentationView`. `resolvePresentation()`
+  (`domain/overlay/presentation.ts`) is the single projection from the current view to the
+  config the themes render (statistics scope, rating character, view label in the title). It is
+  never saved; no theme has view logic and no global rating is invented.
 - **Creator character rotation** (Phase 5.2, [creator-overlays.md](creator-overlays.md)) is
   presentation state in the browser only. `useCharacterRotation` picks a session character
   (games > 0) and OverlayView renders it through a presentation config, never saved. Nothing is

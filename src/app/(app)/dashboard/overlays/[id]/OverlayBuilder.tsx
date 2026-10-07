@@ -31,8 +31,9 @@ import { getOverlayMessages } from "@/i18n/overlay-messages";
 import { saveOverlayAction } from "../../actions";
 import { useLiveDashboard } from "../../_components/LiveDashboard";
 import { EDITOR_TABS, isDirty, type EditorSnapshot, type EditorTab } from "./builder-state";
+import { DEFAULT_CHARACTER_ROTATION } from "@/domain/overlay/rotation";
 import { CreatorPanel } from "./CreatorPanel";
-import { rotationCharacterNames } from "./rotation-preview";
+import { rotationViewSequence } from "./rotation-preview";
 import { ObsOutput } from "./ObsOutput";
 import { AppearancePanel, ContentPanel, StylePanel, type Update } from "./panels";
 import { PreviewPane } from "./PreviewPane";
@@ -350,9 +351,9 @@ export function OverlayBuilder({
                   creatorPresets={access.creatorPresets}
                   motionEffects={access.motionEffects}
                   characterRotation={access.characterRotation}
-                  rotationCharacters={rotationCharacterNames(
+                  rotationViews={rotationViewSequence(
                     state.live.session,
-                    config.creator?.characterRotation?.order ?? "recent",
+                    config.creator?.characterRotation ?? DEFAULT_CHARACTER_ROTATION,
                   )}
                   overlayId={overlayId}
                   presets={presets}

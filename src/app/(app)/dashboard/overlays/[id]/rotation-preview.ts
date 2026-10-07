@@ -1,25 +1,41 @@
 /**
- * Builder helpers for character rotation (Phase 5.2). Display only: which characters would
- * rotate, from data the builder already has (the live state, else the preview sample). No
- * queries, and characters with 0 games never appear (same rule as the overlay).
+ * Builder helpers for automatic presentation (Phase 5.2 rotation, Phase 5.3A modes). Display
+ * only: the views the overlay would cycle through now, from data the builder already has (the
+ * live state, else the preview sample). No queries; characters with 0 games never appear and
+ * the sequence comes from the same domain functions the overlay runs.
  */
 import { sampleMultiCharacterState } from "@/domain/overlay/sample-session";
 import type { LiveSessionState } from "@/domain/overlay/state";
-import { rotationOrder, type RotationOrder } from "@/domain/overlay/rotation";
+import {
+  buildViews,
+  modeCharacters,
+  rotationOrder,
+  type CharacterRotation,
+} from "@/domain/overlay/rotation";
 
 const SAMPLE_SESSION = sampleMultiCharacterState().session;
 
-function names(session: LiveSessionState, order: RotationOrder): string[] {
+/** One cycle of views: null = the session view, else the character's displayed name. */
+function cycle(
+  session: LiveSessionState,
+  rotation: Pick<CharacterRotation, "mode" | "order">,
+): Array<string | null> {
   const byKey = new Map(session.characters.map((c) => [c.characterKey, c.characterName]));
-  return rotationOrder(session.characters, order).map((k) => byKey.get(k) ?? k);
+  const order = rotationOrder(session.characters, rotation.order);
+  const characters = modeCharacters(rotation.mode, order, session.activeCharacterKey);
+  // "characters" with nobody played is the normal overlay: nothing cycles.
+  if (rotation.mode === "characters" && characters.length === 0) return [];
+  return buildViews(rotation.mode, characters).map((v) =>
+    v.kind === "session" ? null : (byKey.get(v.characterKey) ?? v.characterKey),
+  );
 }
 
-export function rotationCharacterNames(
+export function rotationViewSequence(
   live: LiveSessionState,
-  order: RotationOrder,
-): { names: string[]; sample: boolean } {
-  const fromLive = live.status === "active" ? names(live, order) : [];
-  return fromLive.length > 0
-    ? { names: fromLive, sample: false }
-    : { names: names(SAMPLE_SESSION, order), sample: true };
+  rotation: Pick<CharacterRotation, "mode" | "order">,
+): { views: Array<string | null>; sample: boolean } {
+  const played = live.status === "active" && live.characters.some((c) => c.games > 0);
+  return played
+    ? { views: cycle(live, rotation), sample: false }
+    : { views: cycle(SAMPLE_SESSION, rotation), sample: true };
 }

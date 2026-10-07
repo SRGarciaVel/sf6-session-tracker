@@ -778,41 +778,68 @@
     "ratingCharacterHintScoped": "Este personaje decide el rating, el rango y las estadísticas del overlay. Si no tiene partidas en la sesión, se muestran a cero.",
     "sampleCharacter": "Personaje de ejemplo",
     "rotation": {
-      "title": "Rotación de personajes",
-      "enabled": "Rotación automática",
+      "title": "Presentación automática",
+      "enabled": "Activar presentación automática",
       "requiresCreator": "Creator Beta requerido.",
-      "summary": "Muestra por turnos los personajes jugados en la sesión, cada uno con su rating y rango (y sus estadísticas si «Estadísticas mostradas» es «Personaje mostrado»).",
-      "interval": "Intervalo entre personajes",
+      "summary": "Alterna automáticamente vistas del overlay: la sesión completa y/o los personajes jugados, cada uno con su rating, rango y estadísticas.",
+      "interval": "Intervalo entre vistas",
       "seconds": "{n} segundos",
-      "transition": "Transición",
+      "transition": "Tipo de transición",
       "transitions": {
         "fade": "Fundido",
         "slide": "Deslizamiento",
+        "wipe": "Barrido",
         "instant": "Instantánea"
       },
-      "order": "Orden de rotación",
+      "order": "Orden de personajes",
       "orders": {
         "recent": "Más recientes primero",
         "mostPlayed": "Más jugados primero",
         "alphabetical": "Alfabético"
       },
-      "prioritize": "Priorizar personaje de la última partida",
+      "prioritize": "Priorizar última partida",
       "priorityDuration": "Tiempo de prioridad",
-      "priorityHint": "Tras una partida nueva se muestra su personaje durante este tiempo; después se reanuda la rotación.",
-      "priorityOffHint": "Las partidas nuevas actualizan las cifras sin interrumpir la rotación.",
-      "included": "Personajes incluidos",
+      "priorityHint": "Tras una partida nueva se muestra la vista de su personaje durante este tiempo; después se reanuda la secuencia.",
+      "priorityOffHint": "Las partidas nuevas actualizan las cifras sin interrumpir la secuencia.",
+      "included": "Secuencia",
       "sample": "datos de ejemplo",
-      "noCharacters": "Sin personajes disponibles: la rotación empieza cuando juegues partidas en la sesión.",
-      "pinnedNote": "Durante la rotación se muestran los personajes de la sesión. Al desactivarla se recupera el personaje fijado.",
-      "overridesCharacter": "La rotación de personajes (Creator) está activa: sustituye temporalmente esta elección en el overlay.",
-      "resume": "Reanudar"
+      "noCharacters": "Sin personajes disponibles: la presentación empieza cuando juegues partidas en la sesión.",
+      "pinnedNote": "Durante la presentación automática se muestran las vistas de la sesión. Al desactivarla se recupera el personaje fijado.",
+      "overridesCharacter": "La presentación automática (Creator) está activa: sustituye temporalmente esta elección en el overlay.",
+      "resume": "Reanudar",
+      "mode": "Modo de presentación",
+      "modes": {
+        "characters": {
+          "label": "Solo personajes",
+          "hint": "Rota entre los personajes jugados. Las victorias y derrotas siguen «Estadísticas mostradas» (Contenido)."
+        },
+        "session-active": {
+          "label": "Sesión + personaje activo",
+          "hint": "Alterna la sesión completa y el personaje de la última partida, con sus propias estadísticas. Funciona también con un solo personaje."
+        },
+        "session-all": {
+          "label": "Sesión + todos los personajes",
+          "hint": "Muestra la sesión antes de cada personaje jugado: Sesión → Personaje 1 → Sesión → Personaje 2…"
+        }
+      },
+      "direction": "Dirección",
+      "directions": {
+        "left": "Izquierda",
+        "right": "Derecha",
+        "up": "Arriba",
+        "down": "Abajo"
+      },
+      "directionHint": "Lado por el que entra la nueva vista.",
+      "viewSession": "Sesión",
+      "viewCharacter": "Vista de personaje",
+      "viewLabelHint": "El título del overlay identifica la vista («Sesión» o el personaje). Un título personalizado se conserva: «Tu título · Sesión». En la vista de sesión el rating es el del personaje de la última partida, con su nombre."
     },
     "rotationTest": {
-      "start": "Probar rotación",
+      "start": "Probar presentación",
       "stop": "Salir de la prueba",
-      "intro": "Prueba la rotación con datos de ejemplo (Chun-Li, Jamie, Ryu). No guarda nada.",
-      "active": "Probando la rotación con datos de ejemplo.",
-      "hint": "Cambia cada {interval} s. Una partida simulada prioriza su personaje {priority} s y después se reanuda la rotación.",
+      "intro": "Prueba la presentación automática con datos de ejemplo (Chun-Li, Jamie, Ryu). No guarda nada.",
+      "active": "Probando la presentación con datos de ejemplo.",
+      "hint": "Cambia cada {interval} s. Una partida simulada prioriza la vista de su personaje {priority} s y después se reanuda la secuencia.",
       "character": "Personaje",
       "simulate": "Simular partida",
       "done": {

@@ -25,7 +25,13 @@ import {
 } from "@/domain/overlay/state";
 import { motionProfile, type OverlaySummary } from "@/domain/overlay/motion";
 import { MotionFx, MotionProvider, useOverlayUpdate, usePrefersReducedMotion } from "./motion";
-import { effectiveTransition } from "@/domain/overlay/rotation";
+import { resolvePresentation } from "@/domain/overlay/presentation";
+import {
+  effectiveTransition,
+  transitionHasDirection,
+  viewKey,
+  type PresentationView,
+} from "@/domain/overlay/rotation";
 import { useCharacterRotation } from "./rotation";
 import { formatWinRate } from "@/domain/format";
 import { BroadcastTheme, PrestigeTheme, RankCardTheme } from "./creator-themes";
@@ -83,13 +89,20 @@ export function overlayStyle(config: OverlayConfig, sizing: OverlaySizing, fit =
 
 /* ─────────────── Minimal — broadcast lower-third ─────────────── */
 
-function MinimalTheme({ config, live }: ThemeProps) {
+function MinimalTheme({ config, live, viewLabel }: ThemeProps) {
   const t = useTranslations("Overlay");
   const locale = config.locale;
   const s = live.session;
   const f = config.fields;
   const r = ratingParts(live, config);
   const items: Array<{ key: string; node: ReactNode }> = [];
+
+  // Minimal has no title slot: the presentation view identifier (mixed modes) leads the line.
+  if (viewLabel)
+    items.push({
+      key: "view",
+      node: <span className="ov-accent ov-upper ov-view">{viewLabel}</span>,
+    });
 
   if (f.wins || f.losses) {
     items.push({
@@ -497,15 +510,19 @@ function useFitToBox() {
 
 /**
  * Data-only summary for update detection (never config: edits must not "play" an update).
- * `display` is the PRESENTATION config (rotation may have replaced the character). In rotation
- * mode the counters are the global session ones, so a rotation step never looks like a match
- * and a real match is detected whatever character is on screen (motion.ts).
+ * `display` is the PRESENTATION config (rotation may have replaced the character and, in the
+ * mixed modes, the statistics scope). In rotation mode the counters are the global session ones
+ * and the scope is the STORED one (a view change switches the shown scope, which must not reset
+ * the baseline), so a view step never looks like a match and a real match is detected whatever
+ * view is on screen (motion.ts). The view identity keeps ratings of different views apart.
  */
 function overlaySummary(
   live: PlayerLiveState,
+  config: OverlayConfig,
   display: OverlayConfig,
   stats: OverlayStats,
   rotating: boolean,
+  view: PresentationView | null,
 ): OverlaySummary {
   const c = pickRatingCharacter(live.session, display.ratingCharacterKey);
   const counters = rotating ? live.session : stats;
@@ -513,8 +530,9 @@ function overlaySummary(
     // Session identity also on the public (OBS) payload, which has no sessionId.
     sessionId: sessionIdentity(live.session),
     // The statistics being shown (scope + their counters): switching scope is a new baseline.
-    scope: stats.scope,
+    scope: rotating ? config.statsScope : stats.scope,
     mode: rotating ? "rotation" : "fixed",
+    view: rotating && view ? viewKey(view) : null,
     character: c?.characterKey ?? null,
     totalGames: counters.totalGames,
     wins: counters.wins,
@@ -523,16 +541,6 @@ function overlaySummary(
     rank: c?.current?.rank ?? null,
     streak: stats.currentWinStreak,
   };
-}
-
-/**
- * Presentation config for this render: with Creator rotation, the rotated character temporarily
- * takes the place of `ratingCharacterKey` — for EVERYTHING the themes draw (name, rating, rank,
- * delta, emblem, and the statistics via resolveOverlayStats), so characters can never mix.
- * Never saved: the stored pinned character is back as soon as rotation stops.
- */
-function presentationConfig(config: OverlayConfig, characterKey: string | null): OverlayConfig {
-  return characterKey === null ? config : { ...config, ratingCharacterKey: characterKey };
 }
 
 /**
@@ -558,10 +566,16 @@ function withDisplayedStats(live: PlayerLiveState, stats: OverlayStats): PlayerL
   };
 }
 
-function ThemeView({ config, live }: ThemeProps) {
+/** Localized default session word in the OVERLAY's language (view identifier). */
+function sessionLabel(locale: OverlayConfig["locale"]): string {
+  const strings = getOverlayMessages(locale).Overlay;
+  return typeof strings === "object" && typeof strings.session === "string" ? strings.session : "";
+}
+
+function ThemeView({ config, live, viewLabel }: ThemeProps) {
   switch (config.theme) {
     case "minimal":
-      return <MinimalTheme config={config} live={live} />;
+      return <MinimalTheme config={config} live={live} viewLabel={viewLabel} />;
     case "competitive":
       return <CompetitiveTheme config={config} live={live} />;
     case "fighter":
@@ -585,17 +599,24 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
     animations: config.animations,
     reducedMotion,
   });
-  // Phase 5.2: Creator rotation (only in an entitled owner's EFFECTIVE config) picks the
-  // character to represent; null = the config's own choice (pinned, else active).
+  // Phase 5.2/5.3A: Creator rotation (only in an entitled owner's EFFECTIVE config) picks the
+  // view to represent; null = the config's own choice (pinned, else active character). The ONE
+  // presentation projection turns it into the config every theme renders (never saved).
   const rotationConfig = config.creator?.characterRotation;
   const rotation = useCharacterRotation(live.session, rotationConfig);
   const rotating = rotationConfig?.enabled === true && live.session.status === "active";
-  const display = presentationConfig(config, rotation?.characterKey ?? null);
+  const { config: display, viewLabel } = resolvePresentation(
+    config,
+    live.session,
+    rotation?.view ?? null,
+    rotationConfig?.mode ?? "characters",
+    { session: sessionLabel(config.locale) },
+  );
   // Phase 5.1: the ONE projection of the statistics this overlay shows (session or character).
   const stats = resolveOverlayStats(live.session, display);
   const shown = withDisplayedStats(live, stats);
   const update = useOverlayUpdate(
-    overlaySummary(live, display, stats, rotating),
+    overlaySummary(live, config, display, stats, rotating, rotation?.view ?? null),
     profile?.clearAfterMs ?? null,
   );
   const transition =
@@ -605,6 +626,10 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
           reducedMotion,
         })
       : null;
+  const direction =
+    transition && rotationConfig && transitionHasDirection(transition)
+      ? rotationConfig.direction
+      : undefined;
   const motionAttrs = profile
     ? {
         "data-motion-style": profile.style,
@@ -647,15 +672,18 @@ export function OverlayView({ config, live, sizing }: OverlayViewProps) {
       >
         <MotionProvider value={{ update, sweep: profile?.accent === "sweep" }}>
           {rotation ? (
-            // Rotation stage: static (it is what fit-to-box measures); the inner frame is re-keyed
-            // per character, so the transition runs once on the new content and no old DOM stays.
+            // Rotation stage: static (fit-to-box measures the panel inside it); the inner frame is
+            // re-keyed per VIEW, so the transition runs once on the new content and no old DOM
+            // stays. A repeated view (e.g. priority restarted) keeps the same element.
             <div className="ov-rot-stage">
               <div
-                key={rotation.characterKey}
+                key={viewKey(rotation.view)}
                 className="ov-rot-frame"
                 data-rot-transition={rotation.seq > 0 ? (transition ?? "instant") : undefined}
+                data-rot-direction={rotation.seq > 0 ? direction : undefined}
+                data-view={rotation.view.kind}
               >
-                <ThemeView config={display} live={shown} />
+                <ThemeView config={display} live={shown} viewLabel={viewLabel} />
               </div>
             </div>
           ) : (

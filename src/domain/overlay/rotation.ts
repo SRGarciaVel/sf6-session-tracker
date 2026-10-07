@@ -1,7 +1,13 @@
 /**
- * Creator character rotation & latest-match priority (Phase 5.2, docs/creator-overlays.md).
+ * Creator character rotation & latest-match priority (Phase 5.2) evolved into presentation modes
+ * (Phase 5.3A, docs/creator-overlays.md): the overlay cycles through VIEWS — the session view
+ * (global statistics) and character views (one character's own statistics and rating).
  *
- * PRESENTATION state only: rotation decides which session character the overlay represents for a
+ *   mode "characters"      character views only (Phase 5.2, the default for old configs)
+ *   mode "session-active"  session ↔ the active character (character of the latest match)
+ *   mode "session-all"     session before each played character
+ *
+ * PRESENTATION state only: rotation decides which view the overlay represents for a
  * while. It never changes wins, losses, streaks, ratings, the session, the authoritative active
  * character or the stored `ratingCharacterKey`, and nothing about it is persisted (no index, no
  * timer state). The browser rendering the overlay owns its timers; the server owns nothing.
@@ -18,13 +24,23 @@ import type { CharacterKey } from "@/domain/sf6/types";
 
 export const ROTATION_INTERVALS = [5, 10, 15, 20, 30] as const;
 export const PRIORITY_DURATIONS = [10, 15, 20, 30, 60] as const;
-export const ROTATION_TRANSITIONS = ["fade", "slide", "instant"] as const;
+export const ROTATION_TRANSITIONS = ["fade", "slide", "wipe", "instant"] as const;
 export const ROTATION_ORDERS = ["recent", "mostPlayed", "alphabetical"] as const;
+export const PRESENTATION_MODES = ["characters", "session-active", "session-all"] as const;
+/** Side the NEW view enters from (slide / wipe only). "left" is the Phase 5.2 slide. */
+export const TRANSITION_DIRECTIONS = ["left", "right", "up", "down"] as const;
 
 export type RotationInterval = (typeof ROTATION_INTERVALS)[number];
 export type PriorityDuration = (typeof PRIORITY_DURATIONS)[number];
 export type RotationTransition = (typeof ROTATION_TRANSITIONS)[number];
 export type RotationOrder = (typeof ROTATION_ORDERS)[number];
+export type PresentationMode = (typeof PRESENTATION_MODES)[number];
+export type TransitionDirection = (typeof TRANSITION_DIRECTIONS)[number];
+
+/** Transitions that move along a direction (fade and instant have none). */
+export function transitionHasDirection(t: RotationTransition): boolean {
+  return t === "slide" || t === "wipe";
+}
 
 export const characterRotationSchema = z.strictObject({
   enabled: z.boolean(),
@@ -33,6 +49,10 @@ export const characterRotationSchema = z.strictObject({
   prioritizeLatestMatch: z.boolean(),
   prioritySeconds: z.literal([...PRIORITY_DURATIONS]),
   order: z.enum(ROTATION_ORDERS),
+  // Phase 5.3A. Missing on blocks written before it ⇒ the Phase 5.2 behaviour (also on writes,
+  // so an older builder can still save); invalid values are rejected.
+  mode: z.enum(PRESENTATION_MODES).default("characters"),
+  direction: z.enum(TRANSITION_DIRECTIONS).default("left"),
 });
 export type CharacterRotation = z.infer<typeof characterRotationSchema>;
 
@@ -44,6 +64,8 @@ export const DEFAULT_CHARACTER_ROTATION: CharacterRotation = {
   prioritizeLatestMatch: true,
   prioritySeconds: 20,
   order: "recent",
+  mode: "characters",
+  direction: "left",
 };
 
 /**
@@ -66,6 +88,8 @@ export function parseCharacterRotation(raw: unknown): CharacterRotation | undefi
     prioritizeLatestMatch: pick("prioritizeLatestMatch"),
     prioritySeconds: pick("prioritySeconds"),
     order: pick("order"),
+    mode: pick("mode"),
+    direction: pick("direction"),
   };
 }
 
@@ -132,6 +156,108 @@ export function resumeAfterPriority(
   return nextCharacter(order, prioritized);
 }
 
+/* ───────── presentation views ───────── */
+
+/**
+ * What the overlay represents: the session (global statistics) or one character (its own
+ * statistics and rating). Explicitly discriminated — the session view is never a fake key.
+ */
+export type PresentationView =
+  { kind: "session" } | { kind: "character"; characterKey: CharacterKey };
+
+export const SESSION_VIEW: PresentationView = { kind: "session" };
+export const characterView = (characterKey: CharacterKey): PresentationView => ({
+  kind: "character",
+  characterKey,
+});
+
+/** Stable identity of a view (render keys, motion summaries) — never serialized JSON. */
+export function viewKey(view: PresentationView): string {
+  return view.kind === "session" ? "session" : `character:${view.characterKey}`;
+}
+
+export function sameView(a: PresentationView | null, b: PresentationView | null): boolean {
+  return a === b || (a !== null && b !== null && viewKey(a) === viewKey(b));
+}
+
+/**
+ * Characters that get a view in this mode, in order. "session-active" has at most one: the
+ * character of the latest counted match (authoritative `activeCharacterKey`; it is NOT the
+ * character currently selected in the game, which SST doesn't know), else the first eligible.
+ */
+export function modeCharacters(
+  mode: PresentationMode,
+  order: readonly CharacterKey[],
+  activeCharacterKey: CharacterKey | null,
+): CharacterKey[] {
+  if (mode !== "session-active") return [...order];
+  if (activeCharacterKey !== null && order.includes(activeCharacterKey))
+    return [activeCharacterKey];
+  return order.slice(0, 1);
+}
+
+/**
+ * The cycle a mode produces (docs/tests; the state machine navigates it without a flat index
+ * because "session-all" repeats the session view):
+ *   characters      C1 → C2 → C3
+ *   session-active  S → A
+ *   session-all     S → C1 → S → C2 → S → C3
+ * No played characters: characters ⇒ [] (the normal overlay), mixed modes ⇒ [S].
+ */
+export function buildViews(
+  mode: PresentationMode,
+  characters: readonly CharacterKey[],
+): PresentationView[] {
+  if (mode === "characters") return characters.map(characterView);
+  if (characters.length === 0) return [SESSION_VIEW];
+  if (mode === "session-active") return [SESSION_VIEW, characterView(characters[0] ?? "")];
+  return characters.flatMap((k) => [SESSION_VIEW, characterView(k)]);
+}
+
+/** Number of DIFFERENT views (session + one character = 2, so it rotates). */
+export function distinctViewCount(mode: PresentationMode, characters: readonly CharacterKey[]) {
+  return mode === "characters" ? characters.length : 1 + characters.length;
+}
+
+export function isViewValid(
+  view: PresentationView,
+  mode: PresentationMode,
+  characters: readonly CharacterKey[],
+): boolean {
+  return view.kind === "session" ? mode !== "characters" : characters.includes(view.characterKey);
+}
+
+/** First view of a fresh cycle (also the deterministic fallback). */
+export function initialView(
+  mode: PresentationMode,
+  characters: readonly CharacterKey[],
+): PresentationView | null {
+  if (mode !== "characters") return SESSION_VIEW;
+  const first = characters[0];
+  return first === undefined ? null : characterView(first);
+}
+
+/**
+ * The view after `current`. `lastCharacter` is the cycle's cursor (the last character view
+ * shown), needed because the session view repeats in "session-all".
+ */
+export function nextView(
+  mode: PresentationMode,
+  characters: readonly CharacterKey[],
+  current: PresentationView | null,
+  lastCharacter: CharacterKey | null,
+): PresentationView | null {
+  if (mode === "characters") {
+    const from = current?.kind === "character" ? current.characterKey : lastCharacter;
+    const k = nextCharacter(characters, from);
+    return k === null ? null : characterView(k);
+  }
+  if (characters.length === 0) return SESSION_VIEW;
+  if (current?.kind === "character") return SESSION_VIEW;
+  const k = mode === "session-active" ? characters[0] : nextCharacter(characters, lastCharacter);
+  return k === undefined || k === null ? SESSION_VIEW : characterView(k);
+}
+
 /* ───────── state machine ───────── */
 
 /** Authoritative inputs from the live state (plus the presentation config). */
@@ -140,8 +266,11 @@ export interface RotationInput {
   totalGames: number;
   /** Character of the latest counted match (authoritative). */
   activeCharacterKey: CharacterKey | null;
+  /** Eligible characters (games > 0) in the configured order. */
   order: readonly CharacterKey[];
   prioritizeLatestMatch: boolean;
+  /** Presentation mode (default: Phase 5.2 "characters"). */
+  mode?: PresentationMode;
 }
 
 export interface RotationState {
@@ -151,21 +280,29 @@ export interface RotationState {
    */
   sessionId: string | null;
   games: number;
-  /** Character currently represented (null = nothing eligible). */
-  visible: CharacterKey | null;
-  /** Character shown because of a new match, until its priority period ends. */
+  /** View currently represented (null = nothing to show: "characters" with no played one). */
+  visible: PresentationView | null;
+  /** Cursor of the cycle: the last character view shown. */
+  lastCharacter: CharacterKey | null;
+  /** Character whose view is shown because of a new match, until its priority period ends. */
   priority: CharacterKey | null;
-  /** Bumps whenever the pending timer must restart (new visible character or new priority). */
+  /** Bumps whenever the pending timer must restart (new visible view or new priority). */
   epoch: number;
-  /** Bumps whenever `visible` changes to another character (drives the visual transition). */
+  /** Bumps whenever `visible` changes to another view (drives the visual transition). */
   shownSeq: number;
 }
 
+const modeOf = (input: Pick<RotationInput, "mode">): PresentationMode => input.mode ?? "characters";
+const charactersOf = (input: RotationInput) =>
+  modeCharacters(modeOf(input), input.order, input.activeCharacterKey);
+
 export function initRotation(input: RotationInput): RotationState {
+  const visible = initialView(modeOf(input), charactersOf(input));
   return {
     sessionId: input.sessionId,
     games: input.totalGames,
-    visible: input.order[0] ?? null,
+    visible,
+    lastCharacter: visible?.kind === "character" ? visible.characterKey : null,
     priority: null,
     epoch: 0,
     shownSeq: 0,
@@ -188,8 +325,12 @@ export function detectNewMatch(state: RotationState, input: RotationInput): Char
   return key !== null && input.order.includes(key) ? key : null;
 }
 
-function show(state: RotationState, visible: CharacterKey | null): RotationState {
-  return visible === state.visible ? state : { ...state, visible, shownSeq: state.shownSeq + 1 };
+function show(state: RotationState, visible: PresentationView | null): RotationState {
+  const lastCharacter = visible?.kind === "character" ? visible.characterKey : state.lastCharacter;
+  if (sameView(visible, state.visible)) {
+    return lastCharacter === state.lastCharacter ? state : { ...state, lastCharacter };
+  }
+  return { ...state, visible, lastCharacter, shownSeq: state.shownSeq + 1 };
 }
 
 /**
@@ -197,56 +338,59 @@ function show(state: RotationState, visible: CharacterKey | null): RotationState
  * changed, so the controller can call it on every render without looping or restarting timers.
  *  - new session ⇒ fresh cycle, no priority, the new state is a baseline (not a match);
  *  - stale snapshot (fewer games in the same session) ⇒ no change at all (monotonic baseline);
- *  - new match + priority enabled ⇒ show that character now and (re)start its priority period —
- *    also when it is already visible (the period restarts, no transition) and replacing any
- *    other priority (no queue);
- *  - roster changes ⇒ a visible/prioritized character that is no longer eligible is dropped;
- *    one that still is stays visible (a new character just joins the order).
+ *  - new match + priority enabled ⇒ show that character's view now and (re)start its priority
+ *    period — also when it is already visible (the period restarts, no transition) and
+ *    replacing any other priority (no queue);
+ *  - roster / active-character changes ⇒ a visible view that is no longer valid falls back to
+ *    the mode's first view; a still valid one stays (new characters just join the cycle).
  */
 export function syncRotation(state: RotationState, input: RotationInput): RotationState {
   if (input.sessionId !== state.sessionId) return initRotation(input);
   // Stale snapshot (fewer games than already seen in this session): ignored entirely. The
   // baseline is not lowered (so the current snapshot arriving again is not a "new" match) and
-  // its possibly outdated roster can't cancel a priority or replace the visible character.
+  // its possibly outdated roster can't cancel a priority or replace the visible view.
   if (input.totalGames < state.games) return state;
+  const mode = modeOf(input);
+  const characters = charactersOf(input);
   let next = state;
   const matched = detectNewMatch(state, input);
   if (input.totalGames > state.games) next = { ...next, games: input.totalGames };
   if (matched !== null && input.prioritizeLatestMatch) {
-    next = { ...show(next, matched), priority: matched, epoch: next.epoch + 1 };
+    next = { ...show(next, characterView(matched)), priority: matched, epoch: next.epoch + 1 };
   }
-  if (next.priority !== null && !input.order.includes(next.priority)) {
+  if (next.priority !== null && !characters.includes(next.priority)) {
     next = { ...next, priority: null, epoch: next.epoch + 1 };
   }
-  if (next.visible === null || !input.order.includes(next.visible)) {
-    const replacement = input.order[0] ?? null;
-    if (replacement !== next.visible) next = { ...show(next, replacement), epoch: next.epoch + 1 };
+  if (next.visible === null || !isViewValid(next.visible, mode, characters)) {
+    const fallback = initialView(mode, characters);
+    if (!sameView(fallback, next.visible))
+      next = { ...show(next, fallback), epoch: next.epoch + 1 };
   }
   return next;
 }
 
-/** The pending timer fired: end the priority period (resume) or advance the cycle. */
-export function advanceRotation(
-  state: RotationState,
-  order: readonly CharacterKey[],
-): RotationState {
-  const target =
-    state.priority !== null
-      ? resumeAfterPriority(order, state.priority)
-      : nextCharacter(order, state.visible);
+/**
+ * The pending timer fired: end the priority period (resume) or advance the cycle. Resuming is
+ * advancing from the prioritized view: in "characters" the character after it; in mixed modes
+ * the session view, then (session-all) the character after it.
+ */
+export function advanceRotation(state: RotationState, input: RotationInput): RotationState {
+  const target = nextView(modeOf(input), charactersOf(input), state.visible, state.lastCharacter);
   return { ...show(state, target), priority: null, epoch: state.epoch + 1 };
 }
 
 /**
- * How long until the next step, or null for no timer at all: fewer than two eligible
- * characters never schedules periodic work (a single character just stays visible).
+ * How long until the next step, or null for no timer at all: fewer than two DISTINCT views
+ * never schedules periodic work (one character in "characters", or a session with no played
+ * character). Session + one character is two views, so it rotates.
  */
 export function rotationDelayMs(
   state: RotationState,
-  order: readonly CharacterKey[],
+  input: RotationInput,
   config: Pick<CharacterRotation, "intervalSeconds" | "prioritySeconds">,
 ): number | null {
-  if (order.length < 2 || state.visible === null) return null;
+  if (state.visible === null) return null;
+  if (distinctViewCount(modeOf(input), charactersOf(input)) < 2) return null;
   return (state.priority !== null ? config.prioritySeconds : config.intervalSeconds) * 1000;
 }
 

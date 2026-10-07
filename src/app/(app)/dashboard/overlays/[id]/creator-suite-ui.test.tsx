@@ -134,7 +134,7 @@ describe("CreatorPanel", () => {
     overlayId: "00000000-0000-4000-8000-0000000000aa",
     dirty: false,
     onPresetApplied: () => {},
-    rotationCharacters: { names: ["Ryu", "Chun-Li", "Jamie"], sample: true },
+    rotationViews: { views: ["Ryu", "Chun-Li", "Jamie"], sample: true },
   };
   it("Free with stored Creator data: ONE notice with both saved messages; controls disabled", () => {
     const config: OverlayConfig = {
@@ -333,7 +333,7 @@ describe("Phase 5.2: character rotation (builder)", () => {
     dirty: false,
     onPresetApplied: () => {},
     presets: [],
-    rotationCharacters: { names: ["Ryu", "Chun-Li", "Jamie"], sample: true },
+    rotationViews: { views: ["Ryu", "Chun-Li", "Jamie"], sample: true },
   };
   const withRotation = (over: Partial<typeof DEFAULT_CHARACTER_ROTATION> = {}): OverlayConfig => ({
     ...DEFAULT_OVERLAY_CONFIG,
@@ -359,8 +359,8 @@ describe("Phase 5.2: character rotation (builder)", () => {
 
   it("64/66. Creator tab shows the rotation group, enabled for Creator", () => {
     const html = panel(DEFAULT_OVERLAY_CONFIG, true);
-    expect(html).toContain("Rotación de personajes");
-    expect(html).toContain("Rotación automática");
+    expect(html).toContain("Presentación automática");
+    expect(html).toContain("Activar presentación automática");
     expect(html).not.toMatch(/<fieldset[^>]*disabled=""[^>]*data-testid="creator-rotation"/);
     expect(html).not.toContain("Creator Beta requerido");
   });
@@ -396,8 +396,8 @@ describe("Phase 5.2: character rotation (builder)", () => {
     expect(order).toContain("Alfabético");
     const priority = html.match(/<select[^>]*data-testid="rotation-priority"[^>]*>/)?.[0] ?? "";
     expect(priority).not.toContain(`disabled=""`);
-    expect(html).toContain("Priorizar personaje de la última partida");
-    expect(html).toContain("Ryu · Chun-Li · Jamie (datos de ejemplo)");
+    expect(html).toContain("Priorizar última partida");
+    expect(html).toContain("Ryu → Chun-Li → Jamie (datos de ejemplo)");
     expect(html).not.toContain("Cammy");
   });
 
@@ -418,7 +418,7 @@ describe("Phase 5.2: character rotation (builder)", () => {
       "en",
       <CreatorPanel
         {...base}
-        rotationCharacters={{ names: [], sample: false }}
+        rotationViews={{ views: [], sample: false }}
         config={withRotation()}
         advancedCustomization
         creatorPresets
@@ -429,7 +429,7 @@ describe("Phase 5.2: character rotation (builder)", () => {
     expect(html).toContain(en.Builder.rotation.noCharacters);
   });
 
-  it("74. the preview offers “Probar rotación” to Creator only; Content explains the override", () => {
+  it("74. the preview offers “Probar presentación” to Creator only; Content explains the override", () => {
     const builder = (access: typeof FREE, config: OverlayConfig) =>
       wrap(
         "es",
@@ -444,7 +444,7 @@ describe("Phase 5.2: character rotation (builder)", () => {
       );
     const creator = builder(CREATOR, withRotation());
     expect(creator).toContain('data-testid="rotation-test"');
-    expect(creator).toContain("Probar rotación");
+    expect(creator).toContain("Probar presentación");
     expect(creator).toContain('data-testid="rotation-overrides-hint"');
     const free = builder(FREE, withRotation());
     expect(free).not.toContain('data-testid="rotation-test"');
@@ -460,5 +460,63 @@ describe("Phase 5.2: character rotation (builder)", () => {
       const src = readFileSync(fileURLToPath(new URL(f, import.meta.url)), "utf8");
       expect(src).not.toMatch(/actions|fetch\(|EventSource|@\/server\//);
     }
+  });
+});
+
+describe("Phase 5.3A: automatic presentation (builder)", () => {
+  const base = {
+    update: () => {},
+    overlayId: "00000000-0000-4000-8000-0000000000aa",
+    dirty: false,
+    onPresetApplied: () => {},
+    presets: [],
+    rotationViews: { views: [null, "Ryu", null, "Chun-Li"], sample: true },
+  };
+  const cfg = (over: Partial<typeof DEFAULT_CHARACTER_ROTATION> = {}): OverlayConfig => ({
+    ...DEFAULT_OVERLAY_CONFIG,
+    creator: {
+      ...DEFAULT_CREATOR_CUSTOMIZATION,
+      characterRotation: { ...DEFAULT_CHARACTER_ROTATION, enabled: true, ...over },
+    },
+  });
+  const panel = (config: OverlayConfig) =>
+    wrap(
+      "es",
+      <CreatorPanel
+        {...base}
+        config={config}
+        advancedCustomization
+        creatorPresets
+        motionEffects
+        characterRotation
+      />,
+    );
+
+  it("mode select with the three modes and a contextual hint", () => {
+    const html = panel(cfg({ mode: "session-active" }));
+    const select =
+      html.match(/<select[^>]*data-testid="rotation-mode"[\s\S]*?<\/select>/)?.[0] ?? "";
+    expect(select).toContain("Solo personajes");
+    expect(select).toContain("Sesión + personaje activo");
+    expect(select).toContain("Sesión + todos los personajes");
+    expect(html).toContain(es.Builder.rotation.modes["session-active"].hint);
+  });
+
+  it("direction only for slide / wipe; order hidden in session-active", () => {
+    expect(panel(cfg({ transition: "fade" }))).not.toContain('data-testid="rotation-direction"');
+    expect(panel(cfg({ transition: "instant" }))).not.toContain('data-testid="rotation-direction"');
+    const wipe = panel(cfg({ transition: "wipe", direction: "up" }));
+    expect(wipe).toContain('data-testid="rotation-direction"');
+    expect(wipe).toMatch(/<option value="up" selected="">Arriba<\/option>/);
+    expect(wipe).toContain("Barrido");
+    expect(panel(cfg({ mode: "session-active" }))).not.toContain('data-testid="rotation-order"');
+    expect(panel(cfg({ mode: "session-all" }))).toContain('data-testid="rotation-order"');
+  });
+
+  it("the sequence preview names the session view; mixed modes explain the view label", () => {
+    const html = panel(cfg({ mode: "session-all" }));
+    expect(html).toContain("Sesión → Ryu → Sesión → Chun-Li (datos de ejemplo)");
+    expect(html).toContain(es.Builder.rotation.viewLabelHint);
+    expect(panel(cfg({ mode: "characters" }))).not.toContain(es.Builder.rotation.viewLabelHint);
   });
 });

@@ -41,7 +41,21 @@ Rank reaction is disabled with a note on themes without the emblem. The group is
 `overlays.motionEffects`; stored values stay visible and are kept. The tab's single notice covers
 it.
 
-**Rotación de personajes** (Phase 5.2, Creator tab, `overlays.characterRotation`) holds:
+**Presentación automática** (Phase 5.3A; formerly "Rotación de personajes", Phase 5.2; Creator
+tab, `overlays.characterRotation`). Phase 5.3A adds:
+
+- **Modo de presentación:** Solo personajes · Sesión + personaje activo · Sesión + todos los
+  personajes, each with a contextual hint.
+- **Tipo de transición:** a select (Fundido · Deslizamiento · Barrido · Instantánea).
+- **Dirección** (Izquierda · Derecha · Arriba · Abajo, "side the new view enters from"): only
+  for Deslizamiento and Barrido.
+- **Orden de personajes:** hidden in "Sesión + personaje activo", where it has no effect.
+- **Secuencia:** the actual cycle ("Sesión → Ryu → Sesión → Chun-Li …"), from the same domain
+  functions the overlay runs.
+- **A note in mixed modes** on how views are identified (title label, custom title kept) and on
+  the session view's rating.
+
+Every option marks unsaved changes; saving clears them. The 5.2 controls below remain:
 
 - **Rotación automática.** While it's off, only the switch and a one-line summary show
   (progressive disclosure).
@@ -61,7 +75,7 @@ it.
   is covered by the tab's single notice and kept (server merge).
 - **Dirty state:** every option marks unsaved changes, and saving clears them.
 
-**Probar rotación** (preview, Creator only, preview-only) uses the Phase 5.1 multi-character
+**Probar presentación** (formerly "Probar rotación"; preview, Creator only, preview-only) uses the Phase 5.1 multi-character
 sample: Chun-Li, Jamie and Ryu rotate; Cammy (0 games) doesn't.
 
 - **Simulating a match:** in test mode, the Phase 5.0 Victoria | Derrota control gets a
@@ -242,3 +256,31 @@ disabled controls are a convenience.
 - Integration (`creator-overlay-suite`, `multi-character`): the entitlement lifecycle (Free
   crafted request, enable, expiry, Free edit, renewal, revocation, presets) and rotation inputs
   from real ingestion (eligible characters, order, priority signal, global vs individual stats).
+
+## Presentation modes tests (Phase 5.3A)
+
+- `domain/overlay/rotation.test.ts` covers:
+  - every mode's cycle, view building and identity;
+  - session-only and session + one character (two views ⇒ a timer);
+  - orders sorting only character views, wrap-around, roster add/remove;
+  - active-character changes and fallback;
+  - priority, resume, repeats and new sessions;
+  - stale snapshots in every mode;
+  - config defaults, leniency and strictness;
+  - entitlements, downgrade, renewal and presets.
+- `domain/overlay/presentation.test.ts` covers the projection:
+  - the session view is global even with a "character" scope;
+  - character views use their own stats;
+  - the stored `statsScope` / `ratingCharacterKey` / title are never mutated;
+  - no invented global rating (active character by name, else a placeholder);
+  - view labels, and the custom title kept.
+- `components/overlay/presentation-modes.test.tsx` (happy-dom, fake timers):
+  - controller: one timer, cleanup, interval/mode/transition/direction changes, priority, resume,
+    repeats, the **critical stale → current → real match** sequence, new and ended sessions;
+  - Creator Motion across views;
+  - reduced motion and animations off;
+  - six themes with view identification, custom title, transitions × directions, fit-to-box;
+  - a 160-step long run.
+- Builder UI and dirty state, plus integration: views built from the **public** payload of a
+  real ingested session, per-view stats, priority via `sessionIdentity`, and the
+  mixed-mode entitlement lifecycle.

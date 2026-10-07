@@ -104,6 +104,11 @@ export function RecentForm({ results, max = 8 }: { results: MatchResult[]; max?:
 export interface ThemeProps {
   config: OverlayConfig;
   live: PlayerLiveState;
+  /**
+   * Presentation view identifier (Phase 5.3A mixed modes). Titled themes already get it through
+   * the presentation title; only Minimal (no title slot) renders it directly.
+   */
+  viewLabel?: string | null;
 }
 
 /**

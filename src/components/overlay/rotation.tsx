@@ -1,15 +1,16 @@
 "use client";
 
 /**
- * Character rotation controller for the overlay renderer (Phase 5.2). The decisions live in the
- * pure state machine (domain/overlay/rotation.ts); this hook only runs it:
+ * Presentation rotation controller for the overlay renderer (Phase 5.2 characters, Phase 5.3A
+ * views). The decisions live in the pure state machine (domain/overlay/rotation.ts); this hook
+ * only runs it:
  *
  *  - every render reconciles the state with the live snapshot (adjusting state during render,
  *    like useOverlayUpdate): repeated snapshots, SSE reconnects, resizes, locale/theme edits
  *    return the same state, so nothing restarts;
  *  - at most ONE pending setTimeout (interval or priority), keyed on the state's epoch and the
- *    delay: replaced when the visible character or the priority changes, cleared on unmount,
- *    when rotation turns off, or when fewer than two characters are eligible (no periodic work).
+ *    delay: replaced when the visible view or the priority changes, cleared on unmount, when
+ *    rotation turns off, or with fewer than two DISTINCT views (no periodic work).
  *
  * Presentation only: nothing is persisted, sent to the server or written to the config.
  */
@@ -21,16 +22,16 @@ import {
   rotationOrder,
   syncRotation,
   type CharacterRotation,
+  type PresentationView,
   type RotationInput,
   type RotationState,
 } from "@/domain/overlay/rotation";
 import { sessionIdentity, type LiveSessionState } from "@/domain/overlay/state";
-import type { CharacterKey } from "@/domain/sf6/types";
 
 export interface RotationView {
-  /** Character the overlay represents right now (presentation only). */
-  characterKey: CharacterKey;
-  /** Increments on every change of character (0 = initial: no transition). */
+  /** View the overlay represents right now (presentation only). */
+  view: PresentationView;
+  /** Increments on every change of view (0 = initial: no transition). */
   seq: number;
   /** True while a new match's character is being prioritized. */
   priority: boolean;
@@ -49,14 +50,14 @@ export function useCharacterRotation(
   rotation: CharacterRotation | undefined,
 ): RotationView | null {
   const active = isRotationActive(session, rotation);
-  const order = active ? rotationOrder(session.characters, rotation.order) : [];
   const input: RotationInput = {
     // The public (OBS) payload has no sessionId: identify the session by what it does carry.
     sessionId: sessionIdentity(session),
     totalGames: session.totalGames,
     activeCharacterKey: session.activeCharacterKey,
-    order,
+    order: active ? rotationOrder(session.characters, rotation.order) : [],
     prioritizeLatestMatch: active && rotation.prioritizeLatestMatch,
+    mode: active ? rotation.mode : "characters",
   };
 
   const [state, setState] = useState<RotationState>(() => initRotation(input));
@@ -65,21 +66,21 @@ export function useCharacterRotation(
   const synced = syncRotation(state, input);
   if (synced !== state) setState(synced);
 
-  // The timer callback reads the latest order (it may reorder after a match) without being
-  // rescheduled by it: only the epoch and the delay restart the timer.
-  const orderRef = useRef(order);
+  // The timer callback reads the latest input (the order may change after a match, the active
+  // character too) without being rescheduled by it: only the epoch and the delay restart it.
+  const inputRef = useRef(input);
   useEffect(() => {
-    orderRef.current = order;
+    inputRef.current = input;
   });
 
-  const delay = active ? rotationDelayMs(synced, order, rotation) : null;
+  const delay = active ? rotationDelayMs(synced, input, rotation) : null;
   const epoch = synced.epoch;
   useEffect(() => {
     if (delay === null) return;
-    const id = setTimeout(() => setState((s) => advanceRotation(s, orderRef.current)), delay);
+    const id = setTimeout(() => setState((s) => advanceRotation(s, inputRef.current)), delay);
     return () => clearTimeout(id);
   }, [epoch, delay]);
 
   if (!active || synced.visible === null) return null;
-  return { characterKey: synced.visible, seq: synced.shownSeq, priority: synced.priority !== null };
+  return { view: synced.visible, seq: synced.shownSeq, priority: synced.priority !== null };
 }
