@@ -9,13 +9,13 @@ can be applied to any of the account's overlays. Entitlement: `overlays.creatorP
 `src/domain/overlay/presets.ts` defines `presetAppearanceSchema`, a strict pick of the overlay
 config schema that rejects unknown keys.
 
-| Included                                                                                                      | Never included                                                  |
-| ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| theme and canvas                                                                                              | title **text**, overlay language, rating character, stats scope |
-| colors, background and opacity, border, radius                                                                | session, W/L, win rate, MR/LP, rank or streak values            |
-| font, scale, spacing, alignment, animations                                                                   | player, CFN id, overlay id or public token                      |
-| which stats are visible (`fields` booleans) and `showTitle`                                                   | plan, entitlements, grants or Creator Key data                  |
-| Creator block (`config.creator`, incl. motion and character rotation) and Creator theme variants (`variants`) | custom CSS, HTML, URLs, fonts by URL (none exist)               |
+| Included                                                                                                                                          | Never included                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| theme and canvas                                                                                                                                  | title **text**, overlay language, rating character, stats scope |
+| colors, background and opacity, border, radius                                                                                                    | session, W/L, win rate, MR/LP, rank or streak values            |
+| font, scale, spacing, alignment, animations                                                                                                       | player, CFN id, overlay id or public token                      |
+| which stats are visible (`fields` booleans) and `showTitle`                                                                                       | plan, entitlements, grants or Creator Key data                  |
+| Creator block (`config.creator`, incl. motion and automatic presentation: mode, transition, direction, …) and Creator theme variants (`variants`) | custom CSS, HTML, URLs, fonts by URL (none exist)               |
 
 Rank-aware themes derive their style from the **live** rank at render time. A preset never
 stores a rank or a rank style.

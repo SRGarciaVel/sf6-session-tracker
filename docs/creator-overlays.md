@@ -406,6 +406,120 @@ update overlay set config = config #- '{creator,characterRotation}'
 - 15/15 matches got priority and a motion event.
 - No pending timer beyond the rotation timer (plus at most one motion clear).
 
+## Presentation modes (Phase 5.3A; same entitlement)
+
+Phase 5.2 rotates **characters**; Phase 5.3A rotates **views**. A view is either the session
+(global statistics) or one character (its own statistics and rating). It is modelled as a
+discriminated type: `{ kind: "session" } | { kind: "character", characterKey }`. Its identity is
+`viewKey()` (`session`, `character:<key>`), never a fake character key or serialized JSON.
+
+**Configuration.** This extends `creator.characterRotation`; there is no second system,
+entitlement, table or migration.
+
+| Key          | Values                                              | Default (also for old blocks) |
+| ------------ | --------------------------------------------------- | ----------------------------- |
+| `mode`       | characters · session-active · session-all           | characters (= Phase 5.2)      |
+| `transition` | fade · slide · **wipe** · instant                   | fade                          |
+| `direction`  | left · right · up · down (side the new view enters) | left (= the Phase 5.2 slide)  |
+
+- **Old blocks:** a stored block without the new fields reads as Phase 5.2 (per-field lenient
+  parse; the Creator block is never dropped).
+- **Writes:** the strict write schema defaults missing new fields, so an older builder can still
+  save, and rejects invalid values.
+- **Free and expiry:** `overlays.characterRotation` gates every mode through the same stored →
+  effective → save-merge pipeline. Free and expired owners never run it, and their stored
+  preferences are kept until renewal (integration-tested).
+
+| Mode             | Cycle                                        | Character views use                     |
+| ---------------- | -------------------------------------------- | --------------------------------------- |
+| `characters`     | C1 → C2 → C3 → C1 …                          | the **stored** `statsScope` (Phase 5.2) |
+| `session-active` | Session → Active → Session …                 | that character's **own** statistics     |
+| `session-all`    | Session → C1 → Session → C2 → Session → C3 … | that character's **own** statistics     |
+
+- **Active character:** `session.activeCharacterKey`, the character of the latest counted
+  match. It is not what is selected in the game right now, which SST doesn't know. A match with
+  another character updates the cycle without any config write.
+- **Order:** `recent` / `mostPlayed` / `alphabetical` sort only the character views. The session
+  view stays interleaved, and the order control is hidden in `session-active`, where it has no
+  effect.
+- **Eligibility:** `games > 0`, unchanged.
+  - No played character: mixed modes show only the session view and run no timer; `characters`
+    keeps the normal overlay.
+  - Ended session: no presentation; the final state renders as before.
+- **Timers:** the rule is **distinct views ≥ 2**. Session + one character rotates; one character
+  in `characters` mode doesn't.
+
+**Projection.** `resolvePresentation()` (`domain/overlay/presentation.ts`) turns the current view
+into the config every theme renders. It is never saved and feeds `resolveOverlayStats` and
+`ratingParts`, as in 5.2.
+
+- **Session view:** global statistics, even when the stored `statsScope` is "character".
+- **Rating:** SF6 has no session-wide rating, so none is invented. The session view shows the
+  **active character's** rating, labelled with its name like every SST rating, or the neutral
+  placeholder when there's none.
+- **Character view:** that character's rating, rank, delta and (mixed modes) its own W/L, win
+  rate, streaks and form.
+- **View identifier** (mixed modes only):
+  - The title slot shows "SESIÓN" / "CHUN-LI". A custom title is kept and the label appended
+    ("RANKED · CHUN-LI"), never persisted. With the title hidden, only the label shows.
+  - Minimal (no title slot) leads its line with the label.
+  - `characters` mode renders exactly as 5.2.
+  - In a character view the name also appears next to the rating, as on every rating.
+
+**Priority and resume.** This reuses 5.2 (authoritative signal, monotonic baseline, stale
+snapshots ignored, session identity from #30).
+
+- A new match shows that character's **view** for `prioritySeconds`.
+- The same character again restarts the period without re-mounting.
+- Another character replaces it; there is no queue.
+- Resuming means advancing from the prioritized view:
+  - in `characters` mode, the next character;
+  - in mixed modes, the session view, and then in `session-all` the character after the
+    prioritized one. Example: session-all S → Chun-Li → S → **Jamie** (priority) → S → Ryu.
+- An invalid view (character removed, active character changed) falls back to the mode's first
+  view (session in mixed modes).
+
+**Creator Motion.** In rotation mode the motion summary uses the **stored** `statsScope` and adds
+the view identity:
+
+- The stored scope keeps the baseline stable while the shown scope changes per view.
+- The global counters decide matches.
+- A view or character change without new games plays nothing.
+- With new games, only the result plays; the ratings of two views are never compared.
+
+`isStaleSummary` ignores view and character in rotation mode, so stale → current never replays,
+even when the view changed in between (tested with a mutation check).
+
+**Transitions** (`overlay.css`, OBS/CEF-safe, one-shot, `opacity` / `transform` / `clip-path`):
+
+- fade: no direction.
+- slide: four directions (±0.75em horizontal, ±0.5em vertical).
+- wipe: an `inset()` clip-path reveal from the chosen side. It is `backwards`-filled with −2em
+  margins, so no clip remains afterwards and shadows and glows stay intact.
+- instant: no direction.
+- Animations off or reduced motion ⇒ instant (also forced in CSS).
+- Fit-to-box still measures the theme panel inside the static stage.
+
+**Measured** (production build, Chromium, Playwright clock, CDP after forced GC):
+
+- 140 steps (127 view changes and 14 simulated matches in session-all with wipe and motion on):
+  overlay DOM 44 → 44 nodes, one `.ov-rot-frame`, no leftover sweep, fit 27.6 px throughout.
+- JS listeners 493 → 502 after the first block, then constant.
+- Heap 6.21 → 7.51 MB with shrinking increments (the preview's simulated match list grows with
+  each match).
+- 14/14 matches got priority **and** a motion event.
+- Six themes × supported canvases × fade / slide-right / wipe-down (custom title) / slide-up
+  (session-active), measured mid-transition: no clipping, and no view label truncated. A 1–3 px
+  `scrollWidth` excess at rest is the existing fit-to-box tolerance.
+
+**Known limitations.**
+
+- Active character = latest match's character (not the in-game selection).
+- The session view's rating is the active character's, by design.
+- Browser Sources aren't synchronized with each other.
+- **Rollback:** older code reads unknown `mode` / `direction` / `wipe` leniently (Phase 5.2's
+  per-field parser falls back to defaults), so no SQL is needed.
+
 ## Stored vs effective config
 
 ```
