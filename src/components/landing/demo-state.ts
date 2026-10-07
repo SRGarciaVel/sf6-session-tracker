@@ -3,6 +3,7 @@
  * no DB. Values are pre-computed literals (no session math here; see domain/session/engine.ts).
  * They feed the REAL overlay renderer (OverlayView) through the normal PlayerLiveState shape.
  */
+import { MASTER_TIER_LABELS, masterTierFromMr } from "@/domain/sf6/master-tier";
 import {
   DEFAULT_OVERLAY_CONFIG,
   OVERLAY_THEMES,
@@ -49,6 +50,8 @@ const AFTER: LandingDemoStats = {
   winRate: 70.6,
   rating: 1684,
   ratingDelta: 96,
+  // 1684 MR is High Master (documented thresholds) — the same rule the live state applies.
+  rank: MASTER_TIER_LABELS[masterTierFromMr(1684) ?? "master"],
   streak: 4,
   recent: ["loss", "win", "win", "win", "win"],
 };

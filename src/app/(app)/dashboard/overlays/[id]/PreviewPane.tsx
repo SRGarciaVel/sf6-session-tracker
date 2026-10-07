@@ -42,9 +42,10 @@ const SAMPLE_RANKS: SampleRank[] = [
   { rank: "Gold 2", system: "lp", value: 9_620 },
   { rank: "Platinum 4", system: "lp", value: 16_840 },
   { rank: "Diamond 1", system: "lp", value: 20_120 },
-  { rank: "Master", system: "mr", value: 1_684 },
-  { rank: "High Master", system: "mr", value: 1_712 },
-  { rank: "Grand Master", system: "mr", value: 1_845 },
+  // MR samples sit inside their documented tier ranges (domain/sf6/master-tier.ts).
+  { rank: "Master", system: "mr", value: 1_580 },
+  { rank: "High Master", system: "mr", value: 1_650 },
+  { rank: "Grand Master", system: "mr", value: 1_750 },
   { rank: "Ultimate Master", system: "mr", value: 2_030 },
 ];
 
