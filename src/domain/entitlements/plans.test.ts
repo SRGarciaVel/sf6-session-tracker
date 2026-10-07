@@ -41,19 +41,13 @@ describe("plans", () => {
         advancedCustomization: false,
         premiumThemes: false,
         creatorPresets: false,
-        motionEffects: false,
       },
       history: { retentionDays: null },
     });
   });
 
   it("Phase 4/4.5: creator_beta differs from free ONLY by NEW overlay capabilities", () => {
-    for (const key of [
-      "advancedCustomization",
-      "premiumThemes",
-      "creatorPresets",
-      "motionEffects",
-    ] as const) {
+    for (const key of ["advancedCustomization", "premiumThemes", "creatorPresets"] as const) {
       expect(PLAN_ENTITLEMENTS.free.overlays[key]).toBe(false);
       expect(PLAN_ENTITLEMENTS.creator_beta.overlays[key]).toBe(true);
     }
@@ -66,7 +60,6 @@ describe("plans", () => {
         advancedCustomization: false,
         premiumThemes: false,
         creatorPresets: false,
-        motionEffects: false,
       },
     }).toEqual(PLAN_ENTITLEMENTS.free);
   });

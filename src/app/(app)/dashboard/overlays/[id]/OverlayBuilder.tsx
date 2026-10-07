@@ -42,7 +42,6 @@ export interface BuilderAccess {
   advancedCustomization: boolean;
   premiumThemes: boolean;
   creatorPresets: boolean;
-  motionEffects: boolean;
 }
 
 type SaveState = "saved" | "unsaved" | "saving" | "failed";
@@ -344,7 +343,6 @@ export function OverlayBuilder({
                   update={update}
                   advancedCustomization={access.advancedCustomization}
                   creatorPresets={access.creatorPresets}
-                  motionEffects={access.motionEffects}
                   overlayId={overlayId}
                   presets={presets}
                   dirty={dirty}

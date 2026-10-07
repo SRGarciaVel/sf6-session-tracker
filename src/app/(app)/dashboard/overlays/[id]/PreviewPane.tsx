@@ -11,16 +11,9 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { OverlayView } from "@/components/overlay/OverlayView";
-import { usePrefersReducedMotion } from "@/components/overlay/motion";
-import { Button, cx } from "@/components/ui/primitives";
+import { cx } from "@/components/ui/primitives";
 import { OVERLAY_PRESETS, type OverlayConfig, type OverlayPresetId } from "@/domain/overlay/config";
 import { sampleLiveState, type PlayerLiveState, type SampleRank } from "@/domain/overlay/state";
-import {
-  SIMULATION_LEAD_MS,
-  simulationState,
-  type SimulatedResult,
-  type SimulationPhase,
-} from "@/domain/overlay/preview-simulation";
 import { THEME_REGISTRY } from "@/domain/overlay/themes";
 import { ZOOM_STEPS, stepZoom, type PreviewZoom } from "./builder-state";
 import { Segmented, Toggle } from "./controls";
@@ -75,32 +68,7 @@ export function PreviewPane({
   const [zoom, setZoom] = useState<PreviewZoom>(null);
   const [useSample, setUseSample] = useState(liveState.session.totalGames === 0);
   const [sampleRank, setSampleRank] = useState(4); // Master
-  // "Play update": local before → after simulation (never touches config, session or API).
-  const [simResult, setSimResult] = useState<SimulatedResult>("win");
-  const [sim, setSim] = useState<{
-    result: SimulatedResult;
-    phase: SimulationPhase;
-    run: number;
-  } | null>(null);
-  const reducedMotion = usePrefersReducedMotion();
   const { ref, width } = usePaneWidth();
-
-  useEffect(() => {
-    if (!sim || sim.phase !== "before") return;
-    const id = setTimeout(
-      () => setSim((s) => (s && s.run === sim.run ? { ...s, phase: "after" } : s)),
-      SIMULATION_LEAD_MS,
-    );
-    return () => clearTimeout(id);
-  }, [sim]);
-
-  const play = () =>
-    setSim((s) => ({
-      result: simResult,
-      // Reduced motion: jump straight to the final values.
-      phase: reducedMotion ? "after" : "before",
-      run: (s?.run ?? 0) + 1,
-    }));
 
   const theme = THEME_REGISTRY[config.theme];
   const canvas = OVERLAY_PRESETS[config.preset];
@@ -108,11 +76,7 @@ export function PreviewPane({
   const scale = zoom ?? fitScale;
   const boxWidth = Math.round(canvas.width * scale);
   const boxHeight = Math.round(canvas.height * scale);
-  const live = sim
-    ? simulationState(sim.result, sim.phase)
-    : useSample
-      ? sampleLiveState(SAMPLE_RANKS[sampleRank])
-      : liveState;
+  const live = useSample ? sampleLiveState(SAMPLE_RANKS[sampleRank]) : liveState;
 
   return (
     <section aria-labelledby="preview-title" className="hud-panel" data-testid="preview-pane">
@@ -201,15 +165,8 @@ export function PreviewPane({
           {t("canvasHint", { width: canvas.width, height: canvas.height })}
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-3">
-          <Toggle
-            label={t("sampleData")}
-            checked={useSample}
-            onChange={(v) => {
-              setUseSample(v);
-              setSim(null);
-            }}
-          />
-          {useSample && !sim && theme.rankAware && (
+          <Toggle label={t("sampleData")} checked={useSample} onChange={setUseSample} />
+          {useSample && theme.rankAware && (
             <label className="flex items-center gap-2 text-sm">
               <span>{t("sampleRank")}</span>
               <select
@@ -227,33 +184,7 @@ export function PreviewPane({
             </label>
           )}
           <span className="text-xs text-faint">
-            {sim ? t("simulation.active") : useSample ? t("previewSample") : t("previewLive")}
-          </span>
-        </div>
-        <div
-          className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2"
-          role="group"
-          aria-label={t("simulation.label")}
-          data-testid="preview-simulation"
-        >
-          <Segmented<SimulatedResult>
-            value={simResult}
-            onChange={setSimResult}
-            options={[
-              { value: "win", label: t("simulation.win") },
-              { value: "loss", label: t("simulation.loss") },
-            ]}
-          />
-          <Button size="sm" variant="secondary" onClick={play} data-testid="play-update">
-            {`▶ ${t("simulation.play")}`}
-          </Button>
-          {sim && (
-            <Button size="sm" variant="ghost" onClick={() => setSim(null)}>
-              {t("simulation.exit")}
-            </Button>
-          )}
-          <span className="text-xs text-faint" aria-live="polite" data-testid="simulation-status">
-            {sim?.phase === "after" ? t(`simulation.done.${sim.result}`) : ""}
+            {useSample ? t("previewSample") : t("previewLive")}
           </span>
         </div>
       </div>

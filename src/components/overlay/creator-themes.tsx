@@ -12,7 +12,6 @@ import { useTranslations } from "next-intl";
 import { formatWinRate } from "@/domain/format";
 import { DEFAULT_THEME_VARIANTS, type ThemeVariants } from "@/domain/overlay/variants";
 import { rankPrestige, type RankPrestige } from "@/domain/sf6/rank-prestige";
-import { MotionFx } from "./motion";
 import { Animated, Delta, Ratio, RecentForm, ratingParts, type ThemeProps } from "./parts";
 
 type CssVars = CSSProperties & Record<`--${string}`, string>;
@@ -112,7 +111,6 @@ export function RankCardTheme({ config, live }: ThemeProps) {
       ].join(" ")}
       style={{ ...tierVars(p, f.rank), "--ov-bg-solid": config.backgroundColor } as CssVars}
     >
-      <MotionFx />
       <span className="ov-rc-band ov-deco" aria-hidden />
       <div className="ov-rc-badge">
         <RankEmblem prestige={p} />
@@ -213,7 +211,6 @@ export function BroadcastTheme({ config, live }: ThemeProps) {
         `ov-bc-${v.density}`,
       ].join(" ")}
     >
-      <MotionFx />
       {config.showTitle && (
         <div className="ov-bc-tab">
           <span>{config.title || t("session")}</span>
@@ -257,7 +254,6 @@ export function PrestigeTheme({ config, live }: ThemeProps) {
       ].join(" ")}
       style={tierVars(p, f.rank)}
     >
-      <MotionFx />
       <span className="ov-pr-corner ov-pr-tl ov-deco" aria-hidden />
       <span className="ov-pr-corner ov-pr-tr ov-deco" aria-hidden />
       <span className="ov-pr-corner ov-pr-bl ov-deco" aria-hidden />
