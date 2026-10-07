@@ -224,6 +224,12 @@ close OBS mid-session and come back to correct stats. Each poll fetches recent m
     numbers and none recomputes anything. The live payload still carries the global stats plus
     every character's stats. The scope is part of the motion summary, so switching scope never
     plays a match effect.
+- **Creator character rotation** (Phase 5.2, [creator-overlays.md](creator-overlays.md)) is
+  presentation state in the browser only. `useCharacterRotation` picks a session character
+  (games > 0) and OverlayView renders it through a presentation config, never saved. Nothing is
+  persisted and there are no server timers. It is gated by `overlays.characterRotation` in the
+  effective config. Match detection for priority and motion uses only authoritative counters
+  (same session, `totalGames` grew, `activeCharacterKey`).
 - **Fit-to-box** shrinks the root font-size until the content fits. A convergence guard stops it
   from ping-ponging at very small canvases, where borders and glyphs snap to whole pixels (after
   a few adjustments in one frame, only shrinking is allowed).

@@ -46,20 +46,23 @@ never deleted to downgrade: they expire or get revoked, which keeps the audit tr
 
 ## Entitlement set (Phase 4.5)
 
-| Key                              | free  | creator_beta | Notes                                                                                       |
-| -------------------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------- |
-| `overlays.max`                   | 10    | 10           | **10 is the current technical/product behaviour, not a final commercial Free policy.**      |
-| `overlays.advancedCustomization` | false | **true**     | Phase 4: NEW overlay options only ([creator-overlays.md](creator-overlays.md))              |
-| `overlays.premiumThemes`         | false | **true**     | Phase 4.5: NEW themes only (Rank Card, Broadcast, Prestige); Free themes unchanged          |
-| `overlays.creatorPresets`        | false | **true**     | Phase 4.5: saved appearance presets ([creator-presets.md](creator-presets.md))              |
-| `overlays.motionEffects`         | false | **true**     | Phase 5.0: Creator motion & broadcast effects (additive; Free animations unchanged)         |
-| `history.retentionDays`          | null  | null         | `null` = no retention policy (current behaviour: nothing is ever purged). Not enforced yet. |
+| Key                              | free  | creator_beta | Notes                                                                                            |
+| -------------------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------------ |
+| `overlays.max`                   | 10    | 10           | **10 is the current technical/product behaviour, not a final commercial Free policy.**           |
+| `overlays.advancedCustomization` | false | **true**     | Phase 4: NEW overlay options only ([creator-overlays.md](creator-overlays.md))                   |
+| `overlays.premiumThemes`         | false | **true**     | Phase 4.5: NEW themes only (Rank Card, Broadcast, Prestige); Free themes unchanged               |
+| `overlays.creatorPresets`        | false | **true**     | Phase 4.5: saved appearance presets ([creator-presets.md](creator-presets.md))                   |
+| `overlays.motionEffects`         | false | **true**     | Phase 5.0: Creator motion & broadcast effects (additive; Free animations unchanged)              |
+| `overlays.characterRotation`     | false | **true**     | Phase 5.2: character rotation & latest-match priority (presentation only; independent of motion) |
+| `history.retentionDays`          | null  | null         | `null` = no retention policy (current behaviour: nothing is ever purged). Not enforced yet.      |
 
 Phases 2–3: both plans were identical. **Phase 4** adds the first difference,
 `overlays.advancedCustomization`. **Phase 4.5** adds `overlays.premiumThemes` and
 `overlays.creatorPresets`. All three gate **new** capabilities only: every overlay option, theme
 and canvas that existed before stays Free, `overlays.max` stays 10 for both plans, and Free is
-never lowered. The final Free limits are decided from beta usage data (RFC §11.4).
+never lowered. Phase 5.0 adds `overlays.motionEffects` and Phase 5.2 `overlays.characterRotation`,
+each gating only its own block (`creator.motion`, `creator.characterRotation`) in the effective
+config. Phase 5.1 character-scoped statistics stay Free. The final Free limits are decided from beta usage data (RFC §11.4).
 
 **No existing Free overlay capability was moved behind Creator Beta.**
 
