@@ -297,8 +297,17 @@ per-match list.
   invented.
 - A late match that is older than the current latest match therefore prioritizes the latest
   match's character, not the late one's.
-- Snapshots older than the current one are already dropped by `generatedAt`. A rewind (fewer
-  games) only updates the baseline.
+- **Stale snapshots.** The OBS client (`LiveOverlay`) already drops snapshots with an older
+  `generatedAt`. The dashboard client also accepts an older snapshot when only
+  `overlayConnections` changed, so the controller doesn't rely on that filter:
+  - the match baseline is **monotonic within a session**: it keeps the highest `totalGames`
+    seen;
+  - a snapshot with fewer games is ignored entirely. It can't lower the baseline, cancel a
+    priority or replace the visible character with its possibly outdated roster;
+  - the current snapshot arriving again after a stale one is therefore **not** a new match;
+  - the baseline resets only when `sessionId` changes.
+- **Trade-off:** a genuine decrease in games within the same session (not something ingestion
+  produces) would need to grow past the previous maximum before priority fires again.
 
 **Roster changes.**
 

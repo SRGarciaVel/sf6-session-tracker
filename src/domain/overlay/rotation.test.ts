@@ -492,3 +492,48 @@ describe("Creator Motion vs rotation (45–52, pure detector)", () => {
     expect(effectiveTransition("fade", { animations: true, reducedMotion: false })).toBe("fade");
   });
 });
+
+describe("stale snapshots (monotonic match baseline)", () => {
+  const order = ["ryu", "chunli", "jamie"];
+  const at = (totalGames: number, activeCharacterKey = "jamie", sessionId = "s1") =>
+    input({ order, totalGames, activeCharacterKey, sessionId });
+
+  it("current (20) → stale (19) → current (20) again is NOT a new match", () => {
+    let s = initRotation(at(20));
+    s = syncRotation(s, at(19)); // older snapshot
+    expect(s.games).toBe(20); // the baseline never goes back within a session
+    const again = syncRotation(s, at(20));
+    expect(detectNewMatch(s, at(20))).toBeNull();
+    expect(again).toBe(s);
+    expect(again.priority).toBeNull();
+  });
+
+  it("during an active priority: stale + current neither restart nor replace it", () => {
+    let s = initRotation(at(20, "ryu"));
+    s = syncRotation(s, at(21, "jamie")); // legitimate match → priority once
+    expect(s).toMatchObject({ visible: "jamie", priority: "jamie", games: 21 });
+    const epoch = s.epoch;
+    s = syncRotation(s, at(20, "ryu")); // stale snapshot (older active character too)
+    s = syncRotation(s, at(21, "jamie")); // current again
+    expect(s).toMatchObject({ visible: "jamie", priority: "jamie", games: 21, epoch });
+  });
+
+  it("a legitimate new match after a stale snapshot triggers priority exactly once", () => {
+    let s = initRotation(at(20, "ryu"));
+    s = syncRotation(s, at(19, "ryu"));
+    s = syncRotation(s, at(21, "jamie"));
+    expect(s).toMatchObject({ priority: "jamie", games: 21 });
+    const once = s.epoch;
+    s = syncRotation(s, at(21, "jamie"));
+    s = syncRotation(s, at(20, "ryu"));
+    s = syncRotation(s, at(21, "jamie"));
+    expect(s.epoch).toBe(once);
+  });
+
+  it("a new session resets the baseline (even to fewer games) and is not a match", () => {
+    let s = initRotation(at(20));
+    s = syncRotation(s, at(1, "ryu", "s2"));
+    expect(s).toMatchObject({ sessionId: "s2", games: 1, priority: null });
+    expect(syncRotation(s, at(2, "jamie", "s2"))).toMatchObject({ priority: "jamie", games: 2 });
+  });
+});

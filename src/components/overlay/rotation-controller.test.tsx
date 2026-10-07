@@ -260,6 +260,32 @@ describe("controller (17–36)", () => {
     expect(vi.getTimerCount()).toBe(1);
   });
 
+  it("stale → current snapshots never restart priority (also during a priority period)", () => {
+    const cfg = config({ intervalSeconds: 5, prioritySeconds: 10 }, {}, true);
+    const twenty = sample([{ characterKey: "ryu", result: "win" }]);
+    const nineteen = sample();
+    render(cfg, twenty);
+    render(cfg, nineteen); // stale
+    render(cfg, resend(twenty)); // current again: not a match
+    expect(shownName()).toBe("Ryu");
+    tick(5_000);
+    expect(shownName()).toBe("Chun-Li"); // the interval cycle kept running (no priority)
+
+    // A legitimate match: priority once.
+    const jamie = sample([
+      { characterKey: "ryu", result: "win" },
+      { characterKey: "jamie", result: "win" },
+    ]);
+    render(cfg, jamie);
+    expect(shownName()).toBe("Jamie");
+    tick(6_000);
+    render(cfg, twenty); // stale during the priority period
+    render(cfg, resend(jamie)); // current again
+    tick(4_000); // the ORIGINAL 10 s period ends (not restarted at 6 s)
+    expect(shownName()).not.toBe("Jamie");
+    expect(vi.getTimerCount()).toBeLessThanOrEqual(2);
+  });
+
   it("ended session: no rotation, normal overlay (final summary semantics kept)", () => {
     const ended = sample();
     ended.session.status = "ended";

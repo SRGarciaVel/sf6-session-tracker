@@ -145,7 +145,10 @@ export interface RotationInput {
 }
 
 export interface RotationState {
-  /** Match-signal baseline: the session and its game count last seen. */
+  /**
+   * Match-signal baseline: the session and the HIGHEST game count seen in it. Monotonic within
+   * a session (a stale snapshot never lowers it), reset only when the session changes.
+   */
   sessionId: string | null;
   games: number;
   /** Character currently represented (null = nothing eligible). */
@@ -174,7 +177,9 @@ export function initRotation(input: RotationInput): RotationState {
  * character of the latest counted match is known and eligible. Several matches arriving in one
  * snapshot (or a late, older match) give ONE signal for the latest counted match's character —
  * the payload doesn't say which character played each intermediate match, so none is invented.
- * First render, a new session, repeated snapshots or a rewind are never a match.
+ * First render, a new session, repeated snapshots or a stale (older) snapshot are never a
+ * match — and because the baseline is monotonic, neither is the current snapshot arriving again
+ * after a stale one.
  */
 export function detectNewMatch(state: RotationState, input: RotationInput): CharacterKey | null {
   if (input.sessionId === null || input.sessionId !== state.sessionId) return null;
@@ -191,6 +196,7 @@ function show(state: RotationState, visible: CharacterKey | null): RotationState
  * Reconcile the state with a (possibly repeated) snapshot. Returns the SAME object when nothing
  * changed, so the controller can call it on every render without looping or restarting timers.
  *  - new session ⇒ fresh cycle, no priority, the new state is a baseline (not a match);
+ *  - stale snapshot (fewer games in the same session) ⇒ no change at all (monotonic baseline);
  *  - new match + priority enabled ⇒ show that character now and (re)start its priority period —
  *    also when it is already visible (the period restarts, no transition) and replacing any
  *    other priority (no queue);
@@ -199,9 +205,13 @@ function show(state: RotationState, visible: CharacterKey | null): RotationState
  */
 export function syncRotation(state: RotationState, input: RotationInput): RotationState {
   if (input.sessionId !== state.sessionId) return initRotation(input);
+  // Stale snapshot (fewer games than already seen in this session): ignored entirely. The
+  // baseline is not lowered (so the current snapshot arriving again is not a "new" match) and
+  // its possibly outdated roster can't cancel a priority or replace the visible character.
+  if (input.totalGames < state.games) return state;
   let next = state;
   const matched = detectNewMatch(state, input);
-  if (input.totalGames !== state.games) next = { ...next, games: input.totalGames };
+  if (input.totalGames > state.games) next = { ...next, games: input.totalGames };
   if (matched !== null && input.prioritizeLatestMatch) {
     next = { ...show(next, matched), priority: matched, epoch: next.epoch + 1 };
   }

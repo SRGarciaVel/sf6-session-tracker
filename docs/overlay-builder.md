@@ -229,7 +229,7 @@ disabled controls are a convenience.
   - timers: one at most, no restarts on repeated snapshots, cleanup on off/unmount, none with
     0–1 characters;
   - priority: start, restart, replace, disabled, resume;
-  - session restart, rewinds;
+  - session restart, stale → current snapshots (also during priority; `LiveOverlay` included);
   - coherence: stats, rating, rank and delta;
   - Creator Motion events;
   - instant with animations off or reduced motion;
