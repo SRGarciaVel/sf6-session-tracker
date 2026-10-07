@@ -32,6 +32,25 @@ capabilities: the same options, themes, entitlements and server actions.
 | **Estilo**     | text font; core colours (text, labels, accent); results (win, loss); background (colour + opacity); border (toggle, colour, width, radius); size & layout (scale, spacing, alignment, animations); "reset the theme's style" |
 | **Creator**    | one Creator Beta badge, one entitlement/renewal notice, **presets** first, then advanced styling: number typography (font, size) · accent (secondary colour) · visibility (labels, units, character name, decorations)       |
 
+**Movement** (Phase 5.0, Creator tab) holds:
+
+- the "Use Creator motion" switch;
+- motion style, intensity, result emphasis, accent motion, and rank reaction.
+
+Rank reaction is disabled with a note on themes without the emblem. The group is disabled without
+`overlays.motionEffects`; stored values stay visible and are kept. The tab's single notice covers
+it.
+
+**Play update** (preview, below the toolbar, preview-only) offers Victoria | Derrota and
+"▶ Reproducir actualización":
+
+- **Data:** a local before → after pair (`preview-simulation.ts`: 11-5 → 12-5, +96 MR, streak
+  3 → 4; or 11-5 → 11-6, −72 MR). It shows the "before" state for 450 ms, then the update lands.
+- **Afterwards:** the final state stays. Playing again restarts from "before". "Salir de la
+  simulación" (or the sample-data switch) returns to sample or live data.
+- **Isolation:** no API, session, config or SSE change. A status line announces the result.
+  With reduced motion the values jump straight to the final state.
+
 **Canvas** lives in the preview toolbar because it is the OBS Browser Source size. It is saved,
 and the toolbar says so. Options a theme doesn't support are disabled (theme registry).
 **Zoom** (fit, 50–150 %), **background**, **sample data** and **sample rank** are preview-only
