@@ -128,6 +128,11 @@ FETCH (provider) → NORMALIZE (provider) → VALIDATE (zod) → DEDUPLICATE + P
      - it is **not strictly older** than the newest baseline match (older means pre-session
        history that showed up late);
      - `played_at <= ended_at`.
+  3. The target session must still be **active under its row lock** (`SELECT … FOR UPDATE`).
+     Callers resolve the active session before ingesting, so it may end while they wait for the
+     lock. A match that arrives after the end, even one played before `ended_at`, is stored as
+     history (`session_id = NULL`). An ended session's stats and frozen final ratings never
+     change.
 - Re-processing the same response 10× changes nothing, and out-of-order arrival doesn't matter.
 
 ## 5. Session Engine (`src/domain/session`)
