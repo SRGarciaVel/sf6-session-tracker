@@ -75,7 +75,24 @@ Every option marks unsaved changes; saving clears them. The 5.2 controls below r
   is covered by the tab's single notice and kept (server merge).
 - **Dirty state:** every option marks unsaved changes, and saving clears them.
 
-**Marca SST** (Phase 5.3B, Creator tab, `overlays.brandFlag`):
+**Marca SST** (Phase 5.3B; presentations in 5.3C): **Presentación** offers Integrada ·
+Pestaña lateral · Fija (stored `content-interleave` · `timed-tab` · `static-badge`). For
+**Integrada**:
+
+- no position and no slide; Transición is Fundido / Instantánea;
+- frequency and visible time;
+- logo and colour;
+- a note that the mark temporarily replaces a secondary block without changing the overlay's
+  size;
+- a warning when Recent results (the slot) is off;
+- **"Logo completo" disabled** where the theme's capability says it isn't legible (today every
+  theme). It comes with "El logo completo no cabe de forma legible en este estilo…", and the
+  monogram is shown as selected. The stored choice stays for the side tab and static badge.
+
+Switching to Integrada turns a stored slide into a fade. "Probar aparición" works for both timed
+presentations, through the same controller.
+
+Phase 5.3B controls (Pestaña lateral / Fija):
 
 - **Mostrar logo SST:** while it's off, only the switch and a one-line explanation show.
 - **When on:**
@@ -320,3 +337,21 @@ disabled controls are a convenience.
     priority, the real OBS public payload with repeated and stale snapshots, a 120-cycle long run.
 - Builder UI, dirty state and the integration lifecycle (Free forged request, Creator, preset,
   expiry, Free edit, renewal).
+
+## Integrated branding tests (Phase 5.3C)
+
+- `domain/overlay/brand-flag.test.ts`: the third presentation, the shared schedule, fade/instant
+  (slide → fade), old 5.3B configs, entitlements, forged Free saves, downgrade/renewal and presets.
+- `components/brand/lockup-layout.test.ts`: `LOCKUP_LAYOUT` matches the published official
+  lockup.
+- `components/overlay/integrated-branding.test.tsx` (happy-dom, fake timers):
+  - Broadcast as reference: Recent results ↔ SST monogram (integrated branding), content restored exactly, the same
+    element with no structural change, no side row;
+  - timing, preview reveal, fade/instant, animations off and reduced motion;
+  - disabled / side tab / static unchanged; schedule restart on presentation change;
+  - six themes (Minimal monogram), monogram, colour and the hidden slot;
+  - rotation off/characters/session-active/session-all, Creator Motion, the real OBS public
+    payload with repeated and stale snapshots;
+  - 120 cycles.
+- Builder UI (order, disclosure, warnings, legibility note, preview button), dirty state and the
+  integration lifecycle.

@@ -85,6 +85,16 @@ describe("Phase 5.3A: presentation edits", () => {
   });
 });
 
+describe("Phase 5.3C: integrated branding edits", () => {
+  it("switching presentation marks dirty; saving clears it", () => {
+    const on = patchBrandFlag(base, { enabled: true });
+    const il = patchBrandFlag(on, { mode: "content-interleave" });
+    expect(isDirty(snap(on), snap(il))).toBe(true);
+    expect(isDirty(snap(il), snap(il))).toBe(false);
+    expect(isDirty(snap(il), snap(patchBrandFlag(il, { animation: "instant" })))).toBe(true);
+  });
+});
+
 describe("Phase 5.3B: brand flag edits", () => {
   it("every option marks dirty; saving clears it; turning it off keeps preferences", () => {
     const on = patchBrandFlag(base, { enabled: true });

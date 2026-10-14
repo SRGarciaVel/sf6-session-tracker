@@ -10,10 +10,18 @@
  *   visibleSeconds   how long each reveal stays out (always shorter than the period);
  *   the first reveal starts one full interval after the overlay appears.
  * "static-badge" is always visible and schedules nothing.
+ *
+ * Presentations (`mode`; the stored values are kept for backward compatibility):
+ *   "timed-tab"           Side tab (Phase 5.3B): a tab beside the panel, in reserved side space.
+ *   "content-interleave"  Integrated (Phase 5.3C): the mark temporarily takes the place of the
+ *                         theme's designated SECONDARY block (Recent results) in the SAME box —
+ *                         no reserved space, no geometry change. Fade or instant only.
+ *   "static-badge"        Always visible beside the panel (no timer).
  */
 import { z } from "zod";
+import { THEME_REGISTRY, type ThemeId } from "./themes";
 
-export const BRAND_FLAG_MODES = ["timed-tab", "static-badge"] as const;
+export const BRAND_FLAG_MODES = ["timed-tab", "content-interleave", "static-badge"] as const;
 export const BRAND_FLAG_POSITIONS = ["left", "right"] as const;
 export const BRAND_FLAG_INTERVALS = [30, 60, 120, 300] as const;
 export const BRAND_FLAG_VISIBLE = [2, 3, 5] as const;
@@ -94,12 +102,33 @@ export function brandFlagDelayMs(
   phase: BrandFlagPhase,
   firstReveal: boolean,
 ): number | null {
-  if (!config.enabled || config.mode !== "timed-tab") return null;
+  if (!config.enabled || !isTimedBrandMode(config.mode)) return null;
   if (phase === "shown") return config.visibleSeconds * 1000;
   const hidden = firstReveal
     ? config.intervalSeconds
     : config.intervalSeconds - config.visibleSeconds;
   return hidden * 1000;
+}
+
+/** Presentations that appear on a schedule (side tab, integrated); the static badge doesn't. */
+export function isTimedBrandMode(mode: BrandFlagMode): boolean {
+  return mode !== "static-badge";
+}
+
+/** Presentations that reserve side space beside the panel (the integrated one never does). */
+export function usesBrandSideSlot(mode: BrandFlagMode): boolean {
+  return mode !== "content-interleave";
+}
+
+/**
+ * Transition of the integrated presentation: fade or instant only (a slide inside a content
+ * slot would visually move the layout). A stored "slide" — e.g. kept from the side tab — fades.
+ */
+export function interleaveTransition(
+  animation: BrandFlagAnimation,
+  opts: { animations: boolean; reducedMotion: boolean },
+): "fade" | "instant" {
+  return effectiveBrandAnimation(animation, opts) === "instant" ? "instant" : "fade";
 }
 
 /** The animation actually rendered: animations off or reduced motion ⇒ instant. */
@@ -108,4 +137,41 @@ export function effectiveBrandAnimation(
   opts: { animations: boolean; reducedMotion: boolean },
 ): BrandFlagAnimation {
   return !opts.animations || opts.reducedMotion ? "instant" : animation;
+}
+
+/* ───────── integrated logo legibility (Phase 5.3C) ───────── */
+
+/** Official lockup proportions (components/brand/geometry.ts LOCKUP_LAYOUT): 760 × 124, words 27. */
+const LOCKUP_ASPECT = 760 / 124;
+const LOCKUP_WORDS_OF_HEIGHT = 27 / 124;
+
+/**
+ * Rendered font size (px) of the lockup's "SESSION / STATS / TRACKER" words when the official
+ * lockup is scaled to fit a w × h box (preserveAspectRatio meet): min(h, w / aspect) · 27/124.
+ */
+export function fullLockupWordPx(box: { width: number; height: number }): number {
+  return Math.min(box.height, box.width / LOCKUP_ASPECT) * LOCKUP_WORDS_OF_HEIGHT;
+}
+
+/**
+ * Readability floor: the lockup's words must be at least as large as the overlay's OWN smallest
+ * text (its labels) — what the theme's design already considers readable. Below that the full
+ * logo is decoration, not branding, and a theme must not offer it.
+ */
+export function fullLockupLegible(
+  box: { width: number; height: number },
+  themeMinTextPx: number,
+): boolean {
+  return fullLockupWordPx(box) >= themeMinTextPx;
+}
+
+/** Logo the integrated presentation actually renders in a theme (capability-checked). */
+export function integratedLogo(theme: ThemeId, requested: BrandFlagLogo): BrandFlagLogo {
+  return THEME_REGISTRY[theme].integratedBranding.logos.includes(requested)
+    ? requested
+    : "monogram";
+}
+
+export function integratedSupportsFullLogo(theme: ThemeId): boolean {
+  return THEME_REGISTRY[theme].integratedBranding.logos.includes("full");
 }

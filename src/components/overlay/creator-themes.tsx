@@ -7,6 +7,7 @@
  * from fixed tables; nothing user- or Capcom-provided becomes CSS. The emblem is SST-native CSS
  * (no official artwork). OBS/CEF-safe: classes + custom properties only (see overlay.css).
  */
+import { BrandInterleaveLayer, brandHostAttrs, useBrandInterleave } from "./brand-flag";
 import type { CSSProperties, ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { formatWinRate } from "@/domain/format";
@@ -146,7 +147,7 @@ export function RankCardTheme({ config, live }: ThemeProps) {
             ))}
           </div>
         )}
-        {f.recentForm && <RecentForm results={s.recentResults} max={10} />}
+        {f.recentForm && <RecentForm results={s.recentResults} max={10} brandSlot />}
       </div>
     </div>
   );
@@ -156,6 +157,7 @@ export function RankCardTheme({ config, live }: ThemeProps) {
 
 export function BroadcastTheme({ config, live }: ThemeProps) {
   const t = useTranslations("Overlay");
+  const il = useBrandInterleave();
   const v = variantsFor(config, "broadcast");
   const s = live.session;
   const f = config.fields;
@@ -227,8 +229,14 @@ export function BroadcastTheme({ config, live }: ThemeProps) {
           </div>
         ))}
         {f.recentForm && s.recentResults.length > 0 && (
-          <div className="ov-bc-seg ov-bc-form">
+          // Designated branding slot: the WHOLE Recent results segment (recent-results-segment),
+          // so the mark gets the segment's full box (its size still comes from the chips).
+          <div
+            className={il ? "ov-bc-seg ov-bc-form ov-il-host" : "ov-bc-seg ov-bc-form"}
+            {...brandHostAttrs(il)}
+          >
             <RecentForm results={s.recentResults} max={5} />
+            {il && <BrandInterleaveLayer />}
           </div>
         )}
       </div>
@@ -326,7 +334,7 @@ export function PrestigeTheme({ config, live }: ThemeProps) {
             )}
           </span>
         )}
-        {f.recentForm && <RecentForm results={s.recentResults} max={6} />}
+        {f.recentForm && <RecentForm results={s.recentResults} max={6} brandSlot />}
       </div>
     </div>
   );

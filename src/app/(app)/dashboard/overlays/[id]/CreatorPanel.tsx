@@ -49,10 +49,12 @@ import {
   BRAND_FLAG_COLORS,
   BRAND_FLAG_INTERVALS,
   BRAND_FLAG_LOGOS,
-  BRAND_FLAG_MODES,
   BRAND_FLAG_POSITIONS,
   BRAND_FLAG_VISIBLE,
   DEFAULT_BRAND_FLAG,
+  integratedLogo,
+  integratedSupportsFullLogo,
+  isTimedBrandMode,
   type BrandFlagInterval,
   type BrandFlagVisible,
 } from "@/domain/overlay/brand-flag";
@@ -589,7 +591,16 @@ function BrandFlagGroup({
   const t = useTranslations("Builder.brandFlag");
   const flag = config.creator?.brandFlag ?? DEFAULT_BRAND_FLAG;
   const on = config.creator?.brandFlag?.enabled === true;
-  const timed = flag.mode === "timed-tab";
+  const timed = isTimedBrandMode(flag.mode);
+  const integrated = flag.mode === "content-interleave";
+  // Presentation order in the UI: Integrated · Side tab · Static (stored values unchanged).
+  const presentations = ["content-interleave", "timed-tab", "static-badge"] as const;
+  // Integrated: fade / instant only (a slide inside a content slot would move the layout).
+  const animations = integrated ? (["fade", "instant"] as const) : BRAND_FLAG_ANIMATIONS;
+  // The integrated mark needs the theme's designated slot (Recent results) to be visible.
+  const slotHidden = integrated && !config.fields.recentForm;
+  // Theme capability (themes.ts, measured): only logos legible in the theme's slot.
+  const fullAllowed = integratedSupportsFullLogo(config.theme);
   return (
     <fieldset
       disabled={!enabled}
@@ -612,26 +623,48 @@ function BrandFlagGroup({
                 <span>{t("mode")}</span>
                 <Segmented
                   value={flag.mode}
-                  onChange={(mode) => update((c) => patchBrandFlag(c, { mode }))}
-                  options={BRAND_FLAG_MODES.map((m) => ({
+                  onChange={(mode) =>
+                    update((c) =>
+                      patchBrandFlag(c, {
+                        mode,
+                        // Integrated has no slide: a stored slide becomes a fade.
+                        ...(mode === "content-interleave" &&
+                        (c.creator?.brandFlag?.animation ?? DEFAULT_BRAND_FLAG.animation) ===
+                          "slide"
+                          ? { animation: "fade" as const }
+                          : {}),
+                      }),
+                    )
+                  }
+                  options={presentations.map((m) => ({
                     value: m,
                     label: t(`modes.${m}.label`),
                   }))}
                 />
               </div>
               <p className="text-xs text-faint">{t(`modes.${flag.mode}.hint`)}</p>
+              {slotHidden && (
+                <p
+                  className="border-l-2 border-cyan/60 bg-surface-2/60 px-3 py-2 text-xs text-text"
+                  data-testid="brand-slot-hidden"
+                >
+                  {t("slotHidden")}
+                </p>
+              )}
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-              <span>{t("position")}</span>
-              <Segmented
-                value={flag.position}
-                onChange={(position) => update((c) => patchBrandFlag(c, { position }))}
-                options={BRAND_FLAG_POSITIONS.map((v) => ({
-                  value: v,
-                  label: t(`positions.${v}`),
-                }))}
-              />
-            </div>
+            {!integrated && (
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span>{t("position")}</span>
+                <Segmented
+                  value={flag.position}
+                  onChange={(position) => update((c) => patchBrandFlag(c, { position }))}
+                  options={BRAND_FLAG_POSITIONS.map((v) => ({
+                    value: v,
+                    label: t(`positions.${v}`),
+                  }))}
+                />
+              </div>
+            )}
             {timed && (
               <>
                 <label className="flex items-center justify-between gap-3 text-sm">
@@ -676,11 +709,11 @@ function BrandFlagGroup({
                 </label>
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                    <span>{t("animation")}</span>
+                    <span>{integrated ? t("transition") : t("animation")}</span>
                     <Segmented
-                      value={flag.animation}
+                      value={integrated && flag.animation === "slide" ? "fade" : flag.animation}
                       onChange={(animation) => update((c) => patchBrandFlag(c, { animation }))}
-                      options={BRAND_FLAG_ANIMATIONS.map((v) => ({
+                      options={animations.map((v) => ({
                         value: v,
                         label: t(`animations.${v}`),
                       }))}
@@ -694,13 +727,28 @@ function BrandFlagGroup({
                 </div>
               </>
             )}
-            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-              <span>{t("logo")}</span>
-              <Segmented
-                value={flag.logoVariant}
-                onChange={(logoVariant) => update((c) => patchBrandFlag(c, { logoVariant }))}
-                options={BRAND_FLAG_LOGOS.map((v) => ({ value: v, label: t(`logos.${v}`) }))}
-              />
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span>{t("logo")}</span>
+                <Segmented
+                  // Integrated shows the logo the theme can render legibly (the stored choice is
+                  // kept for the side tab and the static badge).
+                  value={
+                    integrated ? integratedLogo(config.theme, flag.logoVariant) : flag.logoVariant
+                  }
+                  onChange={(logoVariant) => update((c) => patchBrandFlag(c, { logoVariant }))}
+                  options={BRAND_FLAG_LOGOS.map((v) => ({
+                    value: v,
+                    label: t(`logos.${v}`),
+                    disabled: integrated && v === "full" && !fullAllowed,
+                  }))}
+                />
+              </div>
+              {integrated && !fullAllowed && (
+                <p className="text-xs text-faint" data-testid="brand-full-unsupported">
+                  {t("fullLogoUnsupported")}
+                </p>
+              )}
             </div>
             <div className="space-y-1">
               <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
@@ -713,7 +761,9 @@ function BrandFlagGroup({
               </div>
               <p className="text-xs text-faint">{t("colorHint")}</p>
             </div>
-            <p className="text-xs text-faint">{t("spaceHint")}</p>
+            <p className="text-xs text-faint">
+              {integrated ? t("integratedSpaceHint") : t("spaceHint")}
+            </p>
           </>
         )}
       </Group>

@@ -571,8 +571,9 @@ describe("Phase 5.3B: SST branding (builder)", () => {
     expect(html).toContain("Marca SST");
     expect(html).toContain("Mostrar logo SST");
     for (const label of [
-      "Pestaña periódica",
-      "Insignia fija",
+      "Integrada",
+      "Pestaña lateral",
+      "Fija",
       "Izquierda",
       "Derecha",
       "Deslizar",
@@ -637,5 +638,119 @@ describe("Phase 5.3B: SST branding (builder)", () => {
     const free = builder(FREE, cfg());
     expect(free).not.toContain('data-testid="brand-reveal"');
     expect(free).not.toContain("ov-brand-row");
+  });
+});
+
+describe("Phase 5.3C: integrated branding (builder)", () => {
+  const base = {
+    update: () => {},
+    overlayId: "00000000-0000-4000-8000-0000000000aa",
+    dirty: false,
+    onPresetApplied: () => {},
+    presets: [],
+    rotationViews: { views: [], sample: true },
+  };
+  const cfg = (
+    over: Partial<typeof DEFAULT_BRAND_FLAG> = {},
+    extra: Partial<OverlayConfig> = {},
+  ): OverlayConfig => ({
+    ...DEFAULT_OVERLAY_CONFIG,
+    ...extra,
+    fields: { ...DEFAULT_OVERLAY_CONFIG.fields, recentForm: true, ...extra.fields },
+    creator: {
+      ...DEFAULT_CREATOR_CUSTOMIZATION,
+      brandFlag: {
+        ...DEFAULT_BRAND_FLAG,
+        enabled: true,
+        mode: "content-interleave",
+        animation: "fade",
+        ...over,
+      },
+    },
+  });
+  const group = (config: OverlayConfig) => {
+    const html = wrap(
+      "es",
+      <CreatorPanel
+        {...base}
+        config={config}
+        advancedCustomization
+        creatorPresets
+        motionEffects
+        characterRotation
+        brandFlag
+      />,
+    );
+    return html.slice(html.indexOf('data-testid="creator-brand-flag"'));
+  };
+
+  it("presentation offered as Integrada · Pestaña lateral · Fija, in that order", () => {
+    const html = group(cfg());
+    const i = html.indexOf("Integrada");
+    expect(i).toBeGreaterThan(-1);
+    expect(html.indexOf("Pestaña lateral")).toBeGreaterThan(i);
+    expect(html.indexOf("Fija")).toBeGreaterThan(html.indexOf("Pestaña lateral"));
+    expect(html).toContain(es.Builder.brandFlag.integratedSpaceHint);
+  });
+
+  it("integrated: no position, no slide — Transition: Fade / Instant; timing shown", () => {
+    const html = group(cfg());
+    expect(html).not.toContain("Posición");
+    expect(html).not.toContain("Deslizar");
+    expect(html).toContain("Transición");
+    expect(html).toContain("Fundido");
+    expect(html).toContain("Instantánea");
+    expect(html).toContain('data-testid="brand-interval"');
+    expect(html).toContain('data-testid="brand-visible"');
+  });
+
+  it("side tab keeps position and slide; static has no timing", () => {
+    const side = group(cfg({ mode: "timed-tab", animation: "slide" }));
+    expect(side).toContain("Posición");
+    expect(side).toContain("Deslizar");
+    const fixed = group(cfg({ mode: "static-badge" }));
+    expect(fixed).not.toContain('data-testid="brand-interval"');
+    expect(fixed).toContain("Posición");
+  });
+
+  it("warns when the theme's slot (Recent results) is hidden; Minimal notes the monogram", () => {
+    expect(
+      group(cfg({}, { fields: { ...DEFAULT_OVERLAY_CONFIG.fields, recentForm: false } })),
+    ).toContain('data-testid="brand-slot-hidden"');
+    expect(group(cfg())).not.toContain('data-testid="brand-slot-hidden"');
+  });
+
+  it("integrated: Full Logo is disabled (not selectable) where the theme can't render it legibly", () => {
+    for (const theme of ["broadcast", "minimal", "competitive"] as const) {
+      const html = group(cfg({ logoVariant: "full" }, { theme }));
+      expect(html).toMatch(
+        /aria-checked="false"[^>]*disabled=""[^>]*>Logo completo|disabled=""[^>]*>Logo completo/,
+      );
+      expect(html).toContain('data-testid="brand-full-unsupported"');
+      expect(html).toContain(es.Builder.brandFlag.fullLogoUnsupported);
+      // The effective (monogram) choice is the one shown as selected.
+      expect(html).toMatch(/aria-checked="true"[^>]*>Monograma/);
+    }
+  });
+
+  it("side tab / static keep Full Logo selectable (no capability restriction there)", () => {
+    const side = group(cfg({ mode: "timed-tab", logoVariant: "full" }));
+    expect(side).not.toContain('data-testid="brand-full-unsupported"');
+    expect(side).not.toMatch(/disabled=""[^>]*>Logo completo/);
+  });
+
+  it("“Probar aparición” is offered for the integrated presentation", () => {
+    const html = wrap(
+      "es",
+      <OverlayBuilder
+        overlayId="00000000-0000-4000-8000-0000000000aa"
+        initialName="Overlay"
+        initialConfig={cfg()}
+        url="https://sst.example/overlay/tok"
+        access={CREATOR}
+        presets={[]}
+      />,
+    );
+    expect(html).toContain('data-testid="brand-reveal"');
   });
 });

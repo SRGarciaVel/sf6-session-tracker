@@ -637,6 +637,94 @@ the theme accent, or the Creator secondary accent (falling back to the theme acc
   update overlay set config = config #- '{creator,brandFlag}' where config->'creator' ? 'brandFlag';
   ```
 
+### Integrated branding (Phase 5.3C; same entitlement)
+
+A third **presentation** of the same `creator.brandFlag` block. It was added after streamer
+feedback: the side tab reserves space and can make the overlay feel smaller.
+
+| Presentation   | Stored `mode`        | Where the mark appears                                    | Space              | Timer    |
+| -------------- | -------------------- | --------------------------------------------------------- | ------------------ | -------- |
+| **Integrated** | `content-interleave` | the theme's designated **secondary** slot, in its own box | **none reserved**  | schedule |
+| Side tab       | `timed-tab`          | a tab beside the panel (Phase 5.3B)                       | reserved side slot | schedule |
+| Static         | `static-badge`       | a badge beside the panel                                  | reserved side slot | none     |
+
+**Integrated behaviour.** The overlay renders normally. One full interval later, the slot's content
+fades out and the official mark fades in **in the same box**, stays `visibleSeconds`, then fades
+out and the original content returns. The schedule is the shared 5.3B one: `intervalSeconds` =
+time between reveal starts, one `setTimeout` chain, and the same "Probar aparición".
+
+- **Transition:** fade or instant only; a stored `slide` fades. Animations off or reduced motion
+  ⇒ instant, same schedule.
+- **Geometry:** the slot keeps the size of its **normal content**. The mark is an absolute layer
+  over that box (inset 0), and the logo is one vector scaled to fit it (`preserveAspectRatio`),
+  so nothing is reserved, moved or re-measured.
+  - There's no side row: the panel stays the overlay's first child, so fit-to-box behaves exactly
+    as with branding off.
+  - `visibility` switches at the end of each fade, so the hidden layer is never visible or
+    announced.
+- **Designated slots + capabilities** (`themes.ts` → `integratedBranding: { slot, logos }`;
+  explicit, never DOM traversal). The slot is always the theme's **Recent results**, which is
+  secondary; primary stats (W/L, win rate, rating, rank) are never replaced.
+  - `"recent-results-segment"`: the **whole** secondary segment or block that holds the chips is
+    the slot (`brandHostAttrs` + `BrandInterleaveLayer`), so the mark gets that full box.
+  - `"recent-results"`: the chips are the slot (`RecentForm brandSlot`), because the theme's
+    surrounding container also holds primary stats.
+  - The normal content always defines the box.
+
+**Readability floor (full logo).** The official lockup's "SESSION / STATS / TRACKER" words must
+render at least as large as the overlay's **own smallest text**: what the theme already treats as
+readable. The words render at `min(h, w / (760/124)) · 27/124` px in a w × h slot
+(`fullLockupWordPx` / `fullLockupLegible` in `brand-flag.ts`). A theme declares `"full"` only if
+its real slot passes; otherwise the builder **disables** "Logo completo" for Integrated with an
+explanation, and the renderer uses the monogram. The stored choice is kept for the side tab and
+static badge, where the full logo is unaffected.
+
+**Measured matrix** (production build, Chromium, 100 % zoom; slot box → lockup words vs floor):
+
+| Theme       | Slot                          | 600×120                 | 800×180                    | 900×240                 | Integrated logos |
+| ----------- | ----------------------------- | ----------------------- | -------------------------- | ----------------------- | ---------------- |
+| Broadcast   | whole segment (`.ov-bc-form`) | 83.5×44.6 → 3.0 / 7.1   | **111.3×59.2 → 4.0 / 9.6** | 125.5×66.8 → 4.5 / 10.8 | monogram         |
+| Street      | whole block (`.ov-st-block`)  | 122.7×61.6 → 4.4 / 10.3 | 163.5×82.2 → 5.8 / 13.7    | 172.2×86.6 → 6.1 / 14.4 | monogram         |
+| Competitive | chips row                     | 422.4×13.1 → 2.9 / 9.1  | 558.8×17.3 → 3.8 / 12      | 558.8×17.3 → 3.8 / 12   | monogram         |
+| Rank Card   | chips row                     | —                       | 198.4×15.8 → 3.4 / 10.9    | 217.7×17.3 → 3.8 / 12   | monogram         |
+| Prestige    | chips row                     | —                       | 92.6×14.6 → 3.2 / 8.7      | 109.8×17.3 → 3.8 / 10.3 | monogram         |
+| Minimal     | chips item                    | 72.6×13.8 → 2.6 / 11.5  | 96.7×18.4 → 3.4 / 15.3     | 108.9×20.7 → 3.9 / 17.3 | monogram         |
+
+**No theme passes, so every theme is monogram-only for Integrated.**
+
+- **Why:** the lockup is ~6:1, so in these slots it's width-bound. Broadcast's words reach only
+  4.0 px against a 9.6 px floor; legibility would need a slot ≈ 280 px wide, ~2.5× the segment.
+- **Not done:** making the full logo work here would need a new official compact or horizontal
+  lockup (a brand design decision, out of scope) or a bigger slot (a geometry change, not
+  allowed). Neither is faked.
+- **Result:** Broadcast's monogram now fills its whole segment (110 × 59 px at 800×180).
+
+- **Slot not available.** The block only exists when Recent results is on and has at least one
+  match. **Policy A:** with zero matches the branding waits until the slot naturally exists after
+  the first match. No space is reserved and no other slot is borrowed: every other block is
+  primary or absent. The builder warns when Recent results is off.
+- **Logo:** official geometry (`LOCKUP_LAYOUT` / monogram, tested against
+  `public/brand/sst-lockup.svg`), monochrome. `colorMode` tints the mark itself: the theme's text
+  colour or the Creator accent.
+- **Independence:** presentation only. It never touches statistics, rotation (a reveal doesn't
+  reset the view cycle and a view step doesn't reset the schedule), latest-match priority or
+  Creator Motion. Snapshots and matches never restart it.
+- **Entitlements:** the same `overlays.brandFlag`, stored vs effective, Free protection,
+  downgrade, renewal and presets as 5.3B (integration-tested).
+
+**Geometry QA** (production build, every theme × supported canvas, branding off vs integrated
+hidden vs revealed): **0 issues**.
+
+- Root font-size (fit), panel box, slot box and **every neighbouring segment or block** are
+  identical across the three states.
+- The integrated state is identical to branding off (no side row; fit-to-box unchanged).
+- The rendered mark is the monogram; Recent results returns unchanged.
+- **Long run** (Broadcast segment slot, paused clock, 1 s steps): 109 reveals in 3300 s with an
+  exact 30 s period, one layer, overlay DOM 46 → 46.
+
+- **Rollback:** 5.3B code reads an unknown `mode` leniently (field default `timed-tab`), so an
+  integrated overlay would show the side tab instead. No SQL needed.
+
 ## Stored vs effective config
 
 ```

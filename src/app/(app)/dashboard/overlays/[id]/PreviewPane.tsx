@@ -17,6 +17,7 @@ import { Button, cx } from "@/components/ui/primitives";
 import { OVERLAY_PRESETS, type OverlayConfig, type OverlayPresetId } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION } from "@/domain/overlay/creator";
 import { DEFAULT_CHARACTER_ROTATION } from "@/domain/overlay/rotation";
+import { isTimedBrandMode } from "@/domain/overlay/brand-flag";
 import {
   SAMPLE_CHARACTER_KEYS,
   sampleMultiCharacterState,
@@ -380,7 +381,7 @@ export function PreviewPane({
           </span>
         </div>
         {config.creator?.brandFlag?.enabled === true &&
-          config.creator.brandFlag.mode === "timed-tab" && (
+          isTimedBrandMode(config.creator.brandFlag.mode) && (
             <div
               className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line pt-3"
               data-testid="brand-preview"

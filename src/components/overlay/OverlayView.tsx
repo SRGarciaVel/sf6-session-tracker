@@ -33,9 +33,20 @@ import {
   type PresentationView,
 } from "@/domain/overlay/rotation";
 import { useCharacterRotation } from "./rotation";
-import { BrandSlot, useBrandFlag } from "./brand-flag";
+import {
+  BrandInterleaveLayer,
+  BrandInterleaveProvider,
+  BrandSlot,
+  brandHostAttrs,
+  useBrandFlag,
+  useBrandInterleave,
+  type BrandInterleaveState,
+} from "./brand-flag";
 import {
   effectiveBrandAnimation,
+  integratedLogo,
+  interleaveTransition,
+  usesBrandSideSlot,
   type BrandFlag,
   type BrandFlagAnimation,
 } from "@/domain/overlay/brand-flag";
@@ -183,7 +194,11 @@ function MinimalTheme({ config, live, viewLabel }: ThemeProps) {
       ),
     });
   if (f.recentForm)
-    items.push({ key: "form", node: <RecentForm results={s.recentResults} max={5} /> });
+    items.push({
+      key: "form",
+      // Designated branding slot (integrated; themes.ts integratedBranding).
+      node: <RecentForm results={s.recentResults} max={5} brandSlot />,
+    });
 
   return (
     <div className="ov-panel ov-minimal ov-shadow">
@@ -311,7 +326,7 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
           <span className="ov-div" aria-hidden key={`div-${k}`} />
         ))}
       </div>
-      {f.recentForm && <RecentForm results={s.recentResults} max={10} />}
+      {f.recentForm && <RecentForm results={s.recentResults} max={10} brandSlot />}
     </div>
   );
 }
@@ -320,6 +335,7 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
 
 function FighterTheme({ config, live }: ThemeProps) {
   const t = useTranslations("Overlay");
+  const il = useBrandInterleave();
   const locale = config.locale;
   const s = live.session;
   const f = config.fields;
@@ -413,10 +429,12 @@ function FighterTheme({ config, live }: ThemeProps) {
         </div>
       )}
       {f.recentForm && s.recentResults.length > 0 && (
-        <div className="ov-st-block">
+        // Designated branding slot: the whole Recent results block (recent-results-segment).
+        <div className={il ? "ov-st-block ov-il-host" : "ov-st-block"} {...brandHostAttrs(il)}>
           <div className="ov-st-inner">
             <RecentForm results={s.recentResults} max={6} />
           </div>
+          {il && <BrandInterleaveLayer />}
         </div>
       )}
     </div>
@@ -674,6 +692,22 @@ export function OverlayView({ config, live, sizing, brandRevealSignal = 0 }: Ove
   const brandAnimation = brandFlag
     ? effectiveBrandAnimation(brandFlag.animation, { animations: config.animations, reducedMotion })
     : "instant";
+  // Side tab / static badge reserve a side slot (BrandRow); the integrated presentation (5.3C)
+  // reserves nothing: the theme's designated secondary slot hosts the mark in its own box.
+  const sideFlag = brand && brandFlag && usesBrandSideSlot(brandFlag.mode) ? brandFlag : undefined;
+  const interleave: BrandInterleaveState | null =
+    brand && brandFlag && !usesBrandSideSlot(brandFlag.mode)
+      ? {
+          shown: brand.shown,
+          colorMode: brandFlag.colorMode,
+          // Only logos legible in this theme's slot (themes.ts integratedBranding, measured).
+          logo: integratedLogo(config.theme, brandFlag.logoVariant),
+          transition: interleaveTransition(brandFlag.animation, {
+            animations: config.animations,
+            reducedMotion,
+          }),
+        }
+      : null;
   const transition =
     rotation && rotationConfig
       ? effectiveTransition(rotationConfig.transition, {
@@ -726,30 +760,28 @@ export function OverlayView({ config, live, sizing, brandRevealSignal = 0 }: Ove
         {...motionAttrs}
       >
         <MotionProvider value={{ update, sweep: profile?.accent === "sweep" }}>
-          <BrandRow
-            flag={brand ? brandFlag : undefined}
-            shown={brand?.shown ?? false}
-            animation={brandAnimation}
-          >
-            {rotation ? (
-              // Rotation stage: static (fit-to-box measures the panel inside it); the inner frame is
-              // re-keyed per VIEW, so the transition runs once on the new content and no old DOM
-              // stays. A repeated view (e.g. priority restarted) keeps the same element.
-              <div className="ov-rot-stage">
-                <div
-                  key={viewKey(rotation.view)}
-                  className="ov-rot-frame"
-                  data-rot-transition={rotation.seq > 0 ? (transition ?? "instant") : undefined}
-                  data-rot-direction={rotation.seq > 0 ? direction : undefined}
-                  data-view={rotation.view.kind}
-                >
-                  <ThemeView config={display} live={shown} viewLabel={viewLabel} />
+          <BrandInterleaveProvider value={interleave}>
+            <BrandRow flag={sideFlag} shown={brand?.shown ?? false} animation={brandAnimation}>
+              {rotation ? (
+                // Rotation stage: static (fit-to-box measures the panel inside it); the inner frame is
+                // re-keyed per VIEW, so the transition runs once on the new content and no old DOM
+                // stays. A repeated view (e.g. priority restarted) keeps the same element.
+                <div className="ov-rot-stage">
+                  <div
+                    key={viewKey(rotation.view)}
+                    className="ov-rot-frame"
+                    data-rot-transition={rotation.seq > 0 ? (transition ?? "instant") : undefined}
+                    data-rot-direction={rotation.seq > 0 ? direction : undefined}
+                    data-view={rotation.view.kind}
+                  >
+                    <ThemeView config={display} live={shown} viewLabel={viewLabel} />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <ThemeView config={display} live={shown} />
-            )}
-          </BrandRow>
+              ) : (
+                <ThemeView config={display} live={shown} />
+              )}
+            </BrandRow>
+          </BrandInterleaveProvider>
         </MotionProvider>
       </div>
     </NextIntlClientProvider>

@@ -46,16 +46,16 @@ never deleted to downgrade: they expire or get revoked, which keeps the audit tr
 
 ## Entitlement set (Phase 4.5)
 
-| Key                              | free  | creator_beta | Notes                                                                                            |
-| -------------------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------------ |
-| `overlays.max`                   | 10    | 10           | **10 is the current technical/product behaviour, not a final commercial Free policy.**           |
-| `overlays.advancedCustomization` | false | **true**     | Phase 4: NEW overlay options only ([creator-overlays.md](creator-overlays.md))                   |
-| `overlays.premiumThemes`         | false | **true**     | Phase 4.5: NEW themes only (Rank Card, Broadcast, Prestige); Free themes unchanged               |
-| `overlays.creatorPresets`        | false | **true**     | Phase 4.5: saved appearance presets ([creator-presets.md](creator-presets.md))                   |
-| `overlays.motionEffects`         | false | **true**     | Phase 5.0: Creator motion & broadcast effects (additive; Free animations unchanged)              |
-| `overlays.characterRotation`     | false | **true**     | Phase 5.2: character rotation & latest-match priority (presentation only; independent of motion) |
-| `overlays.brandFlag`             | false | **true**     | Phase 5.3B: SST Brand Flag (official mark tab; independent of motion and rotation)               |
-| `history.retentionDays`          | null  | null         | `null` = no retention policy (current behaviour: nothing is ever purged). Not enforced yet.      |
+| Key                              | free  | creator_beta | Notes                                                                                               |
+| -------------------------------- | ----- | ------------ | --------------------------------------------------------------------------------------------------- |
+| `overlays.max`                   | 10    | 10           | **10 is the current technical/product behaviour, not a final commercial Free policy.**              |
+| `overlays.advancedCustomization` | false | **true**     | Phase 4: NEW overlay options only ([creator-overlays.md](creator-overlays.md))                      |
+| `overlays.premiumThemes`         | false | **true**     | Phase 4.5: NEW themes only (Rank Card, Broadcast, Prestige); Free themes unchanged                  |
+| `overlays.creatorPresets`        | false | **true**     | Phase 4.5: saved appearance presets ([creator-presets.md](creator-presets.md))                      |
+| `overlays.motionEffects`         | false | **true**     | Phase 5.0: Creator motion & broadcast effects (additive; Free animations unchanged)                 |
+| `overlays.characterRotation`     | false | **true**     | Phase 5.2: character rotation & latest-match priority (presentation only; independent of motion)    |
+| `overlays.brandFlag`             | false | **true**     | Phase 5.3B/5.3C: SST branding — side tab, integrated or static (independent of motion and rotation) |
+| `history.retentionDays`          | null  | null         | `null` = no retention policy (current behaviour: nothing is ever purged). Not enforced yet.         |
 
 Phases 2–3: both plans were identical. **Phase 4** adds the first difference,
 `overlays.advancedCustomization`. **Phase 4.5** adds `overlays.premiumThemes` and

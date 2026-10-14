@@ -2,6 +2,7 @@
  * Shared overlay render parts (used by the Free themes in OverlayView and the Creator themes in
  * creator-themes.tsx). Pure presentation: values arrive pre-computed from the server.
  */
+import { BrandInterleaveLayer, useBrandInterleave } from "./brand-flag";
 import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import type { OverlayConfig } from "@/domain/overlay/config";
@@ -87,16 +88,43 @@ export function Ratio({ wins, losses }: { wins: number; losses: number }) {
 
 const RESULT_KEY = { win: "resultWin", loss: "resultLoss", draw: "resultDraw" } as const;
 
-export function RecentForm({ results, max = 8 }: { results: MatchResult[]; max?: number }) {
+/**
+ * Recent results chips. `brandSlot` makes the CHIPS the theme's designated secondary slot for the
+ * integrated SST branding (Phase 5.3C, themes.ts `integratedBranding.slot: "recent-results"`):
+ * while it's revealed the chips fade out and the official mark fades in over the same box
+ * (absolute layer, inset 0) — same size, no re-measure. Themes whose slot is the whole segment
+ * ("recent-results-segment") make that segment the host instead and leave this prop off.
+ * Without integrated branding the markup is exactly as before. No results ⇒ no block, no slot.
+ */
+export function RecentForm({
+  results,
+  max = 8,
+  brandSlot,
+}: {
+  results: MatchResult[];
+  max?: number;
+  brandSlot?: boolean;
+}) {
   const t = useTranslations("Overlay");
+  const il = useBrandInterleave();
   if (results.length === 0) return null;
+  const slot = brandSlot === true && il !== null;
   return (
-    <span className="ov-form">
+    <span
+      className={slot ? "ov-form ov-il-host" : "ov-form"}
+      data-il={slot ? (il.shown ? "shown" : "hidden") : undefined}
+      data-il-anim={slot ? il.transition : undefined}
+    >
       {results.slice(-max).map((r, i) => (
-        <span key={`${i}-${r}`} className={`ov-form-chip ov-r-${r}`}>
+        <span
+          key={`${i}-${r}`}
+          className={`ov-form-chip ov-r-${r}`}
+          aria-hidden={slot && il.shown ? true : undefined}
+        >
           {t(RESULT_KEY[r])}
         </span>
       ))}
+      {slot && <BrandInterleaveLayer />}
     </span>
   );
 }

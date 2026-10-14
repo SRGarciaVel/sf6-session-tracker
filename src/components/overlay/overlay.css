@@ -1411,3 +1411,73 @@
     transition: none;
   }
 }
+
+/* ── Integrated SST branding (Phase 5.3C) ─────────────────────────────
+   Present only in the integrated presentation. The theme's designated secondary slot (Recent
+   results) keeps its own size: the mark is an absolute layer over the SAME box (inset 0) and the
+   logo is one vector scaled to fit it, so nothing is reserved, moved or re-measured. Fade: the
+   content fades out, then the mark fades in (and back); `visibility` switches at the right end
+   of each fade so the hidden layer is never visible or announced. Instant: no transition. */
+.ov-il-host {
+  position: relative;
+}
+.ov-il-brand {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--ov-text);
+  opacity: 0;
+  visibility: hidden;
+}
+.ov-il-brand[data-color="creator-accent"] {
+  color: var(--ov-secondary, var(--ov-accent));
+}
+.ov-il-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.ov-il-words {
+  font-family: var(--ovf-barlow-condensed), "Barlow Condensed", "Arial Narrow", sans-serif;
+}
+.ov-il-host[data-il="shown"] > :not(.ov-il-brand) {
+  opacity: 0;
+  visibility: hidden;
+}
+.ov-il-host[data-il="shown"] > .ov-il-brand {
+  opacity: 1;
+  visibility: visible;
+}
+/* Fade — revealing: content out (0–180 ms), then the mark in (140–400 ms). */
+.ov-il-host[data-il-anim="fade"][data-il="shown"] > :not(.ov-il-brand) {
+  transition:
+    opacity 180ms ease-in,
+    visibility 0s linear 180ms;
+}
+.ov-il-host[data-il-anim="fade"][data-il="shown"] > .ov-il-brand {
+  transition:
+    opacity 260ms ease-out 140ms,
+    visibility 0s linear 0s;
+}
+/* Fade — restoring: the mark out, then the content back in. */
+.ov-il-host[data-il-anim="fade"][data-il="hidden"] > .ov-il-brand {
+  transition:
+    opacity 180ms ease-in,
+    visibility 0s linear 180ms;
+}
+.ov-il-host[data-il-anim="fade"][data-il="hidden"] > :not(.ov-il-brand) {
+  transition:
+    opacity 260ms ease-out 140ms,
+    visibility 0s linear 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Same specificity as the fade rules above, declared later: wins without !important. */
+  .ov-il-host[data-il-anim][data-il] > :not(.ov-il-brand),
+  .ov-il-host[data-il-anim][data-il] > .ov-il-brand {
+    transition: none;
+  }
+}

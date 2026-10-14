@@ -228,6 +228,10 @@ close OBS mid-session and come back to correct stats. Each poll fetches recent m
     numbers and none recomputes anything. The live payload still carries the global stats plus
     every character's stats. The scope is part of the motion summary, so switching scope never
     plays a match effect.
+- **Integrated SST branding** (Phase 5.3C): the same block and controller.
+  - Each theme designates a secondary slot (`RecentForm brandSlot`), and the mark is an absolute
+    layer over that slot's own box.
+  - No side row and no re-measure, so fit-to-box is identical to branding off.
 - **SST Brand Flag** (Phase 5.3B, [creator-overlays.md](creator-overlays.md)): an optional tab
   with the official SST mark attached to the panel's side, gated by `overlays.brandFlag`.
   - `[panel][slot]` share a row. Fit-to-box measures the panel plus the reserved slot, so the
