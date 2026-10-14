@@ -10,10 +10,17 @@
  *   visibleSeconds   how long each reveal stays out (always shorter than the period);
  *   the first reveal starts one full interval after the overlay appears.
  * "static-badge" is always visible and schedules nothing.
+ *
+ * Presentations (`mode`; the stored values are kept for backward compatibility):
+ *   "timed-tab"           Side tab (Phase 5.3B): a tab beside the panel, in reserved side space.
+ *   "content-interleave"  Integrated (Phase 5.3C): the mark temporarily takes the place of the
+ *                         theme's designated SECONDARY block (Recent results) in the SAME box —
+ *                         no reserved space, no geometry change. Fade or instant only.
+ *   "static-badge"        Always visible beside the panel (no timer).
  */
 import { z } from "zod";
 
-export const BRAND_FLAG_MODES = ["timed-tab", "static-badge"] as const;
+export const BRAND_FLAG_MODES = ["timed-tab", "content-interleave", "static-badge"] as const;
 export const BRAND_FLAG_POSITIONS = ["left", "right"] as const;
 export const BRAND_FLAG_INTERVALS = [30, 60, 120, 300] as const;
 export const BRAND_FLAG_VISIBLE = [2, 3, 5] as const;
@@ -94,12 +101,33 @@ export function brandFlagDelayMs(
   phase: BrandFlagPhase,
   firstReveal: boolean,
 ): number | null {
-  if (!config.enabled || config.mode !== "timed-tab") return null;
+  if (!config.enabled || !isTimedBrandMode(config.mode)) return null;
   if (phase === "shown") return config.visibleSeconds * 1000;
   const hidden = firstReveal
     ? config.intervalSeconds
     : config.intervalSeconds - config.visibleSeconds;
   return hidden * 1000;
+}
+
+/** Presentations that appear on a schedule (side tab, integrated); the static badge doesn't. */
+export function isTimedBrandMode(mode: BrandFlagMode): boolean {
+  return mode !== "static-badge";
+}
+
+/** Presentations that reserve side space beside the panel (the integrated one never does). */
+export function usesBrandSideSlot(mode: BrandFlagMode): boolean {
+  return mode !== "content-interleave";
+}
+
+/**
+ * Transition of the integrated presentation: fade or instant only (a slide inside a content
+ * slot would visually move the layout). A stored "slide" — e.g. kept from the side tab — fades.
+ */
+export function interleaveTransition(
+  animation: BrandFlagAnimation,
+  opts: { animations: boolean; reducedMotion: boolean },
+): "fade" | "instant" {
+  return effectiveBrandAnimation(animation, opts) === "instant" ? "instant" : "fade";
 }
 
 /** The animation actually rendered: animations off or reduced motion ⇒ instant. */

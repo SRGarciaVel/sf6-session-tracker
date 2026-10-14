@@ -10,6 +10,9 @@
  *                 "hidden"; unmount clears it. A static badge schedules nothing.
  *                 `revealSignal` (builder preview only) triggers one reveal through the SAME
  *                 controller — there is no second animation implementation.
+ *   (5.3C)        the integrated presentation shares this controller: OverlayView provides its
+ *                 state (BrandInterleaveProvider) to the theme's designated slot, which draws
+ *                 BrandInterleaveLayer over its own box — no side slot, nothing re-measured.
  *   BrandSlot     the reserved, static space beside the panel and the tab inside it. The tab
  *                 slides out from behind the panel's edge with transform/opacity only (the
  *                 slot clips it while it's retracted), so nothing is ever re-measured.
@@ -18,11 +21,13 @@
  * lockup composition (monogram + divider + "Session Stats Tracker"), in its monochrome form
  * (letters only, in the overlay's text colour — always legible on the panel background).
  */
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { Monogram } from "@/components/brand/BrandMark";
+import { LETTERS, LOCKUP_LAYOUT, SLANT_TRANSFORM, VIEWBOX_ATTR } from "@/components/brand/geometry";
 import { BRAND_FULL_NAME } from "@/components/brand/names";
 import {
   brandFlagDelayMs,
+  isTimedBrandMode,
   type BrandFlag,
   type BrandFlagAnimation,
   type BrandFlagPhase,
@@ -64,7 +69,7 @@ export function useBrandFlag(
     current = { key, phase: "hidden", first: true, seq: current.seq + 1, signal: current.signal };
   }
   if (current.signal !== revealSignal) {
-    const timed = flag?.enabled === true && flag.mode === "timed-tab";
+    const timed = flag?.enabled === true && isTimedBrandMode(flag.mode);
     current = timed
       ? { ...current, phase: "shown", first: false, seq: current.seq + 1, signal: revealSignal }
       : { ...current, signal: revealSignal };
@@ -136,5 +141,106 @@ export function BrandSlot({
         <FlagLogo variant={flag.logoVariant} />
       </div>
     </div>
+  );
+}
+
+/* ───────── Integrated presentation (Phase 5.3C) ───────── */
+
+/**
+ * State of the integrated ("content-interleave") presentation, provided by OverlayView and read
+ * by the theme's designated slot. null = not in integrated mode (the slot renders exactly as
+ * before — no extra element, attribute or style).
+ */
+export interface BrandInterleaveState {
+  shown: boolean;
+  logo: BrandFlag["logoVariant"];
+  colorMode: BrandFlag["colorMode"];
+  transition: "fade" | "instant";
+}
+
+const BrandInterleaveContext = createContext<BrandInterleaveState | null>(null);
+export const BrandInterleaveProvider = BrandInterleaveContext.Provider;
+export const useBrandInterleave = () => useContext(BrandInterleaveContext);
+
+/** Official monogram as one vector that fits any box (letters only, `currentColor`). */
+function FitMonogram() {
+  return (
+    <svg
+      viewBox={VIEWBOX_ATTR}
+      preserveAspectRatio="xMidYMid meet"
+      className="ov-il-logo"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <g transform={SLANT_TRANSFORM} fill="currentColor">
+        <path d={LETTERS.s1} />
+        <path d={LETTERS.s2} />
+        <path d={LETTERS.t} />
+      </g>
+    </svg>
+  );
+}
+
+/**
+ * Official lockup (monogram + divider + "Session Stats Tracker", the composition of
+ * public/brand/sst-lockup.svg) as one vector that fits any box: it scales with the slot, so it
+ * never changes the slot's size. Monochrome, like the side tab.
+ */
+function FitLockup() {
+  const { width, height, mark, divider, words } = LOCKUP_LAYOUT;
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="xMidYMid meet"
+      className="ov-il-logo"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <svg x={mark.x} y={mark.y} width={mark.width} height={mark.height} viewBox={VIEWBOX_ATTR}>
+        <g transform={SLANT_TRANSFORM} fill="currentColor">
+          <path d={LETTERS.s1} />
+          <path d={LETTERS.s2} />
+          <path d={LETTERS.t} />
+        </g>
+      </svg>
+      <rect {...divider} fill="currentColor" opacity={0.35} />
+      <g
+        fill="currentColor"
+        className="ov-il-words"
+        fontSize={words.fontSize}
+        fontWeight={words.fontWeight}
+        letterSpacing={words.letterSpacing}
+      >
+        {BRAND_FULL_NAME.toUpperCase()
+          .split(" ")
+          .map((w, i) => (
+            <text key={w} x={words.x} y={words.baselines[i]}>
+              {w}
+            </text>
+          ))}
+      </g>
+    </svg>
+  );
+}
+
+/**
+ * The brand layer of a theme's designated slot. Absolutely positioned over the slot's own box
+ * (inset 0), so the slot keeps the size of its normal content and nothing is re-measured.
+ * `monogramOnly`: slots too small for a legible lockup (Minimal) always use the monogram.
+ */
+export function BrandInterleaveLayer({ monogramOnly = false }: { monogramOnly?: boolean }) {
+  const il = useBrandInterleave();
+  if (!il) return null;
+  const full = il.logo === "full" && !monogramOnly;
+  return (
+    <span
+      className="ov-il-brand"
+      data-color={il.colorMode}
+      role={il.shown ? "img" : undefined}
+      aria-label={il.shown ? "SST" : undefined}
+      aria-hidden={il.shown ? undefined : true}
+    >
+      {full ? <FitLockup /> : <FitMonogram />}
+    </span>
   );
 }

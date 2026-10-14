@@ -146,7 +146,7 @@ export function RankCardTheme({ config, live }: ThemeProps) {
             ))}
           </div>
         )}
-        {f.recentForm && <RecentForm results={s.recentResults} max={10} />}
+        {f.recentForm && <RecentForm results={s.recentResults} max={10} brandSlot="full" />}
       </div>
     </div>
   );
@@ -228,7 +228,7 @@ export function BroadcastTheme({ config, live }: ThemeProps) {
         ))}
         {f.recentForm && s.recentResults.length > 0 && (
           <div className="ov-bc-seg ov-bc-form">
-            <RecentForm results={s.recentResults} max={5} />
+            <RecentForm results={s.recentResults} max={5} brandSlot="full" />
           </div>
         )}
       </div>
@@ -326,7 +326,7 @@ export function PrestigeTheme({ config, live }: ThemeProps) {
             )}
           </span>
         )}
-        {f.recentForm && <RecentForm results={s.recentResults} max={6} />}
+        {f.recentForm && <RecentForm results={s.recentResults} max={6} brandSlot="full" />}
       </div>
     </div>
   );

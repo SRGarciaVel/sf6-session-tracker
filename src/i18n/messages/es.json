@@ -852,15 +852,19 @@
       "enabled": "Mostrar logo SST",
       "requiresCreator": "Creator Beta requerido.",
       "summary": "Una pequeña pestaña con el logo oficial de SST unida al lateral del overlay. No tapa ninguna estadística: el overlay le reserva su espacio.",
-      "mode": "Estilo de aparición",
+      "mode": "Presentación",
       "modes": {
         "timed-tab": {
-          "label": "Pestaña periódica",
-          "hint": "Sale del borde del overlay cada cierto tiempo, se muestra unos segundos y se recoge."
+          "label": "Pestaña lateral",
+          "hint": "Sale del borde del overlay cada cierto tiempo, se muestra unos segundos y se recoge. Ocupa un espacio reservado al lado del panel."
         },
         "static-badge": {
-          "label": "Insignia fija",
-          "hint": "Siempre visible junto al overlay, sin animación ni temporizador."
+          "label": "Fija",
+          "hint": "Siempre visible junto al overlay, sin animación ni temporizador. Ocupa un espacio reservado al lado del panel."
+        },
+        "content-interleave": {
+          "label": "Integrada",
+          "hint": "Cada cierto tiempo el logo SST sustituye unos segundos a un bloque secundario del overlay (Últimos resultados) en su mismo espacio, sin cambiar el tamaño del overlay."
         }
       },
       "position": "Posición",
@@ -891,7 +895,12 @@
         "creator-accent": "Acento Creator"
       },
       "colorHint": "Color del borde de la pestaña. El logo usa el color del texto del overlay para que siempre se lea.",
-      "spaceHint": "El overlay se ajusta para dejar sitio a la pestaña, incluso mientras está recogida, así nunca se sale del lienzo de OBS."
+      "spaceHint": "El overlay se ajusta para dejar sitio a la pestaña, incluso mientras está recogida, así nunca se sale del lienzo de OBS.",
+      "transition": "Transición",
+      "slotHidden": "La marca integrada aparece en el bloque «Últimos resultados». Actívalo en Contenido → Estadísticas visibles para que se vea (y necesita al menos una partida).",
+      "minimalNote": "En Minimal el hueco es una sola línea: se usa siempre el monograma.",
+      "integratedSpaceHint": "La marca integrada sustituye temporalmente un bloque secundario sin cambiar el tamaño del overlay.",
+      "fullLogoSmallNote": "En el modo integrado el hueco es pequeño: el logo completo se reduce para caber y su texto «Session Stats Tracker» queda demasiado pequeño para leerse. El monograma se lee con claridad."
     },
     "brandTest": {
       "reveal": "Probar aparición",

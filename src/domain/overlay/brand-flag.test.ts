@@ -11,7 +11,10 @@ import {
   brandFlagDelayMs,
   brandFlagSchema,
   effectiveBrandAnimation,
+  interleaveTransition,
+  isTimedBrandMode,
   parseBrandFlag,
+  usesBrandSideSlot,
   type BrandFlag,
 } from "./brand-flag";
 import {
@@ -212,5 +215,81 @@ describe("entitlements: stored vs effective (41–49)", () => {
     });
     expect(parsed.success && parsed.data.creator?.brandFlag?.position).toBe("left");
     expect(Object.keys(presetAppearanceSchema.shape)).not.toContain("statsScope");
+  });
+});
+
+describe("Phase 5.3C: integrated presentation (content-interleave)", () => {
+  const IL: BrandFlag = {
+    ...ON,
+    mode: "content-interleave",
+    animation: "fade",
+    logoVariant: "full",
+  };
+
+  it("is a third presentation of the same block; strict writes accept it", () => {
+    expect(BRAND_FLAG_MODES).toEqual(["timed-tab", "content-interleave", "static-badge"]);
+    expect(brandFlagSchema.safeParse(IL).success).toBe(true);
+    expect(brandFlagSchema.safeParse({ ...IL, mode: "interleave" }).success).toBe(false);
+  });
+
+  it("13. a stored Phase 5.3B config reads unchanged (timed-tab = side tab)", () => {
+    const old = { ...DEFAULT_BRAND_FLAG, enabled: true, mode: "timed-tab", position: "left" };
+    expect(parseBrandFlag(old)).toEqual(old);
+    expect(usesBrandSideSlot("timed-tab")).toBe(true);
+    expect(usesBrandSideSlot("static-badge")).toBe(true);
+    expect(usesBrandSideSlot("content-interleave")).toBe(false);
+  });
+
+  it("shares the 5.3B schedule (interval between reveal starts; visible time)", () => {
+    expect(isTimedBrandMode("content-interleave")).toBe(true);
+    expect(isTimedBrandMode("static-badge")).toBe(false);
+    const c = { ...IL, intervalSeconds: 60 as const, visibleSeconds: 3 as const };
+    expect(brandFlagDelayMs(c, "hidden", true)).toBe(60_000);
+    expect(brandFlagDelayMs(c, "shown", false)).toBe(3_000);
+    expect(brandFlagDelayMs(c, "hidden", false)).toBe(57_000);
+  });
+
+  it("transition: fade or instant only (a stored slide fades); off / reduced motion ⇒ instant", () => {
+    const on = { animations: true, reducedMotion: false };
+    expect(interleaveTransition("fade", on)).toBe("fade");
+    expect(interleaveTransition("slide", on)).toBe("fade");
+    expect(interleaveTransition("instant", on)).toBe("instant");
+    expect(interleaveTransition("fade", { animations: false, reducedMotion: false })).toBe(
+      "instant",
+    );
+    expect(interleaveTransition("fade", { animations: true, reducedMotion: true })).toBe("instant");
+  });
+
+  it("15–18. same entitlement: Creator keeps it; Free effective has none; forged Free ignored; downgrade keeps, renewal restores", () => {
+    expect(
+      getEffectiveOverlayConfig(withFlag(IL), ent({ brandFlag: true })).creator?.brandFlag,
+    ).toEqual(IL);
+    expect(getEffectiveOverlayConfig(withFlag(IL), ent()).creator?.brandFlag).toBeUndefined();
+    const stored = withFlag({ ...ON, mode: "timed-tab" });
+    expect(mergeOverlayConfigForSave(stored, withFlag(IL), ent()).creator?.brandFlag?.mode).toBe(
+      "timed-tab",
+    );
+    expect(
+      mergeOverlayConfigForSave({ ...DEFAULT_OVERLAY_CONFIG }, withFlag(IL), ent()).creator,
+    ).toBeUndefined();
+    const kept = withFlag(IL);
+    expect(getEffectiveOverlayConfig(kept, ent()).creator?.brandFlag).toBeUndefined();
+    expect(kept.creator?.brandFlag).toEqual(IL);
+    expect(getEffectiveOverlayConfig(kept, ent({ brandFlag: true })).creator?.brandFlag).toEqual(
+      IL,
+    );
+  });
+
+  it("14. presets carry the presentation", () => {
+    const parsed = presetAppearanceSchema.safeParse({
+      ...Object.fromEntries(
+        Object.keys(presetAppearanceSchema.shape).map((k) => [
+          k,
+          (DEFAULT_OVERLAY_CONFIG as Record<string, unknown>)[k],
+        ]),
+      ),
+      creator: withFlag(IL).creator,
+    });
+    expect(parsed.success && parsed.data.creator?.brandFlag?.mode).toBe("content-interleave");
   });
 });

@@ -98,6 +98,25 @@ export const COMPACT = {
 } as const;
 export const COMPACT_VIEWBOX = boundsOf([COMPACT.letter, COMPACT.cyan, COMPACT.magenta], 4);
 
+/**
+ * Official lockup composition (public/brand/sst-lockup.svg): the monogram, a divider and the
+ * three-line name, on one 760 × 124 canvas. Exported so renderers can draw the SAME lockup as one
+ * scalable vector (it fits any box with preserveAspectRatio, no measuring).
+ */
+export const LOCKUP_LAYOUT = {
+  width: 760,
+  height: 124,
+  mark: { x: 0, y: 0, width: 420, height: 124 },
+  divider: { x: 446, y: 18, width: 2, height: 88 },
+  words: {
+    x: 476,
+    baselines: [45, 77, 109],
+    fontSize: 27,
+    letterSpacing: 7.5,
+    fontWeight: 600,
+  },
+} as const;
+
 export const BRAND_COLORS = {
   body: "#eef1fb",
   cyan: "#2fe0ff",
