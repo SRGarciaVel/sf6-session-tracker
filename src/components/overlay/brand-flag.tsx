@@ -183,8 +183,10 @@ function FitMonogram() {
 
 /**
  * Official lockup (monogram + divider + "Session Stats Tracker", the composition of
- * public/brand/sst-lockup.svg) as one vector that fits any box: it scales with the slot, so it
- * never changes the slot's size. Monochrome, like the side tab.
+ * public/brand/sst-lockup.svg) as one vector that fits any box. Integrated branding is
+ * monogram-only today: this renders only for a theme whose capability declares "full"
+ * (themes.ts integratedBranding) — none does, since no secondary slot reaches the readability
+ * floor. Kept so a future official asset/slot can be enabled from the registry alone.
  */
 function FitLockup() {
   const { width, height, mark, divider, words } = LOCKUP_LAYOUT;

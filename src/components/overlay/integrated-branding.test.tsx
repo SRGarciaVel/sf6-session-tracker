@@ -133,7 +133,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("Broadcast (reference): Recent results ↔ full SST logo", () => {
+describe("Broadcast (reference): Recent results ↔ SST monogram (integrated branding)", () => {
   it("1. the WHOLE Recent results segment is the slot (not only the chip span); content returns exactly", () => {
     render(config());
     const before = chipsText();
@@ -255,7 +255,7 @@ describe("schedule (shared 5.3B controller)", () => {
 
 describe("themes and logos (19–21)", () => {
   it.each(OVERLAY_THEMES)(
-    "%s exposes its declared slot; full requested ⇒ legible logo only",
+    "%s exposes its declared slot; a requested full logo renders the monogram (capability)",
     (theme) => {
       render(config({ logoVariant: "full" }, { theme }));
       expect(host.querySelectorAll(".ov-il-host")).toHaveLength(1);

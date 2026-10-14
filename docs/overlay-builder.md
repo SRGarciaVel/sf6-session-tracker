@@ -345,7 +345,7 @@ disabled controls are a convenience.
 - `components/brand/lockup-layout.test.ts`: `LOCKUP_LAYOUT` matches the published official
   lockup.
 - `components/overlay/integrated-branding.test.tsx` (happy-dom, fake timers):
-  - Broadcast as reference: Recent results ↔ full logo, content restored exactly, the same
+  - Broadcast as reference: Recent results ↔ SST monogram (integrated branding), content restored exactly, the same
     element with no structural change, no side row;
   - timing, preview reveal, fade/instant, animations off and reduced motion;
   - disabled / side tab / static unchanged; schedule restart on presentation change;
