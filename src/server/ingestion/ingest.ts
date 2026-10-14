@@ -68,7 +68,10 @@ export async function ingestMatchesInTx(
   };
   if (unique.size === 0) return result;
 
-  // Lock the session row so a concurrent "End session" cannot interleave with assignment.
+  // Lock the session row so a concurrent "End session" cannot interleave with assignment, and
+  // re-check it under the lock: the caller resolved the session BEFORE waiting for it, so it may
+  // have ended meanwhile. An ended session is frozen (stats + final ratings): new matches are
+  // stored as history (session_id NULL) instead.
   let baseline: SessionBaseline | null = null;
   if (options.sessionId) {
     const [row] = await tx
@@ -76,7 +79,15 @@ export async function ingestMatchesInTx(
       .from(gameSession)
       .where(eq(gameSession.id, options.sessionId))
       .for("update");
-    if (row && row.playerId === options.playerId) baseline = sessionRowToBaseline(row);
+    if (row && row.playerId === options.playerId && row.status === "active") {
+      baseline = sessionRowToBaseline(row);
+    } else if (row && row.playerId === options.playerId) {
+      log.info("ingest.session_not_active", {
+        playerId: options.playerId,
+        sessionId: options.sessionId,
+        status: row.status,
+      });
+    }
   }
 
   // PERSIST (DB-level dedupe) + ASSIGN SESSION
