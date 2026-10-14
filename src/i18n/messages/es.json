@@ -898,9 +898,8 @@
       "spaceHint": "El overlay se ajusta para dejar sitio a la pestaña, incluso mientras está recogida, así nunca se sale del lienzo de OBS.",
       "transition": "Transición",
       "slotHidden": "La marca integrada aparece en el bloque «Últimos resultados». Actívalo en Contenido → Estadísticas visibles para que se vea (y necesita al menos una partida).",
-      "minimalNote": "En Minimal el hueco es una sola línea: se usa siempre el monograma.",
       "integratedSpaceHint": "La marca integrada sustituye temporalmente un bloque secundario sin cambiar el tamaño del overlay.",
-      "fullLogoSmallNote": "En el modo integrado el hueco es pequeño: el logo completo se reduce para caber y su texto «Session Stats Tracker» queda demasiado pequeño para leerse. El monograma se lee con claridad."
+      "fullLogoUnsupported": "El logo completo no cabe de forma legible en este estilo. Usa el monograma o cambia de estilo."
     },
     "brandTest": {
       "reveal": "Probar aparición",

@@ -89,9 +89,11 @@ export function Ratio({ wins, losses }: { wins: number; losses: number }) {
 const RESULT_KEY = { win: "resultWin", loss: "resultLoss", draw: "resultDraw" } as const;
 
 /**
- * Recent results chips. `brandSlot` marks this block as the THEME'S designated secondary slot for
- * the integrated SST branding (Phase 5.3C): while it's revealed the chips fade out and the
- * official mark fades in over the same box (absolute layer, inset 0) — same size, no re-measure.
+ * Recent results chips. `brandSlot` makes the CHIPS the theme's designated secondary slot for the
+ * integrated SST branding (Phase 5.3C, themes.ts `integratedBranding.slot: "recent-results"`):
+ * while it's revealed the chips fade out and the official mark fades in over the same box
+ * (absolute layer, inset 0) — same size, no re-measure. Themes whose slot is the whole segment
+ * ("recent-results-segment") make that segment the host instead and leave this prop off.
  * Without integrated branding the markup is exactly as before. No results ⇒ no block, no slot.
  */
 export function RecentForm({
@@ -101,12 +103,12 @@ export function RecentForm({
 }: {
   results: MatchResult[];
   max?: number;
-  brandSlot?: "full" | "monogram-only";
+  brandSlot?: boolean;
 }) {
   const t = useTranslations("Overlay");
   const il = useBrandInterleave();
   if (results.length === 0) return null;
-  const slot = brandSlot !== undefined && il !== null;
+  const slot = brandSlot === true && il !== null;
   return (
     <span
       className={slot ? "ov-form ov-il-host" : "ov-form"}
@@ -122,7 +124,7 @@ export function RecentForm({
           {t(RESULT_KEY[r])}
         </span>
       ))}
-      {slot && <BrandInterleaveLayer monogramOnly={brandSlot === "monogram-only"} />}
+      {slot && <BrandInterleaveLayer />}
     </span>
   );
 }

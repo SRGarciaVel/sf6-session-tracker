@@ -224,14 +224,22 @@ function FitLockup() {
 }
 
 /**
- * The brand layer of a theme's designated slot. Absolutely positioned over the slot's own box
- * (inset 0), so the slot keeps the size of its normal content and nothing is re-measured.
- * `monogramOnly`: slots too small for a legible lockup (Minimal) always use the monogram.
+ * Attributes that turn an element into the theme's designated slot host (the element keeps its
+ * own size; its children fade out while the brand layer covers the same box). null ⇒ none.
  */
-export function BrandInterleaveLayer({ monogramOnly = false }: { monogramOnly?: boolean }) {
+export function brandHostAttrs(il: BrandInterleaveState | null) {
+  if (!il) return null;
+  return { "data-il": il.shown ? "shown" : "hidden", "data-il-anim": il.transition } as const;
+}
+
+/**
+ * The brand layer of a theme's designated slot. Absolutely positioned over the slot's own box
+ * (inset 0), so the slot keeps the size of its normal content and nothing is re-measured. The
+ * logo was already resolved against the theme's capability (OverlayView, integratedLogo).
+ */
+export function BrandInterleaveLayer() {
   const il = useBrandInterleave();
   if (!il) return null;
-  const full = il.logo === "full" && !monogramOnly;
   return (
     <span
       className="ov-il-brand"
@@ -240,7 +248,7 @@ export function BrandInterleaveLayer({ monogramOnly = false }: { monogramOnly?: 
       aria-label={il.shown ? "SST" : undefined}
       aria-hidden={il.shown ? undefined : true}
     >
-      {full ? <FitLockup /> : <FitMonogram />}
+      {il.logo === "full" ? <FitLockup /> : <FitMonogram />}
     </span>
   );
 }

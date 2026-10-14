@@ -11,6 +11,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LOCKUP_LAYOUT, VIEWBOX_ATTR } from "@/components/brand/geometry";
 import { DEFAULT_BRAND_FLAG, type BrandFlag } from "@/domain/overlay/brand-flag";
+import { THEME_REGISTRY } from "@/domain/overlay/themes";
 import {
   DEFAULT_OVERLAY_CONFIG,
   OVERLAY_THEMES,
@@ -133,20 +134,24 @@ afterEach(() => {
 });
 
 describe("Broadcast (reference): Recent results ↔ full SST logo", () => {
-  it("1. the Recent results segment hosts the official full lockup, then returns exactly", () => {
+  it("1. the WHOLE Recent results segment is the slot (not only the chip span); content returns exactly", () => {
     render(config());
     const before = chipsText();
     expect(before.length).toBeGreaterThan(0);
-    expect(slot()?.closest(".ov-bc-form")).not.toBeNull(); // Broadcast's secondary segment
+    // The host is Broadcast's secondary segment itself; the brand layer is its direct child.
+    expect(slot()?.classList.contains("ov-bc-seg")).toBe(true);
+    expect(slot()?.classList.contains("ov-bc-form")).toBe(true);
+    expect(brand()?.parentElement).toBe(slot());
+    expect(host.querySelector(".ov-form.ov-il-host")).toBeNull();
     expect(state()).toBe("hidden");
     tick(30_000);
     expect(state()).toBe("shown");
     const svg = brand()?.querySelector("svg");
-    expect(svg?.getAttribute("viewBox")).toBe(`0 0 ${LOCKUP_LAYOUT.width} ${LOCKUP_LAYOUT.height}`);
+    // "full" was requested, but no theme's slot passes the readability floor (themes.ts): the
+    // official monogram is rendered instead of an illegible lockup.
+    expect(svg?.getAttribute("viewBox")).toBe(VIEWBOX_ATTR);
     expect(svg?.getAttribute("preserveAspectRatio")).toBe("xMidYMid meet");
-    expect(brand()?.textContent).toBe("SESSIONSTATSTRACKER");
     expect(brand()?.getAttribute("aria-label")).toBe("SST");
-    expect(slot()?.querySelector(".ov-form-chip")?.getAttribute("aria-hidden")).toBe("true");
     tick(3_000);
     expect(state()).toBe("hidden");
     expect(chipsText()).toBe(before);
@@ -249,17 +254,20 @@ describe("schedule (shared 5.3B controller)", () => {
 });
 
 describe("themes and logos (19–21)", () => {
-  it.each(OVERLAY_THEMES)("%s exposes its designated slot", (theme) => {
-    render(config({}, { theme }));
-    expect(host.querySelectorAll(".ov-il-host")).toHaveLength(1);
-    tick(30_000);
-    expect(state()).toBe("shown");
-    const vb = brand()?.querySelector("svg")?.getAttribute("viewBox");
-    // Minimal's single-line slot always uses the monogram; the others honour "full".
-    expect(vb).toBe(
-      theme === "minimal" ? VIEWBOX_ATTR : `0 0 ${LOCKUP_LAYOUT.width} ${LOCKUP_LAYOUT.height}`,
-    );
-  });
+  it.each(OVERLAY_THEMES)(
+    "%s exposes its declared slot; full requested ⇒ legible logo only",
+    (theme) => {
+      render(config({ logoVariant: "full" }, { theme }));
+      expect(host.querySelectorAll(".ov-il-host")).toHaveLength(1);
+      const segment = THEME_REGISTRY[theme].integratedBranding.slot === "recent-results-segment";
+      expect(slot()?.classList.contains("ov-form")).toBe(!segment);
+      tick(30_000);
+      expect(state()).toBe("shown");
+      const vb = brand()?.querySelector("svg")?.getAttribute("viewBox");
+      const full = THEME_REGISTRY[theme].integratedBranding.logos.includes("full");
+      expect(vb).toBe(full ? `0 0 ${LOCKUP_LAYOUT.width} ${LOCKUP_LAYOUT.height}` : VIEWBOX_ATTR);
+    },
+  );
 
   it("monogram variant everywhere", () => {
     render(config({ logoVariant: "monogram" }));

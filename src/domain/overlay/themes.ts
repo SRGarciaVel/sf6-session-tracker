@@ -28,7 +28,27 @@ export interface ThemeDefinition {
   rankAware: boolean;
   /** Draws the SST rank emblem (Creator motion: rank reaction has something to animate). */
   rankEmblem: boolean;
+  /**
+   * Integrated SST branding (Phase 5.3C): the theme's designated SECONDARY slot and the official
+   * logos that are LEGIBLE in it. "full" is declared only when the official lockup's words reach
+   * the readability floor in the real slot (domain/overlay/brand-flag.ts `fullLockupLegible`,
+   * measured in a production browser — docs/creator-overlays.md). None does today: the lockup
+   * is ~6:1 and every secondary slot is far narrower than the ~280 px it would need.
+   */
+  integratedBranding: IntegratedBrandingCapability;
 }
+
+export interface IntegratedBrandingCapability {
+  /**
+   * "recent-results"          the Recent results chips are the slot;
+   * "recent-results-segment"  the whole secondary segment/block that holds them (larger box).
+   */
+  slot: "recent-results" | "recent-results-segment";
+  logos: readonly ("monogram" | "full")[];
+}
+
+/** Measured (800×180 reference): no secondary slot fits the full lockup legibly. */
+const MONOGRAM_ONLY = ["monogram"] as const;
 
 const ALL_CANVASES = OVERLAY_PRESET_IDS;
 
@@ -40,6 +60,7 @@ export const THEME_REGISTRY: Readonly<Record<ThemeId, ThemeDefinition>> = {
     fallback: "minimal",
     rankAware: false,
     rankEmblem: false,
+    integratedBranding: { slot: "recent-results", logos: MONOGRAM_ONLY },
   },
   competitive: {
     id: "competitive",
@@ -48,6 +69,7 @@ export const THEME_REGISTRY: Readonly<Record<ThemeId, ThemeDefinition>> = {
     fallback: "competitive",
     rankAware: false,
     rankEmblem: false,
+    integratedBranding: { slot: "recent-results", logos: MONOGRAM_ONLY },
   },
   fighter: {
     id: "fighter",
@@ -56,6 +78,7 @@ export const THEME_REGISTRY: Readonly<Record<ThemeId, ThemeDefinition>> = {
     fallback: "fighter",
     rankAware: false,
     rankEmblem: false,
+    integratedBranding: { slot: "recent-results-segment", logos: MONOGRAM_ONLY },
   },
   // Rank card: rank + rating led; closest Free composition is the scoreboard.
   "rank-card": {
@@ -65,6 +88,7 @@ export const THEME_REGISTRY: Readonly<Record<ThemeId, ThemeDefinition>> = {
     fallback: "competitive",
     rankAware: true,
     rankEmblem: true,
+    integratedBranding: { slot: "recent-results", logos: MONOGRAM_ONLY },
   },
   // Broadcast lower-third: flat and sober; closest Free look is the single-line minimal bar.
   broadcast: {
@@ -74,6 +98,7 @@ export const THEME_REGISTRY: Readonly<Record<ThemeId, ThemeDefinition>> = {
     fallback: "minimal",
     rankAware: false,
     rankEmblem: false,
+    integratedBranding: { slot: "recent-results-segment", logos: MONOGRAM_ONLY },
   },
   // Prestige: ornamental, high-tier; closest Free look is the expressive Street theme.
   prestige: {
@@ -83,6 +108,7 @@ export const THEME_REGISTRY: Readonly<Record<ThemeId, ThemeDefinition>> = {
     fallback: "fighter",
     rankAware: true,
     rankEmblem: true,
+    integratedBranding: { slot: "recent-results", logos: MONOGRAM_ONLY },
   },
 };
 

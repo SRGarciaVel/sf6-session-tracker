@@ -85,8 +85,9 @@ Pestaña lateral · Fija (stored `content-interleave` · `timed-tab` · `static-
 - a note that the mark temporarily replaces a secondary block without changing the overlay's
   size;
 - a warning when Recent results (the slot) is off;
-- a note that Minimal always uses the monogram;
-- an honest note when "Logo completo" is chosen (its text is too small in these slots).
+- **"Logo completo" disabled** where the theme's capability says it isn't legible (today every
+  theme). It comes with "El logo completo no cabe de forma legible en este estilo…", and the
+  monogram is shown as selected. The stored choice stays for the side tab and static badge.
 
 Switching to Integrada turns a stored slide into a fade. "Probar aparición" works for both timed
 presentations, through the same controller.

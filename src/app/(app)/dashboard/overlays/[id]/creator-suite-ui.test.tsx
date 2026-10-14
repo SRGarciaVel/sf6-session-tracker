@@ -718,17 +718,25 @@ describe("Phase 5.3C: integrated branding (builder)", () => {
       group(cfg({}, { fields: { ...DEFAULT_OVERLAY_CONFIG.fields, recentForm: false } })),
     ).toContain('data-testid="brand-slot-hidden"');
     expect(group(cfg())).not.toContain('data-testid="brand-slot-hidden"');
-    expect(group(cfg({}, { theme: "minimal" }))).toContain('data-testid="brand-minimal-note"');
   });
 
-  it("integrated + full logo: an honest legibility note (measured slot size); none for the monogram", () => {
-    expect(group(cfg({ logoVariant: "full" }))).toContain('data-testid="brand-full-small-note"');
-    expect(group(cfg({ logoVariant: "monogram" }))).not.toContain(
-      'data-testid="brand-full-small-note"',
-    );
-    expect(group(cfg({ mode: "timed-tab", logoVariant: "full" }))).not.toContain(
-      'data-testid="brand-full-small-note"',
-    );
+  it("integrated: Full Logo is disabled (not selectable) where the theme can't render it legibly", () => {
+    for (const theme of ["broadcast", "minimal", "competitive"] as const) {
+      const html = group(cfg({ logoVariant: "full" }, { theme }));
+      expect(html).toMatch(
+        /aria-checked="false"[^>]*disabled=""[^>]*>Logo completo|disabled=""[^>]*>Logo completo/,
+      );
+      expect(html).toContain('data-testid="brand-full-unsupported"');
+      expect(html).toContain(es.Builder.brandFlag.fullLogoUnsupported);
+      // The effective (monogram) choice is the one shown as selected.
+      expect(html).toMatch(/aria-checked="true"[^>]*>Monograma/);
+    }
+  });
+
+  it("side tab / static keep Full Logo selectable (no capability restriction there)", () => {
+    const side = group(cfg({ mode: "timed-tab", logoVariant: "full" }));
+    expect(side).not.toContain('data-testid="brand-full-unsupported"');
+    expect(side).not.toMatch(/disabled=""[^>]*>Logo completo/);
   });
 
   it("“Probar aparición” is offered for the integrated presentation", () => {

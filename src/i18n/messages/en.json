@@ -898,9 +898,8 @@
       "spaceHint": "The overlay fits itself to leave room for the tab, even while it's retracted, so it never leaves the OBS canvas.",
       "transition": "Transition",
       "slotHidden": "Integrated branding appears in the “Recent results” block. Turn it on in Content → Visible stats to see it (it also needs at least one match).",
-      "minimalNote": "In Minimal the slot is a single line: the monogram is always used.",
       "integratedSpaceHint": "Integrated branding temporarily replaces a secondary content block without changing the overlay size.",
-      "fullLogoSmallNote": "In the integrated mode the slot is small: the full logo shrinks to fit and its “Session Stats Tracker” text becomes too small to read. The monogram reads clearly."
+      "fullLogoUnsupported": "The full logo doesn't fit legibly in this style. Use the monogram or change the style."
     },
     "brandTest": {
       "reveal": "Test appearance",

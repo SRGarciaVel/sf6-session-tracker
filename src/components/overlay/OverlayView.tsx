@@ -34,13 +34,17 @@ import {
 } from "@/domain/overlay/rotation";
 import { useCharacterRotation } from "./rotation";
 import {
+  BrandInterleaveLayer,
   BrandInterleaveProvider,
   BrandSlot,
+  brandHostAttrs,
   useBrandFlag,
+  useBrandInterleave,
   type BrandInterleaveState,
 } from "./brand-flag";
 import {
   effectiveBrandAnimation,
+  integratedLogo,
   interleaveTransition,
   usesBrandSideSlot,
   type BrandFlag,
@@ -192,8 +196,8 @@ function MinimalTheme({ config, live, viewLabel }: ThemeProps) {
   if (f.recentForm)
     items.push({
       key: "form",
-      // Designated branding slot (integrated): a single-line slot ⇒ monogram only.
-      node: <RecentForm results={s.recentResults} max={5} brandSlot="monogram-only" />,
+      // Designated branding slot (integrated; themes.ts integratedBranding).
+      node: <RecentForm results={s.recentResults} max={5} brandSlot />,
     });
 
   return (
@@ -322,7 +326,7 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
           <span className="ov-div" aria-hidden key={`div-${k}`} />
         ))}
       </div>
-      {f.recentForm && <RecentForm results={s.recentResults} max={10} brandSlot="full" />}
+      {f.recentForm && <RecentForm results={s.recentResults} max={10} brandSlot />}
     </div>
   );
 }
@@ -331,6 +335,7 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
 
 function FighterTheme({ config, live }: ThemeProps) {
   const t = useTranslations("Overlay");
+  const il = useBrandInterleave();
   const locale = config.locale;
   const s = live.session;
   const f = config.fields;
@@ -424,10 +429,12 @@ function FighterTheme({ config, live }: ThemeProps) {
         </div>
       )}
       {f.recentForm && s.recentResults.length > 0 && (
-        <div className="ov-st-block">
+        // Designated branding slot: the whole Recent results block (recent-results-segment).
+        <div className={il ? "ov-st-block ov-il-host" : "ov-st-block"} {...brandHostAttrs(il)}>
           <div className="ov-st-inner">
-            <RecentForm results={s.recentResults} max={6} brandSlot="full" />
+            <RecentForm results={s.recentResults} max={6} />
           </div>
+          {il && <BrandInterleaveLayer />}
         </div>
       )}
     </div>
@@ -692,8 +699,9 @@ export function OverlayView({ config, live, sizing, brandRevealSignal = 0 }: Ove
     brand && brandFlag && !usesBrandSideSlot(brandFlag.mode)
       ? {
           shown: brand.shown,
-          logo: brandFlag.logoVariant,
           colorMode: brandFlag.colorMode,
+          // Only logos legible in this theme's slot (themes.ts integratedBranding, measured).
+          logo: integratedLogo(config.theme, brandFlag.logoVariant),
           transition: interleaveTransition(brandFlag.animation, {
             animations: config.animations,
             reducedMotion,

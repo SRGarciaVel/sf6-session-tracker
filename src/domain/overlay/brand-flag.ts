@@ -19,6 +19,7 @@
  *   "static-badge"        Always visible beside the panel (no timer).
  */
 import { z } from "zod";
+import { THEME_REGISTRY, type ThemeId } from "./themes";
 
 export const BRAND_FLAG_MODES = ["timed-tab", "content-interleave", "static-badge"] as const;
 export const BRAND_FLAG_POSITIONS = ["left", "right"] as const;
@@ -136,4 +137,41 @@ export function effectiveBrandAnimation(
   opts: { animations: boolean; reducedMotion: boolean },
 ): BrandFlagAnimation {
   return !opts.animations || opts.reducedMotion ? "instant" : animation;
+}
+
+/* ───────── integrated logo legibility (Phase 5.3C) ───────── */
+
+/** Official lockup proportions (components/brand/geometry.ts LOCKUP_LAYOUT): 760 × 124, words 27. */
+const LOCKUP_ASPECT = 760 / 124;
+const LOCKUP_WORDS_OF_HEIGHT = 27 / 124;
+
+/**
+ * Rendered font size (px) of the lockup's "SESSION / STATS / TRACKER" words when the official
+ * lockup is scaled to fit a w × h box (preserveAspectRatio meet): min(h, w / aspect) · 27/124.
+ */
+export function fullLockupWordPx(box: { width: number; height: number }): number {
+  return Math.min(box.height, box.width / LOCKUP_ASPECT) * LOCKUP_WORDS_OF_HEIGHT;
+}
+
+/**
+ * Readability floor: the lockup's words must be at least as large as the overlay's OWN smallest
+ * text (its labels) — what the theme's design already considers readable. Below that the full
+ * logo is decoration, not branding, and a theme must not offer it.
+ */
+export function fullLockupLegible(
+  box: { width: number; height: number },
+  themeMinTextPx: number,
+): boolean {
+  return fullLockupWordPx(box) >= themeMinTextPx;
+}
+
+/** Logo the integrated presentation actually renders in a theme (capability-checked). */
+export function integratedLogo(theme: ThemeId, requested: BrandFlagLogo): BrandFlagLogo {
+  return THEME_REGISTRY[theme].integratedBranding.logos.includes(requested)
+    ? requested
+    : "monogram";
+}
+
+export function integratedSupportsFullLogo(theme: ThemeId): boolean {
+  return THEME_REGISTRY[theme].integratedBranding.logos.includes("full");
 }

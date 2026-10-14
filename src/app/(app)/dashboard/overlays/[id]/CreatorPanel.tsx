@@ -52,6 +52,8 @@ import {
   BRAND_FLAG_POSITIONS,
   BRAND_FLAG_VISIBLE,
   DEFAULT_BRAND_FLAG,
+  integratedLogo,
+  integratedSupportsFullLogo,
   isTimedBrandMode,
   type BrandFlagInterval,
   type BrandFlagVisible,
@@ -597,6 +599,8 @@ function BrandFlagGroup({
   const animations = integrated ? (["fade", "instant"] as const) : BRAND_FLAG_ANIMATIONS;
   // The integrated mark needs the theme's designated slot (Recent results) to be visible.
   const slotHidden = integrated && !config.fields.recentForm;
+  // Theme capability (themes.ts, measured): only logos legible in the theme's slot.
+  const fullAllowed = integratedSupportsFullLogo(config.theme);
   return (
     <fieldset
       disabled={!enabled}
@@ -645,11 +649,6 @@ function BrandFlagGroup({
                   data-testid="brand-slot-hidden"
                 >
                   {t("slotHidden")}
-                </p>
-              )}
-              {integrated && config.theme === "minimal" && (
-                <p className="text-xs text-faint" data-testid="brand-minimal-note">
-                  {t("minimalNote")}
                 </p>
               )}
             </div>
@@ -732,15 +731,22 @@ function BrandFlagGroup({
               <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span>{t("logo")}</span>
                 <Segmented
-                  value={flag.logoVariant}
+                  // Integrated shows the logo the theme can render legibly (the stored choice is
+                  // kept for the side tab and the static badge).
+                  value={
+                    integrated ? integratedLogo(config.theme, flag.logoVariant) : flag.logoVariant
+                  }
                   onChange={(logoVariant) => update((c) => patchBrandFlag(c, { logoVariant }))}
-                  options={BRAND_FLAG_LOGOS.map((v) => ({ value: v, label: t(`logos.${v}`) }))}
+                  options={BRAND_FLAG_LOGOS.map((v) => ({
+                    value: v,
+                    label: t(`logos.${v}`),
+                    disabled: integrated && v === "full" && !fullAllowed,
+                  }))}
                 />
               </div>
-              {integrated && flag.logoVariant === "full" && (
-                // Measured: the official lockup scales to the slot; its words end up ~3–4 px tall.
-                <p className="text-xs text-faint" data-testid="brand-full-small-note">
-                  {t("fullLogoSmallNote")}
+              {integrated && !fullAllowed && (
+                <p className="text-xs text-faint" data-testid="brand-full-unsupported">
+                  {t("fullLogoUnsupported")}
                 </p>
               )}
             </div>
