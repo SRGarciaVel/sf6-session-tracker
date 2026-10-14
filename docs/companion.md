@@ -150,7 +150,8 @@ SST (autoritativo)
 
 ## 7. Datos enviados al tracker
 
-`POST /api/companion/sync`: `{ cfnUserId, observedAt, profile, matches, gapSuspected, client }`.
+`POST /api/companion/sync`:
+`{ cfnUserId, observedAt, profile, matches, gapSuspected, presence?, client }`.
 
 - **Perfil:** CFN, nombre de luchador, personaje favorito y, por personaje: `characterKey`,
   nombre, rango, `ratingSystem`, LP, MR.
@@ -158,6 +159,19 @@ SST (autoritativo)
   - `replay_id`, hora (`uploaded_at`), modo, resultado, personaje propio, control;
   - rival: **solo** nombre, personaje y rango si se conoce;
   - `ratingBefore` (LP).
+- **Presencia** (opcional, aditiva): `{ onlineStatus }`.
+  - Es el código numérico `fighter_banner_info.online_status_info.online_status` de las páginas
+    que el ciclo **ya descargó**: battlelog página 1 o, si no hubo battlelog, `play.json`. **No hay
+    peticiones extra.**
+  - `null` = las páginas no traían el campo. Nunca se envía el nombre localizado.
+  - El servidor la acepta con **su** hora y la pliega en `companion_snapshot.profile.presence`
+    (JSONB, sin migración).
+  - Solo la usa el cierre automático de sesiones (docs/architecture.md §6a).
+  - **Compatibilidad:**
+    - una Companion antigua sin `presence` sigue funcionando: sin presencia, el cierre usa la regla
+      normal de 45 min y el tope de 12 h;
+    - como el esquema raíz es estricto, **el servidor debe desplegarse antes** de publicar una
+      Companion que envíe `presence`.
 - **Cliente:** versión y transporte.
 
 ## 8. Datos que NUNCA se envían

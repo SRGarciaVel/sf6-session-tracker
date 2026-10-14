@@ -176,6 +176,101 @@ close OBS mid-session and come back to correct stats. Each poll fetches recent m
 (MR/LP/rank) is fetched only when new matches were found, during a 90 s window after a new match
 (CFN can lag), or every `TRACKER_PROFILE_REFRESH_MS`.
 
+### 6a. Session lifecycle: idle auto-end
+
+An active session ends **by itself** after real inactivity. Users forgot to end sessions, which
+left them active for hours or days. In production, all ended sessions were closed > 180 min after
+their last match, while gaps between matches have p95 4.8 min.
+
+The policy is pure, in `src/domain/session/lifecycle.ts`. `TrackerRuntime.maintenance()` runs it
+through `server/sessions/lifecycle.ts`, on the existing maintenance cadence (60 s, and the first
+tick after start-up). It is server-authoritative: it never depends on the dashboard, OBS or the
+Companion being the authority.
+
+Two separate concepts:
+
+- **Session activity.** Matches **assigned to the session**, i.e. those that passed its filter
+  (any filter, nothing hardcoded).
+  - `lastActivityAt = max(started_at, latest played_at)`, using `played_at` (clamped to now), not
+    `ingested_at`. A recovered replay page is ingested "now" but was not played now.
+  - A non-qualifying match (e.g. casual during a ranked session) is history and does not move it.
+- **Player presence.** Buckler's online status as observed by the Companion (§ docs/companion.md).
+  - Presence can hold or accelerate the timer.
+  - It never creates matches, changes stats or moves `lastActivityAt`.
+
+**`lastObservedAt`** = when SST last really saw the player's matches:
+
+| Mode                 | Source                                                                            |
+| -------------------- | --------------------------------------------------------------------------------- |
+| Companion            | `companion_snapshot.matches_observed_at` (the server's acceptance time of a sync) |
+| Direct Capcom / mock | `sf6_player.last_success_at` (only a successful provider read moves it)           |
+
+Without observation (Companion closed), SST cannot claim "nobody played".
+
+**Rules** (first that applies wins):
+
+| Rule             | Ends when                                                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Absolute ceiling | `now − lastActivityAt ≥ 12 h`, regardless of presence or observation                                                                  |
+| Playing presence | **Holds** (no idle close) while a **fresh** Practice (any filter) or a fresh Ranked Match (when the filter counts ranked) is observed |
+| Offline          | Fresh Offline observed **continuously ≥ 15 min** with **≥ 3 observations**, the whole run after the last session match                |
+| Normal idle      | `lastObservedAt − anchor ≥ 45 min`, where `anchor = max(lastActivityAt, last fresh Practice/Ranked observation)`                      |
+
+- **Menu** neither holds nor accelerates.
+- **Unknown codes and stale presence** fall back to normal idle plus the ceiling.
+- **Why the anchor:** leaving a 2 h Practice block for the Menu on the way to Ranked must not close
+  the session at once.
+- **Stale Practice/Ranked never holds.** It only anchors the 45 min, and never the 12 h ceiling.
+
+**Freshness and continuity.** Presence has no timestamp of its own:
+
+- `presenceObservedAt` = the server time the sync was accepted.
+- An observation is fresh for `COMPANION_SNAPSHOT_MAX_AGE_MS` (5 min, the same window that makes a
+  Companion snapshot usable). That is 10 active battlelog cycles, ≥ 2 idle cycles, and shorter than
+  the 10 min Buckler backoff.
+- The presence track folds observations into one run, stored in the Companion snapshot JSON (no
+  table).
+  - A run continues only for the same state with consecutive observations ≤ that window apart.
+  - A different state, or a gap in observation, starts a new run.
+  - So "15 min Offline" is proven by observations, never inferred from one snapshot.
+
+**One finalization path.** Auto-end calls `endSessionInternal(..., { kind: "idle" })`, the same
+function as the "End session" button:
+
+1. Final fetch with `allSettled`: a provider failure never keeps a session open, and the session
+   ends with the last known data.
+2. Lock the active row and check it is the session that was evaluated.
+3. Ingest the final batch and apply the final profile.
+4. **Re-evaluate the policy under the lock.** A match from the final fetch, or one ingested while
+   auto-end waited for the lock, aborts the close.
+5. Freeze the per-character `final_*` values.
+6. `status = ended`, `ended_at = now()`, polling off, publish.
+
+Further properties:
+
+- **Concurrency.** Manual vs auto, two workers, or a restart are all serialized by the session row
+  lock plus the `status = 'active'` guard, so a session is ended once. Late matches after the end
+  stay history (§4.3).
+- **Zero-match sessions** end normally and are kept with their baselines.
+- **No automatic reopen.** A later match is history until the user starts a new session.
+- **No `ended_reason` column.** Each close is logged as
+  `session.auto_ended { sessionId, policy, idleMinutes, presenceState, presenceAgeSeconds }`.
+- **Overrides for tests/operations only** (not user settings): `SESSION_IDLE_TIMEOUT_MINUTES`,
+  `SESSION_OFFLINE_CLOSE_MINUTES`, `SESSION_ABSOLUTE_CEILING_HOURS`.
+
+**Candidate query.** Active sessions come from the partial index `game_session_one_active_uq`.
+The latest session match is an index-only backward scan of `match_session_idx`, and the snapshot a
+primary-key lookup. The match table is never scanned. Sessions with activity in the last 15 min are
+skipped, and the batch is capped at 25, processed sequentially (one connection at a time).
+
+**For Analytics (Phase 6):**
+
+- a sequence is consecutive qualifying matches inside one session, with no extra time cutoff;
+- gameplay duration is the first → last session match, not `started_at → ended_at` (an
+  auto-ended session carries an inactivity tail);
+- zero-match sessions are excluded from session-performance aggregates;
+- older sessions with multi-hour gaps may later be split virtually with the same 45 min timeout.
+
 ## 7. Realtime
 
 - Worker/web → `pg_notify('sf6_events', {kind, playerId, overlayId?})` after commit.
