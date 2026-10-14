@@ -16,7 +16,9 @@ import { hostname } from "node:os";
 import type { Database } from "@/server/db/client";
 import type { Env } from "@/server/env";
 import type { Logger } from "@/server/logger";
+import { DEFAULT_LIFECYCLE_POLICY } from "@/domain/session/lifecycle";
 import { pruneStaleConnections } from "@/server/overlays/service";
+import { autoEndIdleSessions, observationSourceFor } from "@/server/sessions/lifecycle";
 import type { SF6DataProvider } from "@/server/sf6/provider";
 import { claimDuePlayers, pollPlayer, releaseAllLeases, type TrackerConfig } from "./tracker";
 
@@ -107,12 +109,35 @@ export class TrackerRuntime {
     }
   }
 
+  /**
+   * Periodic housekeeping (every `maintenanceEveryMs`, and on the first tick after start-up):
+   * prune stale overlay connections and end idle sessions (server/sessions/lifecycle.ts). The
+   * lifecycle step is isolated: a failure there is logged and never backs off polling.
+   */
   async maintenance(): Promise<void> {
     const every = this.deps.maintenanceEveryMs ?? 60_000;
     if (Date.now() - this.lastMaintenance < every) return;
     this.lastMaintenance = Date.now();
     const pruned = await pruneStaleConnections(this.deps.db);
     if (pruned > 0) this.log.debug("worker.pruned_connections", { pruned });
+    if (this.stopping) return;
+    try {
+      const res = await autoEndIdleSessions(this.deps.db, this.deps.provider, {
+        source: observationSourceFor(this.deps.env.SF6_PROVIDER),
+        policy: this.config.lifecycle ?? DEFAULT_LIFECYCLE_POLICY,
+        log: this.log,
+      });
+      if (res.ended.length > 0 || res.failed > 0) {
+        this.log.info("worker.lifecycle", {
+          evaluated: res.evaluated,
+          ended: res.ended.length,
+          aborted: res.aborted,
+          failed: res.failed,
+        });
+      }
+    } catch (err) {
+      this.log.warn("worker.lifecycle_failed", { error: err });
+    }
   }
 
   private sleep(ms: number): Promise<void> {

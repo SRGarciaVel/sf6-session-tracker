@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   pollPlayer: vi.fn(),
   releaseAllLeases: vi.fn(),
   pruneStaleConnections: vi.fn(),
+  autoEndIdleSessions: vi.fn(),
 }));
 vi.mock("./tracker", () => ({
   claimDuePlayers: mocks.claimDuePlayers,
@@ -17,6 +18,10 @@ vi.mock("./tracker", () => ({
 }));
 vi.mock("@/server/overlays/service", () => ({
   pruneStaleConnections: mocks.pruneStaleConnections,
+}));
+vi.mock("@/server/sessions/lifecycle", () => ({
+  autoEndIdleSessions: mocks.autoEndIdleSessions,
+  observationSourceFor: (p: string) => (p === "companion" ? "companion" : "provider"),
 }));
 
 const { TrackerRuntime } = await import("./worker-runtime");
@@ -61,6 +66,7 @@ describe("TrackerRuntime", () => {
     mocks.pollPlayer.mockResolvedValue({ status: "ok" });
     mocks.releaseAllLeases.mockResolvedValue(undefined);
     mocks.pruneStaleConnections.mockResolvedValue(0);
+    mocks.autoEndIdleSessions.mockResolvedValue({ evaluated: 0, ended: [], aborted: 0, failed: 0 });
   });
   afterEach(() => {
     vi.clearAllMocks();
@@ -183,5 +189,27 @@ describe("TrackerRuntime", () => {
     await rt.tick();
     await vi.waitFor(() => expect(rt.inFlightCount).toBe(0));
     await rt.stop();
+  });
+
+  it("maintenance ends idle sessions on its cadence (first run immediately, then every interval)", async () => {
+    const rt = makeRuntime({ provider: "companion" });
+    await rt.maintenance();
+    expect(mocks.autoEndIdleSessions).toHaveBeenCalledTimes(1);
+    expect(mocks.autoEndIdleSessions.mock.calls[0]?.[2]).toMatchObject({
+      source: "companion",
+      policy: { idleTimeoutMs: 45 * 60_000, absoluteCeilingMs: 12 * 3_600_000 },
+    });
+    await rt.maintenance(); // within the 60 s cadence: no second lifecycle pass
+    expect(mocks.autoEndIdleSessions).toHaveBeenCalledTimes(1);
+    const direct = makeRuntime({ provider: "mock" });
+    await direct.maintenance();
+    expect(mocks.autoEndIdleSessions.mock.calls[1]?.[2]).toMatchObject({ source: "provider" });
+  });
+
+  it("a failing lifecycle pass is contained: maintenance resolves, polling is unaffected", async () => {
+    mocks.autoEndIdleSessions.mockRejectedValueOnce(new Error("db hiccup"));
+    const rt = makeRuntime();
+    await expect(rt.maintenance()).resolves.toBeUndefined();
+    expect(mocks.pruneStaleConnections).toHaveBeenCalledTimes(1);
   });
 });

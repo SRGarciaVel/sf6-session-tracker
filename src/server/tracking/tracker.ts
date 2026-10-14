@@ -9,6 +9,7 @@
  * Even if leases ever overlapped, ingestion is idempotent, so stats stay correct.
  */
 import { and, eq, sql } from "drizzle-orm";
+import type { LifecyclePolicy } from "@/domain/session/lifecycle";
 import { computeNextPollDelay, type PollingConfig } from "@/domain/tracking/polling";
 import type { Database } from "@/server/db/client";
 import { sf6Player } from "@/server/db/schema";
@@ -17,6 +18,7 @@ import { ingestMatches } from "@/server/ingestion/ingest";
 import type { Logger } from "@/server/logger";
 import { updatePlayerProfile } from "@/server/players/service";
 import { publishEvent } from "@/server/realtime/events";
+import { lifecyclePolicyFromEnv } from "@/server/sessions/lifecycle";
 import { getActiveSession } from "@/server/sessions/service";
 import { SF6ProviderError, type SF6DataProvider } from "@/server/sf6/provider";
 
@@ -28,6 +30,8 @@ export interface TrackerConfig {
   leaseMs: number;
   profileRefreshMs: number;
   startGraceMs: number;
+  /** Idle auto-end policy (maintenance); domain defaults when omitted. */
+  lifecycle?: LifecyclePolicy;
 }
 
 export function trackerConfigFromEnv(env: Env): TrackerConfig {
@@ -41,6 +45,7 @@ export function trackerConfigFromEnv(env: Env): TrackerConfig {
     leaseMs: env.TRACKER_LEASE_MS,
     profileRefreshMs: env.TRACKER_PROFILE_REFRESH_MS,
     startGraceMs: env.SESSION_START_GRACE_SECONDS * 1000,
+    lifecycle: lifecyclePolicyFromEnv(env),
   };
 }
 

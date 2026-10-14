@@ -68,6 +68,8 @@ export function buildSyncPayload(input: {
   profile: NormalizedPlayerProfile | null;
   matches: readonly NormalizedSF6Match[];
   gapSuspected: boolean;
+  /** Buckler presence code from the pages fetched this cycle; null = absent from them. */
+  onlineStatus: number | null;
   transport: CompanionTransportKind;
 }): CompanionSyncRequest {
   const payload: CompanionSyncRequest = {
@@ -76,6 +78,7 @@ export function buildSyncPayload(input: {
     profile: input.profile ? toWireProfile(input.profile) : null,
     matches: input.matches.map(toWireMatch),
     gapSuspected: input.gapSuspected,
+    presence: { onlineStatus: input.onlineStatus },
     client: { version: COMPANION_VERSION, transport: input.transport },
   };
   const leaks = findForbiddenKeys(payload);
@@ -143,10 +146,15 @@ export async function runCycle(deps: CycleDeps, manual = false): Promise<CycleOu
   let profile: NormalizedPlayerProfile | null = null;
   let replays: unknown[] = [];
   let gapSuspected = false;
+  // Presence rides on pages we already fetch (no extra request). Battlelog page 1 is fetched
+  // last, so when both are fetched its value is the freshest.
+  let onlineStatus: number | null = null;
   try {
     if (due.profile) {
       const raw = await deps.buckler.getPlay(cfnUserId);
-      profile = normalizeCapcomProfile(parseCapcomPlayPayload(raw), { cfnUserId }).profile;
+      const normalized = normalizeCapcomProfile(parseCapcomPlayPayload(raw), { cfnUserId });
+      profile = normalized.profile;
+      onlineStatus = normalized.onlineStatus;
     }
     if (due.battlelog) {
       const buckler = deps.buckler;
@@ -158,6 +166,7 @@ export async function runCycle(deps: CycleDeps, manual = false): Promise<CycleOu
         due.recovery && known.size > 0 ? state.polling.recoveryMaxPages : 1,
       );
       replays = pages.replays;
+      onlineStatus = pages.onlineStatus ?? onlineStatus;
       // A gap only matters when we expected continuity (known ids exist) and walked back.
       gapSuspected = pages.gapSuspected && due.recovery;
       if (pages.gapSuspected && due.recovery)
@@ -177,6 +186,7 @@ export async function runCycle(deps: CycleDeps, manual = false): Promise<CycleOu
     profile,
     matches: fresh,
     gapSuspected,
+    onlineStatus,
     transport: deps.buckler.transport.kind,
   });
   let response;

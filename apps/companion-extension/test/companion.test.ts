@@ -221,6 +221,67 @@ describe("companion sync cycle", () => {
     expect((await d.storage.load()).seenReplayIds).toHaveLength(10);
   });
 
+  describe("Buckler presence rides on the pages already fetched", () => {
+    const withStatus = (name: string, code: number) => {
+      const raw = structuredClone(fixtureJson(name)) as {
+        pageProps: Record<string, Record<string, unknown>>;
+      };
+      raw.pageProps.fighter_banner_info = {
+        ...raw.pageProps.fighter_banner_info,
+        online_status_info: {
+          online_status: code,
+          online_status_data: { online_status_name: "<span>x</span>", online_status_type: code },
+        },
+      };
+      return { status: 200, contentType: "application/json", text: JSON.stringify(raw) };
+    };
+    const cycleWith = async (
+      overrides: Record<string, ReturnType<typeof withStatus>>,
+      extra: Record<string, unknown>,
+    ) => {
+      const tracker = fakeTracker({ knownReplayIds: [] });
+      const transport = fixtureTransport("service_worker", overrides);
+      const d = {
+        storage: await pairedStorage(extra),
+        tracker: tracker.client(),
+        buckler: new CompanionBucklerClient(transport),
+        now: () => NOW,
+      };
+      expect(await runCycle(d)).toBe("synced");
+      return { sent: tracker.sent[0], paths: transport.paths };
+    };
+
+    it("battlelog page 1 (fetched last) wins over play.json; no extra request", async () => {
+      const both = {
+        "play.json": withStatus(`play-${CFN}.json`, 2),
+        "battlelog.json?sid=": withStatus(`battlelog-${CFN}-page-1.json`, 11),
+      };
+      const withPresence = await cycleWith(both, {});
+      const baseline = await cycleWith({}, {});
+      expect(withPresence.sent?.presence).toEqual({ onlineStatus: 11 });
+      expect(withPresence.paths).toEqual(baseline.paths);
+    });
+
+    it("profile-only cycle → the play.json code; sanitized pages without the field → null", async () => {
+      const recent = new Date(NOW.getTime() - 5_000).toISOString();
+      const profileOnly = await cycleWith(
+        { "play.json": withStatus(`play-${CFN}.json`, 8) },
+        { lastBattlelogAt: recent, lastProfileAt: null },
+      );
+      expect(profileOnly.sent?.presence).toEqual({ onlineStatus: 8 });
+      expect((await cycleWith({}, {})).sent?.presence).toEqual({ onlineStatus: null });
+    });
+
+    it("only the numeric code leaves the extension (never the localized name)", async () => {
+      const { sent } = await cycleWith(
+        { "battlelog.json?sid=": withStatus(`battlelog-${CFN}-page-1.json`, 1) },
+        {},
+      );
+      expect(JSON.stringify(sent)).not.toContain("online_status");
+      expect(JSON.stringify(sent)).not.toContain("<span>");
+    });
+  });
+
   it("14. active session: battlelog every 30 s, profile every 90 s", () => {
     const active = makeState({ activeSession: true });
     const at = (msAgo: number | null) =>
@@ -339,6 +400,7 @@ describe("companion sync cycle", () => {
       profile: null,
       matches: [],
       gapSuspected: false,
+      onlineStatus: null,
       transport: "service_worker" as const,
     };
     expect(() => buildSyncPayload(leaky)).not.toThrow();
@@ -397,8 +459,10 @@ describe("privacy: credential-like keys can never be sent", () => {
       profile: null,
       matches: [],
       gapSuspected: false,
+      onlineStatus: 11,
       transport: "service_worker",
     });
+    expect(payload.presence).toEqual({ onlineStatus: 11 });
     expect(findForbiddenKeys(payload)).toEqual([]);
     expect(
       findForbiddenKeys({

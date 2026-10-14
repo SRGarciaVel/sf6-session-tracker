@@ -16,6 +16,7 @@ import {
   type RatingPoint,
 } from "./types";
 import { mapLeagueInfo, type MappedLeague } from "./league";
+import { onlineStatusOfBanner } from "./presence";
 import {
   battlelogPageSchema,
   cardSchema,
@@ -112,6 +113,8 @@ export interface NormalizedCapcomProfile {
   seasonIds: number[];
   /** fighter_banner_info.is_my_data: the browser session belongs to this CFN (null = absent). */
   viewerOwnsProfile: boolean | null;
+  /** Raw Buckler presence code (presence.ts); null = absent. Never part of the profile itself. */
+  onlineStatus: number | null;
   warnings: string[];
 }
 
@@ -194,6 +197,7 @@ export function normalizeCapcomProfile(
     seasonId,
     seasonIds: play.play.season_ids ?? [],
     viewerOwnsProfile: play.fighter_banner_info.is_my_data ?? null,
+    onlineStatus: onlineStatusOfBanner(play.fighter_banner_info),
     warnings,
   };
 }
@@ -206,6 +210,8 @@ export interface CapcomBattlelogPage {
   totalPage: number;
   /** Raw replay entries (validated individually by normalizeCapcomMatches). */
   replays: unknown[];
+  /** Raw Buckler presence code of the page's fighter_banner_info (presence.ts); null = absent. */
+  onlineStatus: number | null;
 }
 
 /** GET /_next/data/{buildId}/en/profile/{cfnId}/battlelog.json?[page=N&]sid={cfnId} */
@@ -216,6 +222,7 @@ export function parseCapcomBattlelogPayload(raw: unknown): CapcomBattlelogPage {
     currentPage: page.current_page,
     totalPage: page.total_page,
     replays: page.replay_list,
+    onlineStatus: onlineStatusOfBanner(page.fighter_banner_info),
   };
 }
 
