@@ -292,8 +292,11 @@ describe("AnalyticsView", () => {
       const t = section(render(data(rows)));
       expect(t).toContain("Rendimiento en sesión");
       expect(t).toMatch(/Segmentos de sesión analizados 2 de 1 sesión registrada/);
-      expect(t).toContain("1 sesión dividida por pausas de 45 min o más");
-      expect(t).toContain("pausas de 45 minutos o más se dividen solo para estas analíticas");
+      expect(t).toContain("1 sesión con más de un segmento (pausas de 45 min o más)");
+      expect(t).toContain(
+        "se dividen en segmentos cuando pasan 45 minutos o más entre partidas que cuentan. Esto no cambia los límites ni los datos de la sesión real.",
+      );
+      expect(t).not.toMatch(/históric/i);
       expect(t).toContain("no desde que se inició o cerró la sesión");
       expect(t).toMatch(/Mediana de duración de juego 44 min Media: 44 min/); // (84 + 4) / 2
     });

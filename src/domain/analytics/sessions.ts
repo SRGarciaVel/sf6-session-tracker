@@ -6,12 +6,16 @@
  * matches with `session_id = NULL` (history outside any session) take no part here, although
  * they still count in the overall record and in matchups.
  *
- * Analytics-only virtual split: within one real session, two consecutive QUALIFYING matches at
- * least SESSION_ANALYTICS_GAP_MS apart start a new segment. The threshold IS the session idle
- * timeout (domain/session/lifecycle.ts) with the same boundary: the lifecycle closes a session
- * after ≥ 45 min without activity, so a gap of exactly 45:00 is already a session boundary. This
- * guards old sessions recorded before auto-end, and gaps that only appear once other characters
- * or modes are filtered out. Nothing is written: game_session / match.session_id are untouched.
+ * REAL SESSION vs ANALYTICS SEGMENT. The real session is `match.session_id` (its boundaries are
+ * the lifecycle's). An analytics segment is a contiguous block of qualifying matches INSIDE one
+ * real session: two consecutive QUALIFYING matches ≥ SESSION_ANALYTICS_GAP_MS apart start a new
+ * segment, in EVERY session. A segment boundary does not mean the real session ended: a session
+ * held open by fresh Practice / Ranked presence (lifecycle.ts) can legitimately contain such a
+ * gap, and filtering by character or mode can create one. Segments exist so streaks, recovery,
+ * halves, duration and match position never bridge long stretches without qualifying matches;
+ * they also keep old pre-auto-end sessions with very long gaps from distorting the aggregates.
+ * The threshold is the session idle timeout with the same `>=` comparison (45:00 splits).
+ * Nothing is written: game_session / match.session_id are untouched.
  *
  * Order inside a segment: played_at ASC, ties by external id ASC (the session engine's order).
  */
@@ -19,7 +23,10 @@ import { SESSION_IDLE_TIMEOUT_MS } from "@/domain/session/lifecycle";
 import type { MatchResult } from "@/domain/sf6/types";
 import { computeRecord, type AnalyticsMatchRow, type MatchRecord } from "./record";
 
-/** Gap (between consecutive qualifying matches) that starts a new analytics segment: ≥ 45 min. */
+/**
+ * Gap between consecutive qualifying matches that starts a new analytics SEGMENT (≥ 45 min) — not
+ * a real session boundary.
+ */
 export const SESSION_ANALYTICS_GAP_MS = SESSION_IDLE_TIMEOUT_MS;
 /** Match positions shown by "performance by match position" (1…10). */
 export const MATCH_POSITION_CAP = 10;
@@ -248,7 +255,7 @@ export interface SessionAnalytics {
   segments: number;
   /** Distinct real session ids behind those segments. */
   sessions: number;
-  /** Real sessions that the ≥ 45 min rule split into more than one segment. */
+  /** Real sessions that contain more than one analytics segment (gaps ≥ 45 min). */
   splitSessions: number;
   /** Qualifying matches inside segments (session_id NULL excluded). */
   matches: number;

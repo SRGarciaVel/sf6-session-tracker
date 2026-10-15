@@ -367,13 +367,21 @@ query and no `game_session` join.
   - active sessions are ordinary input.
 - **Range boundary:** if the range starts mid-session, only the visible matches take part. Older
   matches are not fetched to rebuild the session.
-- **Analytics-only virtual split:** inside one real session, consecutive qualifying matches
-  **≥ 45 min apart** start a new segment.
-  - `SESSION_ANALYTICS_GAP_MS` is `SESSION_IDLE_TIMEOUT_MS`, with the lifecycle's boundary: it closes
-    at ≥ 45 min, so a gap of exactly 45:00 is a boundary.
-  - It applies to every session and guards pre-auto-end history.
+- **Real session vs analytics segment:**
+  - The **real session** is `match.session_id`, with the lifecycle's boundaries.
+  - An **analytics segment** is a contiguous block of qualifying matches inside one real
+    session. Consecutive qualifying matches **≥ 45 min apart** start a new segment, in **every**
+    session, modern or old.
+  - A segment boundary does **not** mean the real session ended. A session held open by fresh
+    Practice or Ranked presence (§6a) can legitimately contain such a gap, and so can a
+    character or mode filter.
+  - Segments keep streaks, recovery, halves, duration and match position from bridging long
+    stretches without qualifying matches. They also keep old pre-auto-end sessions with very
+    long gaps from distorting the aggregates.
+  - `SESSION_ANALYTICS_GAP_MS` = `SESSION_IDLE_TIMEOUT_MS`, with the same `>=` comparison as the
+    idle rule: exactly 45:00 splits.
   - Gaps are measured between QUALIFYING matches: other characters or modes never bridge them.
-  - Nothing is written.
+  - Nothing is written: real sessions and memberships are unchanged.
 - **Order:** played_at ASC, ties by external id.
 - **Duration:** a segment's first → last qualifying match.
   - One match = 0.

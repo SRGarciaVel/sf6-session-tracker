@@ -84,6 +84,19 @@ describe.skipIf(!TEST_DB)("analytics read model (integration)", () => {
     });
   }
 
+  /** addMatch, returning the new row's id (for membership assertions). */
+  async function addMatchReturningId(
+    playerId: string,
+    o: { result: MatchResult; at: Date; sessionId: string | null },
+  ): Promise<string> {
+    await addMatch(playerId, o);
+    const [row] = await db
+      .select({ id: match.id })
+      .from(match)
+      .where(sql`${match.playerId} = ${playerId} and ${match.externalMatchId} = ${`a-${seq}`}`);
+    return row!.id;
+  }
+
   beforeAll(async () => {
     await db.execute(sql`truncate auth_user, mock_cfn_player restart identity cascade`);
   });
@@ -458,6 +471,54 @@ describe.skipIf(!TEST_DB)("analytics read model (integration)", () => {
         sql`select count(distinct session_id)::int as n from match where player_id = ${me.id}`,
       );
       expect(Number(rows[0]?.n)).toBe(1);
+    });
+
+    it("an analytics segment boundary is NOT a real session boundary (active session, ≥ 45 min gap)", async () => {
+      // A modern session can legitimately contain a ≥ 45 min gap (e.g. held open by fresh Practice
+      // presence). The real session stays ONE active session; analytics sees two segments.
+      const active = await newSession(me.id, "active");
+      const a1 = await addMatchReturningId(me.id, {
+        result: "win",
+        at: base,
+        sessionId: active.id,
+      });
+      const a2 = await addMatchReturningId(me.id, {
+        result: "win",
+        at: minutesAfter(base, 45),
+        sessionId: active.id,
+      });
+      const before = await db
+        .select()
+        .from(gameSession)
+        .where(sql`${gameSession.id} = ${active.id}`);
+
+      const a = sp(await analytics(me));
+      expect(a).toMatchObject({
+        segments: 2,
+        sessions: 1,
+        splitSessions: 1,
+        matches: 2,
+        streaks: { longestWin: 1 }, // the streak does not bridge the segments
+      });
+      expect(a.duration.medianMs).toBe(0); // two one-match segments
+
+      // Real session and memberships untouched: still ONE active session holding both matches.
+      const after = await db
+        .select()
+        .from(gameSession)
+        .where(sql`${gameSession.id} = ${active.id}`);
+      expect(after).toEqual(before);
+      expect(after[0]?.status).toBe("active");
+      const members = await db
+        .select({ id: match.id, sessionId: match.sessionId })
+        .from(match)
+        .where(sql`${match.id} in (${a1}, ${a2})`);
+      expect(members.map((m) => m.sessionId)).toEqual([active.id, active.id]);
+      const sessions = await db
+        .select({ n: sql<number>`count(*)::int` })
+        .from(gameSession)
+        .where(sql`${gameSession.playerId} = ${me.id}`);
+      expect(sessions[0]?.n).toBe(1);
     });
 
     it("an ACTIVE session is included; started_at / ended_at never alter gameplay duration", async () => {
