@@ -117,10 +117,24 @@ describe("sync contract — additive presence", () => {
     client: { version: "0.3.0", transport: "service_worker" as const },
   };
 
-  it("old Companion (no presence key) is still valid", () => {
+  it("old Companion (no presence / battlelogObserved keys) is still valid", () => {
     const parsed = companionSyncRequestSchema.safeParse(base);
     expect(parsed.success).toBe(true);
     expect(parsed.data?.presence).toBeUndefined();
+    expect(parsed.data?.battlelogObserved).toBeUndefined();
+  });
+
+  it("battlelogObserved: boolean only", () => {
+    for (const v of [true, false]) {
+      expect(companionSyncRequestSchema.safeParse({ ...base, battlelogObserved: v }).success).toBe(
+        true,
+      );
+    }
+    for (const v of ["true", 1, null]) {
+      expect(companionSyncRequestSchema.safeParse({ ...base, battlelogObserved: v }).success).toBe(
+        false,
+      );
+    }
   });
 
   it("new Companion: code, null code or null presence", () => {

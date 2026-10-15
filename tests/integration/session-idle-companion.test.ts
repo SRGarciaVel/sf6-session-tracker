@@ -42,7 +42,8 @@ const profile = core.toWireProfile(
   }).profile,
 );
 
-type Presence = number | null | "absent";
+/** A presence code, null (pages without the field) or "old" = an OLD Companion payload. */
+type Presence = number | null | "old";
 
 describe.skipIf(!TEST_DB)("idle auto-end with Buckler presence (Companion mode)", () => {
   const db = TEST_DB ? getDb() : (null as never);
@@ -87,7 +88,7 @@ describe.skipIf(!TEST_DB)("idle auto-end with Buckler presence (Companion mode)"
   async function sync(
     minutes: number,
     presence: Presence,
-    extra: { matches?: unknown[]; withProfile?: boolean; atDate?: Date } = {},
+    extra: { matches?: unknown[]; withProfile?: boolean; battlelog?: boolean; atDate?: Date } = {},
   ) {
     const now = extra.atDate ?? at(minutes);
     clockNow = now;
@@ -98,7 +99,10 @@ describe.skipIf(!TEST_DB)("idle auto-end with Buckler presence (Companion mode)"
       matches: extra.matches ?? [],
       gapSuspected: false,
       client: { version: "0.4.0", transport: "service_worker" },
-      ...(presence === "absent" ? {} : { presence: { onlineStatus: presence } }),
+      // An OLD Companion sends neither `presence` nor `battlelogObserved`.
+      ...(presence === "old"
+        ? {}
+        : { presence: { onlineStatus: presence }, battlelogObserved: extra.battlelog ?? true }),
     };
     const parsed = core.companionSyncRequestSchema.parse(body);
     const res = await applyCompanionSync(db, device.device, parsed, now);
@@ -150,6 +154,7 @@ describe.skipIf(!TEST_DB)("idle auto-end with Buckler presence (Companion mode)"
       matches: [],
       gapSuspected: false,
       presence: { onlineStatus: CODE.menu },
+      battlelogObserved: true,
       client: { version: "0.4.0", transport: "service_worker" },
     });
     await applyCompanionSync(db, device.device, first, clockNow);
@@ -226,20 +231,22 @@ describe.skipIf(!TEST_DB)("idle auto-end with Buckler presence (Companion mode)"
     expect((await run(27)).ended[0]?.decision).toMatchObject({ policy: "offline" });
   });
 
-  it("23. NEW server + OLD Companion (no presence key): tracking works; plain 45 min fallback", async () => {
+  it("23. NEW server + OLD Companion: tracking works, but no proven match observation → no 45 min close; 12 h ceiling", async () => {
     const m = wireMatch(3);
-    const r = await sync(3, "absent", { matches: [m] });
+    const r = await sync(3, "old", { matches: [m] });
     expect(r.ok && r.inserted).toBe(1);
     const [row] = await db
       .select({ sessionId: match.sessionId })
       .from(match)
       .where(and(eq(match.playerId, playerId), eq(match.externalMatchId, m.externalMatchId)));
     expect(row?.sessionId).toBe(sessionId);
-    await syncs(4, 47, "absent", 4);
-    expect((await run(47)).ended).toEqual([]);
-    await sync(48, "absent");
-    const res = await run(48);
-    expect(res.ended[0]?.decision).toMatchObject({ policy: "normal-idle" });
+    // 2 h of ordinary old-Companion traffic: it cannot say whether it read the battlelog.
+    await syncs(4, 120, "old", 2);
+    for (const t of [48, 90, 120]) expect((await run(t)).ended).toEqual([]);
+    expect(await status()).toBe("active");
+    expect((await run(3 + 12 * 60)).ended[0]?.decision).toMatchObject({
+      policy: "absolute-ceiling",
+    });
   });
 
   it("24. an unknown future presence code is treated like no information", async () => {
@@ -251,12 +258,12 @@ describe.skipIf(!TEST_DB)("idle auto-end with Buckler presence (Companion mode)"
     });
   });
 
-  it("11. stale Practice (Companion keeps syncing without presence) ends 45 min after it was last seen", async () => {
+  it("11. Practice no longer reported (pages without the field) ends 45 min after it was last seen", async () => {
     await syncs(0, 30, CODE.practice, 2);
-    await syncs(31, 74, "absent", 3);
-    await sync(74, "absent");
+    await syncs(31, 74, null, 3);
+    await sync(74, null);
     expect((await run(74)).ended).toEqual([]);
-    await sync(75, "absent");
+    await sync(75, null);
     expect((await run(75)).ended[0]?.decision).toMatchObject({
       policy: "normal-idle",
       presenceState: "unknown",
@@ -340,27 +347,76 @@ describe.skipIf(!TEST_DB)("idle auto-end with Buckler presence (Companion mode)"
       expect((await run(245)).ended[0]?.decision).toMatchObject({ policy: "normal-idle" });
     });
 
-    it("6/7. OLD Companion (no presence): first sync after 2 h does not close; 45 min later it does", async () => {
-      await sync(3, "absent", { matches: [wireMatch(2)] });
-      await syncs(4, 5, "absent");
-      await sync(125, "absent");
+    it("6/7. OLD Companion after a gap: neither the first sync nor 45 min of traffic close it", async () => {
+      await sync(3, "old", { matches: [wireMatch(2)] });
+      await syncs(4, 5, "old");
+      await sync(125, "old");
       expect((await run(125)).ended).toEqual([]);
-      await syncs(126, 169, "absent", 2);
-      await sync(169, "absent");
-      expect((await run(169)).ended).toEqual([]);
-      await sync(170, "absent");
-      expect((await run(170)).ended[0]?.decision).toMatchObject({
-        policy: "normal-idle",
-        presenceState: "unknown",
-      });
+      await syncs(126, 175, "old", 2);
+      expect((await run(175)).ended).toEqual([]);
+      expect(await status()).toBe("active");
     });
 
     it("9. normal sync cadence (≤ 5 min apart) keeps one observation run", async () => {
-      await syncs(0, 40, "absent", 4);
+      await syncs(0, 40, null, 4);
       const run40 = (await storedObservation()) as { since: string; observedAt: string };
       // One run since the first sync (made just before Start), 10+ observations, never reset.
       expect(Date.parse(run40.since)).toBeLessThanOrEqual(at(0).getTime());
       expect(run40.observedAt).toBe(at(40).toISOString());
+    });
+  });
+
+  describe("match observation (battlelog) vs presence observation", () => {
+    async function snapshot() {
+      const [row] = await db
+        .select({ profile: companionSnapshot.profile })
+        .from(companionSnapshot)
+        .where(and(eq(companionSnapshot.userId, userId), eq(companionSnapshot.cfnUserId, CFN)));
+      return {
+        observation: row?.profile?.observation as
+          { since: string; observedAt: string; observations: number } | undefined,
+        presence: row?.profile?.presence as { state: string; observations: number } | undefined,
+      };
+    }
+
+    it("1/4/6. profile-only cycle (matches = [], battlelogObserved false): run untouched, presence updates", async () => {
+      await sync(1, CODE.menu);
+      const before = await snapshot();
+      await sync(2, CODE.practice, { battlelog: false });
+      const after = await snapshot();
+      expect(after.observation).toEqual(before.observation);
+      expect(after.presence).toMatchObject({ state: "practice", observations: 1 });
+    });
+
+    it("2/5. battlelog-only cycle (no profile, matches = []) advances the run", async () => {
+      await sync(1, CODE.menu);
+      const before = await snapshot();
+      await sync(2, CODE.menu, { withProfile: false });
+      const after = await snapshot();
+      expect(after.observation?.observations).toBe((before.observation?.observations ?? 0) + 1);
+      expect(after.observation?.observedAt).toBe(at(2).toISOString());
+    });
+
+    it("3. battlelog + profile cycle advances exactly one observation", async () => {
+      await sync(1, CODE.menu);
+      const before = await snapshot();
+      await sync(2, CODE.menu, { withProfile: true, battlelog: true });
+      expect((await snapshot()).observation?.observations).toBe(
+        (before.observation?.observations ?? 0) + 1,
+      );
+    });
+
+    it("7. an old payload is accepted and never advances (or creates) a proven run", async () => {
+      await db.delete(companionSnapshot).where(eq(companionSnapshot.userId, userId));
+      for (let m = 1; m <= 10; m++) await sync(m, "old");
+      expect((await snapshot()).observation).toBeUndefined();
+    });
+
+    it("profile-only traffic alone never proves 45 min of match observation", async () => {
+      await sync(1, CODE.menu); // last battlelog observation
+      for (let m = 2; m <= 60; m += 2) await sync(m, CODE.menu, { battlelog: false });
+      expect((await run(60)).ended).toEqual([]);
+      expect(await status()).toBe("active");
     });
   });
 });

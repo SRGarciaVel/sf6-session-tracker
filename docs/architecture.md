@@ -203,10 +203,10 @@ observedAt, observations }`. Two observations at most 5 min apart continue the r
 (browser closed, Buckler pause, server asleep) starts a new one. The latest observation alone
 proves nothing about the gap before it.
 
-| Mode                 | Source                                                                                                                                                                                                                                                   |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Companion            | `companion_snapshot.profile.observation` (JSONB), folded on **every** accepted sync at the server's time, with or without presence, old Companions included                                                                                              |
-| Direct Capcom / mock | The tracking runtime's **in-memory** run of its own successful polls. `last_success_at` is only the latest success; persisting continuity would need a schema change. In-memory is conservative: a restart or another replica's polls only shorten a run |
+| Mode                 | Source                                                                                                                                                                                                                                                                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Companion            | `companion_snapshot.profile.observation` (JSONB), advanced at the server's time **only** by a sync that says it fetched the battlelog (`battlelogObserved: true`). A profile-only cycle (play.json) or an old Companion (field absent) proves nothing about new matches and leaves it untouched: an old Companion therefore gets the 12 h ceiling only |
+| Direct Capcom / mock | The tracking runtime's **in-memory** run of its own successful polls. `last_success_at` is only the latest success; persisting continuity would need a schema change. In-memory is conservative: a restart or another replica's polls only shorten a run                                                                                               |
 
 Without a run (Companion closed, nothing proven), SST cannot claim "nobody played".
 
@@ -270,7 +270,13 @@ Further properties:
 **Candidate query.** Active sessions come from the partial index `game_session_one_active_uq`.
 The latest session match is an index-only backward scan of `match_session_idx`, and the snapshot a
 primary-key lookup. The match table is never scanned. Sessions with activity in the last 15 min are
-skipped, and the batch is capped at 25, processed sequentially (one connection at a time).
+skipped. The sweep is bounded and **rotates**:
+
+- each maintenance run reads at most 4 pages of 25 in (activity, id) keyset order and processes
+  them sequentially (one connection at a time);
+- the runtime keeps the position for the next run, and a short page wraps around;
+- so sessions the policy keeps (fresh Practice, not observed…) can never starve later ones out of a
+  fixed first batch.
 
 **For Analytics (Phase 6):**
 

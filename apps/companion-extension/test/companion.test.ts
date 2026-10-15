@@ -259,6 +259,7 @@ describe("companion sync cycle", () => {
       const withPresence = await cycleWith(both, {});
       const baseline = await cycleWith({}, {});
       expect(withPresence.sent?.presence).toEqual({ onlineStatus: 11 });
+      expect(withPresence.sent?.battlelogObserved).toBe(true);
       expect(withPresence.paths).toEqual(baseline.paths);
     });
 
@@ -269,6 +270,10 @@ describe("companion sync cycle", () => {
         { lastBattlelogAt: recent, lastProfileAt: null },
       );
       expect(profileOnly.sent?.presence).toEqual({ onlineStatus: 8 });
+      // Only play.json was fetched: NOT a match observation (matches = [] is not evidence).
+      expect(profileOnly.sent?.battlelogObserved).toBe(false);
+      expect(profileOnly.sent?.matches).toEqual([]);
+      expect(profileOnly.paths.some((p) => p.includes("battlelog"))).toBe(false);
       expect((await cycleWith({}, {})).sent?.presence).toEqual({ onlineStatus: null });
     });
 
@@ -401,6 +406,7 @@ describe("companion sync cycle", () => {
       matches: [],
       gapSuspected: false,
       onlineStatus: null,
+      battlelogObserved: true,
       transport: "service_worker" as const,
     };
     expect(() => buildSyncPayload(leaky)).not.toThrow();
@@ -460,6 +466,7 @@ describe("privacy: credential-like keys can never be sent", () => {
       matches: [],
       gapSuspected: false,
       onlineStatus: 11,
+      battlelogObserved: true,
       transport: "service_worker",
     });
     expect(payload.presence).toEqual({ onlineStatus: 11 });

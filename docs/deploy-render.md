@@ -65,8 +65,12 @@ What to expect:
   restart), so a session that expired while the service slept ends on wake-up. Then polling
   stops and the Companion drops back to its 120 s cadence.
 
-- **Deploy order:** deploy the server before releasing a Companion version that sends `presence`
-  (the sync schema is strict; older Companions keep working against the new server).
+- **Deploy order:** deploy the server (which accepts the optional `presence` and
+  `battlelogObserved` fields) before releasing a Companion version that sends them. The sync
+  schema is strict.
+  - Older Companions keep working against the new server.
+  - But an older Companion cannot prove battlelog observation, so only the 12 h ceiling ends its
+    sessions until it is updated.
 
 ## B. Production scaling: split web + worker
 

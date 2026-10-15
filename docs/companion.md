@@ -166,16 +166,26 @@ SST (autoritativo)
   - `null` = las páginas no traían el campo. Nunca se envía el nombre localizado.
   - El servidor la acepta con **su** hora y la pliega en `companion_snapshot.profile.presence`
     (JSONB, sin migración).
-  - Además, **cada** sync aceptada, con o sin `presence`, avanza `profile.observation`: la
-    racha continua de observación que exige el cierre por inactividad.
+  - Solo la usa el cierre automático de sesiones (docs/architecture.md §6a).
+- **Evidencia de battlelog** (opcional, aditiva): `battlelogObserved: boolean`.
+  - Es `true` si el ciclo descargó el battlelog con éxito: entonces `matches`, aunque sea `[]`, es
+    una **observación de partidas**.
+  - Es `false` en un ciclo que solo descargó `play.json`, que no prueba nada sobre partidas
+    nuevas (`matches: []` es ambiguo).
+  - Solo con `true` el servidor avanza `profile.observation`, la racha continua de observación de
+    partidas que exige el cierre por inactividad.
     - Un hueco de más de 5 min la reinicia.
     - Al volver tras horas sin Companion, los 45 min empiezan a contar de nuevo.
-  - Solo la usa el cierre automático de sesiones (docs/architecture.md §6a).
-  - **Compatibilidad:**
-    - una Companion antigua sin `presence` sigue funcionando: sin presencia, el cierre usa la regla
-      normal de 45 min y el tope de 12 h;
-    - como el esquema raíz es estricto, **el servidor debe desplegarse antes** de publicar una
-      Companion que envíe `presence`.
+  - La presencia se pliega aparte y puede venir de cualquiera de las dos páginas.
+- **Compatibilidad:**
+  - una Companion antigua, sin `presence` ni `battlelogObserved`, sigue sincronizando, ingiriendo
+    y operando sesiones con normalidad;
+  - pero **no prueba observación de partidas**: sin racha, el cierre normal de 45 min (y el de
+    Offline) no se aplica a esa Companion, y solo actúa el tope de 12 h. Al actualizarla, la
+    política completa se activa sola;
+  - **orden de despliegue:** como el esquema raíz es estricto, primero el servidor que acepta los
+    campos opcionales y después la nueva Companion. La versión no se incrementa ni se publica
+    automáticamente.
 - **Cliente:** versión y transporte.
 
 ## 8. Datos que NUNCA se envían

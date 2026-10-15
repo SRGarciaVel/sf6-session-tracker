@@ -31,6 +31,7 @@ const { endSession, getActiveSession, startSession, summarizeSessionRow } =
   await import("@/server/sessions/service");
 const { autoEndIdleSessions, findIdleSessionCandidates } =
   await import("@/server/sessions/lifecycle");
+type LifecycleCursor = NonNullable<Awaited<ReturnType<typeof autoEndIdleSessions>>["cursor"]>;
 const { DEFAULT_LIFECYCLE_POLICY, OBSERVATION_MAX_GAP_MS, advanceObservationRun } =
   await import("@/domain/session/lifecycle");
 const { MockSF6DataProvider } = await import("@/server/sf6/providers/mock");
@@ -402,6 +403,68 @@ describe.skipIf(!TEST_DB)("idle auto-end (provider mode, integration)", () => {
     });
     expect(found.map((c) => c.sessionId)).toEqual([sessionId]);
     expect(found[0]?.input).toMatchObject({ filterModes: ["ranked"], presence: null });
+  });
+
+  it("no starvation: kept sessions filling a whole page never block a later closable one", async () => {
+    // 4 OLDER active sessions the policy keeps (2 h idle but never observed → "not-observed").
+    for (let i = 0; i < 4; i++) {
+      const cfn = String(1_000_000_000 + Math.floor(Math.random() * 8_999_999_999)).slice(0, 10);
+      const uid = randomUUID();
+      await db.insert(authUser).values({ id: uid, name: "Kept", email: `${uid}@test.local` });
+      const p = await upsertPlayerForUser(db, uid, await provider.getPlayerProfile(cfn));
+      const s = await startSession(db, provider, p);
+      await db
+        .update(gameSession)
+        .set({ startedAt: at(-120 + i) })
+        .where(eq(gameSession.id, s.id));
+    }
+    // The newest one is genuinely closable (45 min observed in Menu-equivalent: no presence).
+    await observedAt(50);
+    const sweep = (cursor: LifecycleCursor | null) =>
+      autoEndIdleSessions(db, provider, {
+        source: "provider",
+        now: clock(50),
+        observationFor: (id) => runs.get(id) ?? null,
+        limit: 3,
+        pages: 1,
+        cursor,
+        log,
+      });
+    // Run 1: the 3 oldest (all kept) fill the page.
+    const first = await sweep(null);
+    expect(first).toMatchObject({ evaluated: 3, ended: [] });
+    expect(first.cursor).not.toBeNull();
+    expect((await session()).status).toBe("active");
+    // Run 2 resumes after them and reaches the closable session.
+    const second = await sweep(first.cursor);
+    expect(second.ended.map((e) => e.sessionId)).toEqual([sessionId]);
+    expect(second.cursor).toBeNull(); // short page: wrap around next time
+    expect((await session()).status).toBe("ended");
+  });
+
+  it("one maintenance run pages through the candidates (bounded by pages × limit)", async () => {
+    for (let i = 0; i < 4; i++) {
+      const cfn = String(1_000_000_000 + Math.floor(Math.random() * 8_999_999_999)).slice(0, 10);
+      const uid = randomUUID();
+      await db.insert(authUser).values({ id: uid, name: "Kept", email: `${uid}@test.local` });
+      const p = await upsertPlayerForUser(db, uid, await provider.getPlayerProfile(cfn));
+      const s = await startSession(db, provider, p);
+      await db
+        .update(gameSession)
+        .set({ startedAt: at(-120 + i) })
+        .where(eq(gameSession.id, s.id));
+    }
+    await observedAt(50);
+    const res = await autoEndIdleSessions(db, provider, {
+      source: "provider",
+      now: clock(50),
+      observationFor: (id) => runs.get(id) ?? null,
+      limit: 2,
+      pages: 3,
+      log,
+    });
+    expect(res.evaluated).toBe(5);
+    expect(res.ended.map((e) => e.sessionId)).toEqual([sessionId]);
   });
 
   /* ───────── lock helpers (same technique as ingest-active-session.test.ts) ───────── */

@@ -263,10 +263,12 @@ const toWire = (m: CompanionSyncParsed["matches"][number]): CompanionWireMatch =
 /**
  * The profile JSON to store: the new profile (or the stored one) plus the lifecycle metadata
  * folded with this sync (domain/session/lifecycle.ts), both at SERVER acceptance time:
- *   observation  continuous run of accepted syncs (every sync is a match observation, with or
- *                without presence — old Companions included); a gap > 5 min restarts it.
- *   presence     Buckler presence track; a sync without `presence` (older Companion) leaves it
- *                as it was, so it simply ages into "stale".
+ *   observation  continuous run of MATCH observations: advanced only when the Companion says it
+ *                fetched the battlelog this cycle (`battlelogObserved: true`). A profile-only
+ *                cycle, or an older Companion that cannot say (field absent), proves nothing
+ *                about new matches and leaves the run untouched; a gap > 5 min restarts it.
+ *   presence     Buckler presence track (from play.json or battlelog.json); a sync without
+ *                `presence` (older Companion) leaves it as it was, so it ages into "stale".
  * Without any profile there is nowhere to keep them: not stored (auto-end then has no proven
  * observation and only the 12 h ceiling applies).
  */
@@ -278,11 +280,11 @@ function snapshotProfile(
   const maxGapMs = getEnv().COMPANION_SNAPSHOT_MAX_AGE_MS;
   const base = payload.profile ?? (existing ? toWireProfile(existing) : null);
   if (!base) return null;
-  const observation = advanceObservationRun(
-    parseObservationRun(existing?.observation),
-    now,
-    maxGapMs,
-  );
+  const storedRun = parseObservationRun(existing?.observation);
+  const observation =
+    payload.battlelogObserved === true
+      ? advanceObservationRun(storedRun, now, maxGapMs)
+      : storedRun;
   const previous = parsePresenceTrack(existing?.presence);
   const presence = payload.presence
     ? advancePresenceTrack(
@@ -291,7 +293,11 @@ function snapshotProfile(
         maxGapMs,
       )
     : previous;
-  return { ...base, observation, ...(presence ? { presence } : {}) };
+  return {
+    ...base,
+    ...(observation ? { observation } : {}),
+    ...(presence ? { presence } : {}),
+  };
 }
 
 export async function applyCompanionSync(
@@ -395,6 +401,7 @@ export async function applyCompanionSync(
     profile: payload.profile !== null,
     gapSuspected: payload.gapSuspected,
     presence: payload.presence ? presenceFromOnlineStatus(payload.presence.onlineStatus) : "absent",
+    battlelogObserved: payload.battlelogObserved ?? "absent",
     transport: payload.client.transport,
     version: isValidExtensionVersion(version) ? version : "invalid",
   });

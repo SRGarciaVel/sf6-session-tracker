@@ -70,6 +70,8 @@ export function buildSyncPayload(input: {
   gapSuspected: boolean;
   /** Buckler presence code from the pages fetched this cycle; null = absent from them. */
   onlineStatus: number | null;
+  /** The battlelog was fetched (successfully) in this cycle: `matches` is a match observation. */
+  battlelogObserved: boolean;
   transport: CompanionTransportKind;
 }): CompanionSyncRequest {
   const payload: CompanionSyncRequest = {
@@ -79,6 +81,7 @@ export function buildSyncPayload(input: {
     matches: input.matches.map(toWireMatch),
     gapSuspected: input.gapSuspected,
     presence: { onlineStatus: input.onlineStatus },
+    battlelogObserved: input.battlelogObserved,
     client: { version: COMPANION_VERSION, transport: input.transport },
   };
   const leaks = findForbiddenKeys(payload);
@@ -187,6 +190,8 @@ export async function runCycle(deps: CycleDeps, manual = false): Promise<CycleOu
     matches: fresh,
     gapSuspected,
     onlineStatus,
+    // Reaching this point means every due Buckler read succeeded (errors return above).
+    battlelogObserved: due.battlelog,
     transport: deps.buckler.transport.kind,
   });
   let response;

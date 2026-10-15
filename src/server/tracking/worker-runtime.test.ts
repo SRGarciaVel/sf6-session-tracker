@@ -66,7 +66,13 @@ describe("TrackerRuntime", () => {
     mocks.pollPlayer.mockResolvedValue({ status: "ok" });
     mocks.releaseAllLeases.mockResolvedValue(undefined);
     mocks.pruneStaleConnections.mockResolvedValue(0);
-    mocks.autoEndIdleSessions.mockResolvedValue({ evaluated: 0, ended: [], aborted: 0, failed: 0 });
+    mocks.autoEndIdleSessions.mockResolvedValue({
+      evaluated: 0,
+      ended: [],
+      aborted: 0,
+      failed: 0,
+      cursor: null,
+    });
   });
   afterEach(() => {
     vi.clearAllMocks();
@@ -233,5 +239,27 @@ describe("TrackerRuntime", () => {
     rt.recordObservation("c", new Date());
     expect(lookup("c")).toMatchObject({ observations: 1 });
     await rt.stop();
+  });
+
+  it("the idle sweep resumes from the previous run's cursor (rotation, no starvation)", async () => {
+    const cursor = { activityKey: "2026-10-14 18:00:00+00", sessionId: "s-25" };
+    mocks.autoEndIdleSessions
+      .mockResolvedValueOnce({ evaluated: 100, ended: [], aborted: 0, failed: 0, cursor })
+      .mockResolvedValueOnce({ evaluated: 3, ended: [], aborted: 0, failed: 0, cursor: null });
+    const rt = new TrackerRuntime({
+      db: {} as Database,
+      provider: { name: "fake" } as SF6DataProvider,
+      env: { WORKER_CONCURRENCY: 1, WORKER_TICK_MS: 5, SF6_PROVIDER: "mock" },
+      config,
+      logger,
+      mode: "embedded",
+      workerId: "cursor-worker",
+      maintenanceEveryMs: 0,
+    });
+    await rt.maintenance();
+    await rt.maintenance();
+    await rt.maintenance();
+    const cursors = mocks.autoEndIdleSessions.mock.calls.map((c) => c[2]?.cursor);
+    expect(cursors).toEqual([null, cursor, null]);
   });
 });

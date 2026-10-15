@@ -119,6 +119,12 @@ export const companionSyncRequestSchema = z.strictObject({
     })
     .nullable()
     .optional(),
+  /**
+   * true = this cycle fetched the battlelog successfully, so `matches` (possibly []) is a real
+   * MATCH observation; false = profile-only cycle (play.json), which proves nothing about new
+   * matches. Optional and additive: absent (older Companions) = no proven match observation.
+   */
+  battlelogObserved: z.boolean().optional(),
   client: z.strictObject({
     version: z.string().max(20),
     transport: z.enum(COMPANION_TRANSPORTS),

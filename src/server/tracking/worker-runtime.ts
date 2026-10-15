@@ -22,7 +22,11 @@ import {
   type ObservationRun,
 } from "@/domain/session/lifecycle";
 import { pruneStaleConnections } from "@/server/overlays/service";
-import { autoEndIdleSessions, observationSourceFor } from "@/server/sessions/lifecycle";
+import {
+  autoEndIdleSessions,
+  observationSourceFor,
+  type LifecycleCursor,
+} from "@/server/sessions/lifecycle";
 import type { SF6DataProvider } from "@/server/sf6/provider";
 import { claimDuePlayers, pollPlayer, releaseAllLeases, type TrackerConfig } from "./tracker";
 
@@ -57,6 +61,8 @@ export class TrackerRuntime {
    * delay a close, never cause one.
    */
   private readonly observations = new Map<string, ObservationRun>();
+  /** Idle sweep position: each maintenance run continues where the previous one stopped. */
+  private lifecycleCursor: LifecycleCursor | null = null;
   /** Resolves the current inter-tick sleep early so stop() does not wait a full tick. */
   private wake: (() => void) | null = null;
 
@@ -159,8 +165,10 @@ export class TrackerRuntime {
         source: observationSourceFor(this.deps.env.SF6_PROVIDER),
         policy: this.config.lifecycle ?? DEFAULT_LIFECYCLE_POLICY,
         observationFor: (playerId) => this.observations.get(playerId) ?? null,
+        cursor: this.lifecycleCursor,
         log: this.log,
       });
+      this.lifecycleCursor = res.cursor;
       if (res.ended.length > 0 || res.failed > 0) {
         this.log.info("worker.lifecycle", {
           evaluated: res.evaluated,

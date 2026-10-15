@@ -29,9 +29,10 @@ import { endSessionInternal } from "./service";
 
 /**
  * Where the CONTINUOUS observation run (domain ObservationRun) comes from:
- *   companion  `observation` in companion_snapshot.profile JSONB, folded by the server on every
- *              accepted sync (its acceptance time; a gap > 5 min restarts the run). Presence comes
- *              from the same snapshot.
+ *   companion  `observation` in companion_snapshot.profile JSONB, folded by the server (at its
+ *              acceptance time) only for syncs that fetched the battlelog (`battlelogObserved`);
+ *              a gap > 5 min restarts the run. Old Companions never prove one (ceiling only).
+ *              Presence comes from the same snapshot.
  *   provider   the tracking runtime's in-memory run, fed by its own successful polls
  *              (TrackerRuntime). sf6_player.last_success_at alone is only the LATEST success and
  *              cannot prove continuity, and nothing else is persisted without a schema change.
@@ -69,13 +70,26 @@ interface LifecycleRow extends Record<string, unknown> {
   started_at: Date | string;
   filter: unknown;
   last_match_at: Date | string | null;
+  /** greatest(started_at, last match) as Postgres text: an exact, re-castable cursor key. */
+  activity_key: string;
   observation: unknown;
   presence: unknown;
+}
+
+/**
+ * Keyset position in the candidate order (oldest activity first, then id). Kept by the runtime
+ * between maintenance runs so the sweep ROTATES through all candidates: sessions the policy keeps
+ * (fresh Practice, not observed…) can never starve later ones out of a fixed first batch.
+ */
+export interface LifecycleCursor {
+  activityKey: string;
+  sessionId: string;
 }
 
 export interface LifecycleCandidate {
   sessionId: string;
   playerId: string;
+  cursor: LifecycleCursor;
   /** Everything the policy needs except `now`. */
   input: Omit<SessionLifecycleInput, "now">;
 }
@@ -98,6 +112,7 @@ function toCandidate(
   return {
     sessionId: row.session_id,
     playerId: row.player_id,
+    cursor: { activityKey: row.activity_key, sessionId: row.session_id },
     input: {
       startedAt: new Date(row.started_at),
       lastSessionMatchAt: toDate(row.last_match_at),
@@ -119,13 +134,19 @@ function toCandidate(
  */
 async function loadLifecycleRows(
   db: DbExecutor,
-  where: { sessionId: string } | { idleAtLeastMs: number; now: Date; limit: number },
+  where:
+    | { sessionId: string }
+    | { idleAtLeastMs: number; now: Date; limit: number; after: LifecycleCursor | null },
 ): Promise<LifecycleRow[]> {
   const activity = sql`greatest(s.started_at, coalesce(lm.last_match_at, s.started_at))`;
+  const after =
+    "sessionId" in where || !where.after
+      ? sql``
+      : sql`and (${activity}, s.id) > (${where.after.activityKey}::timestamptz, ${where.after.sessionId}::uuid)`;
   const filter =
     "sessionId" in where
       ? sql`and s.id = ${where.sessionId}`
-      : sql`and ${activity} <= ${where.now.toISOString()}::timestamptz - ${`${where.idleAtLeastMs} milliseconds`}::interval`;
+      : sql`and ${activity} <= ${where.now.toISOString()}::timestamptz - ${`${where.idleAtLeastMs} milliseconds`}::interval ${after}`;
   const tail =
     "sessionId" in where ? sql`` : sql`order by ${activity} asc, s.id limit ${where.limit}`;
   return db.execute<LifecycleRow>(sql`
@@ -134,6 +155,7 @@ async function loadLifecycleRows(
            s.started_at,
            s.filter,
            lm.last_match_at,
+           ${activity}::text as activity_key,
            cs.profile -> 'observation' as observation,
            cs.profile -> 'presence' as presence
       from game_session s
@@ -154,8 +176,9 @@ async function loadLifecycleRows(
 }
 
 /**
- * Active sessions that MAY be closable: no session activity for at least the shortest rule
- * window (Offline 15 min). The policy itself decides; this only bounds the work.
+ * One page of active sessions that MAY be closable: no session activity for at least the
+ * shortest rule window (Offline 15 min), after `after` in (activity, id) order. The policy itself
+ * decides; this only bounds the work.
  */
 export async function findIdleSessionCandidates(
   db: DbExecutor,
@@ -164,6 +187,7 @@ export async function findIdleSessionCandidates(
     policy: LifecyclePolicy;
     now: Date;
     limit: number;
+    after?: LifecycleCursor | null;
     observationFor?: ObservationLookup;
   },
 ): Promise<LifecycleCandidate[]> {
@@ -176,6 +200,7 @@ export async function findIdleSessionCandidates(
     idleAtLeastMs,
     now: options.now,
     limit: options.limit,
+    after: options.after ?? null,
   });
   return rows.map((r) => toCandidate(r, options.source, options.observationFor));
 }
@@ -185,8 +210,12 @@ export interface AutoEndOptions {
   policy?: LifecyclePolicy;
   /** Injectable clock (tests). Read again for the in-lock re-check. */
   now?: () => Date;
-  /** Candidates handled per maintenance run (processed sequentially, one connection). */
+  /** Candidates per page (processed sequentially, one connection). */
   limit?: number;
+  /** Pages per maintenance run: bounds the work; the cursor carries on in the next run. */
+  pages?: number;
+  /** Where the previous run stopped (null = from the oldest candidate). */
+  cursor?: LifecycleCursor | null;
   /** Provider mode: the runtime's in-memory observation runs. */
   observationFor?: ObservationLookup;
   log: Logger;
@@ -197,9 +226,12 @@ export interface AutoEndResult {
   ended: Array<{ sessionId: string; decision: LifecycleDecision }>;
   aborted: number;
   failed: number;
+  /** Where to resume next run; null = the whole candidate list was covered (wrap around). */
+  cursor: LifecycleCursor | null;
 }
 
 export const AUTO_END_BATCH = 25;
+export const AUTO_END_PAGES = 4;
 
 export async function autoEndIdleSessions(
   db: Database,
@@ -208,16 +240,41 @@ export async function autoEndIdleSessions(
 ): Promise<AutoEndResult> {
   const policy = options.policy ?? DEFAULT_LIFECYCLE_POLICY;
   const now = options.now ?? (() => new Date());
-  const log = options.log;
-  const candidates = await findIdleSessionCandidates(db, {
-    source: options.source,
-    policy,
-    now: now(),
-    limit: options.limit ?? AUTO_END_BATCH,
-    observationFor: options.observationFor,
-  });
-  const result: AutoEndResult = { evaluated: candidates.length, ended: [], aborted: 0, failed: 0 };
+  const limit = options.limit ?? AUTO_END_BATCH;
+  const result: AutoEndResult = {
+    evaluated: 0,
+    ended: [],
+    aborted: 0,
+    failed: 0,
+    cursor: options.cursor ?? null,
+  };
+  for (let page = 0; page < (options.pages ?? AUTO_END_PAGES); page++) {
+    const candidates = await findIdleSessionCandidates(db, {
+      source: options.source,
+      policy,
+      now: now(),
+      limit,
+      after: result.cursor,
+      observationFor: options.observationFor,
+    });
+    result.evaluated += candidates.length;
+    await endCandidates(db, provider, candidates, { ...options, policy, now }, result);
+    const last = candidates[candidates.length - 1];
+    // A short page = end of the list: the next run starts again from the oldest candidate.
+    result.cursor = candidates.length < limit || !last ? null : last.cursor;
+    if (!result.cursor) break;
+  }
+  return result;
+}
 
+async function endCandidates(
+  db: Database,
+  provider: SF6DataProvider | undefined,
+  candidates: readonly LifecycleCandidate[],
+  options: AutoEndOptions & { policy: LifecyclePolicy; now: () => Date },
+  result: AutoEndResult,
+): Promise<void> {
+  const { policy, now, log } = options;
   for (const c of candidates) {
     if (evaluateSessionLifecycle({ ...c.input, now: now() }, policy).action !== "end") continue;
     try {
@@ -254,5 +311,4 @@ export async function autoEndIdleSessions(
       log.warn("session.auto_end_failed", { sessionId: c.sessionId, error: err });
     }
   }
-  return result;
 }
