@@ -323,8 +323,7 @@ played_at)`, backward scan plus incremental sort; the mode is a filter on those 
 - **Sample bands** (`domain/analytics/samples.ts`, decided matches): 0 none · 1–4 very small ·
   5–9 small · 10–29 developing · 30+ larger. They are communication bands, not statistical
   guarantees.
-- **Later phases:** session analytics (6.2), rating trends (6.3, blocked on segmented baselines)
-  and derived insights (6.4).
+- **Later phases:** rating trends (6.3, blocked on segmented baselines) and derived insights (6.4).
 
 #### Matchups (Phase 6.1)
 
@@ -353,6 +352,44 @@ played_at)`, backward scan plus incremental sort; the mode is a filter on those 
   - The wording never claims a "counter", "advantage" or game balance.
 - **No matchup matrix:** with many characters a full own × opponent grid is mostly empty and
   unreadable. The character filter plus the opponent table show the same pairs legibly.
+
+#### Session performance (Phase 6.2)
+
+Pure TypeScript over the same 9-column rows (`domain/analytics/sessions.ts`). There is no extra
+query and no `game_session` join.
+
+- **Dataset and membership:**
+  - the sequences use the page's dataset (range + mode + character) restricted to matches with a
+    `session_id`;
+  - membership is `match.session_id`, never timestamps, and `game_session.filter` is not consulted;
+  - `session_id = NULL` (history outside sessions) is excluded here but still counts in the summary
+    and matchups;
+  - active sessions are ordinary input.
+- **Range boundary:** if the range starts mid-session, only the visible matches take part. Older
+  matches are not fetched to rebuild the session.
+- **Analytics-only virtual split:** inside one real session, consecutive qualifying matches
+  **≥ 45 min apart** start a new segment.
+  - `SESSION_ANALYTICS_GAP_MS` is `SESSION_IDLE_TIMEOUT_MS`, with the lifecycle's boundary: it closes
+    at ≥ 45 min, so a gap of exactly 45:00 is a boundary.
+  - It applies to every session and guards pre-auto-end history.
+  - Gaps are measured between QUALIFYING matches: other characters or modes never bridge them.
+  - Nothing is written.
+- **Order:** played_at ASC, ties by external id.
+- **Duration:** a segment's first → last qualifying match.
+  - One match = 0.
+  - Never `started_at → ended_at`, which can include an idle tail.
+  - Shown as the median, plus the average.
+  - **Pace** = Σ matches ÷ Σ hours over segments with ≥ 2 matches and duration > 0; otherwise
+    unavailable.
+- **Streaks:** the longest win and loss runs inside a segment. They never cross a session or a
+  split, and a draw breaks both.
+- **Win in the next match after a loss:** for each loss that is not the last match of its segment,
+  only the immediately next match counts (win = yes; loss or draw = no). The rate is null without
+  such a loss.
+- **Halves:** segments with ≥ 4 matches, split by count (first = ceil(N / 2), so it takes the
+  middle match), aggregated across segments. No trend claim.
+- **Match position:** positions 1–10, sample = segments that reached each position.
+- **Wording:** neutral. No tilt, fatigue or momentum, and no best/worst session.
 
 ## 7. Realtime
 
