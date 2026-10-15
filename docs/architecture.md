@@ -296,9 +296,10 @@ while it observes them. The page says so.
   - Not used: ratings, opponent rank, opponent names. Per-match MR is unreliable and LP → MR
     session baselines are not segmented yet (Phase 6.3).
 - **Pipeline:**
-  1. `server/analytics/service.ts` runs one narrow query of the authenticated player's matches
-     (`requirePlayer`, no player-id parameter anywhere). It selects 7 columns, ordered by played_at
-     descending.
+  1. `server/analytics/service.ts` enforces **ownership itself**. Its only export is
+     `getPlayerAnalyticsForUser(db, userId, { range, mode })`, which resolves that user's own player;
+     the player-id loader is private. There is no API route, and the page reads only range and mode
+     from the URL. Then one narrow query (7 columns, played_at descending).
   2. `domain/analytics/aggregate.ts` aggregates them (pure, unit tested).
   3. The page only formats.
   - No analytics tables, views, jobs or migrations. Index: `match_player_played_idx (player_id,

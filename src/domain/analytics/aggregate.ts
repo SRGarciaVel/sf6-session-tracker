@@ -49,6 +49,16 @@ export function parseAnalyticsMode(value: unknown): AnalyticsMode {
 }
 
 /**
+ * The ONLY values the analytics page reads from its URL: range and mode. Any other parameter
+ * (e.g. a player or user id) is ignored — ownership comes from the session, never the request.
+ */
+export function parseAnalyticsSearchParams(
+  params: Readonly<Record<string, string | string[] | undefined>>,
+): { range: AnalyticsRange; mode: AnalyticsMode } {
+  return { range: parseAnalyticsRange(params.range), mode: parseAnalyticsMode(params.mode) };
+}
+
+/**
  * Start of a range: a ROLLING window of N × 24 h ending at `now` (an absolute instant, so it is
  * the same in every timezone; no calendar days). "all" ⇒ null (no lower bound).
  */

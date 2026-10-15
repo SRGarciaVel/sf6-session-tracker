@@ -7,6 +7,7 @@ import {
   computeRecord,
   parseAnalyticsMode,
   parseAnalyticsRange,
+  parseAnalyticsSearchParams,
   rangeStart,
   type AnalyticsMatchRow,
 } from "./aggregate";
@@ -262,4 +263,18 @@ describe("25. no NaN / Infinity anywhere", () => {
       assertFinite(computeAnalytics(many(seqStr)));
     },
   );
+});
+
+describe("URL input", () => {
+  it("only range and mode are read from search params; ids are ignored", () => {
+    const q = parseAnalyticsSearchParams({
+      range: "7d",
+      mode: "all",
+      playerId: "00000000-0000-0000-0000-000000000001",
+      userId: "someone-else",
+    });
+    expect(q).toEqual({ range: "7d", mode: "all" });
+    expect(Object.keys(q).sort()).toEqual(["mode", "range"]);
+    expect(parseAnalyticsSearchParams({})).toEqual({ range: "90d", mode: "ranked" });
+  });
 });
