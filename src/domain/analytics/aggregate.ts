@@ -11,6 +11,7 @@
  */
 import { CHARACTER_KEY_PATTERN, type CharacterKey, type MatchResult } from "@/domain/sf6/types";
 import { computeMatchupSection, type MatchupSection } from "./matchups";
+import { computeSessionAnalytics, type SessionAnalytics } from "./sessions";
 import { computeRecord, newestFirst, type AnalyticsMatchRow, type MatchRecord } from "./record";
 
 export { computeRecord, type AnalyticsMatchRow, type MatchRecord } from "./record";
@@ -141,6 +142,8 @@ export interface AnalyticsSummary {
   sessions: SessionCoverage;
   /** Matchups of the (filtered) dataset — Phase 6.1. */
   matchups: MatchupSection;
+  /** Patterns inside recorded sessions of the (filtered) dataset — Phase 6.2. */
+  sessionPerformance: SessionAnalytics;
   /** Matches whose mode SST could not identify (only possible with mode "all"). */
   unknownModeMatches: number;
   firstPlayedAt: Date | null;
@@ -210,8 +213,9 @@ export function computeSessionCoverage(rows: readonly AnalyticsMatchRow[]): Sess
 
 /**
  * Everything the page shows, from the range/mode's recorded matches (any order). With
- * `character`, the DATASET is that own character's matches: summary, recent form, sessions and
- * matchups all use it; only the character overview spans every own character.
+ * `character`, the DATASET is that own character's matches: summary, recent form, sessions,
+ * matchups and session performance all use it; only the character overview spans every own
+ * character.
  */
 export function computeAnalytics(
   rows: readonly AnalyticsMatchRow[],
@@ -227,6 +231,7 @@ export function computeAnalytics(
     characters: computeCharacterPerformance(all),
     sessions: computeSessionCoverage(newest),
     matchups: computeMatchupSection(newest),
+    sessionPerformance: computeSessionAnalytics(newest),
     unknownModeMatches: newest.filter((m) => m.mode === "unknown").length,
     firstPlayedAt: newest[newest.length - 1]?.playedAt ?? null,
     lastPlayedAt: newest[0]?.playedAt ?? null,

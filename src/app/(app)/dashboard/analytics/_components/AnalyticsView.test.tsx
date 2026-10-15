@@ -263,4 +263,96 @@ describe("AnalyticsView", () => {
       expect(t).toContain("Matchup results depend heavily on sample size.");
     });
   });
+
+  describe("session performance (6.2)", () => {
+    const MIN = 60_000;
+    /** Session matches every `every` minutes from `start` (minutes after T0). */
+    const sess = (
+      results: string,
+      sessionId: string | null,
+      start: number,
+      every = 4,
+      own = "aki",
+    ) =>
+      [...results].map((c, i) =>
+        row(c === "W" ? "win" : c === "L" ? "loss" : "draw", {
+          sessionId,
+          playedAt: new Date(T0 + (start + i * every) * MIN),
+          characterKey: own,
+          characterName: own === "aki" ? "A.K.I." : "Juri",
+        }),
+      );
+    const section = (html: string) => {
+      const i = html.indexOf('data-testid="session-performance"');
+      return i < 0 ? "" : text(html.slice(i));
+    };
+
+    it("renders the section with segments, median duration and notes (45 min split explained)", () => {
+      const rows = [...sess("WWLWL", "a", 0, 21), ...sess("LW", "a", 300)]; // 84 min, then a split
+      const t = section(render(data(rows)));
+      expect(t).toContain("Rendimiento en sesión");
+      expect(t).toMatch(/Segmentos de sesión analizados 2 de 1 sesión registrada/);
+      expect(t).toContain("1 sesión dividida por pausas de 45 min o más");
+      expect(t).toContain("pausas de 45 minutos o más se dividen solo para estas analíticas");
+      expect(t).toContain("no desde que se inició o cerró la sesión");
+      expect(t).toMatch(/Mediana de duración de juego 44 min Media: 44 min/); // (84 + 4) / 2
+    });
+
+    it("no session matches → neutral empty state (history outside sessions still in the summary)", () => {
+      const html = render(data(sess("WWL", null, 0)));
+      expect(html).toContain('data-testid="sessions-empty"');
+      expect(section(html)).toContain("No hay partidas asignadas a una sesión");
+      expect(text(html)).toContain("Partidas registradas 3");
+    });
+
+    it("streak cards, recovery available, first vs second half, position table with samples", () => {
+      const rows = [...sess("WWWLWLLD", "a", 0), ...sess("LW", "b", 200)];
+      const html = render(data(rows));
+      const t = section(html);
+      expect(t).toMatch(/Racha de victorias más larga 3/);
+      expect(t).toMatch(/Racha de derrotas más larga 2/);
+      // Losses followed by a match: a#4→W, a#6→L, a#7→D, b#1→W  ⇒ 2 of 4.
+      expect(t).toMatch(/Victoria en la siguiente partida tras perder 50 % 2 de 4 derrotas/);
+      expect(html).toContain('data-testid="halves"');
+      expect(t).toMatch(/Primera mitad de la sesión 3 – 1 75 %/);
+      expect(t).toMatch(/Segunda mitad de la sesión 1 – 2 33,3 % 1 empate/);
+      expect(html).toMatch(/data-position="1"[\s\S]*data-position="8"/);
+      expect(t).toMatch(/Partida 1 2 1 – 1 50 % Muestra muy pequeña/);
+      expect(t).toMatch(/Partida 3 1 1 – 0/);
+      expect(t).toContain("La muestra se reduce en cada posición");
+    });
+
+    it("recovery and halves unavailable states", () => {
+      const t = section(render(data(sess("WWL", "a", 0))));
+      expect(t).toContain("No disponible: no hay derrotas seguidas de otra partida");
+      expect(t).toContain("No disponible: ningún segmento tiene al menos 4 partidas.");
+    });
+
+    it("a one-match segment: duration 0 min, pace unavailable (never Infinity)", () => {
+      const html = render(data(sess("W", "a", 0)));
+      const t = section(html);
+      expect(t).toMatch(/Mediana de duración de juego 0 min/);
+      expect(t).toContain("No disponible: hace falta un segmento con 2 o más partidas");
+      expect(html).not.toMatch(/Infinity|NaN/);
+    });
+
+    it("the character filter is preserved: only that character's session matches", () => {
+      const rows = [...sess("WWW", "a", 0, 4, "aki"), ...sess("LL", "a", 1, 4, "juri")];
+      const t = section(render(data(rows, "90d", "ranked", "juri")));
+      expect(t).toMatch(/Racha de derrotas más larga 2/);
+      expect(t).toMatch(/Racha de victorias más larga 0/);
+    });
+
+    it("tables scroll inside their panel on narrow screens; English rendering", () => {
+      const html = render(data([...sess("WLWL", "a", 0)]), "en");
+      const i = html.indexOf('data-testid="session-performance"');
+      expect(html.slice(i)).toContain('class="overflow-x-auto"');
+      const t = section(html);
+      expect(t).toContain("Session performance");
+      expect(t).toContain("Win in the next match after a loss");
+      expect(t).toContain("First half of the session");
+      expect(t).toContain("Performance by match position");
+      expect(t).toContain("Match 1");
+    });
+  });
 });

@@ -1037,6 +1037,37 @@
       "weakest": "Menor rendimiento registrado",
       "pair": "{own} vs {opponent}",
       "sample": "{decided} decididas · {matches} registradas"
+    },
+    "sessionPerformance": {
+      "title": "Rendimiento en sesión",
+      "note": "Las métricas de sesión usan únicamente partidas con una sesión registrada por SST. Las sesiones históricas con pausas de 45 minutos o más se dividen solo para estas analíticas.",
+      "durationNote": "La duración de juego se mide entre la primera y la última partida registrada del segmento, no desde que se inició o cerró la sesión.",
+      "empty": "No hay partidas asignadas a una sesión en este conjunto de datos. Las partidas registradas fuera de una sesión cuentan en el resumen, pero no aquí.",
+      "segments": "Segmentos de sesión analizados",
+      "realSessions": "{count, plural, one {de # sesión registrada} other {de # sesiones registradas}}",
+      "splitSessions": "{count, plural, one {# sesión dividida por pausas de 45 min o más} other {# sesiones divididas por pausas de 45 min o más}}",
+      "medianMatches": "Mediana de partidas por segmento",
+      "medianDuration": "Mediana de duración de juego",
+      "averageDuration": "Media: {value}",
+      "pace": "Ritmo de partidas registrado",
+      "paceValue": "{value}/h",
+      "paceBasis": "{count, plural, one {Sobre # segmento con 2 o más partidas} other {Sobre # segmentos con 2 o más partidas}}",
+      "paceUnavailable": "No disponible: hace falta un segmento con 2 o más partidas separadas en el tiempo",
+      "longestWin": "Racha de victorias más larga",
+      "longestLoss": "Racha de derrotas más larga",
+      "recovery": "Victoria en la siguiente partida tras perder",
+      "recoveryCount": "{won} de {total} derrotas seguidas de otra partida",
+      "recoveryUnavailable": "No disponible: no hay derrotas seguidas de otra partida en el mismo segmento.",
+      "halvesTitle": "Primera y segunda mitad de la sesión",
+      "firstHalf": "Primera mitad de la sesión",
+      "secondHalf": "Segunda mitad de la sesión",
+      "halvesUnavailable": "No disponible: ningún segmento tiene al menos {min} partidas.",
+      "halvesRule": "{count, plural, one {# segmento} other {# segmentos}} con al menos {min} partidas, divididos por número de partidas (la primera mitad incluye la partida central si el total es impar).",
+      "positionsTitle": "Rendimiento por posición de partida",
+      "positionsCaption": "Partidas 1 a {cap} de cada segmento. La muestra se reduce en cada posición: solo cuentan los segmentos que llegaron a ella.",
+      "colPosition": "Posición",
+      "colSegments": "Segmentos",
+      "position": "Partida {n}"
     }
   }
 }

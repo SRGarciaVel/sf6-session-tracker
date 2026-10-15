@@ -54,6 +54,19 @@ export function formatDuration(ms: number): string {
   return h > 0 ? `${h}h ${m.toString().padStart(2, "0")}m` : `${m}m`;
 }
 
+/**
+ * Gameplay duration for analytics: whole minutes, no seconds. "0 min", "42 min", "1 h 24 min"
+ * (identical abbreviations in ES/EN; numbers localized). Rounded to the nearest minute.
+ */
+export function formatMinutes(ms: number | null | undefined, locale: string): string {
+  if (ms === null || ms === undefined || !Number.isFinite(ms)) return "—";
+  const total = Math.max(0, Math.round(ms / 60_000));
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  const minutes = `${formatInteger(m, locale)} min`;
+  return h > 0 ? `${formatInteger(h, locale)} h ${minutes}` : minutes;
+}
+
 /** "12 sec. ago" / "hace 12 s" via Intl.RelativeTimeFormat. */
 export function formatTimeAgo(
   iso: string,

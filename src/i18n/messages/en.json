@@ -1037,6 +1037,37 @@
       "weakest": "Weakest recorded performance",
       "pair": "{own} vs {opponent}",
       "sample": "{decided} decided · {matches} recorded"
+    },
+    "sessionPerformance": {
+      "title": "Session performance",
+      "note": "Session metrics only use matches with a session recorded by SST. Historical sessions with breaks of 45 minutes or more are split for these analytics only.",
+      "durationNote": "Gameplay duration is measured from the segment's first to its last recorded match, not from when the session was started or ended.",
+      "empty": "No matches in this dataset belong to a session. Matches recorded outside a session count in the summary, but not here.",
+      "segments": "Session segments analyzed",
+      "realSessions": "{count, plural, one {from # recorded session} other {from # recorded sessions}}",
+      "splitSessions": "{count, plural, one {# session split by breaks of 45 min or more} other {# sessions split by breaks of 45 min or more}}",
+      "medianMatches": "Median matches per segment",
+      "medianDuration": "Median gameplay duration",
+      "averageDuration": "Average: {value}",
+      "pace": "Recorded match pace",
+      "paceValue": "{value}/h",
+      "paceBasis": "{count, plural, one {From # segment with 2 or more matches} other {From # segments with 2 or more matches}}",
+      "paceUnavailable": "Unavailable: needs a segment with 2 or more matches spread over time",
+      "longestWin": "Longest win streak",
+      "longestLoss": "Longest loss streak",
+      "recovery": "Win in the next match after a loss",
+      "recoveryCount": "{won} of {total} losses followed by another match",
+      "recoveryUnavailable": "Unavailable: no loss is followed by another match in the same segment.",
+      "halvesTitle": "First and second half of the session",
+      "firstHalf": "First half of the session",
+      "secondHalf": "Second half of the session",
+      "halvesUnavailable": "Unavailable: no segment has at least {min} matches.",
+      "halvesRule": "{count, plural, one {# segment} other {# segments}} with at least {min} matches, split by match count (the first half takes the middle match when the total is odd).",
+      "positionsTitle": "Performance by match position",
+      "positionsCaption": "Matches 1 to {cap} of each segment. The sample shrinks at every position: only segments that reached it count.",
+      "colPosition": "Position",
+      "colSegments": "Segments",
+      "position": "Match {n}"
     }
   }
 }
