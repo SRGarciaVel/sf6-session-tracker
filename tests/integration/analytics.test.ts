@@ -62,8 +62,11 @@ describe.skipIf(!TEST_DB)("analytics read model (integration)", () => {
       mode?: MatchMode;
       sessionId?: string | null;
       characterKey?: string;
+      /** Opponent character key; null = no usable opponent data. Default "ken". */
+      opponent?: string | null;
     },
   ) {
+    const opponent = o.opponent === undefined ? "ken" : o.opponent;
     await db.insert(match).values({
       playerId,
       sessionId: o.sessionId ?? null,
@@ -74,8 +77,8 @@ describe.skipIf(!TEST_DB)("analytics read model (integration)", () => {
       characterKey: o.characterKey ?? "aki",
       characterName: o.characterKey === "juri" ? "Juri" : "A.K.I.",
       opponentName: SECRET_OPPONENT,
-      opponentCharacterKey: "ken",
-      opponentCharacter: "Ken",
+      opponentCharacterKey: opponent,
+      opponentCharacter: opponent === null ? null : opponent[0]!.toUpperCase() + opponent.slice(1),
       ratingBeforeSystem: "lp",
       ratingBeforeValue: 19_000,
     });
@@ -100,8 +103,14 @@ describe.skipIf(!TEST_DB)("analytics read model (integration)", () => {
     owner: { userId: string },
     range: "7d" | "30d" | "90d" | "all" = "90d",
     mode: "ranked" | "all" = "ranked",
+    character: string | null = null,
   ) {
-    const a = await getPlayerAnalyticsForUser(db, owner.userId, { range, mode, now: NOW });
+    const a = await getPlayerAnalyticsForUser(db, owner.userId, {
+      range,
+      mode,
+      character,
+      now: NOW,
+    });
     if (!a) throw new Error("no player for user");
     return a;
   }
@@ -182,7 +191,8 @@ describe.skipIf(!TEST_DB)("analytics read model (integration)", () => {
     await addMatch(me.id, { result: "win", at: daysAgo(1) });
     const payload = JSON.stringify(await analytics(me, "all", "all"));
     expect(payload).not.toContain(SECRET_OPPONENT);
-    expect(payload).not.toContain("Ken");
+    // The opponent CHARACTER ("Ken") is matchup data; the opponent's NAME never is.
+    expect(payload).toContain('"opponentName":"Ken"');
     expect(payload).not.toContain("19000");
   });
 
@@ -236,6 +246,131 @@ describe.skipIf(!TEST_DB)("analytics read model (integration)", () => {
       expect(
         await getPlayerAnalyticsForUser(db, userId, { range: "90d", mode: "ranked", now: NOW }),
       ).toBeNull();
+    });
+  });
+
+  describe("matchups (6.1)", () => {
+    const pairs = (a: Awaited<ReturnType<typeof analytics>>) =>
+      a.summary.matchups.matchups.map((m) => [
+        `${m.characterKey}>${m.opponentKey}`,
+        m.record.wins,
+        m.record.losses,
+      ]);
+
+    it("user A never receives B's matchups or B's characters as filter options", async () => {
+      await addMatch(me.id, { result: "win", at: daysAgo(1), opponent: "ken" });
+      await addMatch(other.id, {
+        result: "loss",
+        at: daysAgo(1),
+        opponent: "jp",
+        characterKey: "juri",
+      });
+      const a = await analytics(me);
+      expect(pairs(a)).toEqual([["aki>ken", 1, 0]]);
+      expect(a.characters.map((c) => c.characterKey)).toEqual(["aki"]);
+      // B's character as a filter is not A's own → falls back to all.
+      const smuggled = await analytics(me, "90d", "ranked", "juri");
+      expect(smuggled.character).toBeNull();
+      expect(smuggled.summary.overall.matches).toBe(1);
+    });
+
+    it("range and mode both narrow the matchups", async () => {
+      await addMatch(me.id, { result: "win", at: daysAgo(1), opponent: "ken" });
+      await addMatch(me.id, { result: "loss", at: daysAgo(20), opponent: "jp" });
+      await addMatch(me.id, { result: "loss", at: daysAgo(1), opponent: "guile", mode: "unknown" });
+      expect(pairs(await analytics(me, "7d"))).toEqual([["aki>ken", 1, 0]]);
+      expect(pairs(await analytics(me, "30d")).map((p) => p[0])).toEqual(["aki>jp", "aki>ken"]);
+      expect(
+        pairs(await analytics(me, "30d", "all"))
+          .map((p) => p[0])
+          .sort(),
+      ).toEqual(["aki>guile", "aki>jp", "aki>ken"]);
+    });
+
+    it("the own-character filter applies to ALL dataset analytics; the overview stays cross-character", async () => {
+      const s = await newSession(me.id);
+      await addMatch(me.id, { result: "win", at: daysAgo(3), sessionId: s.id, opponent: "ken" });
+      await addMatch(me.id, { result: "win", at: daysAgo(3), sessionId: s.id, opponent: "ken" });
+      await addMatch(me.id, {
+        result: "loss",
+        at: daysAgo(1),
+        characterKey: "juri",
+        opponent: "jp",
+      });
+      await addMatch(me.id, {
+        result: "draw",
+        at: daysAgo(1),
+        characterKey: "juri",
+        opponent: "jp",
+      });
+      const juri = await analytics(me, "90d", "ranked", "juri");
+      expect(juri.character).toBe("juri");
+      expect(juri.summary.overall).toMatchObject({ matches: 2, wins: 0, losses: 1, draws: 1 });
+      expect(juri.summary.recent[0]?.results).toEqual(["draw", "loss"]);
+      expect(juri.summary.sessions).toMatchObject({ sessions: 0, outsideSessions: 2 });
+      expect(pairs(juri)).toEqual([["juri>jp", 0, 1]]);
+      expect(juri.summary.matchups.opponents.map((o) => o.opponentKey)).toEqual(["jp"]);
+      expect(juri.summary.characters.map((c) => c.characterKey)).toEqual(["aki", "juri"]);
+      const all = await analytics(me);
+      expect(all.character).toBeNull();
+      expect(all.summary.overall.matches).toBe(4);
+      expect(all.summary.sessions).toMatchObject({ sessions: 1, sessionMatches: 2 });
+      expect(all.characters.map((c) => c.characterKey)).toEqual(["aki", "juri"]);
+    });
+
+    it("an unknown / malformed character filter falls back to all", async () => {
+      await addMatch(me.id, { result: "win", at: daysAgo(1) });
+      for (const c of ["ryu", "not-mine"]) {
+        const a = await analytics(me, "90d", "ranked", c);
+        expect(a.character).toBeNull();
+        expect(a.summary.overall.matches).toBe(1);
+      }
+    });
+
+    it("a character the player only used outside the range is selectable (empty dataset, no fallback)", async () => {
+      await addMatch(me.id, { result: "win", at: daysAgo(1) });
+      await addMatch(me.id, { result: "loss", at: daysAgo(200), characterKey: "juri" });
+      const a = await analytics(me, "7d", "ranked", "juri");
+      expect(a.character).toBe("juri");
+      expect(a.summary.overall.matches).toBe(0);
+      expect(a.characters.map((c) => c.characterName)).toEqual(["A.K.I.", "Juri"]);
+    });
+
+    it("late history (session_id NULL) is part of the matchups; no session is made up for it", async () => {
+      const s = await newSession(me.id);
+      await addMatch(me.id, { result: "win", at: daysAgo(3), sessionId: s.id, opponent: "ken" });
+      await addMatch(me.id, { result: "loss", at: daysAgo(2.5), sessionId: null, opponent: "ken" });
+      const a = await analytics(me);
+      expect(pairs(a)).toEqual([["aki>ken", 1, 1]]);
+      expect(a.summary.sessions).toMatchObject({
+        sessions: 1,
+        sessionMatches: 1,
+        outsideSessions: 1,
+      });
+    });
+
+    it("mirror matches are included", async () => {
+      await addMatch(me.id, { result: "win", at: daysAgo(1), opponent: "aki" });
+      expect(pairs(await analytics(me))).toEqual([["aki>aki", 1, 0]]);
+    });
+
+    it("rows without opponent character data are excluded from matchups and counted", async () => {
+      await addMatch(me.id, { result: "win", at: daysAgo(1), opponent: "ken" });
+      await addMatch(me.id, { result: "win", at: daysAgo(1), opponent: null });
+      await addMatch(me.id, { result: "loss", at: daysAgo(1), opponent: null });
+      const a = await analytics(me);
+      expect(a.summary.overall.matches).toBe(3);
+      expect(a.summary.matchups).toMatchObject({ considered: 1, unavailable: 2 });
+      expect(pairs(a)).toEqual([["aki>ken", 1, 0]]);
+    });
+
+    it("highlights need 10 decided matches (end to end)", async () => {
+      for (let i = 0; i < 9; i++) await addMatch(me.id, { result: "win", at: daysAgo(1) });
+      expect((await analytics(me)).summary.matchups.highlights.strongest).toBeNull();
+      await addMatch(me.id, { result: "loss", at: daysAgo(1) });
+      const h = (await analytics(me)).summary.matchups.highlights;
+      expect(h.strongest?.record).toMatchObject({ decided: 10, wins: 9 });
+      expect(JSON.stringify(h)).not.toContain(SECRET_OPPONENT);
     });
   });
 });
