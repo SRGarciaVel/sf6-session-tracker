@@ -288,19 +288,23 @@ skipped. The sweep is bounded and **rotates**:
 
 ### 6b. Analytics foundation (Phase 6.0b)
 
-`/dashboard/analytics?range=7d|30d|90d|all&mode=ranked|all` is descriptive analytics over the
+`/dashboard/analytics?range=7d|30d|90d|all&mode=ranked|all[&character=<own key>]` is descriptive
+analytics over the
 matches **SST has recorded**. That is not the player's complete SF6 history: SST only sees matches
 while it observes them. The page says so.
 
-- **Trusted inputs only:** `result`, `played_at`, own character, `mode` and `session_id`.
+- **Trusted inputs only:** `result`, `played_at`, own character, `mode`, `session_id` and (6.1)
+  the opponent CHARACTER.
   - Not used: ratings, opponent rank, opponent names. Per-match MR is unreliable and LP → MR
     session baselines are not segmented yet (Phase 6.3).
 - **Pipeline:**
   1. `server/analytics/service.ts` enforces **ownership itself**. Its only export is
-     `getPlayerAnalyticsForUser(db, userId, { range, mode })`, which resolves that user's own player;
-     the player-id loader is private. There is no API route, and the page reads only range and mode
-     from the URL. Then one narrow query (7 columns, played_at descending).
-  2. `domain/analytics/aggregate.ts` aggregates them (pure, unit tested).
+     `getPlayerAnalyticsForUser(db, userId, { range, mode, character })`, which resolves that user's
+     own player; the player-id loaders are private. There is no API route. The page reads only
+     `range`, `mode` and `character` from the URL. Then two queries, run sequentially:
+     - the player's own recorded characters (filter options): `GROUP BY character_key`;
+     - one narrow projection of 9 columns (no `opponent_name`), played_at descending.
+  2. `domain/analytics/{record,aggregate,matchups}.ts` aggregate them (pure, unit tested).
   3. The page only formats.
   - No analytics tables, views, jobs or migrations. Index: `match_player_played_idx (player_id,
 played_at)`, backward scan plus incremental sort; the mode is a filter on those rows.
@@ -319,8 +323,36 @@ played_at)`, backward scan plus incremental sort; the mode is a filter on those 
 - **Sample bands** (`domain/analytics/samples.ts`, decided matches): 0 none · 1–4 very small ·
   5–9 small · 10–29 developing · 30+ larger. They are communication bands, not statistical
   guarantees.
-- **Later phases:** matchups (6.1), session analytics (6.2), rating trends (6.3, blocked on
-  segmented baselines) and derived insights (6.4).
+- **Later phases:** session analytics (6.2), rating trends (6.3, blocked on segmented baselines)
+  and derived insights (6.4).
+
+#### Matchups (Phase 6.1)
+
+- **Own-character filter** (`?character=<key>`):
+  - the key is syntax-checked from the URL, then accepted only if it is one of the player's own
+    recorded characters (any range or mode); anything else falls back to all;
+  - range + mode + character define the **dataset**. Summary, recent form, sessions and
+    matchups all use it.
+  - The per-character table stays a cross-character overview (navigator) with the selection
+    marked, and the page says so.
+- **Matchup** = own character × opponent character, grouped by keys and named after the most
+  recent row. Mirror matches count. The opponent table aggregates across the dataset's own
+  characters: with a character selected it is that character's matchups, without one it is a
+  descriptive total.
+- **Missing opponent data:** `match.opponent_character_key` is nullable (the normalizer leaves it
+  null for an invalid Capcom id).
+  - Such rows are never assigned to a made-up character.
+  - They are excluded from matchup tables and reported as a count. They still count in the
+    overall record.
+- **Highlights:** "strongest / weakest **recorded** performance" are shown only for pairs with
+  ≥ `MATCHUP_CALLOUT_MIN_DECIDED` = **10 decided** matches.
+  - This is a product threshold, not significance.
+  - Ties: larger decided sample, then more matches, then key order.
+  - A single eligible pair is shown as strongest only.
+  - No pair at the threshold: a neutral message.
+  - The wording never claims a "counter", "advantage" or game balance.
+- **No matchup matrix:** with many characters a full own × opponent grid is mostly empty and
+  unreadable. The character filter plus the opponent table show the same pairs legibly.
 
 ## 7. Realtime
 
