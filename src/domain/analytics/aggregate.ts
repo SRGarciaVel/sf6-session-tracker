@@ -9,9 +9,11 @@
  * Win rate = wins / (wins + losses); draws are counted and shown but never in the denominator.
  * No decided match ⇒ `winRate: null` (shown as "—"), never 0 % and never NaN.
  */
-import { calculateWinRate } from "@/domain/session/engine";
-import type { CharacterKey, MatchMode, MatchResult } from "@/domain/sf6/types";
-import { sampleBand, type SampleBand } from "./samples";
+import { CHARACTER_KEY_PATTERN, type CharacterKey, type MatchResult } from "@/domain/sf6/types";
+import { computeMatchupSection, type MatchupSection } from "./matchups";
+import { computeRecord, newestFirst, type AnalyticsMatchRow, type MatchRecord } from "./record";
+
+export { computeRecord, type AnalyticsMatchRow, type MatchRecord } from "./record";
 
 /* ───────────────────────── Filters (URL state) ───────────────────────── */
 
@@ -52,10 +54,31 @@ export function parseAnalyticsMode(value: unknown): AnalyticsMode {
  * The ONLY values the analytics page reads from its URL: range and mode. Any other parameter
  * (e.g. a player or user id) is ignored — ownership comes from the session, never the request.
  */
+/**
+ * Own-character filter from the URL (`?character=aki`): SYNTAX only (a valid character key, or
+ * null = all characters). Whether the key is one of the player's own recorded characters is
+ * decided by the service; an unknown key falls back to all.
+ */
+export function parseAnalyticsCharacter(value: unknown): CharacterKey | null {
+  const v = Array.isArray(value) ? value[0] : value;
+  return typeof v === "string" && v.length <= 40 && CHARACTER_KEY_PATTERN.test(v) ? v : null;
+}
+
+export interface AnalyticsSearch {
+  range: AnalyticsRange;
+  mode: AnalyticsMode;
+  /** Own-character filter (syntax-checked); null = all own characters. */
+  character: CharacterKey | null;
+}
+
 export function parseAnalyticsSearchParams(
   params: Readonly<Record<string, string | string[] | undefined>>,
-): { range: AnalyticsRange; mode: AnalyticsMode } {
-  return { range: parseAnalyticsRange(params.range), mode: parseAnalyticsMode(params.mode) };
+): AnalyticsSearch {
+  return {
+    range: parseAnalyticsRange(params.range),
+    mode: parseAnalyticsMode(params.mode),
+    character: parseAnalyticsCharacter(params.character),
+  };
 }
 
 /**
@@ -68,30 +91,6 @@ export function rangeStart(range: AnalyticsRange, now: Date): Date | null {
 }
 
 /* ───────────────────────── Input / output ───────────────────────── */
-
-/** Narrow projection of one recorded match (server/analytics/service.ts selects exactly this). */
-export interface AnalyticsMatchRow {
-  externalMatchId: string;
-  playedAt: Date;
-  result: MatchResult;
-  mode: MatchMode;
-  characterKey: CharacterKey;
-  characterName: string;
-  /** Session the match was counted in; null = recorded history outside any session. */
-  sessionId: string | null;
-}
-
-export interface MatchRecord {
-  wins: number;
-  losses: number;
-  draws: number;
-  matches: number;
-  /** wins + losses: the win-rate denominator and the sample-band count. */
-  decided: number;
-  /** 0–100, or null when there is no decided match. */
-  winRate: number | null;
-  sample: SampleBand;
-}
 
 export const RECENT_WINDOWS = [5, 10, 20] as const;
 export type RecentWindow = (typeof RECENT_WINDOWS)[number];
@@ -130,10 +129,18 @@ export interface SessionCoverage {
 }
 
 export interface AnalyticsSummary {
+  /** Own-character filter applied to the dataset; null = all own characters. */
+  character: CharacterKey | null;
   overall: MatchRecord;
   recent: RecentForm[];
+  /**
+   * Cross-character OVERVIEW of the range/mode (NOT narrowed by the character filter, so it can
+   * act as a navigator); everything else in the summary uses the filtered dataset.
+   */
   characters: CharacterPerformance[];
   sessions: SessionCoverage;
+  /** Matchups of the (filtered) dataset — Phase 6.1. */
+  matchups: MatchupSection;
   /** Matches whose mode SST could not identify (only possible with mode "all"). */
   unknownModeMatches: number;
   firstPlayedAt: Date | null;
@@ -141,34 +148,6 @@ export interface AnalyticsSummary {
 }
 
 /* ───────────────────────── Aggregation ───────────────────────── */
-
-/** Newest first; ties broken by external id (same total order as the session engine). */
-function newestFirst(a: AnalyticsMatchRow, b: AnalyticsMatchRow): number {
-  const t = b.playedAt.getTime() - a.playedAt.getTime();
-  if (t !== 0) return t;
-  return a.externalMatchId < b.externalMatchId ? 1 : a.externalMatchId > b.externalMatchId ? -1 : 0;
-}
-
-export function computeRecord(results: readonly MatchResult[]): MatchRecord {
-  let wins = 0;
-  let losses = 0;
-  let draws = 0;
-  for (const r of results) {
-    if (r === "win") wins++;
-    else if (r === "loss") losses++;
-    else draws++;
-  }
-  const decided = wins + losses;
-  return {
-    wins,
-    losses,
-    draws,
-    matches: wins + losses + draws,
-    decided,
-    winRate: decided > 0 ? calculateWinRate(wins, losses) : null,
-    sample: sampleBand(decided),
-  };
-}
 
 export function computeRecentForm(
   newest: readonly AnalyticsMatchRow[],
@@ -229,14 +208,25 @@ export function computeSessionCoverage(rows: readonly AnalyticsMatchRow[]): Sess
   };
 }
 
-/** Everything the 6.0b page shows, from the range/filter's recorded matches (any order). */
-export function computeAnalytics(rows: readonly AnalyticsMatchRow[]): AnalyticsSummary {
-  const newest = [...rows].sort(newestFirst);
+/**
+ * Everything the page shows, from the range/mode's recorded matches (any order). With
+ * `character`, the DATASET is that own character's matches: summary, recent form, sessions and
+ * matchups all use it; only the character overview spans every own character.
+ */
+export function computeAnalytics(
+  rows: readonly AnalyticsMatchRow[],
+  options: { character?: CharacterKey | null } = {},
+): AnalyticsSummary {
+  const all = [...rows].sort(newestFirst);
+  const character = options.character ?? null;
+  const newest = character ? all.filter((m) => m.characterKey === character) : all;
   return {
+    character,
     overall: computeRecord(newest.map((m) => m.result)),
     recent: RECENT_WINDOWS.map((w) => computeRecentForm(newest, w)),
-    characters: computeCharacterPerformance(newest),
+    characters: computeCharacterPerformance(all),
     sessions: computeSessionCoverage(newest),
+    matchups: computeMatchupSection(newest),
     unknownModeMatches: newest.filter((m) => m.mode === "unknown").length,
     firstPlayedAt: newest[newest.length - 1]?.playedAt ?? null,
     lastPlayedAt: newest[0]?.playedAt ?? null,

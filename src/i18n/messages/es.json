@@ -1013,6 +1013,30 @@
     "coverage": "Estas analíticas se basan solo en las partidas que SST ha registrado y pueden no reflejar todo tu historial de Street Fighter 6.",
     "rangeNote": "Los periodos son ventanas móviles que terminan ahora (7, 30 o 90 días de 24 h).",
     "emptyTitle": "No hay partidas registradas en este periodo",
-    "emptyHint": "Prueba con un periodo más largo o con «Todas las registradas». Las partidas aparecen aquí cuando SST las registra con el Companion."
+    "emptyHint": "Prueba con un periodo más largo o con «Todas las registradas». Las partidas aparecen aquí cuando SST las registra con el Companion.",
+    "characterLabel": "Personaje",
+    "characterAll": "Todos mis personajes",
+    "characterApply": "Aplicar",
+    "characterContext": "Filtrado por personaje: {character}",
+    "characterClear": "Ver todos los personajes",
+    "charactersOverviewCaption": "Vista general de todos tus personajes en el periodo; el seleccionado está marcado. El resto de la página usa solo el personaje seleccionado.",
+    "selected": "Seleccionado",
+    "emptyCharacterTitle": "No hay partidas con {character} en este periodo",
+    "matchups": {
+      "title": "Enfrentamientos",
+      "note": "Los resultados por enfrentamiento dependen mucho del tamaño de la muestra. SST solo muestra tendencias de las partidas que ha registrado.",
+      "noOpponentData": "Estas partidas no tienen dato de personaje rival, así que no se pueden mostrar enfrentamientos.",
+      "opponentsTitle": "Rendimiento contra personajes",
+      "usingCharacter": "Usando {character}, ordenado por partidas.",
+      "acrossCharacters": "Suma de todos tus personajes registrados, ordenado por partidas. Elige un personaje para ver sus enfrentamientos concretos.",
+      "colOpponent": "Rival",
+      "colFrequency": "Frecuencia",
+      "unavailable": "{count, plural, one {# partida sin dato de personaje rival no se incluye} other {# partidas sin dato de personaje rival no se incluyen}} en los enfrentamientos.",
+      "highlightsNone": "Ningún enfrentamiento tiene todavía suficientes partidas decididas registradas para destacarlo (mínimo {min}).",
+      "strongest": "Mejor rendimiento registrado",
+      "weakest": "Menor rendimiento registrado",
+      "pair": "{own} vs {opponent}",
+      "sample": "{decided} decididas · {matches} registradas"
+    }
   }
 }

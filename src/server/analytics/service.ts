@@ -7,11 +7,12 @@
  * accepts a player id, so no caller can read another account's analytics by mistake; the
  * player-id loader below is module-private. There is no API route for analytics.
  *
- * Only analytics columns are selected: no opponent names, no ratings, no JSON.
+ * Only analytics columns are selected (9): no opponent NAMES, no ratings, no JSON. Matchups use the
+ * opponent CHARACTER only.
  * Cost: `match_player_played_idx (player_id, played_at)` serves the player + range filter and the
  * ordering; the optional mode predicate is a filter on those rows.
  */
-import { and, desc, eq, gte, type SQL } from "drizzle-orm";
+import { and, desc, eq, gte, sql, type SQL } from "drizzle-orm";
 import {
   computeAnalytics,
   rangeStart,
@@ -20,13 +21,25 @@ import {
   type AnalyticsRange,
   type AnalyticsSummary,
 } from "@/domain/analytics/aggregate";
+import type { CharacterKey } from "@/domain/sf6/types";
 import type { DbExecutor } from "@/server/db/client";
 import { match } from "@/server/db/schema";
 import { findPlayerByUserId } from "@/server/players/service";
 
+/** One of the player's own recorded characters (a value of the `character` filter). */
+export interface OwnCharacterOption {
+  characterKey: CharacterKey;
+  /** Display name of its most recent recorded match. */
+  characterName: string;
+}
+
 export interface PlayerAnalytics {
   range: AnalyticsRange;
   mode: AnalyticsMode;
+  /** Applied own-character filter (validated against `characters`); null = all. */
+  character: CharacterKey | null;
+  /** Own characters in the player's whole recorded history (filter options). */
+  characters: OwnCharacterOption[];
   /** Start of the rolling window (null = all recorded history). */
   from: Date | null;
   generatedAt: Date;
@@ -51,15 +64,41 @@ async function loadAnalyticsRows(
       characterKey: match.characterKey,
       characterName: match.characterName,
       sessionId: match.sessionId,
+      // Opponent CHARACTER only (Phase 6.1) — never opponent_name.
+      opponentCharacterKey: match.opponentCharacterKey,
+      opponentCharacterName: match.opponentCharacter,
     })
     .from(match)
     .where(and(...where))
     .orderBy(desc(match.playedAt), desc(match.externalMatchId));
 }
 
+/** The player's own recorded characters (any range / mode), latest display name, by name. */
+async function loadOwnCharacters(db: DbExecutor, playerId: string): Promise<OwnCharacterOption[]> {
+  const rows = await db
+    .select({
+      characterKey: match.characterKey,
+      // Name of the most recent match with that character.
+      characterName: sql<string>`(array_agg(${match.characterName} order by ${match.playedAt} desc))[1]`,
+    })
+    .from(match)
+    .where(eq(match.playerId, playerId))
+    .groupBy(match.characterKey);
+  return rows.sort(
+    (a, b) =>
+      a.characterName.localeCompare(b.characterName) ||
+      a.characterKey.localeCompare(b.characterKey),
+  );
+}
+
 export interface AnalyticsQuery {
   range: AnalyticsRange;
   mode: AnalyticsMode;
+  /**
+   * Own-character filter (syntax already checked by parseAnalyticsSearchParams). A key that is
+   * not one of the player's own recorded characters falls back to all (null).
+   */
+  character?: CharacterKey | null;
   /** Injectable clock (tests). */
   now?: Date;
 }
@@ -87,12 +126,19 @@ async function analyticsForOwnedPlayer(
 ): Promise<PlayerAnalytics> {
   const now = options.now ?? new Date();
   const from = rangeStart(options.range, now);
+  // Sequential on purpose: one connection per request (pool max 5).
+  const characters = await loadOwnCharacters(db, playerId);
+  const requested = options.character ?? null;
+  const character =
+    requested && characters.some((c) => c.characterKey === requested) ? requested : null;
   const rows = await loadAnalyticsRows(db, playerId, { from, mode: options.mode });
   return {
     range: options.range,
     mode: options.mode,
+    character,
+    characters,
     from,
     generatedAt: now,
-    summary: computeAnalytics(rows),
+    summary: computeAnalytics(rows, { character }),
   };
 }

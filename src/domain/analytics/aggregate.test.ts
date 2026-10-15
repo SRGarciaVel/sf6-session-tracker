@@ -29,6 +29,8 @@ function m(
     characterKey: "aki",
     characterName: "A.K.I.",
     sessionId: "s1",
+    opponentCharacterKey: "ken",
+    opponentCharacterName: "Ken",
     ...rest,
   };
 }
@@ -266,15 +268,24 @@ describe("25. no NaN / Infinity anywhere", () => {
 });
 
 describe("URL input", () => {
-  it("only range and mode are read from search params; ids are ignored", () => {
+  it("only range, mode and an own-character key are read from search params; ids are ignored", () => {
     const q = parseAnalyticsSearchParams({
       range: "7d",
       mode: "all",
+      character: "aki",
       playerId: "00000000-0000-0000-0000-000000000001",
       userId: "someone-else",
     });
-    expect(q).toEqual({ range: "7d", mode: "all" });
-    expect(Object.keys(q).sort()).toEqual(["mode", "range"]);
-    expect(parseAnalyticsSearchParams({})).toEqual({ range: "90d", mode: "ranked" });
+    expect(q).toEqual({ range: "7d", mode: "all", character: "aki" });
+    expect(Object.keys(q).sort()).toEqual(["character", "mode", "range"]);
+    expect(parseAnalyticsSearchParams({})).toEqual({
+      range: "90d",
+      mode: "ranked",
+      character: null,
+    });
+    for (const bad of ["A.K.I.", "aki ", "../x", "x".repeat(41), "", ["Ken"]]) {
+      expect(parseAnalyticsSearchParams({ character: bad }).character).toBeNull();
+    }
+    expect(parseAnalyticsSearchParams({ character: ["m-bison", "ken"] }).character).toBe("m-bison");
   });
 });

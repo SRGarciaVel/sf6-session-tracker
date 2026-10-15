@@ -11,17 +11,20 @@ import {
 } from "@/domain/analytics/aggregate";
 import type { SampleBand } from "@/domain/analytics/samples";
 import { formatDecimal, formatInteger, formatWinRate } from "@/domain/format";
-import type { MatchResult } from "@/domain/sf6/types";
+import { MATCHUP_CALLOUT_MIN_DECIDED, type MatchupPerformance } from "@/domain/analytics/matchups";
+import type { CharacterKey, MatchResult } from "@/domain/sf6/types";
 import type { PlayerAnalytics } from "@/server/analytics/service";
 
 /**
- * Analytics 6.0b page body. Presentation only: every number comes from domain/analytics; nothing
- * is computed here besides formatting. Filters are plain links (URL state, keyboard-native).
+ * Analytics page body (6.0b + 6.1 matchups). Presentation only: every number comes from
+ * domain/analytics; nothing is computed here besides formatting. Filters are URL state: links for
+ * range/mode, a plain GET form for the own character (keyboard-native, no client state).
  */
 export function AnalyticsView({ data }: { data: PlayerAnalytics }) {
   const t = useTranslations("Analytics");
-  const { summary, range, mode } = data;
+  const { summary, range, mode, character } = data;
   const empty = summary.overall.matches === 0;
+  const characterName = characterNameOf(data);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -38,7 +41,7 @@ export function AnalyticsView({ data }: { data: PlayerAnalytics }) {
             options={ANALYTICS_RANGES.map((r) => ({
               key: r,
               label: t(`ranges.${r}`),
-              href: analyticsHref(r, mode),
+              href: analyticsHref(r, mode, character),
               current: r === range,
             }))}
           />
@@ -47,12 +50,25 @@ export function AnalyticsView({ data }: { data: PlayerAnalytics }) {
             options={ANALYTICS_MODES.map((m) => ({
               key: m,
               label: t(`modes.${m}`),
-              href: analyticsHref(range, m),
+              href: analyticsHref(range, m, character),
               current: m === mode,
             }))}
           />
+          {data.characters.length > 0 && <CharacterFilter data={data} />}
         </div>
       </header>
+
+      {characterName && (
+        <p className="text-sm text-muted" data-testid="character-context">
+          {t("characterContext", { character: characterName })} ·{" "}
+          <Link
+            href={analyticsHref(range, mode, null)}
+            className="text-cyan underline underline-offset-4"
+          >
+            {t("characterClear")}
+          </Link>
+        </p>
+      )}
 
       <aside
         role="note"
@@ -66,15 +82,23 @@ export function AnalyticsView({ data }: { data: PlayerAnalytics }) {
       </aside>
 
       {empty ? (
-        <Panel>
-          <h2 className="font-display text-xl font-bold uppercase">{t("emptyTitle")}</h2>
-          <p className="mt-2 text-sm text-muted">{t("emptyHint")}</p>
-        </Panel>
+        <>
+          <Panel>
+            <h2 className="font-display text-xl font-bold uppercase">
+              {characterName
+                ? t("emptyCharacterTitle", { character: characterName })
+                : t("emptyTitle")}
+            </h2>
+            <p className="mt-2 text-sm text-muted">{t("emptyHint")}</p>
+          </Panel>
+          {characterName && summary.characters.length > 0 && <Characters data={data} />}
+        </>
       ) : (
         <>
           <Summary data={data} />
           <Recent forms={summary.recent} />
           <Characters data={data} />
+          <Matchups data={data} />
         </>
       )}
 
@@ -87,8 +111,55 @@ export function AnalyticsView({ data }: { data: PlayerAnalytics }) {
   );
 }
 
-export function analyticsHref(range: AnalyticsRange, mode: AnalyticsMode): string {
-  return `/dashboard/analytics?range=${range}&mode=${mode}`;
+export function analyticsHref(
+  range: AnalyticsRange,
+  mode: AnalyticsMode,
+  character: CharacterKey | null = null,
+): string {
+  const base = `/dashboard/analytics?range=${range}&mode=${mode}`;
+  return character ? `${base}&character=${encodeURIComponent(character)}` : base;
+}
+
+function characterNameOf(data: PlayerAnalytics): string | null {
+  if (!data.character) return null;
+  return (
+    data.characters.find((c) => c.characterKey === data.character)?.characterName ?? data.character
+  );
+}
+
+/** GET form: keeps range/mode, sends `character` ("" = all). Works without JavaScript. */
+function CharacterFilter({ data }: { data: PlayerAnalytics }) {
+  const t = useTranslations("Analytics");
+  return (
+    <form method="get" action="/dashboard/analytics" className="flex flex-col">
+      <label htmlFor="analytics-character" className="hud-label mb-1 text-xs">
+        {t("characterLabel")}
+      </label>
+      <input type="hidden" name="range" value={data.range} />
+      <input type="hidden" name="mode" value={data.mode} />
+      <div className="flex gap-1">
+        <select
+          id="analytics-character"
+          name="character"
+          defaultValue={data.character ?? ""}
+          className="h-8 border border-line-strong bg-surface-2 px-2 text-sm text-text focus:border-cyan"
+        >
+          <option value="">{t("characterAll")}</option>
+          {data.characters.map((c) => (
+            <option key={c.characterKey} value={c.characterKey}>
+              {c.characterName}
+            </option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          className="h-8 border border-line-strong px-3 font-display text-sm font-bold tracking-wide uppercase text-muted hover:border-cyan hover:text-text"
+        >
+          {t("characterApply")}
+        </button>
+      </div>
+    </form>
+  );
 }
 
 function FilterGroup({
@@ -135,7 +206,7 @@ function Summary({ data }: { data: PlayerAnalytics }) {
           {overall.draws > 0 && <span>{t("draws", { count: overall.draws })}</span>}
         </Stat>
         <Stat label={t("winRate")} value={<WinRate record={overall} />}>
-          <SampleTag band={overall.sample} />
+          <SampleTag band={overall.sample} wrap />
         </Stat>
         <Stat label={t("sessions")} value={formatInteger(sessions.sessions, locale)}>
           {sessions.averageMatchesPerSession !== null && (
@@ -217,12 +288,13 @@ function Sequence({ results }: { results: MatchResult[] }) {
 function Characters({ data }: { data: PlayerAnalytics }) {
   const t = useTranslations("Analytics");
   const locale = useLocale();
+  const filtered = data.character !== null;
   return (
     <Panel title={t("charactersTitle")} bodyClassName="px-0 pb-2 pt-3">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[36rem] text-sm">
           <caption className="px-5 pb-3 text-left text-xs text-muted">
-            {t("charactersCaption")}
+            {filtered ? t("charactersOverviewCaption") : t("charactersCaption")}
           </caption>
           <thead>
             <tr className="hud-label border-b border-line text-left text-xs">
@@ -248,10 +320,26 @@ function Characters({ data }: { data: PlayerAnalytics }) {
           </thead>
           <tbody className="divide-y divide-line">
             {data.summary.characters.map((c) => (
-              <tr key={c.characterKey} data-character={c.characterKey}>
+              <tr
+                key={c.characterKey}
+                data-character={c.characterKey}
+                data-selected={c.characterKey === data.character ? "true" : undefined}
+                className={cx(c.characterKey === data.character && "bg-cyan/8")}
+              >
                 <th scope="row" className="px-5 py-2.5 text-left font-display text-base font-bold">
                   <span className="flex flex-wrap items-center gap-2">
-                    {c.characterName}
+                    <Link
+                      href={analyticsHref(data.range, data.mode, c.characterKey)}
+                      aria-current={c.characterKey === data.character ? "true" : undefined}
+                      className="hover:text-cyan"
+                    >
+                      {c.characterName}
+                    </Link>
+                    {c.characterKey === data.character && (
+                      <Badge tone="info" className="whitespace-nowrap">
+                        {t("selected")}
+                      </Badge>
+                    )}
                     {c.mostPlayed && (
                       <Badge tone="accent" className="whitespace-nowrap">
                         {t("mostPlayed")}
@@ -292,6 +380,151 @@ function Characters({ data }: { data: PlayerAnalytics }) {
         </table>
       </div>
     </Panel>
+  );
+}
+
+function Matchups({ data }: { data: PlayerAnalytics }) {
+  const t = useTranslations("Analytics");
+  const locale = useLocale();
+  const { matchups } = data.summary;
+  const characterName = characterNameOf(data);
+  return (
+    <section aria-labelledby="analytics-matchups" className="space-y-4">
+      <h2 id="analytics-matchups" className="hud-heading">
+        {t("matchups.title")}
+      </h2>
+      <p className="text-sm text-muted">{t("matchups.note")}</p>
+
+      {matchups.considered === 0 ? (
+        <Panel>
+          <p className="text-sm text-muted">{t("matchups.noOpponentData")}</p>
+        </Panel>
+      ) : (
+        <>
+          <Highlights data={data} />
+          <Panel title={t("matchups.opponentsTitle")} bodyClassName="px-0 pb-2 pt-3">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[34rem] text-sm">
+                <caption className="px-5 pb-3 text-left text-xs text-muted">
+                  {characterName
+                    ? t("matchups.usingCharacter", { character: characterName })
+                    : t("matchups.acrossCharacters")}
+                </caption>
+                <thead>
+                  <tr className="hud-label border-b border-line text-left text-xs">
+                    <th scope="col" className="px-5 pb-2 font-semibold">
+                      {t("matchups.colOpponent")}
+                    </th>
+                    <th scope="col" className="px-3 pb-2 text-right font-semibold">
+                      {t("colMatches")}
+                    </th>
+                    <th scope="col" className="px-3 pb-2 font-semibold">
+                      {t("colRecord")}
+                    </th>
+                    <th scope="col" className="px-3 pb-2 text-right font-semibold">
+                      {t("colWinRate")}
+                    </th>
+                    <th scope="col" className="px-3 pb-2 text-right font-semibold">
+                      {t("matchups.colFrequency")}
+                    </th>
+                    <th scope="col" className="px-5 pb-2 font-semibold">
+                      {t("colSample")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {matchups.opponents.map((o) => (
+                    <tr key={o.opponentKey} data-opponent={o.opponentKey}>
+                      <th
+                        scope="row"
+                        className="px-5 py-2.5 text-left font-display text-base font-bold"
+                      >
+                        {o.opponentName}
+                      </th>
+                      <td className="px-3 py-2.5 text-right tabular">
+                        {formatInteger(o.record.matches, locale)}
+                      </td>
+                      <td className="px-3 py-2.5 whitespace-nowrap tabular">
+                        <RecordValue record={o.record} />
+                        {o.record.draws > 0 && (
+                          <span className="ml-2 text-xs text-muted">
+                            {t("draws", { count: o.record.draws })}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular">
+                        <WinRate record={o.record} />
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular">
+                        {formatWinRate(Math.round(o.share * 10) / 10, locale)}
+                      </td>
+                      <td className="px-5 py-2.5">
+                        <SampleTag band={o.record.sample} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+        </>
+      )}
+      {matchups.unavailable > 0 && (
+        <p className="text-xs text-muted">
+          {t("matchups.unavailable", { count: matchups.unavailable })}
+        </p>
+      )}
+    </section>
+  );
+}
+
+/** Strongest / weakest RECORDED performance — only pairs with enough decided matches. */
+function Highlights({ data }: { data: PlayerAnalytics }) {
+  const t = useTranslations("Analytics");
+  const { strongest, weakest } = data.summary.matchups.highlights;
+  if (!strongest) {
+    return (
+      <p
+        className="border-l-2 border-line-strong px-4 py-2 text-sm text-muted"
+        data-testid="matchup-highlights-none"
+      >
+        {t("matchups.highlightsNone", { min: MATCHUP_CALLOUT_MIN_DECIDED })}
+      </p>
+    );
+  }
+  return (
+    <div className="grid gap-4 sm:grid-cols-2" data-testid="matchup-highlights">
+      <HighlightCard kind="strongest" matchup={strongest} />
+      {weakest && <HighlightCard kind="weakest" matchup={weakest} />}
+    </div>
+  );
+}
+
+function HighlightCard({
+  kind,
+  matchup,
+}: {
+  kind: "strongest" | "weakest";
+  matchup: MatchupPerformance;
+}) {
+  const t = useTranslations("Analytics");
+  const locale = useLocale();
+  return (
+    <article className="hud-panel p-5" data-highlight={kind}>
+      <h3 className="hud-label">{t(`matchups.${kind}`)}</h3>
+      <p className="mt-2 font-display text-xl font-bold">
+        {t("matchups.pair", { own: matchup.characterName, opponent: matchup.opponentName })}
+      </p>
+      <p className="mt-1 font-display text-3xl font-bold tabular">
+        <WinRate record={matchup.record} />
+      </p>
+      <p className="mt-1 text-xs text-muted">
+        {t("matchups.sample", {
+          decided: formatInteger(matchup.record.decided, locale),
+          matches: formatInteger(matchup.record.matches, locale),
+        })}
+      </p>
+    </article>
   );
 }
 
@@ -340,13 +573,14 @@ function WinRate({ record }: { record: MatchRecord }) {
   return <span>{formatWinRate(Math.round(record.winRate * 10) / 10, locale)}</span>;
 }
 
-function SampleTag({ band }: { band: SampleBand }) {
+/** `wrap`: may break onto two lines (narrow summary columns); tables keep one line. */
+function SampleTag({ band, wrap = false }: { band: SampleBand; wrap?: boolean }) {
   const t = useTranslations("Analytics");
   return (
     <Badge
       tone="neutral"
       className={cx(
-        "whitespace-nowrap",
+        wrap ? "h-auto max-w-full py-0.5 leading-tight" : "whitespace-nowrap",
         (band === "none" || band === "very-small") && "opacity-70",
       )}
     >

@@ -1013,6 +1013,30 @@
     "coverage": "These analytics are based only on the matches SST has recorded and may not reflect your complete Street Fighter 6 match history.",
     "rangeNote": "Ranges are rolling windows ending now: the last 7, 30 or 90 days of 24 hours.",
     "emptyTitle": "No recorded matches in this range",
-    "emptyHint": "Try a longer range or “All recorded”. Matches appear here once SST records them through the Companion."
+    "emptyHint": "Try a longer range or “All recorded”. Matches appear here once SST records them through the Companion.",
+    "characterLabel": "Character",
+    "characterAll": "All my characters",
+    "characterApply": "Apply",
+    "characterContext": "Filtered by character: {character}",
+    "characterClear": "Show all characters",
+    "charactersOverviewCaption": "Overview of all your characters in this range; the selected one is marked. The rest of the page uses only the selected character.",
+    "selected": "Selected",
+    "emptyCharacterTitle": "No matches with {character} in this range",
+    "matchups": {
+      "title": "Matchups",
+      "note": "Matchup results depend heavily on sample size. SST only shows trends from the matches it has recorded.",
+      "noOpponentData": "These matches have no opponent character data, so matchups can't be shown.",
+      "opponentsTitle": "Performance against characters",
+      "usingCharacter": "Using {character}, sorted by matches.",
+      "acrossCharacters": "Combined across all your recorded characters, sorted by matches. Pick a character to see its specific matchups.",
+      "colOpponent": "Opponent",
+      "colFrequency": "Frequency",
+      "unavailable": "{count, plural, one {# match without opponent character data is} other {# matches without opponent character data are}} not included in matchups.",
+      "highlightsNone": "No matchup has enough recorded decided matches to highlight yet (minimum {min}).",
+      "strongest": "Strongest recorded performance",
+      "weakest": "Weakest recorded performance",
+      "pair": "{own} vs {opponent}",
+      "sample": "{decided} decided · {matches} recorded"
+    }
   }
 }
