@@ -24,6 +24,17 @@ import type {
   RatingSystem,
 } from "@/domain/sf6/types";
 
+/**
+ * companion_snapshot.profile JSON: the normalized profile plus, additively, the session-lifecycle
+ * metadata (domain/session/lifecycle.ts): `observation` (ObservationRun) and `presence`
+ * (PresenceTrack). Untrusted stored JSON: read only through parseObservationRun /
+ * parsePresenceTrack. Never part of the profile the provider serves.
+ */
+export type CompanionSnapshotProfile = NormalizedPlayerProfile & {
+  observation?: unknown;
+  presence?: unknown;
+};
+
 /** A NormalizedSF6Match as stored in JSON (playedAt serialized to ISO). */
 export type CompanionWireMatch = Omit<NormalizedSF6Match, "playedAt"> & { playedAt: string };
 
@@ -434,8 +445,8 @@ export const companionSnapshot = pgTable(
       .notNull()
       .references(() => authUser.id, { onDelete: "cascade" }),
     deviceId: uuid("device_id").references(() => companionDevice.id, { onDelete: "set null" }),
-    /** NormalizedPlayerProfile (JSON). */
-    profile: jsonb("profile").$type<NormalizedPlayerProfile>(),
+    /** NormalizedPlayerProfile (JSON) + additive `presence` track (CompanionSnapshotProfile). */
+    profile: jsonb("profile").$type<CompanionSnapshotProfile>(),
     profileObservedAt: tz("profile_observed_at"),
     /** Latest normalized matches (wire format: ISO playedAt), newest first, bounded. */
     matches: jsonb("matches").$type<CompanionWireMatch[]>().notNull().default([]),

@@ -15,6 +15,7 @@ import {
   type CharacterSnapshot,
   type SessionSummary,
 } from "@/domain/session/engine";
+import type { LifecycleDecision } from "@/domain/session/lifecycle";
 import { toLiveSessionState, type PlayerLiveState } from "@/domain/overlay/state";
 import { ratingPointOf } from "@/domain/sf6/rating";
 import type { NormalizedPlayerProfile, NormalizedSF6Match, RatingPoint } from "@/domain/sf6/types";
@@ -347,6 +348,32 @@ async function insertCharacterBaselines(
 }
 
 /**
+ * Why a session is being ended. Manual = the user (or startSession) asked. Idle = the lifecycle
+ * maintenance (server/sessions/lifecycle.ts) found it inactive; `recheck` re-evaluates the policy
+ * under the session lock AFTER the final batch was ingested, and can abort the close.
+ */
+export type EndSessionTrigger =
+  | { kind: "manual" }
+  | {
+      kind: "idle";
+      expectedSessionId: string;
+      recheck: (
+        tx: DbExecutor,
+        session: GameSessionRow,
+        player: Sf6PlayerRow,
+      ) => Promise<LifecycleDecision>;
+    };
+
+export type EndSessionOutcome =
+  | { status: "ended"; session: GameSessionRow; decision: LifecycleDecision | null }
+  /** Nothing to end: no active session (already ended by someone else). */
+  | { status: "no_active_session" }
+  /** Idle only: the active session is not the one that was evaluated (a new one started). */
+  | { status: "session_changed" }
+  /** Idle only: the recheck no longer allows closing (e.g. the final fetch brought a match). */
+  | { status: "aborted"; decision: LifecycleDecision };
+
+/**
  * End the player's active session. Idempotent.
  *
  * With a provider, a final fetch runs first so a match finished seconds before "End session"
@@ -358,6 +385,23 @@ export async function endSession(
   playerId: string,
   provider?: SF6DataProvider,
 ): Promise<GameSessionRow | null> {
+  const outcome = await endSessionInternal(db, playerId, provider, { kind: "manual" });
+  return outcome.status === "ended" ? outcome.session : null;
+}
+
+/**
+ * The ONE finalization path, shared by manual end and idle auto-end:
+ *   final fetch (allSettled: a provider failure never keeps a session open)
+ *   → lock the active session → [idle: same session?] → ingest the final batch → final profile
+ *   → [idle: re-check the policy, abort if no longer inactive]
+ *   → freeze per-character finals → status ended + ended_at → polling off → publish.
+ */
+export async function endSessionInternal(
+  db: Database,
+  playerId: string,
+  provider: SF6DataProvider | undefined,
+  trigger: EndSessionTrigger,
+): Promise<EndSessionOutcome> {
   let finalMatches: NormalizedSF6Match[] | null = null;
   let finalProfile: NormalizedPlayerProfile | null = null;
   if (provider) {
@@ -370,35 +414,45 @@ export async function endSession(
       if (matches.status === "fulfilled") finalMatches = matches.value;
       if (profile.status === "fulfilled") finalProfile = profile.value;
       if (matches.status === "rejected" || profile.status === "rejected") {
-        log.warn("session.end_final_fetch_failed", { playerId });
+        log.warn("session.end_final_fetch_failed", { playerId, trigger: trigger.kind });
       }
     }
   }
   const startGraceMs = getEnv().SESSION_START_GRACE_SECONDS * 1000;
 
-  const ended = await db.transaction(async (tx) => {
+  const outcome = await db.transaction(async (tx): Promise<EndSessionOutcome> => {
     const [active] = await tx
       .select()
       .from(gameSession)
       .where(and(eq(gameSession.playerId, playerId), eq(gameSession.status, "active")))
       .for("update");
-    if (!active) return null;
+    if (!active) return { status: "no_active_session" };
+    if (trigger.kind === "idle" && active.id !== trigger.expectedSessionId) {
+      return { status: "session_changed" };
+    }
     if (finalMatches) {
       await ingestMatchesInTx(tx, finalMatches, { playerId, sessionId: active.id, startGraceMs });
     }
     if (finalProfile) await updatePlayerProfile(tx, playerId, finalProfile);
     const player = await findPlayerById(tx, playerId);
-    if (!player) return null;
+    if (!player) return { status: "no_active_session" };
+    let decision: LifecycleDecision | null = null;
+    if (trigger.kind === "idle") {
+      decision = await trigger.recheck(tx, active, player);
+      if (decision.action !== "end") return { status: "aborted", decision };
+    }
     await endSessionInTx(tx, active, player);
     await tx
       .update(sf6Player)
       .set({ nextPollAt: null, leaseOwner: null, leaseExpiresAt: null })
       .where(eq(sf6Player.id, playerId));
     await publishEvent(tx, { kind: "player", playerId });
-    return active;
+    return { status: "ended", session: active, decision };
   });
-  if (ended) log.info("session.ended", { playerId, sessionId: ended.id });
-  return ended;
+  if (outcome.status === "ended") {
+    log.info("session.ended", { playerId, sessionId: outcome.session.id, trigger: trigger.kind });
+  }
+  return outcome;
 }
 
 /* ───────────────────────── Read models ───────────────────────── */

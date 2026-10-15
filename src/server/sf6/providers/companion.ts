@@ -10,6 +10,7 @@
  * the account in `options.scope` is ever read (SEC-001 — no cross-account injection/squatting).
  */
 import { and, eq } from "drizzle-orm";
+import { toWireProfile } from "@sf6/capcom-core";
 import type { NormalizedPlayerProfile, NormalizedSF6Match } from "@/domain/sf6/types";
 import type { DbExecutor } from "@/server/db/client";
 import { companionSnapshot } from "@/server/db/schema";
@@ -59,7 +60,8 @@ export class CompanionSF6DataProvider implements SF6DataProvider {
     const row = await this.snapshot(cfnUserId, options);
     this.assertFresh(row.profileObservedAt, "profile");
     if (!row.profile) throw new SF6ProviderError("unavailable", "Companion has not sent a profile");
-    return row.profile;
+    // Whitelisted copy: the stored JSON also carries the presence track, which is not profile.
+    return toWireProfile(row.profile);
   }
 
   async getRecentMatches(

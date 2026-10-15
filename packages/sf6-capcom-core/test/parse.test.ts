@@ -338,7 +338,13 @@ describe("Capcom battlelog → NormalizedSF6Match", () => {
     const page = parseCapcomBattlelogPayload({
       pageProps: { sid: 1, current_page: 1, total_page: 10, replay_list: [] },
     });
-    expect(page).toEqual({ cfnUserId: "1", currentPage: 1, totalPage: 10, replays: [] });
+    expect(page).toEqual({
+      cfnUserId: "1",
+      currentPage: 1,
+      totalPage: 10,
+      replays: [],
+      onlineStatus: null,
+    });
     expect(() => parseCapcomBattlelogPayload({ pageProps: { sid: 1 } })).toThrowError(
       /battlelog payload/,
     );

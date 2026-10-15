@@ -150,7 +150,8 @@ SST (autoritativo)
 
 ## 7. Datos enviados al tracker
 
-`POST /api/companion/sync`: `{ cfnUserId, observedAt, profile, matches, gapSuspected, client }`.
+`POST /api/companion/sync`:
+`{ cfnUserId, observedAt, profile, matches, gapSuspected, presence?, client }`.
 
 - **Perfil:** CFN, nombre de luchador, personaje favorito y, por personaje: `characterKey`,
   nombre, rango, `ratingSystem`, LP, MR.
@@ -158,6 +159,33 @@ SST (autoritativo)
   - `replay_id`, hora (`uploaded_at`), modo, resultado, personaje propio, control;
   - rival: **solo** nombre, personaje y rango si se conoce;
   - `ratingBefore` (LP).
+- **Presencia** (opcional, aditiva): `{ onlineStatus }`.
+  - Es el código numérico `fighter_banner_info.online_status_info.online_status` de las páginas
+    que el ciclo **ya descargó**: battlelog página 1 o, si no hubo battlelog, `play.json`. **No hay
+    peticiones extra.**
+  - `null` = las páginas no traían el campo. Nunca se envía el nombre localizado.
+  - El servidor la acepta con **su** hora y la pliega en `companion_snapshot.profile.presence`
+    (JSONB, sin migración).
+  - Solo la usa el cierre automático de sesiones (docs/architecture.md §6a).
+- **Evidencia de battlelog** (opcional, aditiva): `battlelogObserved: boolean`.
+  - Es `true` si el ciclo descargó el battlelog con éxito: entonces `matches`, aunque sea `[]`, es
+    una **observación de partidas**.
+  - Es `false` en un ciclo que solo descargó `play.json`, que no prueba nada sobre partidas
+    nuevas (`matches: []` es ambiguo).
+  - Solo con `true` el servidor avanza `profile.observation`, la racha continua de observación de
+    partidas que exige el cierre por inactividad.
+    - Un hueco de más de 5 min la reinicia.
+    - Al volver tras horas sin Companion, los 45 min empiezan a contar de nuevo.
+  - La presencia se pliega aparte y puede venir de cualquiera de las dos páginas.
+- **Compatibilidad:**
+  - una Companion antigua, sin `presence` ni `battlelogObserved`, sigue sincronizando, ingiriendo
+    y operando sesiones con normalidad;
+  - pero **no prueba observación de partidas**: sin racha, el cierre normal de 45 min (y el de
+    Offline) no se aplica a esa Companion, y solo actúa el tope de 12 h. Al actualizarla, la
+    política completa se activa sola;
+  - **orden de despliegue:** como el esquema raíz es estricto, primero el servidor que acepta los
+    campos opcionales y después la nueva Companion. La versión no se incrementa ni se publica
+    automáticamente.
 - **Cliente:** versión y transporte.
 
 ## 8. Datos que NUNCA se envían

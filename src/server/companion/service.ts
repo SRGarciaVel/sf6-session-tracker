@@ -16,9 +16,17 @@ import {
   PAIRING_CODE_ALPHABET,
   PAIRING_CODE_LENGTH,
   isValidExtensionVersion,
+  presenceFromOnlineStatus,
+  toWireProfile,
   type CompanionState,
   type CompanionSyncParsed,
 } from "@sf6/capcom-core";
+import {
+  advanceObservationRun,
+  advancePresenceTrack,
+  parseObservationRun,
+  parsePresenceTrack,
+} from "@/domain/session/lifecycle";
 import type { Database, DbExecutor } from "@/server/db/client";
 import {
   companionDevice,
@@ -26,6 +34,7 @@ import {
   companionSnapshot,
   match,
   type CompanionDeviceRow,
+  type CompanionSnapshotProfile,
   type CompanionWireMatch,
 } from "@/server/db/schema";
 import { getEnv } from "@/server/env";
@@ -251,6 +260,46 @@ const toWire = (m: CompanionSyncParsed["matches"][number]): CompanionWireMatch =
   playedAt: m.playedAt.toISOString(),
 });
 
+/**
+ * The profile JSON to store: the new profile (or the stored one) plus the lifecycle metadata
+ * folded with this sync (domain/session/lifecycle.ts), both at SERVER acceptance time:
+ *   observation  continuous run of MATCH observations: advanced only when the Companion says it
+ *                fetched the battlelog this cycle (`battlelogObserved: true`). A profile-only
+ *                cycle, or an older Companion that cannot say (field absent), proves nothing
+ *                about new matches and leaves the run untouched; a gap > 5 min restarts it.
+ *   presence     Buckler presence track (from play.json or battlelog.json); a sync without
+ *                `presence` (older Companion) leaves it as it was, so it ages into "stale".
+ * Without any profile there is nowhere to keep them: not stored (auto-end then has no proven
+ * observation and only the 12 h ceiling applies).
+ */
+function snapshotProfile(
+  existing: CompanionSnapshotProfile | null,
+  payload: CompanionSyncParsed,
+  now: Date,
+): CompanionSnapshotProfile | null {
+  const maxGapMs = getEnv().COMPANION_SNAPSHOT_MAX_AGE_MS;
+  const base = payload.profile ?? (existing ? toWireProfile(existing) : null);
+  if (!base) return null;
+  const storedRun = parseObservationRun(existing?.observation);
+  const observation =
+    payload.battlelogObserved === true
+      ? advanceObservationRun(storedRun, now, maxGapMs)
+      : storedRun;
+  const previous = parsePresenceTrack(existing?.presence);
+  const presence = payload.presence
+    ? advancePresenceTrack(
+        previous,
+        { code: payload.presence.onlineStatus, observedAt: now },
+        maxGapMs,
+      )
+    : previous;
+  return {
+    ...base,
+    ...(observation ? { observation } : {}),
+    ...(presence ? { presence } : {}),
+  };
+}
+
 export async function applyCompanionSync(
   db: Database,
   device: CompanionDeviceRow,
@@ -285,40 +334,46 @@ export async function applyCompanionSync(
   /*
    * Snapshot of THIS account only (SEC-001). Companion data is client-asserted: it must never
    * be readable by, or block, another account that tracks the same CFN.
+   * Read-modify-write under the row lock: the presence track is a fold over observations, so two
+   * concurrent syncs must not both build on the same previous state.
    */
-  const [existing] = await db
-    .select()
-    .from(companionSnapshot)
-    .where(
-      and(
-        eq(companionSnapshot.userId, device.userId),
-        eq(companionSnapshot.cfnUserId, payload.cfnUserId),
-      ),
-    )
-    .limit(1);
-  const merged = new Map<string, CompanionWireMatch>();
-  for (const m of [...payload.matches.map(toWire), ...(existing?.matches ?? [])]) {
-    if (!merged.has(m.externalMatchId)) merged.set(m.externalMatchId, m);
-  }
-  const matches = [...merged.values()]
-    .sort((a, b) => Date.parse(b.playedAt) - Date.parse(a.playedAt))
-    .slice(0, SNAPSHOT_MATCHES);
-  const values = {
-    cfnUserId: payload.cfnUserId,
-    userId: device.userId,
-    deviceId: device.id,
-    matches,
-    matchesObservedAt: now,
-    updatedAt: now,
-    ...(payload.profile ? { profile: payload.profile, profileObservedAt: now } : {}),
-  };
-  await db
-    .insert(companionSnapshot)
-    .values(values)
-    .onConflictDoUpdate({
-      target: [companionSnapshot.userId, companionSnapshot.cfnUserId],
-      set: values,
-    });
+  await db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select()
+      .from(companionSnapshot)
+      .where(
+        and(
+          eq(companionSnapshot.userId, device.userId),
+          eq(companionSnapshot.cfnUserId, payload.cfnUserId),
+        ),
+      )
+      .for("update");
+    const merged = new Map<string, CompanionWireMatch>();
+    for (const m of [...payload.matches.map(toWire), ...(existing?.matches ?? [])]) {
+      if (!merged.has(m.externalMatchId)) merged.set(m.externalMatchId, m);
+    }
+    const matches = [...merged.values()]
+      .sort((a, b) => Date.parse(b.playedAt) - Date.parse(a.playedAt))
+      .slice(0, SNAPSHOT_MATCHES);
+    const profile = snapshotProfile(existing?.profile ?? null, payload, now);
+    const values = {
+      cfnUserId: payload.cfnUserId,
+      userId: device.userId,
+      deviceId: device.id,
+      matches,
+      matchesObservedAt: now,
+      updatedAt: now,
+      ...(profile ? { profile } : {}),
+      ...(payload.profile ? { profileObservedAt: now } : {}),
+    };
+    await tx
+      .insert(companionSnapshot)
+      .values(values)
+      .onConflictDoUpdate({
+        target: [companionSnapshot.userId, companionSnapshot.cfnUserId],
+        set: values,
+      });
+  });
 
   /* Ingestion through the normal pipeline (only in companion mode, only for the owner's player). */
   let inserted = 0;
@@ -345,6 +400,8 @@ export async function applyCompanionSync(
     duplicates,
     profile: payload.profile !== null,
     gapSuspected: payload.gapSuspected,
+    presence: payload.presence ? presenceFromOnlineStatus(payload.presence.onlineStatus) : "absent",
+    battlelogObserved: payload.battlelogObserved ?? "absent",
     transport: payload.client.transport,
     version: isValidExtensionVersion(version) ? version : "invalid",
   });

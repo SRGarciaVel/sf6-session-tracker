@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   pollPlayer: vi.fn(),
   releaseAllLeases: vi.fn(),
   pruneStaleConnections: vi.fn(),
+  autoEndIdleSessions: vi.fn(),
 }));
 vi.mock("./tracker", () => ({
   claimDuePlayers: mocks.claimDuePlayers,
@@ -17,6 +18,10 @@ vi.mock("./tracker", () => ({
 }));
 vi.mock("@/server/overlays/service", () => ({
   pruneStaleConnections: mocks.pruneStaleConnections,
+}));
+vi.mock("@/server/sessions/lifecycle", () => ({
+  autoEndIdleSessions: mocks.autoEndIdleSessions,
+  observationSourceFor: (p: string) => (p === "companion" ? "companion" : "provider"),
 }));
 
 const { TrackerRuntime } = await import("./worker-runtime");
@@ -61,6 +66,13 @@ describe("TrackerRuntime", () => {
     mocks.pollPlayer.mockResolvedValue({ status: "ok" });
     mocks.releaseAllLeases.mockResolvedValue(undefined);
     mocks.pruneStaleConnections.mockResolvedValue(0);
+    mocks.autoEndIdleSessions.mockResolvedValue({
+      evaluated: 0,
+      ended: [],
+      aborted: 0,
+      failed: 0,
+      cursor: null,
+    });
   });
   afterEach(() => {
     vi.clearAllMocks();
@@ -183,5 +195,71 @@ describe("TrackerRuntime", () => {
     await rt.tick();
     await vi.waitFor(() => expect(rt.inFlightCount).toBe(0));
     await rt.stop();
+  });
+
+  it("maintenance ends idle sessions on its cadence (first run immediately, then every interval)", async () => {
+    const rt = makeRuntime({ provider: "companion" });
+    await rt.maintenance();
+    expect(mocks.autoEndIdleSessions).toHaveBeenCalledTimes(1);
+    expect(mocks.autoEndIdleSessions.mock.calls[0]?.[2]).toMatchObject({
+      source: "companion",
+      policy: { idleTimeoutMs: 45 * 60_000, absoluteCeilingMs: 12 * 3_600_000 },
+    });
+    await rt.maintenance(); // within the 60 s cadence: no second lifecycle pass
+    expect(mocks.autoEndIdleSessions).toHaveBeenCalledTimes(1);
+    const direct = makeRuntime({ provider: "mock" });
+    await direct.maintenance();
+    expect(mocks.autoEndIdleSessions.mock.calls[1]?.[2]).toMatchObject({ source: "provider" });
+  });
+
+  it("a failing lifecycle pass is contained: maintenance resolves, polling is unaffected", async () => {
+    mocks.autoEndIdleSessions.mockRejectedValueOnce(new Error("db hiccup"));
+    const rt = makeRuntime();
+    await expect(rt.maintenance()).resolves.toBeUndefined();
+    expect(mocks.pruneStaleConnections).toHaveBeenCalledTimes(1);
+  });
+
+  it("provider mode: successful polls feed the in-memory observation run used by maintenance", async () => {
+    mocks.claimDuePlayers.mockResolvedValueOnce([player("a"), player("b")]);
+    mocks.pollPlayer.mockImplementation(
+      async (_db: unknown, _p: unknown, claimed: ClaimedPlayer) =>
+        claimed.id === "a" ? { status: "ok" } : { status: "error", code: "unavailable" },
+    );
+    const rt = makeRuntime();
+    await rt.tick();
+    await vi.waitFor(() => expect(rt.inFlightCount).toBe(0));
+    await rt.maintenance();
+    const lookup = mocks.autoEndIdleSessions.mock.calls[0]?.[2]?.observationFor as (
+      id: string,
+    ) => { since: string; observations: number } | null;
+    expect(lookup("a")).toMatchObject({ observations: 1 });
+    expect(lookup("b")).toBeNull(); // a failed read is not an observation
+    // A gap longer than the continuity window restarts the run.
+    rt.recordObservation("c", new Date(Date.now() - 20 * 60_000));
+    rt.recordObservation("c", new Date());
+    expect(lookup("c")).toMatchObject({ observations: 1 });
+    await rt.stop();
+  });
+
+  it("the idle sweep resumes from the previous run's cursor (rotation, no starvation)", async () => {
+    const cursor = { activityKey: "2026-10-14 18:00:00+00", sessionId: "s-25" };
+    mocks.autoEndIdleSessions
+      .mockResolvedValueOnce({ evaluated: 100, ended: [], aborted: 0, failed: 0, cursor })
+      .mockResolvedValueOnce({ evaluated: 3, ended: [], aborted: 0, failed: 0, cursor: null });
+    const rt = new TrackerRuntime({
+      db: {} as Database,
+      provider: { name: "fake" } as SF6DataProvider,
+      env: { WORKER_CONCURRENCY: 1, WORKER_TICK_MS: 5, SF6_PROVIDER: "mock" },
+      config,
+      logger,
+      mode: "embedded",
+      workerId: "cursor-worker",
+      maintenanceEveryMs: 0,
+    });
+    await rt.maintenance();
+    await rt.maintenance();
+    await rt.maintenance();
+    const cursors = mocks.autoEndIdleSessions.mock.calls.map((c) => c[2]?.cursor);
+    expect(cursors).toEqual([null, cursor, null]);
   });
 });

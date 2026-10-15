@@ -21,6 +21,8 @@ export interface MatchesSinceResult {
    */
   gapSuspected: boolean;
   gapReason: "page_limit" | "history_exhausted" | null;
+  /** Buckler presence code of page 1 (the freshest page fetched); null = absent. */
+  onlineStatus: number | null;
   warnings: string[];
 }
 
@@ -40,6 +42,7 @@ export async function collectMatchesSince(
   const collected = new Set<string>();
   const warnings: string[] = [];
   let totalPage: number | null = null;
+  let onlineStatus: number | null = null;
   let pagesFetched = 0;
   let reachedKnown = false;
   let stoppedByLimit = false;
@@ -52,6 +55,7 @@ export async function collectMatchesSince(
     }
     const data = await fetchPage(page);
     pagesFetched++;
+    if (page === 1) onlineStatus = data.onlineStatus;
 
     if (data.currentPage !== page) {
       warnings.push(`asked for page ${page} but Capcom answered current_page ${data.currentPage}`);
@@ -92,6 +96,7 @@ export async function collectMatchesSince(
     reachedKnown,
     gapSuspected,
     gapReason: gapSuspected ? (stoppedByLimit ? "page_limit" : "history_exhausted") : null,
+    onlineStatus,
     warnings,
   };
 }

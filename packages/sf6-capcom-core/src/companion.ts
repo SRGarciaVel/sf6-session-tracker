@@ -7,6 +7,7 @@
  */
 import { z } from "zod";
 import { cfnUserIdSchema, normalizedMatchSchema, normalizedProfileSchema } from "./contract";
+import { MAX_ONLINE_STATUS_CODE } from "./presence";
 import type { NormalizedPlayerProfile, NormalizedSF6Match } from "./types";
 
 /**
@@ -107,6 +108,23 @@ export const companionSyncRequestSchema = z.strictObject({
   profile: normalizedProfileSchema.nullable(),
   matches: z.array(companionMatchWireSchema).max(COMPANION_LIMITS.maxMatchesPerSync),
   gapSuspected: z.boolean(),
+  /**
+   * Buckler presence seen in the pages fetched for THIS sync (raw `online_status`, see
+   * presence.ts); `onlineStatus: null` = pages fetched but the field was absent. Optional and
+   * additive: companions older than presence support omit it entirely.
+   */
+  presence: z
+    .strictObject({
+      onlineStatus: z.number().int().min(0).max(MAX_ONLINE_STATUS_CODE).nullable(),
+    })
+    .nullable()
+    .optional(),
+  /**
+   * true = this cycle fetched the battlelog successfully, so `matches` (possibly []) is a real
+   * MATCH observation; false = profile-only cycle (play.json), which proves nothing about new
+   * matches. Optional and additive: absent (older Companions) = no proven match observation.
+   */
+  battlelogObserved: z.boolean().optional(),
   client: z.strictObject({
     version: z.string().max(20),
     transport: z.enum(COMPANION_TRANSPORTS),

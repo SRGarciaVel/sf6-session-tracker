@@ -176,6 +176,26 @@ proyecto. Se actualizan en una sola constante (`MASTER_MR_THRESHOLDS`).
 - **`phase` queda en `null`.** No está demostrado que la temporada de Buckler equivalga a la
   fase de MR.
 
+### Presencia (`fighter_banner_info.online_status_info`)
+
+- Viene en **todas** las páginas de perfil (`play.json` y `battlelog.json`).
+- Se extrae con `onlineStatusOfBanner`, de forma tolerante: si falta o está mal formada da `null`
+  y nunca rompe el parseo.
+- Se mapea con `presenceFromOnlineStatus` (`packages/sf6-capcom-core/src/presence.ts`).
+- La identidad es el **código numérico**. `online_status_name` es HTML localizado y no se usa.
+
+| `online_status` | Presencia      | Evidencia                                                        |
+| --------------- | -------------- | ---------------------------------------------------------------- |
+| 1               | `offline`      | Captura HAR (2026-10-03) y verificación contra el perfil         |
+| 2               | `menu`         | Verificado por el propietario contra el estado visible           |
+| 8               | `practice`     | Verificado (Training / Practice)                                 |
+| 11              | `ranked-match` | Verificado; no existe un estado separado de cola de Ranked       |
+| otro            | `unknown`      | Sin evidencia: Battle Hub, Custom Room, Casual, Fighting Ground… |
+
+- El JS de Capcom muestra datos de Battle Hub para 4, 5 y 6. **No** se toma como mapeo.
+- `last_play_at` **no** se usa: Menu lo actualizó, pero Practice y Ranked no. Su semántica no está
+  probada.
+
 ### Partidas (`replay_list[]`)
 
 | Campo del tracker   | Fuente                                                                       | Evidencia                                                                                                                          |

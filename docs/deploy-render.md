@@ -56,6 +56,21 @@ What to expect:
   service fits Render Free's monthly 750 h.
 - **Restarts and deploys:** leases not released before Next exits expire after
   `TRACKER_LEASE_MS` (60 s), then tracking continues.
+- **Forgotten sessions end by themselves** (docs/architecture.md §6a):
+  - after 45 min of observed inactivity (Practice / Ranked Match presence holds it);
+  - after 15 min of confirmed Offline;
+  - after 12 h at most.
+
+  The check runs in the tracker's maintenance step (every 60 s and right after a wake-up or
+  restart), so a session that expired while the service slept ends on wake-up. Then polling
+  stops and the Companion drops back to its 120 s cadence.
+
+- **Deploy order:** deploy the server (which accepts the optional `presence` and
+  `battlelogObserved` fields) before releasing a Companion version that sends them. The sync
+  schema is strict.
+  - Older Companions keep working against the new server.
+  - But an older Companion cannot prove battlelog observation, so only the 12 h ceiling ends its
+    sessions until it is updated.
 
 ## B. Production scaling: split web + worker
 

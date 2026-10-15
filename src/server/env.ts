@@ -66,6 +66,13 @@ const envSchema = z.object({
    */
   TRACKER_RUNTIME_MODE: z.enum(["standalone", "embedded"]).default("standalone"),
   SESSION_START_GRACE_SECONDS: int(90),
+  /**
+   * Session idle auto-end (domain/session/lifecycle.ts). SST-defined policy, NOT user settings:
+   * overrides exist only for tests and operations; defaults are the domain constants.
+   */
+  SESSION_IDLE_TIMEOUT_MINUTES: int(45, 1),
+  SESSION_OFFLINE_CLOSE_MINUTES: int(15, 1),
+  SESSION_ABSOLUTE_CEILING_HOURS: int(12, 1),
 
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 
