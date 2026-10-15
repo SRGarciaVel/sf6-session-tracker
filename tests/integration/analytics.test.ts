@@ -84,6 +84,19 @@ describe.skipIf(!TEST_DB)("analytics read model (integration)", () => {
     });
   }
 
+  /** addMatch, returning the new row's id (for membership assertions). */
+  async function addMatchReturningId(
+    playerId: string,
+    o: { result: MatchResult; at: Date; sessionId: string | null },
+  ): Promise<string> {
+    await addMatch(playerId, o);
+    const [row] = await db
+      .select({ id: match.id })
+      .from(match)
+      .where(sql`${match.playerId} = ${playerId} and ${match.externalMatchId} = ${`a-${seq}`}`);
+    return row!.id;
+  }
+
   beforeAll(async () => {
     await db.execute(sql`truncate auth_user, mock_cfn_player restart identity cascade`);
   });
@@ -371,6 +384,179 @@ describe.skipIf(!TEST_DB)("analytics read model (integration)", () => {
       const h = (await analytics(me)).summary.matchups.highlights;
       expect(h.strongest?.record).toMatchObject({ decided: 10, wins: 9 });
       expect(JSON.stringify(h)).not.toContain(SECRET_OPPONENT);
+    });
+  });
+
+  describe("session performance (6.2)", () => {
+    const minutesAfter = (base: Date, m: number) => new Date(base.getTime() + m * 60_000);
+    const base = daysAgo(1);
+    const sp = (a: Awaited<ReturnType<typeof analytics>>) => a.summary.sessionPerformance;
+
+    it("ownership: A never receives B's session analytics", async () => {
+      const mine = await newSession(me.id);
+      const theirs = await newSession(other.id);
+      await addMatch(me.id, { result: "win", at: base, sessionId: mine.id });
+      for (let i = 0; i < 5; i++) {
+        await addMatch(other.id, {
+          result: "loss",
+          at: minutesAfter(base, i * 4),
+          sessionId: theirs.id,
+        });
+      }
+      expect(sp(await analytics(me))).toMatchObject({ segments: 1, sessions: 1, matches: 1 });
+      expect(sp(await analytics(me)).streaks.longestLoss).toBe(0);
+    });
+
+    it("range, mode and character all narrow the session dataset", async () => {
+      const s = await newSession(me.id);
+      await addMatch(me.id, { result: "win", at: base, sessionId: s.id });
+      await addMatch(me.id, {
+        result: "win",
+        at: minutesAfter(base, 4),
+        sessionId: s.id,
+        mode: "unknown",
+      });
+      await addMatch(me.id, {
+        result: "loss",
+        at: minutesAfter(base, 8),
+        sessionId: s.id,
+        characterKey: "juri",
+      });
+      const old = await newSession(me.id);
+      await addMatch(me.id, { result: "loss", at: daysAgo(20), sessionId: old.id });
+      expect(sp(await analytics(me, "7d"))).toMatchObject({ sessions: 1, matches: 2 });
+      expect(sp(await analytics(me, "30d"))).toMatchObject({ sessions: 2, matches: 3 });
+      expect(sp(await analytics(me, "7d", "all"))).toMatchObject({ matches: 3 });
+      expect(sp(await analytics(me, "7d", "all", "juri"))).toMatchObject({
+        matches: 1,
+        streaks: { longestLoss: 1, longestWin: 0 },
+      });
+    });
+
+    it("session_id NULL is excluded from session analytics but counts globally", async () => {
+      const s = await newSession(me.id);
+      await addMatch(me.id, { result: "loss", at: base, sessionId: s.id });
+      await addMatch(me.id, { result: "win", at: minutesAfter(base, 4), sessionId: null });
+      const a = await analytics(me);
+      expect(a.summary.overall.matches).toBe(2);
+      expect(sp(a)).toMatchObject({ matches: 1, recovery: { lossesWithNextMatch: 0, rate: null } });
+    });
+
+    it("two real sessions never combine, even minutes apart", async () => {
+      const s1 = await newSession(me.id);
+      const s2 = await newSession(me.id);
+      await addMatch(me.id, { result: "win", at: base, sessionId: s1.id });
+      await addMatch(me.id, { result: "win", at: minutesAfter(base, 3), sessionId: s2.id });
+      expect(sp(await analytics(me))).toMatchObject({
+        segments: 2,
+        sessions: 2,
+        streaks: { longestWin: 1 },
+      });
+    });
+
+    it("inside one session: a 44 min gap stays one segment; a 45 min gap splits (analytics only)", async () => {
+      const s = await newSession(me.id);
+      await addMatch(me.id, { result: "win", at: base, sessionId: s.id });
+      await addMatch(me.id, { result: "win", at: minutesAfter(base, 44), sessionId: s.id });
+      await addMatch(me.id, { result: "win", at: minutesAfter(base, 89), sessionId: s.id });
+      const a = sp(await analytics(me));
+      expect(a).toMatchObject({
+        segments: 2,
+        sessions: 1,
+        splitSessions: 1,
+        streaks: { longestWin: 2 },
+      });
+      // Nothing was written: still one DB session, matches untouched.
+      const rows = await db.execute<{ n: number }>(
+        sql`select count(distinct session_id)::int as n from match where player_id = ${me.id}`,
+      );
+      expect(Number(rows[0]?.n)).toBe(1);
+    });
+
+    it("an analytics segment boundary is NOT a real session boundary (active session, ≥ 45 min gap)", async () => {
+      // A modern session can legitimately contain a ≥ 45 min gap (e.g. held open by fresh Practice
+      // presence). The real session stays ONE active session; analytics sees two segments.
+      const active = await newSession(me.id, "active");
+      const a1 = await addMatchReturningId(me.id, {
+        result: "win",
+        at: base,
+        sessionId: active.id,
+      });
+      const a2 = await addMatchReturningId(me.id, {
+        result: "win",
+        at: minutesAfter(base, 45),
+        sessionId: active.id,
+      });
+      const before = await db
+        .select()
+        .from(gameSession)
+        .where(sql`${gameSession.id} = ${active.id}`);
+
+      const a = sp(await analytics(me));
+      expect(a).toMatchObject({
+        segments: 2,
+        sessions: 1,
+        splitSessions: 1,
+        matches: 2,
+        streaks: { longestWin: 1 }, // the streak does not bridge the segments
+      });
+      expect(a.duration.medianMs).toBe(0); // two one-match segments
+
+      // Real session and memberships untouched: still ONE active session holding both matches.
+      const after = await db
+        .select()
+        .from(gameSession)
+        .where(sql`${gameSession.id} = ${active.id}`);
+      expect(after).toEqual(before);
+      expect(after[0]?.status).toBe("active");
+      const members = await db
+        .select({ id: match.id, sessionId: match.sessionId })
+        .from(match)
+        .where(sql`${match.id} in (${a1}, ${a2})`);
+      expect(members.map((m) => m.sessionId)).toEqual([active.id, active.id]);
+      const sessions = await db
+        .select({ n: sql<number>`count(*)::int` })
+        .from(gameSession)
+        .where(sql`${gameSession.playerId} = ${me.id}`);
+      expect(sessions[0]?.n).toBe(1);
+    });
+
+    it("an ACTIVE session is included; started_at / ended_at never alter gameplay duration", async () => {
+      const active = await newSession(me.id, "active");
+      await addMatch(me.id, { result: "win", at: base, sessionId: active.id });
+      await addMatch(me.id, { result: "loss", at: minutesAfter(base, 10), sessionId: active.id });
+      // An ended session whose started_at/ended_at span days.
+      const [wide] = await db
+        .insert(gameSession)
+        .values({
+          playerId: me.id,
+          status: "ended",
+          startedAt: daysAgo(5),
+          endedAt: daysAgo(1.5),
+          filter: { modes: ["ranked"] },
+        })
+        .returning();
+      await addMatch(me.id, { result: "win", at: daysAgo(4), sessionId: wide!.id });
+      await addMatch(me.id, {
+        result: "win",
+        at: minutesAfter(daysAgo(4), 6),
+        sessionId: wide!.id,
+      });
+      const a = sp(await analytics(me));
+      expect(a).toMatchObject({ segments: 2, sessions: 2 });
+      expect(a.duration.medianMs).toBe(8 * 60_000); // (10 + 6) / 2 min — from matches only
+    });
+
+    it("zero-match DB sessions do not count; payload has no opponent names or ratings", async () => {
+      await newSession(me.id); // no matches
+      await newSession(me.id, "active"); // no matches
+      const s = await newSession(me.id);
+      await addMatch(me.id, { result: "win", at: base, sessionId: s.id });
+      const a = await analytics(me);
+      expect(sp(a)).toMatchObject({ segments: 1, sessions: 1 });
+      const payload = JSON.stringify(sp(a));
+      expect(payload).not.toContain(SECRET_OPPONENT);
+      expect(payload).not.toContain("19000");
     });
   });
 });

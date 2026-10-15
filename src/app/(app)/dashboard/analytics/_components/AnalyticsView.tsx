@@ -10,7 +10,8 @@ import {
   type RecentForm,
 } from "@/domain/analytics/aggregate";
 import type { SampleBand } from "@/domain/analytics/samples";
-import { formatDecimal, formatInteger, formatWinRate } from "@/domain/format";
+import { HALVES_MIN_MATCHES, MATCH_POSITION_CAP } from "@/domain/analytics/sessions";
+import { formatDecimal, formatInteger, formatMinutes, formatWinRate } from "@/domain/format";
 import { MATCHUP_CALLOUT_MIN_DECIDED, type MatchupPerformance } from "@/domain/analytics/matchups";
 import type { CharacterKey, MatchResult } from "@/domain/sf6/types";
 import type { PlayerAnalytics } from "@/server/analytics/service";
@@ -99,6 +100,7 @@ export function AnalyticsView({ data }: { data: PlayerAnalytics }) {
           <Recent forms={summary.recent} />
           <Characters data={data} />
           <Matchups data={data} />
+          <SessionPerformance data={data} />
         </>
       )}
 
@@ -525,6 +527,210 @@ function HighlightCard({
         })}
       </p>
     </article>
+  );
+}
+
+/** Phase 6.2: descriptive patterns inside recorded sessions (no tilt / fatigue claims). */
+function SessionPerformance({ data }: { data: PlayerAnalytics }) {
+  const t = useTranslations("Analytics.sessionPerformance");
+  const ta = useTranslations("Analytics");
+  const locale = useLocale();
+  const s = data.summary.sessionPerformance;
+  return (
+    <section
+      aria-labelledby="analytics-sessions"
+      className="space-y-4"
+      data-testid="session-performance"
+    >
+      <h2 id="analytics-sessions" className="hud-heading">
+        {t("title")}
+      </h2>
+      <div className="space-y-1 text-sm text-muted">
+        <p>{t("note")}</p>
+        <p>{t("durationNote")}</p>
+      </div>
+
+      {s.segments === 0 ? (
+        <Panel>
+          <p className="text-sm text-muted" data-testid="sessions-empty">
+            {t("empty")}
+          </p>
+        </Panel>
+      ) : (
+        <>
+          <Panel>
+            <dl className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+              <Stat label={t("segments")} value={formatInteger(s.segments, locale)}>
+                <span>{t("realSessions", { count: s.sessions })}</span>
+                {s.splitSessions > 0 && (
+                  <span>{t("splitSessions", { count: s.splitSessions })}</span>
+                )}
+              </Stat>
+              <Stat
+                label={t("medianMatches")}
+                value={formatDecimal(s.medianMatchesPerSegment, locale)}
+              />
+              <Stat label={t("medianDuration")} value={formatMinutes(s.duration.medianMs, locale)}>
+                <span>
+                  {t("averageDuration", { value: formatMinutes(s.duration.averageMs, locale) })}
+                </span>
+              </Stat>
+              <Stat
+                label={t("pace")}
+                value={
+                  s.duration.matchesPerHour === null ? (
+                    <Unavailable label={t("paceUnavailable")} />
+                  ) : (
+                    t("paceValue", { value: formatDecimal(s.duration.matchesPerHour, locale) })
+                  )
+                }
+              >
+                {s.duration.matchesPerHour !== null && (
+                  <span>{t("paceBasis", { count: s.duration.measurableSegments })}</span>
+                )}
+              </Stat>
+            </dl>
+          </Panel>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <article className="hud-panel p-5" data-testid="streak-win">
+              <h3 className="hud-label">{t("longestWin")}</h3>
+              <p className="mt-2 font-display text-3xl font-bold tabular">
+                {formatInteger(s.streaks.longestWin, locale)}
+              </p>
+            </article>
+            <article className="hud-panel p-5" data-testid="streak-loss">
+              <h3 className="hud-label">{t("longestLoss")}</h3>
+              <p className="mt-2 font-display text-3xl font-bold tabular">
+                {formatInteger(s.streaks.longestLoss, locale)}
+              </p>
+            </article>
+            <article className="hud-panel p-5" data-testid="recovery">
+              <h3 className="hud-label">{t("recovery")}</h3>
+              {s.recovery.rate === null ? (
+                <p className="mt-2 text-sm text-muted">{t("recoveryUnavailable")}</p>
+              ) : (
+                <>
+                  <p className="mt-2 font-display text-3xl font-bold tabular">
+                    {formatWinRate(Math.round(s.recovery.rate * 10) / 10, locale)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    {t("recoveryCount", {
+                      won: formatInteger(s.recovery.recoveredWithWin, locale),
+                      total: formatInteger(s.recovery.lossesWithNextMatch, locale),
+                    })}
+                  </p>
+                </>
+              )}
+            </article>
+          </div>
+
+          <Panel title={t("halvesTitle")}>
+            {s.halves.eligibleSegments === 0 ? (
+              <p className="text-sm text-muted" data-testid="halves-unavailable">
+                {t("halvesUnavailable", { min: HALVES_MIN_MATCHES })}
+              </p>
+            ) : (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2" data-testid="halves">
+                  {(["first", "second"] as const).map((half) => (
+                    <div key={half} data-half={half}>
+                      <p className="hud-label">
+                        {t(half === "first" ? "firstHalf" : "secondHalf")}
+                      </p>
+                      <p className="mt-1 font-display text-2xl font-bold tabular">
+                        <RecordValue record={s.halves[half]} />
+                      </p>
+                      <p className="mt-1 text-sm">
+                        <WinRate record={s.halves[half]} />
+                        {s.halves[half].draws > 0 && (
+                          <span className="ml-2 text-muted">
+                            {ta("draws", { count: s.halves[half].draws })}
+                          </span>
+                        )}
+                      </p>
+                      <p className="mt-1 text-xs text-muted">
+                        {ta("available", { count: s.halves[half].matches })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-xs text-muted">
+                  {t("halvesRule", { count: s.halves.eligibleSegments, min: HALVES_MIN_MATCHES })}
+                </p>
+              </>
+            )}
+          </Panel>
+
+          <Panel title={t("positionsTitle")} bodyClassName="px-0 pb-2 pt-3">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[30rem] text-sm">
+                <caption className="px-5 pb-3 text-left text-xs text-muted">
+                  {t("positionsCaption", { cap: MATCH_POSITION_CAP })}
+                </caption>
+                <thead>
+                  <tr className="hud-label border-b border-line text-left text-xs">
+                    <th scope="col" className="px-5 pb-2 font-semibold">
+                      {t("colPosition")}
+                    </th>
+                    <th scope="col" className="px-3 pb-2 text-right font-semibold">
+                      {t("colSegments")}
+                    </th>
+                    <th scope="col" className="px-3 pb-2 font-semibold">
+                      {ta("colRecord")}
+                    </th>
+                    <th scope="col" className="px-3 pb-2 text-right font-semibold">
+                      {ta("colWinRate")}
+                    </th>
+                    <th scope="col" className="px-5 pb-2 font-semibold">
+                      {ta("colSample")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {s.positions.map((p) => (
+                    <tr key={p.position} data-position={p.position}>
+                      <th
+                        scope="row"
+                        className="px-5 py-2 text-left font-display font-bold whitespace-nowrap"
+                      >
+                        {t("position", { n: p.position })}
+                      </th>
+                      <td className="px-3 py-2 text-right tabular">
+                        {formatInteger(p.record.matches, locale)}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap tabular">
+                        <RecordValue record={p.record} />
+                        {p.record.draws > 0 && (
+                          <span className="ml-2 text-xs text-muted">
+                            {ta("draws", { count: p.record.draws })}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular">
+                        <WinRate record={p.record} />
+                      </td>
+                      <td className="px-5 py-2">
+                        <SampleTag band={p.record.sample} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+        </>
+      )}
+    </section>
+  );
+}
+
+function Unavailable({ label }: { label: string }) {
+  return (
+    <span title={label}>
+      <span aria-hidden>—</span>
+      <span className="sr-only">{label}</span>
+    </span>
   );
 }
 
