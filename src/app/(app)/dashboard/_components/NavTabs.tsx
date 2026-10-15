@@ -4,8 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 
+const ANALYTICS = "/dashboard/analytics";
 const TABS = [
-  { href: "/dashboard", key: "dashboard", match: (p: string) => p.startsWith("/dashboard") },
+  {
+    href: "/dashboard",
+    key: "dashboard",
+    match: (p: string) => p.startsWith("/dashboard") && !p.startsWith(ANALYTICS),
+  },
+  { href: ANALYTICS, key: "analytics", match: (p: string) => p.startsWith(ANALYTICS) },
   { href: "/onboarding", key: "player", match: (p: string) => p.startsWith("/onboarding") },
 ] as const;
 

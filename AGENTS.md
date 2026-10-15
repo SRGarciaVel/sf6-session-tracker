@@ -13,6 +13,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Architecture & decisions: `docs/architecture.md`. Read it before structural changes.
 - Session math lives ONLY in `src/domain/session/engine.ts` (pure, unit tested). Never compute
   W/L, win rate, streaks or deltas in React, API routes, the worker or the provider.
+- Analytics aggregation lives ONLY in `src/domain/analytics/` (pure, unit tested, reusing the
+  engine's primitives such as `calculateWinRate`), fed by narrow server queries. Analytics never
+  uses ratings until segmented baselines exist (docs/architecture.md §6b).
 - Ratings (rank/LP/MR) belong to a CHARACTER (`characterKey`), never to the player. Never
   subtract ratings of different characters, systems (MR vs LP) or phases; unknown ⇒ `null`.
 - Capcom/CFN access lives ONLY in `src/server/sf6/providers/*` behind `SF6DataProvider`.

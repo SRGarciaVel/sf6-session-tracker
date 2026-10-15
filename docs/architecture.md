@@ -286,6 +286,42 @@ skipped. The sweep is bounded and **rotates**:
 - zero-match sessions are excluded from session-performance aggregates;
 - older sessions with multi-hour gaps may later be split virtually with the same 45 min timeout.
 
+### 6b. Analytics foundation (Phase 6.0b)
+
+`/dashboard/analytics?range=7d|30d|90d|all&mode=ranked|all` is descriptive analytics over the
+matches **SST has recorded**. That is not the player's complete SF6 history: SST only sees matches
+while it observes them. The page says so.
+
+- **Trusted inputs only:** `result`, `played_at`, own character, `mode` and `session_id`.
+  - Not used: ratings, opponent rank, opponent names. Per-match MR is unreliable and LP → MR
+    session baselines are not segmented yet (Phase 6.3).
+- **Pipeline:**
+  1. `server/analytics/service.ts` enforces **ownership itself**. Its only export is
+     `getPlayerAnalyticsForUser(db, userId, { range, mode })`, which resolves that user's own player;
+     the player-id loader is private. There is no API route, and the page reads only range and mode
+     from the URL. Then one narrow query (7 columns, played_at descending).
+  2. `domain/analytics/aggregate.ts` aggregates them (pure, unit tested).
+  3. The page only formats.
+  - No analytics tables, views, jobs or migrations. Index: `match_player_played_idx (player_id,
+played_at)`, backward scan plus incremental sort; the mode is a filter on those rows.
+- **Range:** a rolling window of N × 24 h ending now, an absolute instant with no calendar or
+  timezone semantics. The default is 90 days.
+- **Mode:** `ranked` by default, or `all`. SST only identifies Ranked with certainty; other modes
+  are stored as `unknown`, and `all` says how many such matches it includes.
+- **Metrics:**
+  - matches, W / L / D (draws kept apart);
+  - win rate = W / (W + L), or "—" when nothing is decided;
+  - recent form over the last 5 / 10 / 20 (available sample made explicit when shorter);
+  - per own character: record, win rate, usage share, "most played" only for a single top
+    character, never "best";
+  - sessions with matches and the average matches per session, counted by `match.session_id`
+    only. History outside sessions still counts overall.
+- **Sample bands** (`domain/analytics/samples.ts`, decided matches): 0 none · 1–4 very small ·
+  5–9 small · 10–29 developing · 30+ larger. They are communication bands, not statistical
+  guarantees.
+- **Later phases:** matchups (6.1), session analytics (6.2), rating trends (6.3, blocked on
+  segmented baselines) and derived insights (6.4).
+
 ## 7. Realtime
 
 - Worker/web → `pg_notify('sf6_events', {kind, playerId, overlayId?})` after commit.
