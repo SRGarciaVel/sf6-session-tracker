@@ -30,10 +30,12 @@
     "overlayBuilder": "Configure overlay",
     "sessionRecap": "Session recap",
     "notFound": "Not found",
-    "helpCompanion": "Install the Companion"
+    "helpCompanion": "Install the Companion",
+    "analytics": "Analytics"
   },
   "Nav": {
     "dashboard": "Dashboard",
+    "analytics": "Analytics",
     "player": "Player",
     "switchLanguage": "Change language"
   },
@@ -948,5 +950,69 @@
     "updateStep5": "On SST Companion for Street Fighter 6, press ⟳ Reload.",
     "updateStep6": "Check that the card shows the new version; the dashboard will show “✓ Companion up to date” after the next sync.",
     "updateStep7": "If the Companion shows “Not connected”, generate a new code in the dashboard and pair it again: your sessions are not lost."
+  },
+  "Analytics": {
+    "title": "Analytics",
+    "subtitle": "Performance from the matches recorded by SST",
+    "rangeLabel": "Range",
+    "ranges": {
+      "7d": "7 days",
+      "30d": "30 days",
+      "90d": "90 days",
+      "all": "All"
+    },
+    "modeLabel": "Mode",
+    "modes": {
+      "ranked": "Ranked",
+      "all": "All recorded"
+    },
+    "unknownModeNote": "{count, plural, one {# match} other {# matches}} with an unidentified mode: SST only identifies Ranked with certainty; other modes are recorded as unknown.",
+    "summaryTitle": "Summary",
+    "matches": "Recorded matches",
+    "record": "Record",
+    "winRate": "Win rate",
+    "winRateUnavailable": "No decided matches",
+    "draws": "{count, plural, one {# draw} other {# draws}}",
+    "drawsExcluded": "Draws don't count toward the win rate.",
+    "sessions": "Sessions with matches",
+    "perSession": "{value} matches per session on average",
+    "outsideSessions": "{count, plural, one {# recorded match} other {# recorded matches}} outside a session",
+    "recentTitle": "Recent form",
+    "lastN": "Last {n}",
+    "available": "{count, plural, one {# recorded match} other {# recorded matches}}",
+    "availableOf": "{count} of {n} matches recorded",
+    "sequenceLabel": "Results, most recent first",
+    "result": {
+      "win": "Win",
+      "loss": "Loss",
+      "draw": "Draw"
+    },
+    "resultShort": {
+      "win": "W",
+      "loss": "L",
+      "draw": "D"
+    },
+    "charactersTitle": "Performance by character",
+    "charactersCaption": "Your characters in this range, sorted by matches played.",
+    "colCharacter": "Character",
+    "colMatches": "Matches",
+    "colRecord": "Record",
+    "colWinRate": "Win rate",
+    "colUsage": "Usage",
+    "colSample": "Sample",
+    "mostPlayed": "Most played",
+    "sample": {
+      "none": "No sample",
+      "very-small": "Very small sample",
+      "small": "Small sample",
+      "developing": "Developing sample",
+      "larger": "Larger sample"
+    },
+    "sampleNote": "The sample shows how many decided matches stand behind each win rate. It is a guide, not a statistical guarantee.",
+    "coverageTitle": "About this data",
+    "coverage": "These analytics are based only on the matches SST has recorded and may not reflect your complete Street Fighter 6 match history.",
+    "rangeNote": "Ranges are rolling windows ending now: the last 7, 30 or 90 days of 24 hours.",
+    "emptyTitle": "No recorded matches in this range",
+    "emptyHint": "Try a longer range or “All recorded”. Matches appear here once SST records them through the Companion."
   }
 }

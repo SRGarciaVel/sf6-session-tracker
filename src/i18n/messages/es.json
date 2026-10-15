@@ -30,10 +30,12 @@
     "overlayBuilder": "Configurar overlay",
     "sessionRecap": "Resumen de sesión",
     "notFound": "No encontrado",
-    "helpCompanion": "Instalar el Companion"
+    "helpCompanion": "Instalar el Companion",
+    "analytics": "Analíticas"
   },
   "Nav": {
     "dashboard": "Panel",
+    "analytics": "Analíticas",
     "player": "Jugador",
     "switchLanguage": "Cambiar idioma"
   },
@@ -948,5 +950,69 @@
     "updateStep5": "En SST Companion para Street Fighter 6, pulsa ⟳ Recargar.",
     "updateStep6": "Comprueba que la tarjeta muestra la versión nueva; en el panel verás «✓ Companion actualizado» tras la siguiente sincronización.",
     "updateStep7": "Si el Companion aparece «Sin conectar», genera un código nuevo en el panel y vuelve a vincularlo: tus sesiones no se pierden."
+  },
+  "Analytics": {
+    "title": "Analíticas",
+    "subtitle": "Rendimiento a partir de las partidas registradas por SST",
+    "rangeLabel": "Periodo",
+    "ranges": {
+      "7d": "7 días",
+      "30d": "30 días",
+      "90d": "90 días",
+      "all": "Todo"
+    },
+    "modeLabel": "Modo",
+    "modes": {
+      "ranked": "Ranked",
+      "all": "Todas las registradas"
+    },
+    "unknownModeNote": "{count, plural, one {# partida} other {# partidas}} de modo no identificado: SST solo distingue las Ranked con certeza; el resto se registra como modo desconocido.",
+    "summaryTitle": "Resumen",
+    "matches": "Partidas registradas",
+    "record": "Récord",
+    "winRate": "Win rate",
+    "winRateUnavailable": "Sin partidas decididas",
+    "draws": "{count, plural, one {# empate} other {# empates}}",
+    "drawsExcluded": "Los empates no cuentan en el win rate.",
+    "sessions": "Sesiones con partidas",
+    "perSession": "{value} partidas por sesión de media",
+    "outsideSessions": "{count, plural, one {# partida registrada} other {# partidas registradas}} fuera de una sesión",
+    "recentTitle": "Forma reciente",
+    "lastN": "Últimas {n}",
+    "available": "{count, plural, one {# partida registrada} other {# partidas registradas}}",
+    "availableOf": "{count} de {n} partidas registradas",
+    "sequenceLabel": "Resultados, del más reciente al más antiguo",
+    "result": {
+      "win": "Victoria",
+      "loss": "Derrota",
+      "draw": "Empate"
+    },
+    "resultShort": {
+      "win": "V",
+      "loss": "D",
+      "draw": "E"
+    },
+    "charactersTitle": "Rendimiento por personaje",
+    "charactersCaption": "Tus personajes en el periodo, ordenados por partidas jugadas.",
+    "colCharacter": "Personaje",
+    "colMatches": "Partidas",
+    "colRecord": "Récord",
+    "colWinRate": "Win rate",
+    "colUsage": "Uso",
+    "colSample": "Muestra",
+    "mostPlayed": "Más jugado",
+    "sample": {
+      "none": "Sin muestra",
+      "very-small": "Muestra muy pequeña",
+      "small": "Muestra pequeña",
+      "developing": "Muestra en desarrollo",
+      "larger": "Muestra más amplia"
+    },
+    "sampleNote": "La muestra indica cuántas partidas decididas hay detrás de cada win rate. Es orientativa: no es una garantía estadística.",
+    "coverageTitle": "Sobre estos datos",
+    "coverage": "Estas analíticas se basan solo en las partidas que SST ha registrado y pueden no reflejar todo tu historial de Street Fighter 6.",
+    "rangeNote": "Los periodos son ventanas móviles que terminan ahora (7, 30 o 90 días de 24 h).",
+    "emptyTitle": "No hay partidas registradas en este periodo",
+    "emptyHint": "Prueba con un periodo más largo o con «Todas las registradas». Las partidas aparecen aquí cuando SST las registra con el Companion."
   }
 }

@@ -21,6 +21,13 @@ export function formatInteger(n: number | null | undefined, locale: string): str
     : numberFormat(locale, { maximumFractionDigits: 0 }).format(n);
 }
 
+/** A non-integer quantity (e.g. an average), at most `digits` decimals; "—" if not finite. */
+export function formatDecimal(n: number | null | undefined, locale: string, digits = 1): string {
+  return n === null || n === undefined || !Number.isFinite(n)
+    ? "—"
+    : numberFormat(locale, { maximumFractionDigits: digits }).format(n);
+}
+
 /** `rate` is 0–100. */
 export function formatWinRate(rate: number, locale: string): string {
   const safe = Number.isFinite(rate) ? rate : 0;
