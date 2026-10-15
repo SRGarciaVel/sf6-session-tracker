@@ -25,11 +25,15 @@ import type {
 } from "@/domain/sf6/types";
 
 /**
- * companion_snapshot.profile JSON: the normalized profile plus, additively, the Buckler presence
- * track (domain/session/lifecycle.ts PresenceTrack). `presence` is untrusted stored JSON: read it
- * only through parsePresenceTrack. Never part of the profile the provider serves.
+ * companion_snapshot.profile JSON: the normalized profile plus, additively, the session-lifecycle
+ * metadata (domain/session/lifecycle.ts): `observation` (ObservationRun) and `presence`
+ * (PresenceTrack). Untrusted stored JSON: read only through parseObservationRun /
+ * parsePresenceTrack. Never part of the profile the provider serves.
  */
-export type CompanionSnapshotProfile = NormalizedPlayerProfile & { presence?: unknown };
+export type CompanionSnapshotProfile = NormalizedPlayerProfile & {
+  observation?: unknown;
+  presence?: unknown;
+};
 
 /** A NormalizedSF6Match as stored in JSON (playedAt serialized to ISO). */
 export type CompanionWireMatch = Omit<NormalizedSF6Match, "playedAt"> & { playedAt: string };

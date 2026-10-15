@@ -6,11 +6,15 @@ import {
   SESSION_IDLE_TIMEOUT_MS,
   SESSION_OFFLINE_CLOSE_MS,
   SESSION_OFFLINE_MIN_OBSERVATIONS,
+  OBSERVATION_MAX_GAP_MS,
+  advanceObservationRun,
   advancePresenceTrack,
   evaluateSessionLifecycle,
   lastActivityAt,
+  parseObservationRun,
   parsePresenceTrack,
   presenceHoldsSession,
+  type ObservationRun,
   type PresenceTrack,
   type SessionLifecycleInput,
 } from "./lifecycle";
@@ -35,11 +39,28 @@ function observe(
   return track;
 }
 
+/** A continuous observation run from minute `from` to minute `to`. */
+const watched = (from: number, to: number): ObservationRun => ({
+  since: min(from).toISOString(),
+  observedAt: min(to).toISOString(),
+  observations: Math.max(1, Math.round((to - from) * 2) + 1),
+});
+
+/** Observation-run fold over syncs every `everySec` seconds in [fromMin, toMin]. */
+function syncRun(prev: ObservationRun | null, fromMin: number, toMin: number, everySec = 30) {
+  let run = prev;
+  for (let s = fromMin * 60; s <= toMin * 60; s += everySec) {
+    run = advanceObservationRun(run, sec(s), OBSERVATION_MAX_GAP_MS);
+  }
+  return run;
+}
+
 const input = (over: Partial<SessionLifecycleInput> & { now: Date }): SessionLifecycleInput => ({
   startedAt: T0,
   lastSessionMatchAt: null,
   filterModes: ["ranked"],
-  lastObservedAt: over.now,
+  // Default: SST has been observing continuously since the session started.
+  observation: { since: T0.toISOString(), observedAt: over.now.toISOString(), observations: 100 },
   presence: null,
   ...over,
 });
@@ -59,7 +80,9 @@ describe("constants (approved policy)", () => {
       offlineMinObservations: 3,
       absoluteCeilingMs: SESSION_ABSOLUTE_CEILING_MS,
       presenceMaxAgeMs: PRESENCE_MAX_AGE_MS,
+      observationMaxGapMs: OBSERVATION_MAX_GAP_MS,
     });
+    expect(OBSERVATION_MAX_GAP_MS).toBe(5 * 60_000);
   });
 });
 
@@ -117,18 +140,18 @@ describe("normal observed inactivity (45 min)", () => {
   });
 
   it("requires OBSERVATION: idle 45 min but SST stopped observing at 30 min → keep", () => {
-    expect(decide({ now: min(50), lastObservedAt: min(30) })).toMatchObject({
+    expect(decide({ now: min(50), observation: watched(0, 30) })).toMatchObject({
       action: "keep",
       reason: "not-observed",
     });
-    expect(decide({ now: min(50), lastObservedAt: null })).toMatchObject({
+    expect(decide({ now: min(50), observation: null })).toMatchObject({
       action: "keep",
       reason: "not-observed",
     });
   });
 
   it("an observation covering the 45 min is enough even if it is not current", () => {
-    expect(decide({ now: min(70), lastObservedAt: min(46) })).toMatchObject({
+    expect(decide({ now: min(70), observation: watched(0, 46) })).toMatchObject({
       action: "end",
       policy: "normal-idle",
     });
@@ -202,12 +225,12 @@ describe("playing presence holds the session (Practice, Ranked Match)", () => {
     const presence = observe(null, CODE.practice, 0, 60); // Companion stops reporting presence
     expect(decide({ now: min(64), presence }).action).toBe("keep"); // still fresh (< 5 min)
     // Matches keep being observed (old Companion / presence missing), presence goes stale.
-    expect(decide({ now: min(70), presence, lastObservedAt: min(70) })).toMatchObject({
+    expect(decide({ now: min(70), presence, observation: watched(0, 70) })).toMatchObject({
       action: "keep",
       reason: "awaiting-timeout",
       presenceState: "unknown",
     });
-    expect(decide({ now: min(105), presence, lastObservedAt: min(105) })).toMatchObject({
+    expect(decide({ now: min(105), presence, observation: watched(0, 105) })).toMatchObject({
       action: "end",
       policy: "normal-idle",
       presenceState: "unknown",
@@ -216,11 +239,11 @@ describe("playing presence holds the session (Practice, Ranked Match)", () => {
 
   it("12. stale Ranked Match: same rule, and without observation only the ceiling remains", () => {
     const presence = observe(null, CODE.ranked, 0, 30);
-    expect(decide({ now: min(80), presence, lastObservedAt: min(80) })).toMatchObject({
+    expect(decide({ now: min(80), presence, observation: watched(0, 80) })).toMatchObject({
       action: "end",
       policy: "normal-idle",
     });
-    expect(decide({ now: min(300), presence, lastObservedAt: min(30) })).toMatchObject({
+    expect(decide({ now: min(300), presence, observation: watched(0, 30) })).toMatchObject({
       action: "keep",
       reason: "not-observed",
     });
@@ -295,7 +318,7 @@ describe("accelerated Offline close (≥ 15 min continuous, ≥ 3 observations)"
   it("stale Offline never accelerates", () => {
     const presence = observe(null, CODE.offline, 20, 35);
     expect(
-      decide({ now: min(41), lastSessionMatchAt: min(19), presence, lastObservedAt: min(35) })
+      decide({ now: min(41), lastSessionMatchAt: min(19), presence, observation: watched(0, 35) })
         .action,
     ).toBe("keep");
   });
@@ -313,16 +336,16 @@ describe("13. absolute ceiling (12 h) — regardless of presence or observation"
         policy: "absolute-ceiling",
       });
     }
-    expect(decide({ now, lastObservedAt: null })).toMatchObject({
+    expect(decide({ now, observation: null })).toMatchObject({
       action: "end",
       policy: "absolute-ceiling",
     });
-    expect(decide({ now: new Date(now.getTime() - 1), lastObservedAt: null }).action).toBe("keep");
+    expect(decide({ now: new Date(now.getTime() - 1), observation: null }).action).toBe("keep");
   });
 
   it("counted from the last session match", () => {
     expect(
-      decide({ now: min(12 * 60 + 30), lastSessionMatchAt: min(31), lastObservedAt: null }).action,
+      decide({ now: min(12 * 60 + 30), lastSessionMatchAt: min(31), observation: null }).action,
     ).toBe("keep");
   });
 });
@@ -368,6 +391,128 @@ describe("advancePresenceTrack / parsePresenceTrack", () => {
       { ...t, lastPlayingAt: 5 },
     ]) {
       expect(parsePresenceTrack(bad)).toBeNull();
+    }
+  });
+});
+
+describe("continuous observation (normal idle needs 45 min inside ONE observation run)", () => {
+  // Session match at 0; observed until 5; Companion gone for 2 h; back at 125.
+  const reconnect = (backUntil: number) => syncRun(syncRun(null, 0, 5), 125, backUntil);
+
+  it("8. a gap > 5 min restarts the run; 9. polling-cadence gaps (30 s, 120 s, 4:59) do not", () => {
+    const run = reconnect(125);
+    expect(run).toMatchObject({ since: min(125).toISOString(), observations: 1 });
+    expect(syncRun(null, 0, 60, 30)?.since).toBe(T0.toISOString());
+    expect(syncRun(null, 0, 60, 120)?.since).toBe(T0.toISOString());
+    expect(syncRun(null, 0, 60, 299)?.since).toBe(T0.toISOString());
+    expect(syncRun(null, 0, 60, 301)?.observations).toBe(1);
+    // Exactly the window continues; out-of-order observations are ignored.
+    const a = advanceObservationRun(null, min(0), OBSERVATION_MAX_GAP_MS);
+    const b = advanceObservationRun(a, min(5), OBSERVATION_MAX_GAP_MS);
+    expect(b).toMatchObject({ since: min(0).toISOString(), observations: 2 });
+    expect(advanceObservationRun(b, min(1), OBSERVATION_MAX_GAP_MS)).toBe(b);
+  });
+
+  it("1. back after 2 h unobserved, one fresh Menu sync → MUST stay active", () => {
+    const presence = observe(observe(null, CODE.menu, 0, 5), CODE.menu, 125, 125);
+    expect(
+      decide({ now: min(125), lastSessionMatchAt: T0, observation: reconnect(125), presence }),
+    ).toMatchObject({ action: "keep", reason: "awaiting-timeout", presenceState: "menu" });
+  });
+
+  it("2. continuous observation 125 → 169 → active; 3. at 170 (45 min observed) → normal close", () => {
+    let presence = observe(null, CODE.menu, 0, 5);
+    presence = observe(presence, CODE.menu, 125, 169);
+    expect(
+      decide({ now: min(169), lastSessionMatchAt: T0, observation: reconnect(169), presence })
+        .action,
+    ).toBe("keep");
+    presence = observe(presence, CODE.menu, 169.5, 170);
+    expect(
+      decide({ now: min(170), lastSessionMatchAt: T0, observation: reconnect(170), presence }),
+    ).toMatchObject({ action: "end", policy: "normal-idle" });
+  });
+
+  it("4. back after a long gap directly in Practice → active; 5. Practice → Menu starts the 45 min", () => {
+    let presence = observe(null, CODE.menu, 0, 5);
+    presence = observe(presence, CODE.practice, 125, 200);
+    const at200 = reconnect(200);
+    expect(
+      decide({ now: min(200), lastSessionMatchAt: T0, observation: at200, presence }),
+    ).toMatchObject({ action: "keep", reason: "presence-playing" });
+    presence = observe(presence, CODE.menu, 200.5, 244);
+    expect(
+      decide({ now: min(244), lastSessionMatchAt: T0, observation: reconnect(244), presence })
+        .action,
+    ).toBe("keep");
+    presence = observe(presence, CODE.menu, 244.5, 245);
+    expect(
+      decide({ now: min(245), lastSessionMatchAt: T0, observation: reconnect(245), presence }),
+    ).toMatchObject({ action: "end", policy: "normal-idle" });
+  });
+
+  it("6/7. old Companion (no presence): first sync after 2 h does not close; 45 min later it does", () => {
+    expect(
+      decide({ now: min(125), lastSessionMatchAt: min(3), observation: reconnect(125) }).action,
+    ).toBe("keep");
+    expect(
+      decide({ now: min(169), lastSessionMatchAt: min(3), observation: reconnect(169) }).action,
+    ).toBe("keep");
+    expect(
+      decide({ now: min(170), lastSessionMatchAt: min(3), observation: reconnect(170) }),
+    ).toMatchObject({ action: "end", policy: "normal-idle", presenceState: "unknown" });
+  });
+
+  it("observation alone never accelerates: a fresh run still waits 45 min after activity", () => {
+    expect(
+      decide({ now: min(40), lastSessionMatchAt: T0, observation: syncRun(null, 30, 40) }).action,
+    ).toBe("keep");
+  });
+
+  it("11. the 12 h ceiling closes with no continuous observation at all", () => {
+    const now = new Date(T0.getTime() + SESSION_ABSOLUTE_CEILING_MS);
+    for (const observation of [null, syncRun(null, 715, 720)]) {
+      expect(decide({ now, observation })).toMatchObject({
+        action: "end",
+        policy: "absolute-ceiling",
+      });
+    }
+  });
+
+  it("12. Offline continuity is unchanged and independent of the observation run", () => {
+    // A fresh observation run (Companion just came back) does not block a proven Offline run…
+    const presence = observe(null, CODE.offline, 20, 35);
+    expect(
+      decide({
+        now: min(35),
+        lastSessionMatchAt: min(19),
+        observation: syncRun(null, 34, 35),
+        presence,
+      }),
+    ).toMatchObject({ action: "end", policy: "offline" });
+    // …and the Offline rule still needs its own 15 min.
+    expect(
+      decide({
+        now: min(34),
+        lastSessionMatchAt: min(19),
+        presence: observe(null, CODE.offline, 20, 34),
+      }).action,
+    ).toBe("keep");
+  });
+
+  it("parseObservationRun: round-trip; malformed ⇒ null", () => {
+    const run = syncRun(null, 0, 3);
+    expect(parseObservationRun(JSON.parse(JSON.stringify(run)))).toEqual(run);
+    for (const bad of [
+      null,
+      "x",
+      {},
+      { ...run, since: "nope" },
+      { ...run, observations: 0 },
+      { ...run, observations: 1.5 },
+      { ...run, since: min(10).toISOString(), observedAt: min(5).toISOString() },
+    ]) {
+      expect(parseObservationRun(bad)).toBeNull();
     }
   });
 });

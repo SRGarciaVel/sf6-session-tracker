@@ -198,14 +198,17 @@ Two separate concepts:
   - Presence can hold or accelerate the timer.
   - It never creates matches, changes stats or moves `lastActivityAt`.
 
-**`lastObservedAt`** = when SST last really saw the player's matches:
+**Observation run** = the current **continuous** run of successful match observations: `{ since,
+observedAt, observations }`. Two observations at most 5 min apart continue the run. A larger gap
+(browser closed, Buckler pause, server asleep) starts a new one. The latest observation alone
+proves nothing about the gap before it.
 
-| Mode                 | Source                                                                            |
-| -------------------- | --------------------------------------------------------------------------------- |
-| Companion            | `companion_snapshot.matches_observed_at` (the server's acceptance time of a sync) |
-| Direct Capcom / mock | `sf6_player.last_success_at` (only a successful provider read moves it)           |
+| Mode                 | Source                                                                                                                                                                                                                                                   |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Companion            | `companion_snapshot.profile.observation` (JSONB), folded on **every** accepted sync at the server's time, with or without presence, old Companions included                                                                                              |
+| Direct Capcom / mock | The tracking runtime's **in-memory** run of its own successful polls. `last_success_at` is only the latest success; persisting continuity would need a schema change. In-memory is conservative: a restart or another replica's polls only shorten a run |
 
-Without observation (Companion closed), SST cannot claim "nobody played".
+Without a run (Companion closed, nothing proven), SST cannot claim "nobody played".
 
 **Rules** (first that applies wins):
 
@@ -214,20 +217,26 @@ Without observation (Companion closed), SST cannot claim "nobody played".
 | Absolute ceiling | `now − lastActivityAt ≥ 12 h`, regardless of presence or observation                                                                  |
 | Playing presence | **Holds** (no idle close) while a **fresh** Practice (any filter) or a fresh Ranked Match (when the filter counts ranked) is observed |
 | Offline          | Fresh Offline observed **continuously ≥ 15 min** with **≥ 3 observations**, the whole run after the last session match                |
-| Normal idle      | `lastObservedAt − anchor ≥ 45 min`, where `anchor = max(lastActivityAt, last fresh Practice/Ranked observation)`                      |
+| Normal idle      | `observation.observedAt − anchor ≥ 45 min`, where `anchor = max(lastActivityAt, last Practice/Ranked observation, observation.since)` |
 
 - **Menu** neither holds nor accelerates.
 - **Unknown codes and stale presence** fall back to normal idle plus the ceiling.
 - **Why the anchor:** leaving a 2 h Practice block for the Menu on the way to Ranked must not close
   the session at once.
 - **Stale Practice/Ranked never holds.** It only anchors the 45 min, and never the 12 h ceiling.
+- **Why `observation.since`:** the 45 min must be **observed continuously**.
+  - Example: a Companion observed until 20:05, was gone for 2 h, and came back in Menu at 22:05.
+    The 2 h gap does not count, because the player may have been in Training.
+  - It starts a new run, and the session closes at 22:50 at the earliest.
 
 **Freshness and continuity.** Presence has no timestamp of its own:
 
 - `presenceObservedAt` = the server time the sync was accepted.
 - An observation is fresh for `COMPANION_SNAPSHOT_MAX_AGE_MS` (5 min, the same window that makes a
-  Companion snapshot usable). That is 10 active battlelog cycles, ≥ 2 idle cycles, and shorter than
-  the 10 min Buckler backoff.
+  Companion snapshot usable). The same 5 min is the observation-run gap.
+  - It is 10 active battlelog cycles, ≥ 2 idle cycles, and 15 tracker polls.
+  - It equals the tracker's maximum backoff, and is shorter than the 10 min Buckler backoff.
+  - So any real outage breaks continuity.
 - The presence track folds observations into one run, stored in the Companion snapshot JSON (no
   table).
   - A run continues only for the same state with consecutive observations ≤ that window apart.

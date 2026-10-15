@@ -14,8 +14,10 @@ import { DEFAULT_SESSION_FILTER, type SessionFilter } from "@/domain/session/eng
 import {
   DEFAULT_LIFECYCLE_POLICY,
   evaluateSessionLifecycle,
+  parseObservationRun,
   parsePresenceTrack,
   type LifecycleDecision,
+  type ObservationRun,
   type LifecyclePolicy,
   type SessionLifecycleInput,
 } from "@/domain/session/lifecycle";
@@ -26,11 +28,15 @@ import type { SF6DataProvider } from "@/server/sf6/provider";
 import { endSessionInternal } from "./service";
 
 /**
- * Where "SST observed the player's matches" comes from:
- *   companion  companion_snapshot.matches_observed_at — when the account's Companion last
- *              delivered a battlelog (the server's acceptance time). Presence comes from there too.
- *   provider   sf6_player.last_success_at — the last poll whose provider read succeeded (direct
- *              Capcom / mock). A failed or stale read never moves it. No presence in this mode.
+ * Where the CONTINUOUS observation run (domain ObservationRun) comes from:
+ *   companion  `observation` in companion_snapshot.profile JSONB, folded by the server on every
+ *              accepted sync (its acceptance time; a gap > 5 min restarts the run). Presence comes
+ *              from the same snapshot.
+ *   provider   the tracking runtime's in-memory run, fed by its own successful polls
+ *              (TrackerRuntime). sf6_player.last_success_at alone is only the LATEST success and
+ *              cannot prove continuity, and nothing else is persisted without a schema change.
+ *              In-memory is conservative: a restart, or polls made by another replica, can only
+ *              shorten a run (later close, never earlier); the 12 h ceiling always applies.
  */
 export type ObservationSource = "companion" | "provider";
 
@@ -53,6 +59,7 @@ export function lifecyclePolicyFromEnv(
     offlineCloseMs: env.SESSION_OFFLINE_CLOSE_MINUTES * 60_000,
     absoluteCeilingMs: env.SESSION_ABSOLUTE_CEILING_HOURS * 3_600_000,
     presenceMaxAgeMs: env.COMPANION_SNAPSHOT_MAX_AGE_MS,
+    observationMaxGapMs: env.COMPANION_SNAPSHOT_MAX_AGE_MS,
   };
 }
 
@@ -62,8 +69,7 @@ interface LifecycleRow extends Record<string, unknown> {
   started_at: Date | string;
   filter: unknown;
   last_match_at: Date | string | null;
-  last_success_at: Date | string | null;
-  matches_observed_at: Date | string | null;
+  observation: unknown;
   presence: unknown;
 }
 
@@ -81,7 +87,14 @@ function filterModes(raw: unknown): SessionFilter["modes"] {
   return Array.isArray(modes) ? modes : DEFAULT_SESSION_FILTER.modes;
 }
 
-function toCandidate(row: LifecycleRow, source: ObservationSource): LifecycleCandidate {
+/** In-memory observation runs by player (provider mode; see ObservationSource). */
+export type ObservationLookup = (playerId: string) => ObservationRun | null;
+
+function toCandidate(
+  row: LifecycleRow,
+  source: ObservationSource,
+  observationFor: ObservationLookup | undefined,
+): LifecycleCandidate {
   return {
     sessionId: row.session_id,
     playerId: row.player_id,
@@ -89,8 +102,10 @@ function toCandidate(row: LifecycleRow, source: ObservationSource): LifecycleCan
       startedAt: new Date(row.started_at),
       lastSessionMatchAt: toDate(row.last_match_at),
       filterModes: filterModes(row.filter),
-      lastObservedAt:
-        source === "companion" ? toDate(row.matches_observed_at) : toDate(row.last_success_at),
+      observation:
+        source === "companion"
+          ? parseObservationRun(row.observation)
+          : (observationFor?.(row.player_id) ?? null),
       presence: source === "companion" ? parsePresenceTrack(row.presence) : null,
     },
   };
@@ -119,8 +134,7 @@ async function loadLifecycleRows(
            s.started_at,
            s.filter,
            lm.last_match_at,
-           p.last_success_at,
-           cs.matches_observed_at,
+           cs.profile -> 'observation' as observation,
            cs.profile -> 'presence' as presence
       from game_session s
       join sf6_player p on p.id = s.player_id
@@ -145,7 +159,13 @@ async function loadLifecycleRows(
  */
 export async function findIdleSessionCandidates(
   db: DbExecutor,
-  options: { source: ObservationSource; policy: LifecyclePolicy; now: Date; limit: number },
+  options: {
+    source: ObservationSource;
+    policy: LifecyclePolicy;
+    now: Date;
+    limit: number;
+    observationFor?: ObservationLookup;
+  },
 ): Promise<LifecycleCandidate[]> {
   const idleAtLeastMs = Math.min(
     options.policy.offlineCloseMs,
@@ -157,7 +177,7 @@ export async function findIdleSessionCandidates(
     now: options.now,
     limit: options.limit,
   });
-  return rows.map((r) => toCandidate(r, options.source));
+  return rows.map((r) => toCandidate(r, options.source, options.observationFor));
 }
 
 export interface AutoEndOptions {
@@ -167,6 +187,8 @@ export interface AutoEndOptions {
   now?: () => Date;
   /** Candidates handled per maintenance run (processed sequentially, one connection). */
   limit?: number;
+  /** Provider mode: the runtime's in-memory observation runs. */
+  observationFor?: ObservationLookup;
   log: Logger;
 }
 
@@ -192,6 +214,7 @@ export async function autoEndIdleSessions(
     policy,
     now: now(),
     limit: options.limit ?? AUTO_END_BATCH,
+    observationFor: options.observationFor,
   });
   const result: AutoEndResult = { evaluated: candidates.length, ended: [], aborted: 0, failed: 0 };
 
@@ -204,7 +227,7 @@ export async function autoEndIdleSessions(
         recheck: async (tx) => {
           const [row] = await loadLifecycleRows(tx, { sessionId: c.sessionId });
           if (!row) throw new Error("locked session vanished");
-          const fresh = toCandidate(row, options.source);
+          const fresh = toCandidate(row, options.source, options.observationFor);
           return evaluateSessionLifecycle({ ...fresh.input, now: now() }, policy);
         },
       });

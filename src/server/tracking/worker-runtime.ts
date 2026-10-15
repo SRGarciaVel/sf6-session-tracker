@@ -16,7 +16,11 @@ import { hostname } from "node:os";
 import type { Database } from "@/server/db/client";
 import type { Env } from "@/server/env";
 import type { Logger } from "@/server/logger";
-import { DEFAULT_LIFECYCLE_POLICY } from "@/domain/session/lifecycle";
+import {
+  DEFAULT_LIFECYCLE_POLICY,
+  advanceObservationRun,
+  type ObservationRun,
+} from "@/domain/session/lifecycle";
 import { pruneStaleConnections } from "@/server/overlays/service";
 import { autoEndIdleSessions, observationSourceFor } from "@/server/sessions/lifecycle";
 import type { SF6DataProvider } from "@/server/sf6/provider";
@@ -46,6 +50,13 @@ export class TrackerRuntime {
   private loop: Promise<void> | null = null;
   private stopPromise: Promise<void> | null = null;
   private lastMaintenance = 0;
+  /**
+   * Provider mode only: continuous run of THIS runtime's successful polls per player (the
+   * observation clock of the idle auto-end). In memory on purpose — nothing persisted can prove
+   * continuity without a schema change, and losing it (restart, another replica polling) can only
+   * delay a close, never cause one.
+   */
+  private readonly observations = new Map<string, ObservationRun>();
   /** Resolves the current inter-tick sleep early so stop() does not wait a full tick. */
   private wake: (() => void) | null = null;
 
@@ -101,6 +112,9 @@ export class TrackerRuntime {
         this.workerId,
         this.log,
       )
+        .then((outcome) => {
+          if (outcome.status === "ok") this.recordObservation(player.id, new Date());
+        })
         .catch((err: unknown) =>
           this.log.error("worker.poll_crashed", { playerId: player.id, error: err }),
         )
@@ -114,6 +128,24 @@ export class TrackerRuntime {
    * prune stale overlay connections and end idle sessions (server/sessions/lifecycle.ts). The
    * lifecycle step is isolated: a failure there is logged and never backs off polling.
    */
+  /** A successful provider read for this player (exposed for tests). */
+  recordObservation(playerId: string, at: Date): void {
+    const policy = this.config.lifecycle ?? DEFAULT_LIFECYCLE_POLICY;
+    const run = advanceObservationRun(
+      this.observations.get(playerId) ?? null,
+      at,
+      policy.observationMaxGapMs,
+    );
+    this.observations.set(playerId, run);
+  }
+
+  private pruneObservations(now: number): void {
+    const policy = this.config.lifecycle ?? DEFAULT_LIFECYCLE_POLICY;
+    for (const [id, run] of this.observations) {
+      if (now - Date.parse(run.observedAt) > policy.absoluteCeilingMs) this.observations.delete(id);
+    }
+  }
+
   async maintenance(): Promise<void> {
     const every = this.deps.maintenanceEveryMs ?? 60_000;
     if (Date.now() - this.lastMaintenance < every) return;
@@ -121,10 +153,12 @@ export class TrackerRuntime {
     const pruned = await pruneStaleConnections(this.deps.db);
     if (pruned > 0) this.log.debug("worker.pruned_connections", { pruned });
     if (this.stopping) return;
+    this.pruneObservations(Date.now());
     try {
       const res = await autoEndIdleSessions(this.deps.db, this.deps.provider, {
         source: observationSourceFor(this.deps.env.SF6_PROVIDER),
         policy: this.config.lifecycle ?? DEFAULT_LIFECYCLE_POLICY,
+        observationFor: (playerId) => this.observations.get(playerId) ?? null,
         log: this.log,
       });
       if (res.ended.length > 0 || res.failed > 0) {

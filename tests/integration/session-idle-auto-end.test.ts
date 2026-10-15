@@ -1,6 +1,6 @@
 /**
  * Idle auto-end against a real Postgres (TEST_DATABASE_URL), provider mode (mock CFN): the
- * observation clock is sf6_player.last_success_at and there is no presence. Companion mode and
+ * observation clock is the runtime's in-memory run of successful polls and there is no presence. Companion mode and
  * presence are covered in session-idle-companion.test.ts. Skipped when TEST_DATABASE_URL is unset.
  *
  * Time: the policy runs on an injected clock (`at(minutes)` after the session start), so 45 min
@@ -9,6 +9,7 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import type { ObservationRun } from "@/domain/session/lifecycle";
 import type { NormalizedSF6Match } from "@/domain/sf6/types";
 
 try {
@@ -30,7 +31,8 @@ const { endSession, getActiveSession, startSession, summarizeSessionRow } =
   await import("@/server/sessions/service");
 const { autoEndIdleSessions, findIdleSessionCandidates } =
   await import("@/server/sessions/lifecycle");
-const { DEFAULT_LIFECYCLE_POLICY } = await import("@/domain/session/lifecycle");
+const { DEFAULT_LIFECYCLE_POLICY, OBSERVATION_MAX_GAP_MS, advanceObservationRun } =
+  await import("@/domain/session/lifecycle");
 const { MockSF6DataProvider } = await import("@/server/sf6/providers/mock");
 const { TrackerRuntime } = await import("@/server/tracking/worker-runtime");
 const { logger } = await import("@/server/logger");
@@ -48,8 +50,15 @@ describe.skipIf(!TEST_DB)("idle auto-end (provider mode, integration)", () => {
 
   const at = (minutes: number) => new Date(startedAt.getTime() + minutes * 60_000);
   const clock = (minutes: number) => () => at(minutes);
+  /** Provider mode observation runs (the runtime keeps them in memory; injected here). */
+  const runs = new Map<string, ObservationRun>();
   const run = (minutes: number) =>
-    autoEndIdleSessions(db, provider, { source: "provider", now: clock(minutes), log });
+    autoEndIdleSessions(db, provider, {
+      source: "provider",
+      now: clock(minutes),
+      observationFor: (id) => runs.get(id) ?? null,
+      log,
+    });
 
   beforeAll(async () => {
     await db.execute(sql`truncate auth_user, mock_cfn_player restart identity cascade`);
@@ -75,11 +84,32 @@ describe.skipIf(!TEST_DB)("idle auto-end (provider mode, integration)", () => {
     startedAt = session.startedAt;
   });
 
+  /** SST has been observing CONTINUOUSLY from the session start until minute `minutes`. */
   async function observedAt(minutes: number) {
-    await db
-      .update(sf6Player)
-      .set({ lastSuccessAt: at(minutes) })
-      .where(eq(sf6Player.id, playerId));
+    let r: ObservationRun | null = null;
+    for (let m = 0; m <= minutes + 1e-9; m += 0.5) {
+      r = advanceObservationRun(r, at(Math.min(m, minutes)), OBSERVATION_MAX_GAP_MS);
+    }
+    r = advanceObservationRun(r, at(minutes), OBSERVATION_MAX_GAP_MS);
+    runs.set(playerId, r);
+  }
+
+  function runtime(workerId: string) {
+    return new TrackerRuntime({
+      db,
+      provider,
+      env: { WORKER_CONCURRENCY: 1, WORKER_TICK_MS: 1000, SF6_PROVIDER: "mock" },
+      config: {
+        polling: { intervalMs: 20_000, jitterMs: 0, backoffBaseMs: 30_000, backoffMaxMs: 120_000 },
+        leaseMs: 60_000,
+        profileRefreshMs: 300_000,
+        startGraceMs: 0,
+        lifecycle: DEFAULT_LIFECYCLE_POLICY,
+      },
+      logger: log,
+      mode: "standalone",
+      workerId,
+    });
   }
 
   function rankedMatch(minutes: number, mode: NormalizedSF6Match["mode"] = "ranked") {
@@ -322,23 +352,39 @@ describe.skipIf(!TEST_DB)("idle auto-end (provider mode, integration)", () => {
       .update(gameSession)
       .set({ startedAt: sql`now() - interval '13 hours'` })
       .where(eq(gameSession.id, sessionId));
-    const rt = new TrackerRuntime({
-      db,
-      provider,
-      env: { WORKER_CONCURRENCY: 1, WORKER_TICK_MS: 1000, SF6_PROVIDER: "mock" },
-      config: {
-        polling: { intervalMs: 20_000, jitterMs: 0, backoffBaseMs: 30_000, backoffMaxMs: 120_000 },
-        leaseMs: 60_000,
-        profileRefreshMs: 300_000,
-        startGraceMs: 0,
-        lifecycle: DEFAULT_LIFECYCLE_POLICY,
-      },
-      logger: log,
-      mode: "standalone",
-      workerId: "restart-test",
-    });
+    const rt = runtime("restart-test"); // no observation history: only the ceiling can fire
     await rt.maintenance();
     expect((await session()).status).toBe("ended");
+  });
+
+  it("10. provider mode: the runtime's own polls prove continuity; a gap restarts it", async () => {
+    // Real clock here (maintenance uses Date.now()): the session started 3 h ago.
+    await db
+      .update(gameSession)
+      .set({ startedAt: sql`now() - interval '170 minutes'` })
+      .where(eq(gameSession.id, sessionId));
+    const ago = (m: number) => new Date(Date.now() - m * 60_000);
+    // Polled 170 → 165 min ago, then NOTHING for 2 h (server asleep), back 44 min ago.
+    const gapped = runtime("gap-test");
+    for (let m = 170; m >= 165; m -= 0.5) gapped.recordObservation(playerId, ago(m));
+    for (let m = 44; m >= 0; m -= 0.5) gapped.recordObservation(playerId, ago(m));
+    await gapped.maintenance();
+    expect((await session()).status).toBe("active"); // only 44 min observed since the gap
+    // Continuous polling for the last 46 min (≤ 5 min apart) → normal idle.
+    const steady = runtime("steady-test");
+    for (let m = 46; m >= 0; m -= 4) steady.recordObservation(playerId, ago(m));
+    steady.recordObservation(playerId, ago(0));
+    await steady.maintenance();
+    expect((await session()).status).toBe("ended");
+  });
+
+  it("10b. last_success_at alone never counts as observation (a fresh success after a gap)", async () => {
+    await db
+      .update(sf6Player)
+      .set({ lastSuccessAt: at(125) })
+      .where(eq(sf6Player.id, playerId));
+    expect((await run(125)).ended).toEqual([]);
+    expect((await session()).status).toBe("active");
   });
 
   it("candidate discovery is bounded and skips recently active sessions", async () => {

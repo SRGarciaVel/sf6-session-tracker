@@ -279,6 +279,7 @@ describe.skipIf(!TEST_DB)("idle auto-end with Buckler presence (Companion mode)"
   });
 
   it("25. a non-qualifying (casual) match neither counts nor resets the timer", async () => {
+    await syncs(0, 29, CODE.menu, 3); // continuous observation from the start
     await sync(30, CODE.menu, { matches: [wireMatch(30, "casual")] });
     await syncs(31, 45, CODE.menu, 2);
     await sync(45, CODE.menu);
@@ -302,5 +303,64 @@ describe.skipIf(!TEST_DB)("idle auto-end with Buckler presence (Companion mode)"
     await sync(2, CODE.practice, { withProfile: false });
     expect(await storedPresence()).toMatchObject({ observations: 2 });
     expect(await provider.getPlayerProfile(CFN, { scope: { userId } })).toEqual(profile);
+  });
+
+  describe("continuous observation after a Companion gap", () => {
+    async function storedObservation() {
+      const [row] = await db
+        .select({ profile: companionSnapshot.profile })
+        .from(companionSnapshot)
+        .where(and(eq(companionSnapshot.userId, userId), eq(companionSnapshot.cfnUserId, CFN)));
+      return row?.profile?.observation ?? null;
+    }
+
+    it("1–3. observed until 5, gone 2 h, back in Menu at 125 → active; 169 → active; 170 → close", async () => {
+      await syncs(0, 5, CODE.menu);
+      await sync(125, CODE.menu);
+      expect(await storedObservation()).toMatchObject({
+        since: at(125).toISOString(),
+        observations: 1,
+      });
+      expect((await run(125)).ended).toEqual([]);
+      await syncs(126, 169, CODE.menu);
+      expect((await run(169)).ended).toEqual([]);
+      expect(await status()).toBe("active");
+      await sync(170, CODE.menu);
+      expect((await run(170)).ended[0]?.decision).toMatchObject({ policy: "normal-idle" });
+    });
+
+    it("4/5. back directly in Practice → active; Practice → Menu → 45 min from the last Practice", async () => {
+      await syncs(0, 5, CODE.menu);
+      await syncs(125, 200, CODE.practice, 2);
+      await sync(200, CODE.practice); // last Practice observation at exactly 200
+      expect((await run(200)).ended).toEqual([]);
+      await syncs(201, 244, CODE.menu);
+      expect((await run(244)).ended).toEqual([]);
+      await sync(245, CODE.menu);
+      expect((await run(245)).ended[0]?.decision).toMatchObject({ policy: "normal-idle" });
+    });
+
+    it("6/7. OLD Companion (no presence): first sync after 2 h does not close; 45 min later it does", async () => {
+      await sync(3, "absent", { matches: [wireMatch(2)] });
+      await syncs(4, 5, "absent");
+      await sync(125, "absent");
+      expect((await run(125)).ended).toEqual([]);
+      await syncs(126, 169, "absent", 2);
+      await sync(169, "absent");
+      expect((await run(169)).ended).toEqual([]);
+      await sync(170, "absent");
+      expect((await run(170)).ended[0]?.decision).toMatchObject({
+        policy: "normal-idle",
+        presenceState: "unknown",
+      });
+    });
+
+    it("9. normal sync cadence (≤ 5 min apart) keeps one observation run", async () => {
+      await syncs(0, 40, "absent", 4);
+      const run40 = (await storedObservation()) as { since: string; observedAt: string };
+      // One run since the first sync (made just before Start), 10+ observations, never reset.
+      expect(Date.parse(run40.since)).toBeLessThanOrEqual(at(0).getTime());
+      expect(run40.observedAt).toBe(at(40).toISOString());
+    });
   });
 });

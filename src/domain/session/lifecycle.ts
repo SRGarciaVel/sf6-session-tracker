@@ -17,9 +17,12 @@
  *   3. offline           fresh Offline observed CONTINUOUSLY for ≥ 15 min (≥ 3 observations,
  *                        consecutive observations ≤ the freshness window apart), the whole run
  *                        after the last session match ⇒ end.
- *   4. normal idle       SST OBSERVED ≥ 45 min without activity: lastObservedAt − anchor ≥ 45 min,
- *                        where anchor = max(lastActivityAt, last fresh playing presence). Menu,
- *                        unknown and stale presence neither hold nor accelerate this timer.
+ *   4. normal idle       SST OBSERVED ≥ 45 min without activity, CONTINUOUSLY:
+ *                        observedAt − anchor ≥ 45 min, where
+ *                        anchor = max(lastActivityAt, last playing presence, observation.since)
+ *                        and observation is the current continuous run of successful match
+ *                        observations (consecutive ≤ 5 min apart). Menu, unknown and stale
+ *                        presence neither hold nor accelerate this timer.
  *   otherwise keep.
  *
  * Why the anchor includes the last playing presence: "hold while playing" alone would close a
@@ -28,8 +31,10 @@
  * last seen. A stale Practice/Ranked never holds the session: once it is older than the freshness
  * window it only anchors the timer, and the 12 h ceiling (from lastActivityAt) is never moved.
  *
- * "Observed" matters: if the Companion is closed SST cannot know that nobody played, so without
- * observation only the 12 h ceiling can end a session.
+ * "Observed" matters: if the Companion is closed SST cannot know that nobody played. The latest
+ * observation alone is not enough either: after a gap (browser closed, Buckler pause, server
+ * asleep) a new run starts and the 45 min are counted again inside it. Without a run only the
+ * 12 h ceiling can end a session.
  */
 import type { BucklerPresence } from "@/domain/sf6/presence";
 import { presenceFromOnlineStatus } from "@/domain/sf6/presence";
@@ -45,6 +50,13 @@ export const SESSION_ABSOLUTE_CEILING_MS = 12 * 60 * 60_000;
  * battlelog cycles (30 s), short of the 10 min Buckler backoff.
  */
 export const PRESENCE_MAX_AGE_MS = 5 * 60_000;
+/**
+ * Two successful match observations at most this far apart count as CONTINUOUS observation; a
+ * larger gap restarts the observation run. Same 5 min: Companion syncs every 30 s with a session
+ * (120 s without), the tracker polls every 20 s and backs off to at most 5 min; a Buckler pause
+ * (10 min) or a closed browser therefore breaks continuity, as it should.
+ */
+export const OBSERVATION_MAX_GAP_MS = PRESENCE_MAX_AGE_MS;
 
 export interface LifecyclePolicy {
   idleTimeoutMs: number;
@@ -52,6 +64,7 @@ export interface LifecyclePolicy {
   offlineMinObservations: number;
   absoluteCeilingMs: number;
   presenceMaxAgeMs: number;
+  observationMaxGapMs: number;
 }
 
 export const DEFAULT_LIFECYCLE_POLICY: LifecyclePolicy = Object.freeze({
@@ -60,7 +73,58 @@ export const DEFAULT_LIFECYCLE_POLICY: LifecyclePolicy = Object.freeze({
   offlineMinObservations: SESSION_OFFLINE_MIN_OBSERVATIONS,
   absoluteCeilingMs: SESSION_ABSOLUTE_CEILING_MS,
   presenceMaxAgeMs: PRESENCE_MAX_AGE_MS,
+  observationMaxGapMs: OBSERVATION_MAX_GAP_MS,
 });
+
+/* ───────────────────────── Observation run ───────────────────────── */
+
+/**
+ * The current CONTINUOUS run of successful match observations (Companion syncs / provider
+ * polls), independent of any presence state. "SST observed 45 min without activity" needs the
+ * whole 45 min inside one run: the latest observation alone says nothing about the gap before it
+ * (a Companion that was closed for 2 h and comes back in Menu must not close the session at once).
+ */
+export interface ObservationRun {
+  /** First observation of the current run. */
+  since: string;
+  /** Latest observation. */
+  observedAt: string;
+  observations: number;
+}
+
+/** Fold one successful observation into the run; a gap > `maxGapMs` starts a new run. */
+export function advanceObservationRun(
+  prev: ObservationRun | null,
+  observedAt: Date,
+  maxGapMs: number,
+): ObservationRun {
+  if (prev) {
+    const prevAt = Date.parse(prev.observedAt);
+    if (observedAt.getTime() < prevAt) return prev;
+    if (observedAt.getTime() - prevAt <= maxGapMs) {
+      return {
+        since: prev.since,
+        observedAt: observedAt.toISOString(),
+        observations: prev.observations + 1,
+      };
+    }
+  }
+  const at = observedAt.toISOString();
+  return { since: at, observedAt: at, observations: 1 };
+}
+
+/** Lenient reader for a stored run: anything malformed ⇒ null (no proven observation). */
+export function parseObservationRun(raw: unknown): ObservationRun | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const iso = (v: unknown): v is string => typeof v === "string" && !Number.isNaN(Date.parse(v));
+  if (!iso(r.since) || !iso(r.observedAt) || Date.parse(r.since) > Date.parse(r.observedAt)) {
+    return null;
+  }
+  if (typeof r.observations !== "number" || !Number.isInteger(r.observations)) return null;
+  if (r.observations < 1) return null;
+  return { since: r.since, observedAt: r.observedAt, observations: r.observations };
+}
 
 /* ───────────────────────── Presence track ───────────────────────── */
 
@@ -157,8 +221,11 @@ export interface SessionLifecycleInput {
   lastSessionMatchAt: Date | null;
   /** Modes the session counts (its filter): a match-mode presence holds it only if counted. */
   filterModes: readonly MatchMode[];
-  /** Latest time SST successfully observed the player's matches; null = never. */
-  lastObservedAt: Date | null;
+  /**
+   * Current continuous run of successful match observations; null = none proven (never observed,
+   * or the source cannot prove continuity).
+   */
+  observation: ObservationRun | null;
   /** Companion presence track; null = no presence (old Companion, direct Capcom mode…). */
   presence: PresenceTrack | null;
 }
@@ -248,14 +315,17 @@ export function evaluateSessionLifecycle(
     }
   }
 
-  // 4. Normal observed inactivity, counted from the last activity or playing presence.
+  // 4. Normal observed inactivity: the 45 min must lie inside ONE continuous observation run,
+  //    after the last session activity and after the last playing presence.
+  const observation = input.observation;
+  if (!observation) return { action: "keep", reason: "not-observed", ...diag };
   let anchor = activity;
-  if (presence?.lastPlayingAt) {
-    const playing = clampToNow(new Date(presence.lastPlayingAt), now);
-    if (ms(playing) > ms(anchor)) anchor = playing;
+  for (const iso of [presence?.lastPlayingAt ?? null, observation.since]) {
+    if (!iso) continue;
+    const t = clampToNow(new Date(iso), now);
+    if (ms(t) > ms(anchor)) anchor = t;
   }
-  if (!input.lastObservedAt) return { action: "keep", reason: "not-observed", ...diag };
-  const observed = clampToNow(input.lastObservedAt, now);
+  const observed = clampToNow(new Date(observation.observedAt), now);
   if (ms(observed) - ms(anchor) >= policy.idleTimeoutMs) {
     return { action: "end", policy: "normal-idle", ...diag };
   }

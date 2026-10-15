@@ -21,7 +21,12 @@ import {
   type CompanionState,
   type CompanionSyncParsed,
 } from "@sf6/capcom-core";
-import { advancePresenceTrack, parsePresenceTrack } from "@/domain/session/lifecycle";
+import {
+  advanceObservationRun,
+  advancePresenceTrack,
+  parseObservationRun,
+  parsePresenceTrack,
+} from "@/domain/session/lifecycle";
 import type { Database, DbExecutor } from "@/server/db/client";
 import {
   companionDevice,
@@ -256,28 +261,37 @@ const toWire = (m: CompanionSyncParsed["matches"][number]): CompanionWireMatch =
 });
 
 /**
- * The profile JSON to store: the new profile (or the stored one) plus the presence track folded
- * with this sync's observation. Presence is accepted at SERVER time (it has no timestamp of its
- * own). A sync without `presence` (older Companion) leaves the track as it was, so it simply ages
- * into "stale". Without any profile there is nowhere to keep presence: it is not stored.
+ * The profile JSON to store: the new profile (or the stored one) plus the lifecycle metadata
+ * folded with this sync (domain/session/lifecycle.ts), both at SERVER acceptance time:
+ *   observation  continuous run of accepted syncs (every sync is a match observation, with or
+ *                without presence — old Companions included); a gap > 5 min restarts it.
+ *   presence     Buckler presence track; a sync without `presence` (older Companion) leaves it
+ *                as it was, so it simply ages into "stale".
+ * Without any profile there is nowhere to keep them: not stored (auto-end then has no proven
+ * observation and only the 12 h ceiling applies).
  */
 function snapshotProfile(
   existing: CompanionSnapshotProfile | null,
   payload: CompanionSyncParsed,
   now: Date,
 ): CompanionSnapshotProfile | null {
+  const maxGapMs = getEnv().COMPANION_SNAPSHOT_MAX_AGE_MS;
+  const base = payload.profile ?? (existing ? toWireProfile(existing) : null);
+  if (!base) return null;
+  const observation = advanceObservationRun(
+    parseObservationRun(existing?.observation),
+    now,
+    maxGapMs,
+  );
   const previous = parsePresenceTrack(existing?.presence);
   const presence = payload.presence
     ? advancePresenceTrack(
         previous,
         { code: payload.presence.onlineStatus, observedAt: now },
-        getEnv().COMPANION_SNAPSHOT_MAX_AGE_MS,
+        maxGapMs,
       )
     : previous;
-  const base = payload.profile ?? (existing ? toWireProfile(existing) : null);
-  if (!base) return null;
-  if (!payload.profile && presence === previous) return null; // nothing changed: keep the row's
-  return presence ? { ...base, presence } : base;
+  return { ...base, observation, ...(presence ? { presence } : {}) };
 }
 
 export async function applyCompanionSync(

@@ -212,4 +212,26 @@ describe("TrackerRuntime", () => {
     await expect(rt.maintenance()).resolves.toBeUndefined();
     expect(mocks.pruneStaleConnections).toHaveBeenCalledTimes(1);
   });
+
+  it("provider mode: successful polls feed the in-memory observation run used by maintenance", async () => {
+    mocks.claimDuePlayers.mockResolvedValueOnce([player("a"), player("b")]);
+    mocks.pollPlayer.mockImplementation(
+      async (_db: unknown, _p: unknown, claimed: ClaimedPlayer) =>
+        claimed.id === "a" ? { status: "ok" } : { status: "error", code: "unavailable" },
+    );
+    const rt = makeRuntime();
+    await rt.tick();
+    await vi.waitFor(() => expect(rt.inFlightCount).toBe(0));
+    await rt.maintenance();
+    const lookup = mocks.autoEndIdleSessions.mock.calls[0]?.[2]?.observationFor as (
+      id: string,
+    ) => { since: string; observations: number } | null;
+    expect(lookup("a")).toMatchObject({ observations: 1 });
+    expect(lookup("b")).toBeNull(); // a failed read is not an observation
+    // A gap longer than the continuity window restarts the run.
+    rt.recordObservation("c", new Date(Date.now() - 20 * 60_000));
+    rt.recordObservation("c", new Date());
+    expect(lookup("c")).toMatchObject({ observations: 1 });
+    await rt.stop();
+  });
 });
