@@ -52,7 +52,7 @@ export function AnalyticsView({ data }: { data: PlayerAnalytics }) {
   })).filter((g) => g.items.length > 0);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-[1280px] space-y-6">
       <header>
         <h1 className="font-display text-4xl leading-none font-extrabold uppercase italic sm:text-5xl">
           {t("title")}
@@ -103,19 +103,29 @@ export function AnalyticsView({ data }: { data: PlayerAnalytics }) {
             </>
           )}
 
-          <details className="group border-t border-line pt-4 text-sm" data-testid="methodology">
-            <summary className="cursor-pointer font-display font-bold tracking-wide text-muted uppercase hover:text-text">
-              {t("methodology.title")}
-            </summary>
-            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-xs text-muted">
-              <li>{t("sampleNote")}</li>
-              <li>{t("drawsExcluded")}</li>
-              <li>{t("rangeNote")}</li>
-              <li>{t("matchups.note")}</li>
-              <li>{t("sessionPerformance.note")}</li>
-              <li>{t("sessionPerformance.durationNote")}</li>
-            </ul>
-          </details>
+          <footer className="border-t border-line pt-5" data-testid="analytics-end">
+            <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="font-display text-sm font-extrabold tracking-[0.14em] text-heading uppercase">
+                {t("end.brand")}
+              </span>
+              <span className="text-xs text-muted">
+                {t("end.basedOn", { count: summary.overall.matches })} · {context}
+              </span>
+            </p>
+            <details className="group mt-4 text-sm" data-testid="methodology">
+              <summary className="cursor-pointer font-display font-bold tracking-wide text-muted uppercase hover:text-text">
+                {t("methodology.title")}
+              </summary>
+              <ul className="mt-3 list-disc space-y-1.5 pl-5 text-xs text-muted">
+                <li>{t("sampleNote")}</li>
+                <li>{t("drawsExcluded")}</li>
+                <li>{t("rangeNote")}</li>
+                <li>{t("matchups.note")}</li>
+                <li>{t("sessionPerformance.note")}</li>
+                <li>{t("sessionPerformance.durationNote")}</li>
+              </ul>
+            </details>
+          </footer>
         </div>
       </div>
     </div>

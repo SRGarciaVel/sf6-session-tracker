@@ -8,6 +8,7 @@ import { formatDecimal, formatInteger, formatMinutes, formatWinRate } from "@/do
 import type { PlayerAnalytics } from "@/server/analytics/service";
 import {
   AnalyticsSection,
+  RecordBar,
   RecordValue,
   SampleTag,
   Stat,
@@ -27,7 +28,7 @@ export function SessionPerformanceSection({ data }: { data: PlayerAnalytics }) {
     <AnalyticsSection
       id="sessions"
       testId="session-performance"
-      eyebrow={ta("nav.groups.sessions")}
+      eyebrow={ta("eyebrows.sessions")}
       title={t("title")}
       description={<p>{t("note")}</p>}
     >
@@ -122,6 +123,7 @@ export function SessionPerformanceSection({ data }: { data: PlayerAnalytics }) {
                         <p className="mt-1 font-display text-2xl font-bold tabular">
                           <RecordValue record={s.halves[half]} />
                         </p>
+                        <RecordBar record={s.halves[half]} className="max-w-56" />
                         <p className="mt-1 text-sm">
                           <WinRate record={s.halves[half]} />
                           {s.halves[half].draws > 0 && (

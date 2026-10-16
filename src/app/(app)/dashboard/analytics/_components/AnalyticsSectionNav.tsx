@@ -175,7 +175,7 @@ export function AnalyticsSectionNav({
           {groups.map((g) => (
             <div key={g.label}>
               <p className="hud-label mb-1.5 text-xs text-faint">{g.label}</p>
-              <ul className="space-y-0.5">
+              <ul className="space-y-0.5 border-l border-line">
                 {g.items.map((item) => (
                   <li key={item.id}>
                     <a
@@ -184,7 +184,7 @@ export function AnalyticsSectionNav({
                       aria-current={current(item.id)}
                       onClick={() => setActive(item.id)}
                       className={cx(
-                        "block border-l-2 py-1.5 pl-3 text-sm transition-colors motion-reduce:transition-none",
+                        "-ml-px block border-l-2 py-1.5 pl-3 text-sm transition-colors motion-reduce:transition-none",
                         "focus-visible:-outline-offset-2",
                         item.id === active
                           ? "border-cyan font-semibold text-text"

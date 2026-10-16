@@ -7,19 +7,25 @@ import {
   AnalyticsSection,
   RecordValue,
   SampleTag,
-  TablePanel,
+  DisclosureTablePanel,
   WinRate,
   characterNameOf,
 } from "./parts";
+
+/** Opponent rows shown before "Show N more" (existing order: matches desc; never a ranking). */
+export const OPPONENT_ROWS_INITIAL = 10;
+const OPPONENT_COLUMNS = ["22%", "10%", "19%", "11%", "14%", "24%"] as const;
 
 export function MatchupsSection({ data }: { data: PlayerAnalytics }) {
   const t = useTranslations("Analytics");
   const locale = useLocale();
   const { matchups } = data.summary;
   const characterName = characterNameOf(data);
+  const hidden = Math.max(0, matchups.opponents.length - OPPONENT_ROWS_INITIAL);
   return (
     <AnalyticsSection
       id="matchups"
+      eyebrow={t("eyebrows.matchups")}
       title={t("matchups.title")}
       description={<p>{t("matchups.note")}</p>}
     >
@@ -30,8 +36,18 @@ export function MatchupsSection({ data }: { data: PlayerAnalytics }) {
       ) : (
         <>
           <Highlights data={data} />
-          <TablePanel
-            minWidth="min-w-[34rem]"
+          <DisclosureTablePanel
+            testId="opponents-table"
+            minWidth="min-w-[42rem]"
+            columns={OPPONENT_COLUMNS}
+            rows={matchups.opponents}
+            limit={OPPONENT_ROWS_INITIAL}
+            showMore={t("disclosure.moreOpponents", { count: hidden })}
+            showLess={t("disclosure.lessOpponents")}
+            continuationCaption={t("disclosure.opponentsContinued", {
+              from: OPPONENT_ROWS_INITIAL + 1,
+              to: matchups.opponents.length,
+            })}
             caption={
               <>
                 <span className="mb-1 block font-display text-base font-bold tracking-wide text-text uppercase">
@@ -64,8 +80,7 @@ export function MatchupsSection({ data }: { data: PlayerAnalytics }) {
                 </th>
               </>
             }
-          >
-            {matchups.opponents.map((o) => (
+            renderRow={(o) => (
               <tr
                 key={o.opponentKey}
                 data-opponent={o.opponentKey}
@@ -92,11 +107,11 @@ export function MatchupsSection({ data }: { data: PlayerAnalytics }) {
                   {formatWinRate(Math.round(o.share * 10) / 10, locale)}
                 </td>
                 <td className="px-5 py-3">
-                  <SampleTag band={o.record.sample} />
+                  <SampleTag band={o.record.sample} wrap />
                 </td>
               </tr>
-            ))}
-          </TablePanel>
+            )}
+          />
         </>
       )}
       {matchups.unavailable > 0 && (

@@ -8,10 +8,11 @@ import {
   AnalyticsSection,
   RecordValue,
   SampleTag,
+  RecordBar,
   Sequence,
   Stat,
   StatSurface,
-  TablePanel,
+  DisclosureTablePanel,
   WinRate,
   analyticsHref,
 } from "./parts";
@@ -21,10 +22,11 @@ export function OverviewSection({ data }: { data: PlayerAnalytics }) {
   const locale = useLocale();
   const { overall, sessions } = data.summary;
   return (
-    <AnalyticsSection id="overview" title={t("summaryTitle")}>
+    <AnalyticsSection id="overview" eyebrow={t("eyebrows.overview")} title={t("summaryTitle")}>
       <StatSurface testId="overview-stats">
         <Stat label={t("matches")} value={formatInteger(overall.matches, locale)} />
         <Stat label={t("record")} value={<RecordValue record={overall} />}>
+          <RecordBar record={overall} />
           {overall.draws > 0 && <span>{t("draws", { count: overall.draws })}</span>}
         </Stat>
         <Stat label={t("winRate")} value={<WinRate record={overall} />}>
@@ -56,7 +58,7 @@ export function RecentFormSection({ data }: { data: PlayerAnalytics }) {
   const forms = data.summary.recent;
   const latest = forms[forms.length - 1]?.results ?? [];
   return (
-    <AnalyticsSection id="recent" eyebrow={t("nav.groups.performance")} title={t("recentTitle")}>
+    <AnalyticsSection id="recent" eyebrow={t("eyebrows.recent")} title={t("recentTitle")}>
       <div className="hud-panel">
         {latest.length > 0 && (
           <div className="border-b border-line p-5">
@@ -90,18 +92,37 @@ export function RecentFormSection({ data }: { data: PlayerAnalytics }) {
   );
 }
 
+/** Rows shown before "Show N more characters" (existing order; never a ranking). */
+export const CHARACTER_ROWS_INITIAL = 8;
+const CHARACTER_COLUMNS = ["22%", "9%", "18%", "10%", "19%", "22%"] as const;
+
 export function CharactersSection({ data }: { data: PlayerAnalytics }) {
   const t = useTranslations("Analytics");
   const locale = useLocale();
   const filtered = data.character !== null;
+  const rows = data.summary.characters;
+  const hidden = Math.max(0, rows.length - CHARACTER_ROWS_INITIAL);
+  const selectedIndex = rows.findIndex((c) => c.characterKey === data.character);
   return (
     <AnalyticsSection
       id="characters"
-      eyebrow={t("nav.groups.performance")}
+      eyebrow={t("eyebrows.characters")}
       title={t("charactersTitle")}
     >
-      <TablePanel
-        minWidth="min-w-[36rem]"
+      <DisclosureTablePanel
+        testId="characters-table"
+        minWidth="min-w-[44rem]"
+        columns={CHARACTER_COLUMNS}
+        rows={rows}
+        limit={CHARACTER_ROWS_INITIAL}
+        // A selected character below the cutoff opens the disclosure (order unchanged).
+        defaultOpen={selectedIndex >= CHARACTER_ROWS_INITIAL}
+        showMore={t("disclosure.moreCharacters", { count: hidden })}
+        showLess={t("disclosure.lessCharacters")}
+        continuationCaption={t("disclosure.charactersContinued", {
+          from: CHARACTER_ROWS_INITIAL + 1,
+          to: rows.length,
+        })}
         caption={filtered ? t("charactersOverviewCaption") : t("charactersCaption")}
         head={
           <>
@@ -125,8 +146,7 @@ export function CharactersSection({ data }: { data: PlayerAnalytics }) {
             </th>
           </>
         }
-      >
-        {data.summary.characters.map((c) => {
+        renderRow={(c) => {
           const selected = c.characterKey === data.character;
           return (
             <tr
@@ -184,12 +204,12 @@ export function CharactersSection({ data }: { data: PlayerAnalytics }) {
                 </span>
               </td>
               <td className="px-5 py-3">
-                <SampleTag band={c.record.sample} />
+                <SampleTag band={c.record.sample} wrap />
               </td>
             </tr>
           );
-        })}
-      </TablePanel>
+        }}
+      />
     </AnalyticsSection>
   );
 }
