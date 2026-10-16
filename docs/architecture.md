@@ -304,7 +304,8 @@ while it observes them. The page says so.
      `range`, `mode` and `character` from the URL. Then two queries, run sequentially:
      - the player's own recorded characters (filter options): `GROUP BY character_key`;
      - one narrow projection of 9 columns (no `opponent_name`), played_at descending.
-  2. `domain/analytics/{record,aggregate,matchups}.ts` aggregate them (pure, unit tested).
+  2. `domain/analytics/{record,aggregate,matchups,sessions,review}.ts` aggregate them (pure, unit
+     tested).
   3. The page only formats.
   - No analytics tables, views, jobs or migrations. Index: `match_player_played_idx (player_id,
 played_at)`, backward scan plus incremental sort; the mode is a filter on those rows.
@@ -323,7 +324,8 @@ played_at)`, backward scan plus incremental sort; the mode is a filter on those 
 - **Sample bands** (`domain/analytics/samples.ts`, decided matches): 0 none · 1–4 very small ·
   5–9 small · 10–29 developing · 30+ larger. They are communication bands, not statistical
   guarantees.
-- **Later phases:** rating trends (6.3, blocked on segmented baselines) and derived insights (6.4).
+- **Later phases:** rating trends (6.3, blocked on segmented baselines). Review priorities (6.4A)
+  are below.
 
 #### Matchups (Phase 6.1)
 
@@ -398,6 +400,53 @@ query and no `game_session` join.
   middle match), aggregated across segments. No trend claim.
 - **Match position:** positions 1–10, sample = segments that reached each position.
 - **Wording:** neutral. No tilt, fatigue or momentum, and no best/worst session.
+
+#### Review priorities (Phase 6.4A)
+
+`#review` ("Para revisar" / "To review"), right after the overview. It answers "where should I look
+first when reviewing my play?" — never "what is technically wrong with my play?".
+
+- **Deterministic, not AI.** `domain/analytics/review.ts` (pure, unit tested) turns the analytics
+  of the SAME dataset into signals: no LLM, no external API, no embeddings, no probabilistic
+  classification, no randomness, no clock. Same rows ⇒ same signals, ids and order. The domain
+  returns facts (discriminated union + evidence); the UI and the i18n catalogs word them and attach
+  PREDEFINED review questions.
+- **Data:** the same 9-column rows, no new query. `computeAnalytics` builds the matchup section and
+  the session segments once and passes them (with the halves) to `computeReviewSection`; `review.ts`
+  imports `record` / `matchups` / `sessions`, never `aggregate` (no cycle).
+- **Dataset:** range + mode + character, as every other section. No review-specific filters.
+- **Gates** (product thresholds, NOT significance; every pp gate uses `>=` with a 1e-9 float
+  tolerance, so exactly 10 pp qualifies and 9.9 never does):
+
+  | Signal                     | Comparator                                                                                                                                           | Eligibility                                                           | Trigger                                                   | Link        |
+  | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------- | ----------- |
+  | `matchup-underperformance` | the SAME own character's record in the dataset (all its matches, unknown opponents included) — never the cross-character account record              | pair ≥ 10 decided, character ≥ 30 decided                             | pair WR − character WR ≤ −10 pp                           | `#matchups` |
+  | `recent-form-shift`        | latest 20 vs the 20 before them (non-overlapping, canonical newest-first order; never vs the whole range)                                            | ≥ 10 decided in each window (draws stay in the window, out of the WR) | \|Δ\| ≥ 10 pp, up or down                                 | `#recent`   |
+  | `session-half-shift`       | Phase 6.2 halves as they are                                                                                                                         | ≥ 5 eligible segments, ≥ 20 decided per half                          | \|second − first\| ≥ 10 pp                                | `#sessions` |
+  | `post-loss-transition`     | P(next = win \| loss) vs P(next = win \| win), inside ONE analytics segment (`segmentSessionMatches`: never across a real session or a ≥ 45 min gap) | ≥ 10 observations each                                                | post-loss − post-win ≤ −10 pp (no positive signal in v1)  | `#sessions` |
+  | `high-exposure-opponent`   | descriptive (frequency only)                                                                                                                         | ≥ 20 matches and ≥ 10 % of matches with a known opponent              | the single top opponent (more matches, higher share, key) | `#matchups` |
+  - A draw as the current match is in neither transition group; a draw as the next match is a
+    non-win; a segment's last match has no next match. The post-loss side equals the existing
+    "win in the next match after a loss" counts.
+  - `session_id = NULL` takes no part in transition / halves signals, but does in recent form
+    (which needs no session membership). Rows without an opponent character never form a matchup
+    or an exposure signal (no "Unknown" opponent).
+
+- **Selection (no score):** rank by 1. direction — negative comparative, then positive
+  comparative, then the neutral exposure signal; 2. larger |Δ pp|; 3. larger evidence sample (the
+  smaller side of the comparison; matches for exposure); 4. stable id
+  (`matchup:<own>:<opponent>`, `recent:20v20`, `session-halves`, `post-loss`,
+  `exposure:<opponent>`). Walk the ranking keeping at most 2 per type until 3 are selected.
+  `totalEligible` counts every qualifying signal, so the UI can say more existed.
+- **UI:** at most 3 cards with comparator, sample and signed pp; direction by arrow + sign +
+  words, never colour alone (restrained loss / win accents; exposure is cyan). Questions sit in a
+  collapsed native `<details>` per card; a section-level note says they guide replay review and SST
+  does not observe those situations. No signal ⇒ a neutral "not enough sample" state (never "no
+  weaknesses").
+- **Never claimed:** causes, tilt, fatigue, mental state, adaptation, "bad matchup" / counters,
+  improvement or decline trends, significance or confidence. There is no replay telemetry (neutral,
+  anti-air, Drive / DI / Parry / Burnout, corner, wake-up, throw tech, punish counters, combos,
+  Super) and no rating data (LP / MR / rank): 6.3 stays blocked on segmented baselines.
 
 ## 7. Realtime
 

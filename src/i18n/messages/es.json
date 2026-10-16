@@ -1085,6 +1085,7 @@
       },
       "items": {
         "overview": "Resumen",
+        "review": "Para revisar",
         "recent": "Forma reciente",
         "characters": "Personajes",
         "matchups": "Enfrentamientos",
@@ -1092,6 +1093,7 @@
       },
       "short": {
         "overview": "Resumen",
+        "review": "Revisar",
         "recent": "Forma",
         "characters": "Personajes",
         "matchups": "Rivales",
@@ -1108,6 +1110,7 @@
     },
     "eyebrows": {
       "overview": "Vista general",
+      "review": "Revisión",
       "recent": "Rendimiento",
       "characters": "Por personaje",
       "matchups": "Rivales",
@@ -1124,6 +1127,98 @@
     "end": {
       "brand": "SST Analytics",
       "basedOn": "{count, plural, one {Basado en # partida registrada} other {Basado en # partidas registradas}}"
+    },
+    "review": {
+      "title": "Para revisar",
+      "subtitle": "Señales descriptivas de tu muestra registrada: dónde mirar primero al revisar tus replays. Señalan diferencias registradas, no sus causas.",
+      "empty": "No hay señales con suficiente muestra en este conjunto de datos. SST evita generar prioridades a partir de muestras demasiado pequeñas.",
+      "moreEligible": "{count, plural, one {Hay # señal más con muestra suficiente; se muestran las {shown} primeras.} other {Hay # señales más con muestra suficiente; se muestran las {shown} primeras.}}",
+      "disclaimer": "Estas preguntas sirven para orientar la revisión de replays. SST no observa directamente estas situaciones dentro de la partida.",
+      "questionsTitle": "Preguntas para revisar",
+      "pp": "{value} pp",
+      "go": {
+        "recent": "Ver forma reciente",
+        "matchups": "Ver enfrentamientos",
+        "sessions": "Ver sesiones"
+      },
+      "matchup": {
+        "kind": "Enfrentamiento",
+        "title": "{own} vs {opponent}",
+        "valueLabel": "win rate registrado",
+        "comparison": "{delta} vs {own} en general",
+        "evidence": "{decided} decididas · {own} en general: {baseline} ({baselineDecided} decididas)",
+        "statement": "Tu rendimiento registrado en este enfrentamiento está {delta} pp por debajo de tu rendimiento registrado con este personaje."
+      },
+      "recent": {
+        "kind": "Forma reciente",
+        "title": "Últimas {n} partidas",
+        "valueLabel": "win rate registrado",
+        "comparison": "{delta} vs las {n} anteriores",
+        "evidence": "{decided} decididas · {n} anteriores: {previous} ({previousDecided} decididas)",
+        "statement": {
+          "up": "Tu muestra registrada más reciente está {delta} pp por encima de las {n} partidas anteriores.",
+          "down": "Tu muestra registrada más reciente está {delta} pp por debajo de las {n} partidas anteriores."
+        }
+      },
+      "halves": {
+        "kind": "Dentro de la sesión",
+        "title": "Segunda mitad de sesión",
+        "valueLabel": "win rate registrado",
+        "comparison": "{delta} vs la primera mitad",
+        "evidence": "{decided} decididas · Primera mitad: {first} ({firstDecided} decididas) · {segments} segmentos",
+        "statement": {
+          "up": "En {segments} segmentos de sesión, tu win rate registrado en la segunda mitad está {delta} pp por encima de la primera mitad.",
+          "down": "En {segments} segmentos de sesión, tu win rate registrado en la segunda mitad está {delta} pp por debajo de la primera mitad."
+        }
+      },
+      "postLoss": {
+        "kind": "Partida siguiente",
+        "title": "Resultados tras una derrota",
+        "valueLabel": "de victorias en la partida siguiente",
+        "comparison": "{delta} vs tras una victoria",
+        "evidence": "{wins} de {total} ganadas tras una derrota · Tras una victoria: {afterWin} ({winWins} de {winTotal})",
+        "statement": "Dentro de una misma sesión, la partida siguiente a una derrota termina en victoria con una frecuencia {delta} pp menor que la siguiente a una victoria."
+      },
+      "exposure": {
+        "kind": "Exposición frecuente",
+        "valueLabel": "de las partidas con rival conocido",
+        "comparison": "Rival con más partidas registradas",
+        "evidence": "{matches} partidas · Récord {wins} – {losses}",
+        "statement": "Es el personaje rival con más partidas registradas en este conjunto de datos. Describe frecuencia, no rendimiento."
+      },
+      "questions": {
+        "matchup": {
+          "situations": "¿Qué situaciones se repiten en estas partidas?",
+          "approach": "¿Cómo estás consiguiendo entrar?",
+          "stops": "¿Qué opciones del rival detienen tu aproximación?",
+          "knockdowns": "¿Qué ocurre después de los derribos y en las situaciones recurrentes?"
+        },
+        "recent": {
+          "decisions": "Compara la toma de decisiones entre ambas ventanas de 20 partidas.",
+          "situations": "¿Qué situaciones cambiaron entre una ventana y otra?",
+          "context": "¿Cambió el contexto de personajes o enfrentamientos?",
+          "errors": "¿Aparecen los mismos errores en ambas ventanas?"
+        },
+        "halves": {
+          "compare": "Compara las primeras partidas de la sesión con las posteriores.",
+          "risk": "Revisa si cambian las decisiones de riesgo.",
+          "repeated": "Comprueba si ciertas opciones se repiten más a menudo.",
+          "execution": "Observa si la ejecución o la respuesta defensiva cambian de forma visible."
+        },
+        "postLoss": {
+          "compare": "Compara las partidas inmediatamente posteriores a una derrota.",
+          "pace": "Revisa si cambia tu ritmo de juego.",
+          "risk": "Comprueba si asumes riesgos distintos.",
+          "repeat": "Revisa si repites de inmediato interacciones que no funcionaron.",
+          "opponent": "Observa si el rival se adapta a algo que se repite."
+        },
+        "exposure": {
+          "lab": "¿Hay situaciones recurrentes que valga la pena practicar en el modo entrenamiento?",
+          "interactions": "¿Qué interacciones ocurren con más frecuencia?",
+          "knowledge": "¿Qué conocimiento del enfrentamiento necesitas una y otra vez?"
+        }
+      },
+      "methodology": "Para revisar: señales deterministas con umbrales de producto (no significación estadística). Enfrentamiento ≥ 10 decididas frente al mismo personaje propio con ≥ 30; últimas 20 frente a las 20 anteriores (≥ 10 decididas cada una); mitades con ≥ 5 segmentos y ≥ 20 decididas por mitad; partida siguiente tras derrota frente a tras victoria (≥ 10 observaciones cada una, dentro del mismo segmento); diferencia mínima de 10 pp. Exposición: ≥ 20 partidas y ≥ 10 % del total con rival conocido. Máximo 3 señales y 2 por tipo."
     }
   }
 }

@@ -89,11 +89,12 @@ const FULL = [
 ];
 
 describe("anchors and section navigation", () => {
-  it("1. all five section anchors exist; 15. no duplicate ids anywhere", () => {
+  it("1. all six section anchors exist; 15. no duplicate ids anywhere", () => {
     const html = render(data(FULL));
     for (const id of ANALYTICS_SECTIONS) expect(html).toContain(`id="${id}"`);
     expect(ANALYTICS_SECTIONS).toEqual([
       "overview",
+      "review",
       "recent",
       "characters",
       "matchups",
@@ -113,9 +114,9 @@ describe("anchors and section navigation", () => {
     }
     const d = text(desktop);
     expect(d).toMatch(
-      /Resumen Resumen Rendimiento Forma reciente Personajes Enfrentamientos Enfrentamientos Sesiones Rendimiento en sesión/,
+      /Resumen Resumen Para revisar Rendimiento Forma reciente Personajes Enfrentamientos Enfrentamientos Sesiones Rendimiento en sesión/,
     );
-    expect(text(mobile)).toMatch(/Resumen Forma Personajes Rivales Sesiones/);
+    expect(text(mobile)).toMatch(/Resumen Revisar Forma Personajes Rivales Sesiones/);
     // 16. labelled navigation landmarks; desktop sidebar hidden below lg, strip hidden from lg.
     expect(html).toContain('aria-label="Secciones de analíticas"');
     expect(desktop).toMatch(/class="[^"]*hidden[^"]*lg:block/);
@@ -127,7 +128,14 @@ describe("anchors and section navigation", () => {
     const hrefs = [...region(html, "analytics-nav-desktop", "nav").matchAll(/href="([^"]+)"/g)].map(
       (m) => m[1],
     );
-    expect(hrefs).toEqual(["#overview", "#recent", "#characters", "#matchups", "#sessions"]);
+    expect(hrefs).toEqual([
+      "#overview",
+      "#review",
+      "#recent",
+      "#characters",
+      "#matchups",
+      "#sessions",
+    ]);
   });
 
   it("the first section is current on the server render (aria-current=location)", () => {
@@ -158,7 +166,7 @@ describe("anchors and section navigation", () => {
 });
 
 describe("pickActiveSection (scroll-spy)", () => {
-  const order = ["overview", "recent", "characters", "matchups", "sessions"];
+  const order = ["overview", "review", "recent", "characters", "matchups", "sessions"];
   it("first visible section in document order wins", () => {
     expect(pickActiveSection(order, new Set(["matchups", "characters"]), "overview")).toBe(
       "characters",

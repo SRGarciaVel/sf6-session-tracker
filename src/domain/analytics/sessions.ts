@@ -268,7 +268,13 @@ export interface SessionAnalytics {
 }
 
 export function computeSessionAnalytics(rows: readonly AnalyticsMatchRow[]): SessionAnalytics {
-  const segments = segmentSessionMatches(rows);
+  return sessionAnalyticsOfSegments(segmentSessionMatches(rows));
+}
+
+/** Same as computeSessionAnalytics, over segments already built (lets callers segment once). */
+export function sessionAnalyticsOfSegments(
+  segments: readonly AnalyticsSessionSegment[],
+): SessionAnalytics {
   const perSession = new Map<string, number>();
   for (const s of segments) perSession.set(s.sessionId, (perSession.get(s.sessionId) ?? 0) + 1);
   return {

@@ -196,9 +196,10 @@ describe("matchups: progressive disclosure (first 10, existing order)", () => {
 describe("navigation and eyebrows", () => {
   const html = render(data(manyCharacters(3)));
 
-  it("14/15. anchors and nav links unchanged", () => {
+  it("14/15. anchors and nav links (6.4A adds #review after #overview; others unchanged)", () => {
     expect(ANALYTICS_SECTIONS).toEqual([
       "overview",
+      "review",
       "recent",
       "characters",
       "matchups",
@@ -217,6 +218,7 @@ describe("navigation and eyebrows", () => {
     };
     expect(ANALYTICS_SECTIONS.map((id) => eyebrow(html, id))).toEqual([
       "Vista general",
+      "Revisión",
       "Rendimiento",
       "Por personaje",
       "Rivales",
@@ -225,6 +227,7 @@ describe("navigation and eyebrows", () => {
     const enHtml = render(data(manyCharacters(3)), "en");
     expect(ANALYTICS_SECTIONS.map((id) => eyebrow(enHtml, id))).toEqual([
       "At a glance",
+      "Review",
       "Performance",
       "By character",
       "Opponents",
