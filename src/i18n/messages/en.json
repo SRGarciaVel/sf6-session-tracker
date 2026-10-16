@@ -953,7 +953,7 @@
   },
   "Analytics": {
     "title": "Analytics",
-    "subtitle": "Performance from the matches recorded by SST",
+    "subtitle": "Understand your performance from the matches recorded by SST.",
     "rangeLabel": "Range",
     "ranges": {
       "7d": "7 days",
@@ -1067,7 +1067,44 @@
       "positionsCaption": "Matches 1 to {cap} of each segment. The sample shrinks at every position: only segments that reached it count.",
       "colPosition": "Position",
       "colSegments": "Segments",
-      "position": "Match {n}"
+      "position": "Match {n}",
+      "groups": {
+        "activity": "Activity",
+        "sequences": "Sequences",
+        "within": "Within the session"
+      }
+    },
+    "recentLatest": "Latest results, most recent first",
+    "nav": {
+      "label": "Analytics sections",
+      "groups": {
+        "overview": "Overview",
+        "performance": "Performance",
+        "matchups": "Matchups",
+        "sessions": "Sessions"
+      },
+      "items": {
+        "overview": "Overview",
+        "recent": "Recent form",
+        "characters": "Characters",
+        "matchups": "Matchups",
+        "sessions": "Session performance"
+      },
+      "short": {
+        "overview": "Overview",
+        "recent": "Form",
+        "characters": "Characters",
+        "matchups": "Matchups",
+        "sessions": "Sessions"
+      }
+    },
+    "filters": {
+      "title": "Analytics filters",
+      "reset": "Reset filters",
+      "context": "Data"
+    },
+    "methodology": {
+      "title": "How these analytics are calculated"
     }
   }
 }
