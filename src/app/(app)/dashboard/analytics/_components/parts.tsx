@@ -205,7 +205,10 @@ const RESULT_STYLE: Record<MatchResult, string> = {
   draw: "bg-faint text-bg",
 };
 
-/** Newest first; letters + screen-reader words, never colour alone. */
+/**
+ * Newest first; letters + screen-reader words, never colour alone. Visually grouped in blocks of
+ * five (an extra gap after every 5th result) — one list, order unchanged.
+ */
 export function Sequence({ results, className }: { results: MatchResult[]; className?: string }) {
   const t = useTranslations("Analytics");
   return (
@@ -213,8 +216,10 @@ export function Sequence({ results, className }: { results: MatchResult[]; class
       {results.map((r, i) => (
         <li
           key={i}
+          data-block-end={(i + 1) % 5 === 0 && i < results.length - 1 ? "true" : undefined}
           className={cx(
             "grid h-6 w-6 place-items-center font-display text-xs font-bold",
+            (i + 1) % 5 === 0 && i < results.length - 1 && "mr-2.5",
             RESULT_STYLE[r],
           )}
         >
@@ -248,6 +253,108 @@ export function TablePanel({
           </thead>
           <tbody className="divide-y divide-line">{children}</tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Decorative wins-vs-losses bar (the existing `.ratio-bar` primitive). Decided matches only: draws
+ * are never folded into either side, and with no decided match nothing is drawn. The numbers next
+ * to it stay the accessible, primary information.
+ */
+export function RecordBar({ record, className }: { record: MatchRecord; className?: string }) {
+  if (record.decided <= 0) return null;
+  return (
+    <span className={cx("ratio-bar mt-2 h-1 w-full max-w-40", className)} aria-hidden>
+      <span className="bg-win" style={{ flexGrow: record.wins }} />
+      <span className="bg-loss" style={{ flexGrow: record.losses }} />
+    </span>
+  );
+}
+
+/**
+ * A long table with progressive disclosure, no client state: the first `limit` rows in a normal
+ * table; the rest in a CONTINUATION table inside a native <details> (keyboard + screen readers get
+ * the expanded state natively). Both tables share the column widths (`table-fixed` + colgroup) and
+ * one horizontal scroll container, so columns line up and scroll together on narrow screens. The
+ * row order is the caller's — nothing is re-sorted or picked.
+ */
+export function DisclosureTablePanel<T>({
+  caption,
+  continuationCaption,
+  columns,
+  minWidth,
+  head,
+  rows,
+  renderRow,
+  limit,
+  showMore,
+  showLess,
+  defaultOpen = false,
+  testId,
+}: {
+  caption: ReactNode;
+  /** Screen-reader caption of the continuation table (e.g. "Characters 9–17, continued"). */
+  continuationCaption: string;
+  /** Column widths (CSS lengths), one per column. */
+  columns: readonly string[];
+  minWidth: string;
+  head: ReactNode;
+  rows: readonly T[];
+  renderRow: (row: T) => ReactNode;
+  limit: number;
+  showMore: string;
+  showLess: string;
+  defaultOpen?: boolean;
+  testId?: string;
+}) {
+  const first = rows.slice(0, limit);
+  const rest = rows.slice(limit);
+  const colgroup = (
+    <colgroup>
+      {columns.map((w, i) => (
+        <col key={i} style={{ width: w }} />
+      ))}
+    </colgroup>
+  );
+  return (
+    <div className="hud-panel" data-testid={testId}>
+      <div className="overflow-x-auto">
+        <div className={minWidth}>
+          <table className="w-full table-fixed text-sm" data-part="primary">
+            <caption className="px-5 pt-4 pb-3 text-left text-xs text-muted">{caption}</caption>
+            {colgroup}
+            <thead>
+              <tr className="hud-label border-b border-line text-left text-xs">{head}</tr>
+            </thead>
+            <tbody className="divide-y divide-line">{first.map(renderRow)}</tbody>
+          </table>
+          {rest.length > 0 && (
+            <details className="group border-t border-line" open={defaultOpen || undefined}>
+              <summary className="sticky left-0 inline-flex min-h-11 cursor-pointer items-center gap-2 px-5 font-display text-sm font-bold tracking-wide text-cyan uppercase hover:text-text">
+                <span
+                  aria-hidden
+                  className="transition-transform group-open:rotate-90 motion-reduce:transition-none"
+                >
+                  ▸
+                </span>
+                <span className="group-open:hidden">{showMore}</span>
+                <span className="hidden group-open:inline">{showLess}</span>
+              </summary>
+              <table className="w-full table-fixed text-sm" data-part="continuation">
+                <caption className="sr-only">{continuationCaption}</caption>
+                {colgroup}
+                <thead className="sr-only">
+                  <tr>{head}</tr>
+                </thead>
+                <tbody className="divide-y divide-line border-t border-line">
+                  {rest.map(renderRow)}
+                </tbody>
+              </table>
+            </details>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1105,6 +1105,25 @@
     },
     "methodology": {
       "title": "Cómo se calculan estas analíticas"
+    },
+    "eyebrows": {
+      "overview": "Vista general",
+      "recent": "Rendimiento",
+      "characters": "Por personaje",
+      "matchups": "Rivales",
+      "sessions": "Sesiones"
+    },
+    "disclosure": {
+      "moreCharacters": "{count, plural, one {Mostrar # personaje más} other {Mostrar # personajes más}}",
+      "lessCharacters": "Ocultar personajes adicionales",
+      "charactersContinued": "Rendimiento por personaje, filas {from} a {to} (continuación)",
+      "moreOpponents": "{count, plural, one {Mostrar # enfrentamiento más} other {Mostrar # enfrentamientos más}}",
+      "lessOpponents": "Ocultar enfrentamientos adicionales",
+      "opponentsContinued": "Rendimiento contra personajes, filas {from} a {to} (continuación)"
+    },
+    "end": {
+      "brand": "SST Analytics",
+      "basedOn": "{count, plural, one {Basado en # partida registrada} other {Basado en # partidas registradas}}"
     }
   }
 }

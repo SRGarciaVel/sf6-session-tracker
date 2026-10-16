@@ -1105,6 +1105,25 @@
     },
     "methodology": {
       "title": "How these analytics are calculated"
+    },
+    "eyebrows": {
+      "overview": "At a glance",
+      "recent": "Performance",
+      "characters": "By character",
+      "matchups": "Opponents",
+      "sessions": "Sessions"
+    },
+    "disclosure": {
+      "moreCharacters": "{count, plural, one {Show # more character} other {Show # more characters}}",
+      "lessCharacters": "Hide additional characters",
+      "charactersContinued": "Performance by character, rows {from} to {to} (continued)",
+      "moreOpponents": "{count, plural, one {Show # more matchup} other {Show # more matchups}}",
+      "lessOpponents": "Hide additional matchups",
+      "opponentsContinued": "Performance against characters, rows {from} to {to} (continued)"
+    },
+    "end": {
+      "brand": "SST Analytics",
+      "basedOn": "{count, plural, one {Based on # recorded match} other {Based on # recorded matches}}"
     }
   }
 }
