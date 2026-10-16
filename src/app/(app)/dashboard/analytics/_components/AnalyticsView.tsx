@@ -1,6 +1,7 @@
 /**
  * Analytics workspace: page identity → filter toolbar (defines the whole dataset) → coverage note
- * → [section nav | sections] → methodology disclosure.
+ * → [section nav | sections: overview · review · recent · characters · matchups · sessions] →
+ * methodology disclosure.
  *
  * Everything here is server-rendered presentation; the only client component is the in-page
  * section navigation (AnalyticsSectionNav: anchors + scroll-spy). Every number comes from
@@ -14,6 +15,7 @@ import { MatchupsSection } from "./MatchupsSection";
 import { cx } from "@/components/ui/primitives";
 import { SECTION_SCROLL_MARGIN, characterNameOf, type AnalyticsSectionId } from "./parts";
 import { CharactersSection, OverviewSection, RecentFormSection } from "./PerformanceSections";
+import { ReviewSection } from "./ReviewSection";
 import { SessionPerformanceSection } from "./SessionPerformanceSection";
 
 export { analyticsHref } from "./parts";
@@ -23,7 +25,7 @@ const NAV: ReadonlyArray<{
   group: "overview" | "performance" | "matchups" | "sessions";
   items: AnalyticsSectionId[];
 }> = [
-  { group: "overview", items: ["overview"] },
+  { group: "overview", items: ["overview", "review"] },
   { group: "performance", items: ["recent", "characters"] },
   { group: "matchups", items: ["matchups"] },
   { group: "sessions", items: ["sessions"] },
@@ -42,7 +44,7 @@ export function AnalyticsView({ data }: { data: PlayerAnalytics }) {
       ? characterName && summary.characters.length > 0
         ? ["overview", "characters"]
         : ["overview"]
-      : ["overview", "recent", "characters", "matchups", "sessions"],
+      : ["overview", "review", "recent", "characters", "matchups", "sessions"],
   );
   const groups: SectionNavGroup[] = NAV.map(({ group, items }) => ({
     label: t(`nav.groups.${group}`),
@@ -96,6 +98,7 @@ export function AnalyticsView({ data }: { data: PlayerAnalytics }) {
           ) : (
             <>
               <OverviewSection data={data} />
+              <ReviewSection data={data} />
               <RecentFormSection data={data} />
               <CharactersSection data={data} />
               <MatchupsSection data={data} />
@@ -123,6 +126,7 @@ export function AnalyticsView({ data }: { data: PlayerAnalytics }) {
                 <li>{t("matchups.note")}</li>
                 <li>{t("sessionPerformance.note")}</li>
                 <li>{t("sessionPerformance.durationNote")}</li>
+                <li>{t("review.methodology")}</li>
               </ul>
             </details>
           </footer>

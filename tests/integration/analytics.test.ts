@@ -559,4 +559,184 @@ describe.skipIf(!TEST_DB)("analytics read model (integration)", () => {
       expect(payload).not.toContain("19000");
     });
   });
+
+  describe("review priorities (6.4A)", () => {
+    const at = (i: number) => new Date(daysAgo(1).getTime() + i * 4 * 60_000);
+    type Spec = {
+      result: MatchResult;
+      characterKey?: string;
+      opponent?: string | null;
+      mode?: MatchMode;
+      sessionId?: string | null;
+      when?: Date;
+    };
+    /** Bulk insert, in play order, 4 minutes apart (from `start` index). */
+    async function addMany(playerId: string, specs: Spec[], start = 0) {
+      await db.insert(match).values(
+        specs.map((o, i) => {
+          const opponent = o.opponent === undefined ? "ken" : o.opponent;
+          return {
+            playerId,
+            sessionId: o.sessionId ?? null,
+            externalMatchId: `r-${++seq}`,
+            playedAt: o.when ?? at(start + i),
+            mode: o.mode ?? ("ranked" as const),
+            result: o.result,
+            characterKey: o.characterKey ?? "aki",
+            characterName: o.characterKey === "juri" ? "Juri" : "A.K.I.",
+            opponentName: SECRET_OPPONENT,
+            opponentCharacterKey: opponent,
+            opponentCharacter:
+              opponent === null ? null : opponent[0]!.toUpperCase() + opponent.slice(1),
+            ratingBeforeSystem: "lp" as const,
+            ratingBeforeValue: 19_000,
+          };
+        }),
+      );
+    }
+    const results = (wins: number, losses: number): MatchResult[] => [
+      ...Array<MatchResult>(wins).fill("win"),
+      ...Array<MatchResult>(losses).fill("loss"),
+    ];
+    /** own × opponent block. */
+    const block = (wins: number, losses: number, o: Omit<Spec, "result"> = {}): Spec[] =>
+      results(wins, losses).map((result) => ({ result, ...o }));
+    const review = (a: Awaited<ReturnType<typeof analytics>>) => a.summary.review;
+    const ids = (a: Awaited<ReturnType<typeof analytics>>) => review(a).signals.map((s) => s.id);
+    const matchupSignal = (a: Awaited<ReturnType<typeof analytics>>, id: string) => {
+      const s = review(a).signals.find((x) => x.id === id);
+      return s?.type === "matchup-underperformance" ? s : undefined;
+    };
+
+    it("ownership: another user's matches never affect my baseline or signals", async () => {
+      // Mine: A.K.I. vs JP 4–6 (40 %) vs A.K.I. 15–15 (50 %) → exactly −10 pp.
+      await addMany(me.id, [...block(4, 6, { opponent: "jp" }), ...block(11, 9)]);
+      // Theirs: 60 A.K.I. losses would drag a shared baseline down (and add a signal of their own).
+      await addMany(other.id, [...block(0, 60), ...block(0, 10, { opponent: "jp" })]);
+      const s = matchupSignal(await analytics(me), "matchup:aki:jp");
+      expect(s?.baseline).toMatchObject({ wins: 15, losses: 15, decided: 30 });
+      expect(s?.deltaPp).toBeCloseTo(-10, 9);
+      expect(review(await analytics(other)).signals.some((x) => x.id === "matchup:aki:jp")).toBe(
+        false, // their JP 0 % vs their A.K.I. 0 %: no gap
+      );
+    });
+
+    it("uses the current range", async () => {
+      const old = daysAgo(50);
+      await addMany(
+        me.id,
+        [...block(2, 8, { opponent: "jp" }), ...block(14, 6)].map((x, i) => ({
+          ...x,
+          when: new Date(old.getTime() + i * 4 * 60_000),
+        })),
+      );
+      expect(ids(await analytics(me, "90d"))).toContain("matchup:aki:jp");
+      expect(ids(await analytics(me, "30d"))).not.toContain("matchup:aki:jp");
+      expect(review(await analytics(me, "30d"))).toEqual({ signals: [], totalEligible: 0 });
+    });
+
+    it("uses the current mode", async () => {
+      await addMany(me.id, [
+        ...block(2, 8, { opponent: "jp", mode: "unknown" }),
+        ...block(14, 6, { mode: "unknown" }),
+        ...block(1, 1),
+      ]);
+      expect(ids(await analytics(me, "90d", "all"))).toContain("matchup:aki:jp");
+      expect(ids(await analytics(me, "90d", "ranked"))).not.toContain("matchup:aki:jp");
+    });
+
+    it("same-character baseline; the character filter narrows review", async () => {
+      // A.K.I. 25–15 (62.5 %): JP 5–5 → −12.5 pp. Juri 2–28 (6.7 %): JP 0–10 → −6.7 pp (none).
+      // Against the ACCOUNT record (27 / 70 = 38.6 %) the result would be the other way round.
+      await addMany(me.id, [
+        ...block(5, 5, { opponent: "jp" }),
+        ...block(20, 10),
+        ...block(0, 10, { opponent: "jp", characterKey: "juri" }),
+        ...block(2, 18, { characterKey: "juri" }),
+      ]);
+      const all = await analytics(me);
+      const aki = matchupSignal(all, "matchup:aki:jp");
+      expect(aki?.baseline).toMatchObject({ wins: 25, losses: 15 });
+      expect(aki?.deltaPp).toBeCloseTo(-12.5, 9);
+      expect(ids(all)).not.toContain("matchup:juri:jp");
+
+      const juri = await analytics(me, "90d", "ranked", "juri");
+      expect(
+        review(juri).signals.every(
+          (x) => x.type !== "matchup-underperformance" || x.characterKey === "juri",
+        ),
+      ).toBe(true);
+      expect(ids(juri)).not.toContain("matchup:aki:jp");
+      expect(ids(await analytics(me, "90d", "ranked", "aki"))).toContain("matchup:aki:jp");
+    });
+
+    it("session_id NULL takes no part in transitions / halves, but does in recent form", async () => {
+      // 10 LL + 10 WW pairs and 20 L then 20 W — all OUTSIDE sessions.
+      const pairs: Spec[] = [];
+      for (let i = 0; i < 10; i++) pairs.push(...block(0, 2), ...block(2, 0));
+      await addMany(me.id, [...pairs, ...block(0, 20), ...block(20, 0)]);
+      const outside = await analytics(me);
+      expect(ids(outside)).toContain("recent:20v20");
+      expect(ids(outside)).not.toContain("post-loss");
+      expect(ids(outside)).not.toContain("session-halves");
+
+      // The same post-loss pattern inside real sessions does produce the transition signal.
+      const fresh = await newPlayer();
+      const specs: Spec[] = [];
+      for (let i = 0; i < 10; i++) {
+        const l = await newSession(fresh.id);
+        const w = await newSession(fresh.id);
+        specs.push(...block(0, 2, { sessionId: l.id }), ...block(2, 0, { sessionId: w.id }));
+      }
+      await addMany(fresh.id, specs);
+      const inside = await analytics(fresh);
+      const s = review(inside).signals.find((x) => x.type === "post-loss-transition");
+      expect(s).toMatchObject({
+        postLoss: { total: 10, nextWins: 0 },
+        postWin: { total: 10, nextWins: 10 },
+      });
+    });
+
+    it("no opponent names or ratings in review; the 9-column query is enough (no new query)", async () => {
+      await addMany(me.id, [...block(2, 8, { opponent: "jp" }), ...block(14, 6)]);
+      const selects: Array<string[] | null> = [];
+      const counting = new Proxy(db, {
+        get(target, prop, receiver) {
+          const value = Reflect.get(target, prop, receiver) as unknown;
+          if (prop === "select" && typeof value === "function") {
+            return (fields?: Record<string, unknown>) => {
+              selects.push(fields ? Object.keys(fields).sort() : null);
+              return (value as (f?: unknown) => unknown).call(target, fields);
+            };
+          }
+          return value;
+        },
+      });
+      const a = await getPlayerAnalyticsForUser(counting, me.userId, {
+        range: "90d",
+        mode: "ranked",
+        now: NOW,
+      });
+      expect(a?.summary.review.signals.length).toBeGreaterThan(0);
+      // player lookup + own characters + the analytics projection: same 3 queries as before.
+      expect(selects).toHaveLength(3);
+      expect(selects[2]).toEqual(
+        [
+          "characterKey",
+          "characterName",
+          "externalMatchId",
+          "mode",
+          "opponentCharacterKey",
+          "opponentCharacterName",
+          "playedAt",
+          "result",
+          "sessionId",
+        ].sort(),
+      );
+      const payload = JSON.stringify(a?.summary.review);
+      expect(payload).not.toContain(SECRET_OPPONENT);
+      expect(payload).not.toContain("19000");
+      expect(payload).not.toMatch(/rating|"lp"|"mr"/i);
+    });
+  });
 });

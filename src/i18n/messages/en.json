@@ -1085,6 +1085,7 @@
       },
       "items": {
         "overview": "Overview",
+        "review": "To review",
         "recent": "Recent form",
         "characters": "Characters",
         "matchups": "Matchups",
@@ -1092,6 +1093,7 @@
       },
       "short": {
         "overview": "Overview",
+        "review": "Review",
         "recent": "Form",
         "characters": "Characters",
         "matchups": "Matchups",
@@ -1108,6 +1110,7 @@
     },
     "eyebrows": {
       "overview": "At a glance",
+      "review": "Review",
       "recent": "Performance",
       "characters": "By character",
       "matchups": "Opponents",
@@ -1124,6 +1127,98 @@
     "end": {
       "brand": "SST Analytics",
       "basedOn": "{count, plural, one {Based on # recorded match} other {Based on # recorded matches}}"
+    },
+    "review": {
+      "title": "To review",
+      "subtitle": "Descriptive signals from your recorded sample: where to look first when reviewing your replays. They point at recorded differences, not their causes.",
+      "empty": "No signal has a large enough sample in this dataset. SST avoids building priorities from samples that are too small.",
+      "moreEligible": "{count, plural, one {# more signal has a large enough sample; the first {shown} are shown.} other {# more signals have a large enough sample; the first {shown} are shown.}}",
+      "disclaimer": "These questions are meant to guide replay review. SST does not directly observe these situations inside a match.",
+      "questionsTitle": "Questions to review",
+      "pp": "{value} pp",
+      "go": {
+        "recent": "View recent form",
+        "matchups": "View matchups",
+        "sessions": "View sessions"
+      },
+      "matchup": {
+        "kind": "Matchup",
+        "title": "{own} vs {opponent}",
+        "valueLabel": "recorded win rate",
+        "comparison": "{delta} vs {own} overall",
+        "evidence": "{decided} decided · {own} overall: {baseline} ({baselineDecided} decided)",
+        "statement": "Your recorded performance in this matchup is {delta} pp below your recorded performance with this character."
+      },
+      "recent": {
+        "kind": "Recent form",
+        "title": "Latest {n} matches",
+        "valueLabel": "recorded win rate",
+        "comparison": "{delta} vs the previous {n}",
+        "evidence": "{decided} decided · Previous {n}: {previous} ({previousDecided} decided)",
+        "statement": {
+          "up": "Your latest recorded sample is {delta} pp above the previous {n} matches.",
+          "down": "Your latest recorded sample is {delta} pp below the previous {n} matches."
+        }
+      },
+      "halves": {
+        "kind": "Within the session",
+        "title": "Second half of sessions",
+        "valueLabel": "recorded win rate",
+        "comparison": "{delta} vs the first half",
+        "evidence": "{decided} decided · First half: {first} ({firstDecided} decided) · {segments} segments",
+        "statement": {
+          "up": "Across {segments} session segments, your recorded win rate in the second half is {delta} pp above the first half.",
+          "down": "Across {segments} session segments, your recorded win rate in the second half is {delta} pp below the first half."
+        }
+      },
+      "postLoss": {
+        "kind": "Next match",
+        "title": "Next-match results after losses",
+        "valueLabel": "won the next match",
+        "comparison": "{delta} vs after a win",
+        "evidence": "{wins} of {total} won after a loss · After a win: {afterWin} ({winWins} of {winTotal})",
+        "statement": "Within the same session, the match after a loss ends in a win {delta} pp less often than the match after a win."
+      },
+      "exposure": {
+        "kind": "High recorded exposure",
+        "valueLabel": "of matches with a known opponent",
+        "comparison": "Opponent with the most recorded matches",
+        "evidence": "{matches} matches · Record {wins} – {losses}",
+        "statement": "This is the opponent character with the most recorded matches in this dataset. It describes frequency, not performance."
+      },
+      "questions": {
+        "matchup": {
+          "situations": "Which situations repeat across these matches?",
+          "approach": "How are you getting in?",
+          "stops": "Which opponent options stop your approach?",
+          "knockdowns": "What happens after knockdowns and in recurring situations?"
+        },
+        "recent": {
+          "decisions": "Compare decision-making between both 20-match windows.",
+          "situations": "Which situations changed from one window to the other?",
+          "context": "Did your character or matchup context change?",
+          "errors": "Are the same errors appearing in both windows?"
+        },
+        "halves": {
+          "compare": "Compare early matches in a session with later ones.",
+          "risk": "Check whether your risk choices change.",
+          "repeated": "Check whether some options are repeated more often.",
+          "execution": "Look for visible changes in execution or defensive response."
+        },
+        "postLoss": {
+          "compare": "Compare the matches right after a loss.",
+          "pace": "Check whether your pace changes.",
+          "risk": "Check whether you take different risks.",
+          "repeat": "Check whether failed interactions are repeated right away.",
+          "opponent": "Look at whether the opponent adapts to something repeated."
+        },
+        "exposure": {
+          "lab": "Are there recurring situations worth labbing?",
+          "interactions": "Which interactions happen most often?",
+          "knowledge": "Which matchup knowledge do you need again and again?"
+        }
+      },
+      "methodology": "To review: deterministic signals with product thresholds (not statistical significance). Matchup ≥ 10 decided vs the same own character with ≥ 30; latest 20 vs the previous 20 (≥ 10 decided each); halves with ≥ 5 segments and ≥ 20 decided per half; next match after a loss vs after a win (≥ 10 observations each, within the same segment); minimum difference 10 pp. Exposure: ≥ 20 matches and ≥ 10 % of matches with a known opponent. At most 3 signals, 2 per type."
     }
   }
 }

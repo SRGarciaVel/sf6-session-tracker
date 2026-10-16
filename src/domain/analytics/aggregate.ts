@@ -11,7 +11,12 @@
  */
 import { CHARACTER_KEY_PATTERN, type CharacterKey, type MatchResult } from "@/domain/sf6/types";
 import { computeMatchupSection, type MatchupSection } from "./matchups";
-import { computeSessionAnalytics, type SessionAnalytics } from "./sessions";
+import { computeReviewSection, type ReviewSection } from "./review";
+import {
+  segmentSessionMatches,
+  sessionAnalyticsOfSegments,
+  type SessionAnalytics,
+} from "./sessions";
 import { computeRecord, newestFirst, type AnalyticsMatchRow, type MatchRecord } from "./record";
 
 export { computeRecord, type AnalyticsMatchRow, type MatchRecord } from "./record";
@@ -144,6 +149,8 @@ export interface AnalyticsSummary {
   matchups: MatchupSection;
   /** Patterns inside recorded sessions of the (filtered) dataset — Phase 6.2. */
   sessionPerformance: SessionAnalytics;
+  /** Review priorities of the (filtered) dataset — Phase 6.4A (descriptive signals, no causes). */
+  review: ReviewSection;
   /** Matches whose mode SST could not identify (only possible with mode "all"). */
   unknownModeMatches: number;
   firstPlayedAt: Date | null;
@@ -214,7 +221,7 @@ export function computeSessionCoverage(rows: readonly AnalyticsMatchRow[]): Sess
 /**
  * Everything the page shows, from the range/mode's recorded matches (any order). With
  * `character`, the DATASET is that own character's matches: summary, recent form, sessions,
- * matchups and session performance all use it; only the character overview spans every own
+ * matchups, session performance and review all use it; only the character overview spans every own
  * character.
  */
 export function computeAnalytics(
@@ -224,14 +231,24 @@ export function computeAnalytics(
   const all = [...rows].sort(newestFirst);
   const character = options.character ?? null;
   const newest = character ? all.filter((m) => m.characterKey === character) : all;
+  // Built once and shared by session performance and review (no recomputation).
+  const matchups = computeMatchupSection(newest);
+  const segments = segmentSessionMatches(newest);
+  const sessionPerformance = sessionAnalyticsOfSegments(segments);
   return {
     character,
     overall: computeRecord(newest.map((m) => m.result)),
     recent: RECENT_WINDOWS.map((w) => computeRecentForm(newest, w)),
     characters: computeCharacterPerformance(all),
     sessions: computeSessionCoverage(newest),
-    matchups: computeMatchupSection(newest),
-    sessionPerformance: computeSessionAnalytics(newest),
+    matchups,
+    sessionPerformance,
+    review: computeReviewSection({
+      newest,
+      matchups,
+      segments,
+      halves: sessionPerformance.halves,
+    }),
     unknownModeMatches: newest.filter((m) => m.mode === "unknown").length,
     firstPlayedAt: newest[newest.length - 1]?.playedAt ?? null,
     lastPlayedAt: newest[0]?.playedAt ?? null,

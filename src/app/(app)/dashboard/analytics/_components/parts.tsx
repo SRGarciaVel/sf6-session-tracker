@@ -17,6 +17,7 @@ import type { PlayerAnalytics } from "@/server/analytics/service";
  */
 export const ANALYTICS_SECTIONS = [
   "overview",
+  "review",
   "recent",
   "characters",
   "matchups",

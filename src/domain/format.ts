@@ -28,6 +28,24 @@ export function formatDecimal(n: number | null | undefined, locale: string, digi
     : numberFormat(locale, { maximumFractionDigits: digits }).format(n);
 }
 
+/**
+ * A signed non-integer quantity, at most `digits` decimals ("+10", "-13,8"); "—" if not finite.
+ * Rounded first, so it never shows "-0" or "+0" (that is "±0").
+ */
+export function formatSignedDecimal(
+  n: number | null | undefined,
+  locale: string,
+  digits = 1,
+): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return "—";
+  const factor = 10 ** digits;
+  const rounded = Math.round(n * factor) / factor;
+  if (rounded === 0) return "±0";
+  return numberFormat(locale, { maximumFractionDigits: digits, signDisplay: "always" }).format(
+    rounded,
+  );
+}
+
 /** `rate` is 0–100. */
 export function formatWinRate(rate: number, locale: string): string {
   const safe = Number.isFinite(rate) ? rate : 0;

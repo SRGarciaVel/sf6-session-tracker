@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMinutes } from "./format";
+import { formatMinutes, formatSignedDecimal } from "./format";
 
 describe("formatMinutes (analytics gameplay duration)", () => {
   it.each([
@@ -19,5 +19,22 @@ describe("formatMinutes (analytics gameplay duration)", () => {
       expect(formatMinutes(v, "en")).toBe("—");
     }
     expect(formatMinutes(-5, "en")).toBe("0 min");
+  });
+});
+
+describe("formatSignedDecimal (review differences in pp)", () => {
+  it("always signed, one decimal, locale separators", () => {
+    expect(formatSignedDecimal(-13.84, "es")).toBe("-13,8");
+    expect(formatSignedDecimal(10, "es")).toBe("+10");
+    expect(formatSignedDecimal(-9.99999999999999, "en")).toBe("-10");
+    expect(formatSignedDecimal(12.55, "en")).toBe("+12.6");
+  });
+
+  it("never -0 / +0 / NaN", () => {
+    expect(formatSignedDecimal(-0.04, "es")).toBe("±0");
+    expect(formatSignedDecimal(0, "en")).toBe("±0");
+    for (const v of [null, undefined, Number.NaN, Number.NEGATIVE_INFINITY]) {
+      expect(formatSignedDecimal(v, "es")).toBe("—");
+    }
   });
 });
