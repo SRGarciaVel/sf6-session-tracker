@@ -953,7 +953,7 @@
   },
   "Analytics": {
     "title": "Analíticas",
-    "subtitle": "Rendimiento a partir de las partidas registradas por SST",
+    "subtitle": "Entiende tu rendimiento a partir de las partidas registradas por SST.",
     "rangeLabel": "Periodo",
     "ranges": {
       "7d": "7 días",
@@ -1067,7 +1067,44 @@
       "positionsCaption": "Partidas 1 a {cap} de cada segmento. La muestra se reduce en cada posición: solo cuentan los segmentos que llegaron a ella.",
       "colPosition": "Posición",
       "colSegments": "Segmentos",
-      "position": "Partida {n}"
+      "position": "Partida {n}",
+      "groups": {
+        "activity": "Actividad",
+        "sequences": "Secuencias",
+        "within": "Dentro de la sesión"
+      }
+    },
+    "recentLatest": "Últimos resultados, del más reciente al más antiguo",
+    "nav": {
+      "label": "Secciones de analíticas",
+      "groups": {
+        "overview": "Resumen",
+        "performance": "Rendimiento",
+        "matchups": "Enfrentamientos",
+        "sessions": "Sesiones"
+      },
+      "items": {
+        "overview": "Resumen",
+        "recent": "Forma reciente",
+        "characters": "Personajes",
+        "matchups": "Enfrentamientos",
+        "sessions": "Rendimiento en sesión"
+      },
+      "short": {
+        "overview": "Resumen",
+        "recent": "Forma",
+        "characters": "Personajes",
+        "matchups": "Rivales",
+        "sessions": "Sesiones"
+      }
+    },
+    "filters": {
+      "title": "Filtros de las analíticas",
+      "reset": "Restablecer filtros",
+      "context": "Datos"
+    },
+    "methodology": {
+      "title": "Cómo se calculan estas analíticas"
     }
   }
 }
