@@ -69,7 +69,7 @@ export function AnalyticsFilters({ data }: { data: PlayerAnalytics }) {
         {!isDefaultFilters(data) && (
           <Link
             href={analyticsHref(DEFAULT_ANALYTICS_RANGE, DEFAULT_ANALYTICS_MODE, null)}
-            className="ml-auto inline-flex h-9 items-center text-sm text-muted underline-offset-4 hover:text-text hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
+            className="ml-auto inline-flex h-9 items-center text-sm text-muted underline-offset-4 hover:text-text hover:underline"
             data-testid="analytics-reset"
           >
             {t("filters.reset")}
@@ -117,7 +117,7 @@ function FilterGroup({
               aria-current={o.current ? "page" : undefined}
               className={cx(
                 "inline-flex h-9 items-center border px-3 font-display text-sm font-bold tracking-wide uppercase transition-colors motion-reduce:transition-none",
-                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan",
+                "focus-visible:-outline-offset-2",
                 o.current
                   ? "border-cyan bg-cyan/12 text-text"
                   : "border-line-strong text-muted hover:border-cyan hover:text-text",
@@ -147,7 +147,7 @@ function CharacterFilter({ data }: { data: PlayerAnalytics }) {
           id="analytics-character"
           name="character"
           defaultValue={data.character ?? ""}
-          className="h-9 min-w-40 border border-line-strong bg-surface-2 px-2 text-sm text-text focus-visible:border-cyan focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
+          className="h-9 min-w-40 border border-line-strong bg-surface-2 px-2 text-sm text-text focus-visible:border-cyan"
         >
           <option value="">{t("characterAll")}</option>
           {data.characters.map((c) => (
@@ -158,7 +158,7 @@ function CharacterFilter({ data }: { data: PlayerAnalytics }) {
         </select>
         <button
           type="submit"
-          className="h-9 border border-line-strong px-3 font-display text-sm font-bold tracking-wide text-muted uppercase hover:border-cyan hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
+          className="h-9 border border-line-strong px-3 font-display text-sm font-bold tracking-wide text-muted uppercase hover:border-cyan hover:text-text"
         >
           {t("characterApply")}
         </button>

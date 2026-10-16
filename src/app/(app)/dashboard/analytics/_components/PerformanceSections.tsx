@@ -21,7 +21,7 @@ export function OverviewSection({ data }: { data: PlayerAnalytics }) {
   const locale = useLocale();
   const { overall, sessions } = data.summary;
   return (
-    <AnalyticsSection id="overview" eyebrow={t("nav.groups.overview")} title={t("summaryTitle")}>
+    <AnalyticsSection id="overview" title={t("summaryTitle")}>
       <StatSurface testId="overview-stats">
         <Stat label={t("matches")} value={formatInteger(overall.matches, locale)} />
         <Stat label={t("record")} value={<RecordValue record={overall} />}>
@@ -143,7 +143,7 @@ export function CharactersSection({ data }: { data: PlayerAnalytics }) {
                   <Link
                     href={analyticsHref(data.range, data.mode, c.characterKey)}
                     aria-current={selected ? "true" : undefined}
-                    className="hover:text-cyan focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
+                    className="hover:text-cyan"
                   >
                     {c.characterName}
                   </Link>

@@ -25,7 +25,7 @@ export const ANALYTICS_SECTIONS = [
 export type AnalyticsSectionId = (typeof ANALYTICS_SECTIONS)[number];
 
 /** Clears the sticky chrome when jumping to an anchor (global header + mobile section strip). */
-export const SECTION_SCROLL_MARGIN = "scroll-mt-40 sm:scroll-mt-32 lg:scroll-mt-24";
+export const SECTION_SCROLL_MARGIN = "scroll-mt-52 sm:scroll-mt-40 lg:scroll-mt-24";
 
 export function analyticsHref(
   range: AnalyticsRange,

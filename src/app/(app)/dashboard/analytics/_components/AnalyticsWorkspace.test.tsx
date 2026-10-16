@@ -168,6 +168,11 @@ describe("pickActiveSection (scroll-spy)", () => {
   it("nothing in the reading band keeps the previous section", () => {
     expect(pickActiveSection(order, new Set(), "matchups")).toBe("matchups");
   });
+  it("page top → first section; page bottom → last section (whatever is in the band)", () => {
+    expect(pickActiveSection(order, new Set(["characters"]), "sessions", "top")).toBe("overview");
+    expect(pickActiveSection(order, new Set(["matchups"]), "overview", "bottom")).toBe("sessions");
+    expect(pickActiveSection(order, new Set(["matchups"]), "overview", null)).toBe("matchups");
+  });
   it("unknown ids are ignored", () => {
     expect(pickActiveSection(order, new Set(["nope"]), "recent")).toBe("recent");
   });

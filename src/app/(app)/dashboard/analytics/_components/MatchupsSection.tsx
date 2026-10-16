@@ -20,7 +20,6 @@ export function MatchupsSection({ data }: { data: PlayerAnalytics }) {
   return (
     <AnalyticsSection
       id="matchups"
-      eyebrow={t("nav.groups.matchups")}
       title={t("matchups.title")}
       description={<p>{t("matchups.note")}</p>}
     >

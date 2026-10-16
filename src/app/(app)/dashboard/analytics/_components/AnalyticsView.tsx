@@ -11,7 +11,8 @@ import type { PlayerAnalytics } from "@/server/analytics/service";
 import { AnalyticsFilters, useFilterContext } from "./AnalyticsFilters";
 import { AnalyticsSectionNav, type SectionNavGroup } from "./AnalyticsSectionNav";
 import { MatchupsSection } from "./MatchupsSection";
-import { characterNameOf, type AnalyticsSectionId } from "./parts";
+import { cx } from "@/components/ui/primitives";
+import { SECTION_SCROLL_MARGIN, characterNameOf, type AnalyticsSectionId } from "./parts";
 import { CharactersSection, OverviewSection, RecentFormSection } from "./PerformanceSections";
 import { SessionPerformanceSection } from "./SessionPerformanceSection";
 
@@ -81,7 +82,7 @@ export function AnalyticsView({ data }: { data: PlayerAnalytics }) {
               <section
                 id="overview"
                 aria-labelledby="overview-title"
-                className="hud-panel scroll-mt-40 p-5 sm:scroll-mt-32 lg:scroll-mt-24"
+                className={cx("hud-panel p-5", SECTION_SCROLL_MARGIN)}
               >
                 <h2 id="overview-title" className="font-display text-xl font-bold uppercase">
                   {characterName
@@ -103,7 +104,7 @@ export function AnalyticsView({ data }: { data: PlayerAnalytics }) {
           )}
 
           <details className="group border-t border-line pt-4 text-sm" data-testid="methodology">
-            <summary className="cursor-pointer font-display font-bold tracking-wide text-muted uppercase hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan">
+            <summary className="cursor-pointer font-display font-bold tracking-wide text-muted uppercase hover:text-text">
               {t("methodology.title")}
             </summary>
             <ul className="mt-3 list-disc space-y-1.5 pl-5 text-xs text-muted">

@@ -27,22 +27,43 @@ export interface SectionNavGroup {
 }
 
 /**
- * The active section: the first one (in document order) currently inside the reading band; if
- * none is (between two far-apart headings) keep the previous one. Pure — unit tested.
+ * The active section. At the very top of the page it is the first section and at the very bottom
+ * the last one (a short last section may never reach the reading band); otherwise the first
+ * section (in document order) inside the reading band, or — between two far-apart headings — the
+ * previous one. Pure — unit tested.
  */
 export function pickActiveSection(
   order: readonly string[],
   visible: ReadonlySet<string>,
   previous: string,
+  edge: "top" | "bottom" | null = null,
 ): string {
+  if (edge === "top") return order[0] ?? previous;
+  if (edge === "bottom") return order[order.length - 1] ?? previous;
   return order.find((id) => visible.has(id)) ?? previous;
 }
 
+function scrollEdge(): "top" | "bottom" | null {
+  const el = document.documentElement;
+  if (window.scrollY <= 4) return "top";
+  if (window.scrollY + window.innerHeight >= el.scrollHeight - 4) return "bottom";
+  return null;
+}
+
 /**
- * Reading band: below the sticky chrome (~ header + strip) and above the lower 55 % of the
- * viewport, so a section becomes active when its top reaches the upper part of the screen.
+ * Reading band top, per breakpoint: just above where an anchored heading lands (the section
+ * scroll margins in parts.tsx: 208 / 160 / 96 px), so after a jump the target is in the band and
+ * the previous section (≥ 48 px above) is not. The band ends above the lower 55 % of the viewport.
  */
-const ROOT_MARGIN = "-120px 0px -55% 0px";
+const BAND_TOP: ReadonlyArray<{ query: string | null; px: number }> = [
+  { query: "(min-width: 1024px)", px: 72 },
+  { query: "(min-width: 640px)", px: 136 },
+  { query: null, px: 184 },
+];
+
+function readingBandTop(): number {
+  return BAND_TOP.find((b) => b.query === null || window.matchMedia(b.query).matches)?.px ?? 184;
+}
 
 export function AnalyticsSectionNav({
   label,
@@ -59,12 +80,25 @@ export function AnalyticsSectionNav({
   const order = items.map((i) => i.id);
   const orderKey = order.join("|");
   const [active, setActive] = useState(order[0] ?? "");
+  // Recomputed only when a breakpoint flips (media-query events, not scroll events).
+  const [bandTop, setBandTop] = useState<number | null>(null);
+
+  useEffect(() => {
+    const queries = BAND_TOP.flatMap((b) => (b.query ? [window.matchMedia(b.query)] : []));
+    const update = () => setBandTop(readingBandTop());
+    for (const q of queries) q.addEventListener("change", update);
+    const raf = window.requestAnimationFrame(update);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      for (const q of queries) q.removeEventListener("change", update);
+    };
+  }, []);
   const stripRef = useRef<HTMLUListElement>(null);
 
   // Scroll-spy: one observer for all sections; no scroll listeners. A deep link (#matchups) needs
   // no special case: the browser scrolls to the anchor and the observer reports it.
   useEffect(() => {
-    if (typeof IntersectionObserver === "undefined") return;
+    if (typeof IntersectionObserver === "undefined" || bandTop === null) return;
     const ids = orderKey.split("|");
     const visible = new Set<string>();
     const observer = new IntersectionObserver(
@@ -73,16 +107,18 @@ export function AnalyticsSectionNav({
           if (e.isIntersecting) visible.add(e.target.id);
           else visible.delete(e.target.id);
         }
-        setActive((prev) => pickActiveSection(ids, visible, prev));
+        // Edges are read only when the observer fires (no scroll listener).
+        const edge = scrollEdge();
+        setActive((prev) => pickActiveSection(ids, visible, prev, edge));
       },
-      { rootMargin: ROOT_MARGIN },
+      { rootMargin: `-${bandTop}px 0px -55% 0px` },
     );
     for (const id of ids) {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
     }
     return () => observer.disconnect();
-  }, [orderKey]);
+  }, [orderKey, bandTop]);
 
   // Keep the active pill visible inside the mobile strip (horizontal only: never moves the page).
   useEffect(() => {
@@ -116,7 +152,7 @@ export function AnalyticsSectionNav({
                 onClick={() => setActive(item.id)}
                 className={cx(
                   "inline-flex h-9 items-center border px-3 font-display text-sm font-bold tracking-wide whitespace-nowrap uppercase transition-colors motion-reduce:transition-none",
-                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan",
+                  "focus-visible:-outline-offset-2",
                   item.id === active
                     ? "border-cyan bg-cyan/12 text-text"
                     : "border-line-strong text-muted hover:border-cyan hover:text-text",
@@ -149,7 +185,7 @@ export function AnalyticsSectionNav({
                       onClick={() => setActive(item.id)}
                       className={cx(
                         "block border-l-2 py-1.5 pl-3 text-sm transition-colors motion-reduce:transition-none",
-                        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan",
+                        "focus-visible:-outline-offset-2",
                         item.id === active
                           ? "border-cyan font-semibold text-text"
                           : "border-transparent text-muted hover:border-line-strong hover:text-text",
