@@ -98,3 +98,38 @@ export function formatTimeAgo(
   if (minutes < 60) return { seconds, text: rtf.format(-minutes, "minute") };
   return { seconds, text: rtf.format(-Math.floor(minutes / 60), "hour") };
 }
+
+/**
+ * Calendar date of an instant in UTC ("16 oct 2026" / "Oct 16, 2026"). Server-rendered exports have
+ * no viewer timezone, so the date is explicitly UTC (the same day as the export filename).
+ */
+export function formatUtcDate(date: Date, locale: string): string {
+  return dateFormat(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })
+    .format(date)
+    .replace(/\.$/, "");
+}
+
+/** UTC date + time to the minute ("16 oct 2026, 06:43 UTC"); never seconds. */
+export function formatUtcDateTime(date: Date, locale: string): string {
+  const text = dateFormat(locale, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "UTC",
+  }).format(date);
+  return `${text} UTC`;
+}
+
+const dateCache = new Map<string, Intl.DateTimeFormat>();
+function dateFormat(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${locale}|${JSON.stringify(options)}`;
+  let df = dateCache.get(key);
+  if (!df) {
+    df = new Intl.DateTimeFormat(locale, options);
+    dateCache.set(key, df);
+  }
+  return df;
+}

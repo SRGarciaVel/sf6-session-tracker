@@ -33,6 +33,11 @@ function csp({ frameable }: { frameable: boolean }): string {
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // The review-report PDF reads its committed TTFs at runtime (fs, not an import): keep them in
+  // the traced output of that route.
+  outputFileTracingIncludes: {
+    "/dashboard/analytics/review.pdf": ["./src/server/analytics/report/fonts/**/*"],
+  },
   // The dev badge would show up inside OBS while testing overlays locally.
   devIndicators: false,
 

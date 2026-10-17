@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMinutes, formatSignedDecimal } from "./format";
+import { formatMinutes, formatSignedDecimal, formatUtcDate, formatUtcDateTime } from "./format";
 
 describe("formatMinutes (analytics gameplay duration)", () => {
   it.each([
@@ -36,5 +36,17 @@ describe("formatSignedDecimal (review differences in pp)", () => {
     for (const v of [null, undefined, Number.NaN, Number.NEGATIVE_INFINITY]) {
       expect(formatSignedDecimal(v, "es")).toBe("—");
     }
+  });
+});
+
+describe("formatUtcDate / formatUtcDateTime (server-rendered exports)", () => {
+  const late = new Date("2026-10-16T23:59:30Z");
+  it("calendar day in UTC, whatever the server timezone", () => {
+    expect(formatUtcDate(late, "en")).toBe("Oct 16, 2026");
+    expect(formatUtcDate(late, "es")).toBe("16 oct 2026");
+  });
+  it("to the minute, labelled UTC, never seconds", () => {
+    expect(formatUtcDateTime(late, "en")).toBe("Oct 16, 2026, 23:59 UTC");
+    expect(formatUtcDateTime(late, "es")).toBe("16 oct 2026, 23:59 UTC");
   });
 });

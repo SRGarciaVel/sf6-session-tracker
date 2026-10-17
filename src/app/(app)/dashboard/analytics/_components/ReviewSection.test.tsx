@@ -211,7 +211,11 @@ describe("review questions and disclaimer", () => {
   it("the replay disclaimer is visible at section level (outside every <details>)", () => {
     const review = reviewOf(html);
     const at = review.indexOf('data-testid="review-disclaimer"');
-    expect(at).toBeGreaterThan(review.lastIndexOf("</details>"));
+    // After every card's questions disclosure (the cards list), and not inside any <details>.
+    const cardsEnd = review.lastIndexOf("</article>");
+    expect(at).toBeGreaterThan(cardsEnd);
+    const before = review.slice(0, at);
+    expect(before.split("<details").length).toBe(before.split("</details>").length);
     expect(text(review)).toContain(
       "Estas preguntas sirven para orientar la revisión de replays. SST no observa directamente estas situaciones dentro de la partida.",
     );

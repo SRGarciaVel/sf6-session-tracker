@@ -37,6 +37,18 @@ export function analyticsHref(
   return character ? `${base}&character=${encodeURIComponent(character)}` : base;
 }
 
+/** The review report PDF for the SAME filters (the server recomputes everything from them). */
+export function reviewPdfHref(
+  range: AnalyticsRange,
+  mode: AnalyticsMode,
+  character: CharacterKey | null = null,
+): string {
+  return analyticsHref(range, mode, character).replace(
+    "/dashboard/analytics?",
+    "/dashboard/analytics/review.pdf?",
+  );
+}
+
 export function characterNameOf(data: PlayerAnalytics): string | null {
   if (!data.character) return null;
   return (
