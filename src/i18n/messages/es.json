@@ -1219,6 +1219,100 @@
         }
       },
       "methodology": "Para revisar: señales deterministas con umbrales de producto (no significación estadística). Enfrentamiento ≥ 10 decididas frente al mismo personaje propio con ≥ 30; últimas 20 frente a las 20 anteriores (≥ 10 decididas cada una); mitades con ≥ 5 segmentos y ≥ 20 decididas por mitad; partida siguiente tras derrota frente a tras victoria (≥ 10 observaciones cada una, dentro del mismo segmento); diferencia mínima de 10 pp. Exposición: ≥ 20 partidas y ≥ 10 % del total con rival conocido. Máximo 3 señales y 2 por tipo."
+    },
+    "reviewReport": {
+      "title": "Revisión de rendimiento",
+      "reportLabel": "Informe de revisión",
+      "header": "Revisión de rendimiento",
+      "overviewTitle": "Vista general",
+      "generated": "Generado {date}",
+      "version": "SST Review v1",
+      "page": "{page} / {total}",
+      "context": {
+        "title": "Conjunto de datos",
+        "period": "Periodo",
+        "mode": "Modo",
+        "character": "Personaje",
+        "coverage": "Cobertura"
+      },
+      "coverageRange": "{from} – {to}",
+      "coverageNone": "Sin partidas registradas",
+      "coverageNote": "Solo partidas registradas por SST: no es tu historial completo de SF6.",
+      "snapshot": {
+        "title": "Resumen registrado",
+        "matches": "Partidas registradas",
+        "record": "Récord",
+        "winRate": "Win rate",
+        "sessions": "Sesiones con partidas",
+        "ratioLabel": "Victorias / derrotas (solo partidas decididas)"
+      },
+      "overview": {
+        "title": "Prioridades de revisión",
+        "found": "{count, plural, one {SST encontró # señal que cumple los criterios de muestra.} other {SST encontró # señales que cumplen los criterios de muestra.}}",
+        "included": "{count, plural, one {Este informe incluye la primera prioridad de revisión.} other {Este informe incluye las # primeras prioridades de revisión.}}",
+        "limitation": "Estas señales describen diferencias registradas. No identifican sus causas dentro de la partida."
+      },
+      "omitted": "{count, plural, one {# señal adicional cumplió los criterios de muestra y no se incluye en este informe.} other {# señales adicionales cumplieron los criterios de muestra y no se incluyen en este informe.}}",
+      "priority": "Prioridad",
+      "why": "Por qué aparece",
+      "replayFocus": "Foco de replay",
+      "compare": {
+        "baseline": "{own} en general",
+        "recent": "Últimas {n}",
+        "previous": "{n} anteriores",
+        "firstHalf": "Primera mitad",
+        "secondHalf": "Segunda mitad",
+        "afterLoss": "Tras una derrota",
+        "afterWin": "Tras una victoria",
+        "share": "De las partidas con rival conocido",
+        "decided": "{count} decididas",
+        "nextWins": "{wins} de {total} ganadas",
+        "segments": "{count, plural, one {# segmento de sesión} other {# segmentos de sesión}}",
+        "segmentNote": "Solo transiciones dentro del mismo segmento de sesión.",
+        "matches": "{count} partidas"
+      },
+      "worksheet": {
+        "title": "Hoja de revisión",
+        "note": "Marca cada pregunta mientras revisas los replays de esa prioridad."
+      },
+      "notesTitle": "Notas de revisión",
+      "methodology": {
+        "title": "Metodología y límites",
+        "recorded": "Solo se usan partidas que SST registró; no es el historial completo de SF6.",
+        "deterministic": "Las señales son deterministas: los mismos datos producen siempre el mismo informe. No se usa IA.",
+        "gates": "Los umbrales son criterios de producto, no significación estadística.",
+        "causes": "Ninguna señal diagnostica causas: indican dónde mirar primero, no qué ocurrió en la partida.",
+        "telemetry": "SST no observa el contenido de los replays (neutral, anti-aéreos, Drive, esquina, levantadas, castigos, ejecución).",
+        "rating": "No se usan LP, MR ni rangos.",
+        "rulesTitle": "Reglas",
+        "rules": {
+          "matchup": "Enfrentamiento: ≥ 10 decididas; base del mismo personaje ≥ 30 decididas; ≥ 10 pp por debajo.",
+          "recent": "Forma reciente: últimas 20 frente a las 20 anteriores; ≥ 10 decididas en cada una; ≥ 10 pp.",
+          "halves": "Mitades de sesión: ≥ 5 segmentos con mitades; ≥ 20 decididas por mitad; ≥ 10 pp.",
+          "postLoss": "Partida siguiente: ≥ 10 observaciones por lado, dentro del mismo segmento de sesión; ≥ 10 pp por debajo tras derrota.",
+          "exposure": "Exposición: ≥ 20 partidas y ≥ 10 % de las partidas con rival conocido.",
+          "top": "Selección: máximo 3 señales y 2 por tipo."
+        }
+      },
+      "plain": {
+        "matches": "{count, plural, one {# partida registrada} other {# partidas registradas}}",
+        "winRate": "{value} WR",
+        "sessions": "{count, plural, one {# sesión con partidas} other {# sesiones con partidas}}",
+        "prioritiesTitle": "Prioridades para revisar",
+        "generatedBy": "Generado por {brand}"
+      },
+      "cta": {
+        "title": "Preparar revisión",
+        "text": "Convierte estas señales en un resumen para revisar tus replays o compartirlo.",
+        "preview": "Ver resumen",
+        "copy": "Copiar resumen",
+        "copied": "Copiado",
+        "copyFailed": "No se pudo copiar. Abre el resumen y cópialo manualmente.",
+        "download": "Descargar PDF"
+      },
+      "errors": {
+        "noSignals": "No hay prioridades de revisión para exportar con estos filtros."
+      }
     }
   }
 }

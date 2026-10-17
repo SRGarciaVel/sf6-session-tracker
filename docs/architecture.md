@@ -448,6 +448,88 @@ first when reviewing my play?" — never "what is technically wrong with my play
   anti-air, Drive / DI / Parry / Burnout, corner, wake-up, throw tech, punish counters, combos,
   Super) and no rating data (LP / MR / rank): 6.3 stays blocked on segmented baselines.
 
+#### Review report: summary + PDF (Phase 6.4B)
+
+The review priorities (6.4A) can be exported as a branded **SST review report**. The PDF is the
+primary format; there is also a plain-text summary for Discord / WhatsApp / e-mail / notes (never
+Markdown). Both answer "where to look first", never "what went wrong". There is no AI and no
+causal claim.
+
+- **One model, two renderers.** `domain/analytics/review-report.ts` (pure) projects what the page
+  already computed into a `ReviewReport`:
+  - `context`: range, mode, character, its display name, `from`, `generatedAt`;
+  - `snapshot`: the overall record and sessions, copied from the summary;
+  - `priorities`: **exactly** `summary.review.signals`, the same objects in the same order;
+  - `omittedPriorities` = totalEligible − selected.
+
+  It never re-ranks or recomputes evidence, and it has no ratings and no opponent player names.
+  `components/analytics/review-text.ts` words it from the i18n catalogs (`Analytics.review.*`,
+  `Analytics.reviewReport.*`) for the web cards, the plain text and the PDF.
+  `components/analytics/review-content.ts` holds the shared question-key metadata
+  (`REVIEW_QUESTION_KEYS`), so the cards, the summary and the PDF use the same predefined questions.
+
+- **Route:** `GET /dashboard/analytics/review.pdf?range=…&mode=…[&character=…]`.
+  1. Better Auth session (401 without).
+  2. Locale: account preference, then the `NEXT_LOCALE` cookie, then `es`. Never Accept-Language.
+  3. `parseAnalyticsSearchParams`: the same lenient fallbacks as the page. Any other parameter is
+     ignored.
+  4. `getPlayerAnalyticsForUser(userId)`: the same ownership and the same 3 selects / 9-column
+     projection as the page. There is no report query.
+  5. `buildReviewReport`, then `renderReviewPdf`.
+
+  No selected signal ⇒ **409** with a short translated text, never an empty PDF; the page does not
+  offer the export either. No player ⇒ 404. The route only implements GET: there is no body, and
+  no client-sent signals or metrics are read.
+
+- **Response:** `application/pdf`, `Content-Disposition: attachment;
+filename="sst-review-<character | all-characters>-<mode>-<range>-<YYYY-MM-DD>.pdf"` (UTC date,
+  only `[a-z0-9-]`), `Cache-Control: private, no-store`. Generated on demand and streamed once:
+  no DB row, no object storage, no history, no links.
+- **Renderer:** `@react-pdf/renderer` 4.9.0, in-process on the server (`src/server/analytics/report/`).
+  No Chromium, Playwright, Puppeteer or browser print: SST runs on Render Free.
+  - **Compatibility spike (Node 22.22, Next 16 `next start`):** `renderToBuffer`, `Text` / `View` /
+    `Svg` / `G` / `Path` and local TTF registration all worked.
+  - **Measured:** about 0.3–0.5 s per report including the per-render font reload (~0.5 s end to end through `next start`); reports are 80–110 KB; over 60 consecutive renders the heap stays flat after warm-up (~50 MB after GC; no leak).
+- **Fonts:** official static TTFs committed in `src/server/analytics/report/fonts/`, with the OFL
+  licenses and their provenance (README).
+  - Barlow Condensed 600/700/800 for display, Barlow 400/600 for body, JetBrains Mono 500 for
+    metadata. Arrows and diamonds use mono, the only family with those glyphs.
+  - **Not `next/font` output:** its hashed WOFF2 subsets crash fontkit on `Ó` / `Ñ` / `é` / `ú`.
+  - Hyphenation is disabled (words break only at spaces).
+  - **Per-render font reset, renders serialised per process.** react-pdf keeps one fontkit object
+    per font across documents. A document rendered after another one lost glyphs ("A.K.I." became
+    "K I"). `resetReportFontData()` makes each render reload the TTFs; a regression test compares
+    ToUnicode maps.
+  - **One page number per page.** Only one dynamic page-number text per page renders reliably, as
+    a direct child of the page.
+- **Design:** A4 portrait, dark and digital-first, using the dashboard palette, Barlow and the
+  brand geometry (`ReportBrandMark` / `ReportBrandLockup` draw `LETTERS` / `ACCENTS` /
+  `SLANT_TRANSFORM` / `VIEWBOX` / `LOCKUP_LAYOUT` as vectors). Components:
+  - page furniture: a magenta → cyan top line, a restrained vector glow, notched panels, a fixed
+    header (monogram + "SST // …") and footer;
+  - cover: dataset identity, context, a snapshot telemetry panel with a decided-only W / L bar,
+    and a priority overview;
+  - priority blocks (`wrap={false}`): number "01 / 03", headline value, arrow + signed pp + words,
+    comparison bars, evidence, a neutral "why this appears", and the replay-focus checklist;
+  - closing blocks: a worksheet (each priority's own questions), a notes area and the methodology /
+    gates.
+- **Pagination (intentional, `report-layout.ts`):**
+
+  | Signals | Pages                                                                  |
+  | ------- | ---------------------------------------------------------------------- |
+  | 1       | cover · priority · worksheet + notes + methodology                     |
+  | 2       | cover · two priorities · worksheet + notes + methodology               |
+  | 3       | cover · two priorities · priority 03 + worksheet · notes + methodology |
+
+  So 3 or 4 pages, with a hard maximum of 5.
+
+- **Web:** a compact "Prepare review" area under the review cards (only with signals), containing:
+  - a native `<details>` preview of the server-built plain text;
+  - `ReviewExportActions` (client), which only copies and announces it in a polite live region;
+  - a plain link to the PDF route with the page's filters.
+- **Never:** ratings (6.3 stays blocked), replay telemetry, causes / tilt / fatigue, generative AI,
+  stored reports, or editable PDF fields.
+
 ## 7. Realtime
 
 - Worker/web → `pg_notify('sf6_events', {kind, playerId, overlayId?})` after commit.

@@ -1,0 +1,3 @@
+# Review-report PDF fonts: official files kept byte-for-byte (OFL texts contain trailing spaces).
+src/server/analytics/report/fonts/*.ttf binary
+src/server/analytics/report/fonts/licenses/*.txt -whitespace
