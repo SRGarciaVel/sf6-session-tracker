@@ -404,7 +404,7 @@ Compose; run `DATABASE_URL=$TEST_DATABASE_URL pnpm db:migrate` once).
 | Performance analytics  | **Working.** Characters, matchups and sessions over recorded matches                    |
 | Review priorities      | **Working.** Deterministic signals with sample gates and replay-review questions        |
 | Review summary + PDF   | **Working.** Plain-text summary and a server-generated PDF                              |
-| Rating trends          | **Not implemented.** Blocked on reliable per-character rating baselines                 |
+| Rating trends          | **Not implemented.** Pending segmented rating-baseline work                             |
 
 Still to do: the final Ranked end-to-end smoke test in production (a real match counted live),
 then closed-beta feedback. This is a closed beta, not a stable release.
