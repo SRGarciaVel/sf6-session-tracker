@@ -5,101 +5,14 @@
   "extDescription": {
     "message": "Envía tus propias partidas de Street Fighter 6 desde Buckler's Boot Camp a tu cuenta de SST. Nunca envía tus cookies ni credenciales de Capcom."
   },
-  "tracker": {
-    "message": "Tracker"
+  "dash": {
+    "message": "—"
   },
-  "session": {
-    "message": "Sesión"
-  },
-  "lastMatch": {
-    "message": "Última partida"
-  },
-  "lastSync": {
-    "message": "Última sync"
-  },
-  "connectTitle": {
-    "message": "Conectar con SST"
-  },
-  "trackerUrl": {
-    "message": "Tracker"
-  },
-  "pairingCode": {
-    "message": "Código de vinculación (Dashboard → Conectar Companion)"
-  },
-  "deviceName": {
-    "message": "Nombre del dispositivo"
-  },
-  "connect": {
-    "message": "Conectar"
-  },
-  "cfnManual": {
-    "message": "Tu CFN ID (solo si el tracker aún no tiene uno)"
-  },
-  "save": {
-    "message": "Guardar"
-  },
-  "testBuckler": {
-    "message": "Probar conexión con Buckler"
-  },
-  "syncNow": {
-    "message": "Sincronizar ahora"
-  },
-  "disconnect": {
-    "message": "Desconectar"
-  },
-  "privacy": {
-    "message": "El companion nunca envía tus cookies o credenciales de Capcom a SST. Solo envía tu CFN ID, nombre de luchador, personajes, rango/LP/MR y tus partidas (ID de replay, hora, modo, resultado, nombre y personaje del rival)."
-  },
-  "connected": {
-    "message": "Conectado"
-  },
-  "notPaired": {
-    "message": "Sin conectar"
-  },
-  "revoked": {
-    "message": "Dispositivo revocado — vuelve a conectar"
-  },
-  "trackerDisconnected": {
-    "message": "Tracker desconectado"
-  },
-  "loggedIn": {
-    "message": "Sesión iniciada"
-  },
-  "loginRequired": {
-    "message": "Inicia sesión en Buckler"
-  },
-  "openBucklerTab": {
-    "message": "Abre una pestaña de Buckler's Boot Camp"
-  },
-  "unknown": {
-    "message": "Desconocido"
-  },
-  "runTest": {
-    "message": "Pulsa «Probar conexión con Buckler»"
-  },
-  "buckler_blocked": {
-    "message": "Acceso rechazado (403)"
-  },
-  "buckler_rate_limited": {
-    "message": "Límite de peticiones (429) — en pausa"
-  },
-  "buckler_not_found": {
-    "message": "No encontrado"
-  },
-  "buckler_unavailable": {
-    "message": "No disponible"
-  },
-  "buckler_invalid_response": {
-    "message": "Respuesta inesperada"
-  },
-  "active": {
-    "message": "Activa"
-  },
-  "noActiveSession": {
-    "message": "Sin sesión activa"
+  "justNow": {
+    "message": "Ahora"
   },
   "secondsAgo": {
-    "message": "hace $VALUE$ s",
+    "message": "Hace $VALUE$ s",
     "placeholders": {
       "value": {
         "content": "$1"
@@ -107,7 +20,7 @@
     }
   },
   "minutesAgo": {
-    "message": "hace $VALUE$ min",
+    "message": "Hace $VALUE$ min",
     "placeholders": {
       "value": {
         "content": "$1"
@@ -115,20 +28,279 @@
     }
   },
   "hoursAgo": {
-    "message": "hace $VALUE$ h",
+    "message": "Hace $VALUE$ h",
     "placeholders": {
       "value": {
         "content": "$1"
       }
     }
   },
-  "lastError": {
-    "message": "Último error: $VALUE$",
-    "placeholders": {
-      "value": {
-        "content": "$1"
-      }
-    }
+  "lastSync": {
+    "message": "Última sincronización"
+  },
+  "lastMatch": {
+    "message": "Última partida"
+  },
+  "trackerUrl": {
+    "message": "Servidor de SST"
+  },
+  "pairingCode": {
+    "message": "Código de conexión"
+  },
+  "deviceName": {
+    "message": "Nombre del dispositivo"
+  },
+  "defaultDeviceName": {
+    "message": "Companion del navegador"
+  },
+  "pairHelpQuestion": {
+    "message": "¿Dónde obtengo el código?"
+  },
+  "pairHelpAnswer": {
+    "message": "En SST, abre el panel y pulsa «Conectar Companion»."
+  },
+  "state_unpaired_title": {
+    "message": "Conecta el Companion"
+  },
+  "state_unpaired_body": {
+    "message": "Conecta este navegador con tu cuenta de SST para empezar a sincronizar tus partidas."
+  },
+  "state_tracker_revoked_title": {
+    "message": "Vuelve a conectar el Companion"
+  },
+  "state_tracker_revoked_body": {
+    "message": "La conexión de este dispositivo con SST ya no es válida. Genera un código nuevo en SST para volver a conectarlo."
+  },
+  "state_tracker_error_title": {
+    "message": "No podemos conectar con SST"
+  },
+  "state_tracker_error_body": {
+    "message": "El Companion no puede comunicarse con SST en este momento. Si el servidor estaba en reposo, puede tardar hasta un minuto en arrancar."
+  },
+  "state_needs_cfn_title": {
+    "message": "Falta tu CFN"
+  },
+  "state_needs_cfn_body": {
+    "message": "SST todavía no tiene un CFN asociado a esta conexión. Escribe tu CFN ID para empezar."
+  },
+  "state_needs_buckler_title": {
+    "message": "Prepara Buckler"
+  },
+  "state_needs_buckler_body": {
+    "message": "SST ya está conectado. Ahora comprobaremos que Buckler's Boot Camp puede leer tu perfil."
+  },
+  "state_needs_buckler_tab_title": {
+    "message": "Abre Buckler"
+  },
+  "state_needs_buckler_tab_body": {
+    "message": "No encontramos una pestaña abierta de Buckler's Boot Camp. Ábrela en este navegador y vuelve a probar."
+  },
+  "state_needs_buckler_login_title": {
+    "message": "Inicia sesión en Buckler"
+  },
+  "state_needs_buckler_login_body": {
+    "message": "SST está conectado, pero Buckler necesita una sesión de Capcom iniciada."
+  },
+  "state_buckler_paused_title": {
+    "message": "Buckler está en pausa"
+  },
+  "state_buckler_paused_body": {
+    "message": "Buckler rechazó temporalmente las consultas. SST esperará antes de volver a intentarlo."
+  },
+  "state_buckler_paused_note": {
+    "message": "No necesitas volver a conectar el Companion."
+  },
+  "state_buckler_error_title": {
+    "message": "Buckler no responde"
+  },
+  "state_buckler_error_body": {
+    "message": "No pudimos consultar Buckler en este momento. SST volverá a intentarlo automáticamente."
+  },
+  "state_ready_active_title": {
+    "message": "Todo listo"
+  },
+  "state_ready_active_body": {
+    "message": "SST está siguiendo tu sesión. Buckler está conectado y la sincronización automática está activa."
+  },
+  "state_ready_idle_title": {
+    "message": "Todo listo"
+  },
+  "state_ready_idle_body": {
+    "message": "Buckler está conectado y SST sincroniza tus partidas automáticamente."
+  },
+  "eyebrowSstConnected": {
+    "message": "● SST conectado"
+  },
+  "loginStep1": {
+    "message": "Abre Buckler's Boot Camp."
+  },
+  "loginStep2": {
+    "message": "Inicia sesión normalmente."
+  },
+  "loginStep3": {
+    "message": "Vuelve aquí y reintenta."
+  },
+  "sessionTitle": {
+    "message": "Sesión SST"
+  },
+  "sessionActive": {
+    "message": "Sesión activa"
+  },
+  "sessionInactive": {
+    "message": "Sin sesión activa"
+  },
+  "sessionActiveShort": {
+    "message": "Activa"
+  },
+  "sessionInactiveShort": {
+    "message": "Sin sesión"
+  },
+  "sessionActiveGuidance": {
+    "message": "Tus nuevas partidas se añadirán automáticamente."
+  },
+  "sessionIdleGuidance": {
+    "message": "El Companion seguirá conectado. Inicia una sesión desde SST cuando quieras empezar a jugar."
+  },
+  "readyClosing": {
+    "message": "Puedes jugar. SST se ocupa del resto."
+  },
+  "actionConnect": {
+    "message": "Conectar con SST"
+  },
+  "actionReconnect": {
+    "message": "Conectar de nuevo"
+  },
+  "actionSaveCfn": {
+    "message": "Guardar CFN"
+  },
+  "actionRetry": {
+    "message": "Reintentar"
+  },
+  "actionOpenSst": {
+    "message": "Abrir SST"
+  },
+  "actionOpenBuckler": {
+    "message": "Abrir Buckler"
+  },
+  "actionTestConnection": {
+    "message": "Probar conexión"
+  },
+  "actionRetryConnection": {
+    "message": "Reintentar conexión"
+  },
+  "actionTryAgain": {
+    "message": "Probar de nuevo"
+  },
+  "actionSyncNow": {
+    "message": "Sincronizar ahora"
+  },
+  "actionCopyDiagnostics": {
+    "message": "Copiar diagnóstico"
+  },
+  "actionDisconnect": {
+    "message": "Desconectar Companion"
+  },
+  "busyPairing": {
+    "message": "Conectando…"
+  },
+  "busyTesting": {
+    "message": "Probando…"
+  },
+  "busySyncing": {
+    "message": "Sincronizando…"
+  },
+  "busyDisconnecting": {
+    "message": "Desconectando…"
+  },
+  "busySaving": {
+    "message": "Guardando…"
+  },
+  "diagnostics": {
+    "message": "Diagnóstico"
+  },
+  "diagConnection": {
+    "message": "Conexión"
+  },
+  "diagSst": {
+    "message": "SST"
+  },
+  "diagBuckler": {
+    "message": "Buckler"
+  },
+  "diagCfn": {
+    "message": "CFN"
+  },
+  "diagActivity": {
+    "message": "Actividad"
+  },
+  "diagSession": {
+    "message": "Sesión"
+  },
+  "diagBucklerTest": {
+    "message": "Prueba de Buckler"
+  },
+  "diagTestResult": {
+    "message": "Resultado"
+  },
+  "diagTransport": {
+    "message": "Transporte"
+  },
+  "diagCharacters": {
+    "message": "Personajes"
+  },
+  "diagReplays": {
+    "message": "Partidas recientes"
+  },
+  "diagLocale": {
+    "message": "Idioma"
+  },
+  "diagCompanion": {
+    "message": "Companion"
+  },
+  "diagVersion": {
+    "message": "Versión"
+  },
+  "diagLastError": {
+    "message": "Último error"
+  },
+  "diagCopied": {
+    "message": "Diagnóstico copiado."
+  },
+  "diagCopyFailed": {
+    "message": "No se pudo copiar el diagnóstico."
+  },
+  "statusConnected": {
+    "message": "Conectado"
+  },
+  "statusNotPaired": {
+    "message": "Sin conectar"
+  },
+  "statusRevoked": {
+    "message": "Revocado"
+  },
+  "statusUnreachable": {
+    "message": "Sin conexión"
+  },
+  "statusNotTested": {
+    "message": "Sin probar"
+  },
+  "statusLoginRequired": {
+    "message": "Inicia sesión"
+  },
+  "statusNoTab": {
+    "message": "Sin pestaña"
+  },
+  "statusPaused": {
+    "message": "En pausa"
+  },
+  "statusUnavailable": {
+    "message": "No disponible"
+  },
+  "privacyTitle": {
+    "message": "Tu sesión de Capcom permanece en este navegador"
+  },
+  "privacyBody": {
+    "message": "SST nunca recibe tu contraseña, cookies ni credenciales de Capcom."
   },
   "error": {
     "message": "Error: $VALUE$",
@@ -138,40 +310,32 @@
       }
     }
   },
-  "defaultDeviceName": {
-    "message": "Companion del navegador"
+  "errGeneric": {
+    "message": "Algo no salió bien. Inténtalo de nuevo en unos segundos."
   },
   "errTrackerUnreachable": {
-    "message": "No pudimos conectar con SST ($VALUE$). Si es la primera visita del día, el servidor de la beta puede tardar hasta un minuto en iniciarse: abre esa dirección en una pestaña, espera a que cargue y vuelve a intentarlo.",
-    "placeholders": {
-      "value": {
-        "content": "$1"
-      }
-    }
+    "message": "No pudimos conectar con SST. Si es la primera visita del día, el servidor puede tardar hasta un minuto en iniciarse: abre SST, espera a que cargue y vuelve a intentarlo."
   },
   "errOriginNotAllowed": {
-    "message": "Esta URL de tracker no está permitida en esta compilación de la extensión."
+    "message": "Esta compilación del Companion no puede conectarse a ese servidor de SST."
   },
   "errInvalidCode": {
-    "message": "Código de vinculación inválido o caducado. Genera otro en el dashboard."
+    "message": "Código de conexión inválido o caducado. Genera otro en SST."
   },
   "errRateLimited": {
-    "message": "Demasiados intentos — espera un minuto."
+    "message": "Demasiados intentos. Espera un minuto."
   },
   "errCfnRequired": {
-    "message": "Introduce primero tu CFN ID (o regístralo en el tracker)."
+    "message": "Escribe primero tu CFN ID (o regístralo en SST)."
   },
   "errInvalidCfn": {
     "message": "Un CFN ID es un número de 6 a 12 dígitos."
   },
-  "buckler_locale_mismatch": {
-    "message": "Idioma (locale) no coincide"
-  },
   "testPass": {
-    "message": "Prueba Buckler: PASS"
+    "message": "Prueba de Buckler: PASS"
   },
   "testFail": {
-    "message": "Prueba Buckler: FAIL"
+    "message": "Prueba de Buckler: FAIL"
   },
   "testMode": {
     "message": "Modo: $VALUE$",
@@ -212,7 +376,7 @@
     "message": "Buckler no está disponible ahora mismo."
   },
   "testReasonRateLimited": {
-    "message": "Buckler limitó las peticiones (429) — espera unos minutos."
+    "message": "Buckler limitó las consultas (429). Espera unos minutos."
   },
   "testReasonInvalid": {
     "message": "Respuesta inválida de Buckler."

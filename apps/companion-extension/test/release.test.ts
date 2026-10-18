@@ -111,6 +111,25 @@ describe("companion beta release", () => {
     }
   });
 
+  it("accepts only the packaged SST brand mark, OFL fonts and their licenses", () => {
+    const assets = [
+      file("brand/sst-monogram.svg", "<svg></svg>"),
+      file("fonts/Barlow-Regular.ttf", "ttf"),
+      file("fonts/JetBrainsMono-Medium.ttf", "ttf"),
+      file("fonts/licenses/Barlow-OFL.txt", "SIL Open Font License"),
+    ];
+    expect(validateBuild(build({}, assets)).ok).toBe(true);
+    for (const path of [
+      "brand/logo.png",
+      "fonts/remote.woff2",
+      "fonts/licenses/notes.md",
+      "fonts/sub/x.ttf",
+    ]) {
+      const r = validateBuild(build({}, [file(path, "x")]));
+      expect(r.errors, path).toContain(`unexpected file: ${path}`);
+    }
+  });
+
   it("rejects unexpected files (.env, source maps, TypeScript, HAR, nested folders)", () => {
     for (const path of [
       ".env",

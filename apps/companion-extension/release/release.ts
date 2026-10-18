@@ -29,7 +29,7 @@ export const REQUIRED_FILES = [
 ] as const;
 /** Every file in the package must match one of these (anything else fails validation). */
 const ALLOWED_FILE =
-  /^(manifest\.json|background\.js|popup\.(html|js|css)|_locales\/[a-zA-Z_]+\/messages\.json|icons\/[\w-]+\.png)$/;
+  /^(manifest\.json|background\.js|popup\.(html|js|css)|_locales\/[a-zA-Z_]+\/messages\.json|icons\/[\w-]+\.png|brand\/sst-[\w-]+\.svg|fonts\/[\w-]+\.ttf|fonts\/licenses\/[\w-]+-OFL\.txt)$/;
 const FORBIDDEN_PERMISSIONS = ["cookies", "webRequest", "webRequestBlocking", "<all_urls>"];
 
 /* ───────── naming ───────── */

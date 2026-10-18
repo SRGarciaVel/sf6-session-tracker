@@ -6,51 +6,101 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <h1 data-i18n="extName">SST Companion for Street Fighter 6</h1>
+    <header class="hdr">
+      <img class="hdr-mark" src="brand/sst-monogram.svg" alt="" width="60" height="17" />
+      <div class="hdr-name">
+        <p class="hdr-product">SST COMPANION</p>
+        <p class="hdr-game">STREET FIGHTER 6</p>
+      </div>
+      <span id="version" class="hdr-version"></span>
+    </header>
 
-    <dl class="status">
-      <dt data-i18n="tracker"></dt>
-      <dd id="tracker"></dd>
-      <dt>Buckler</dt>
-      <dd id="buckler"></dd>
-      <dt>CFN</dt>
-      <dd id="cfn"></dd>
-      <dt data-i18n="session"></dt>
-      <dd id="session"></dd>
-      <dt data-i18n="lastMatch"></dt>
-      <dd id="lastMatch"></dd>
-      <dt data-i18n="lastSync"></dt>
-      <dd id="lastSync"></dd>
-    </dl>
+    <main>
+      <section id="status" class="panel status" aria-labelledby="title">
+        <p id="eyebrow" class="eyebrow" hidden></p>
+        <h1 class="status-title">
+          <span class="status-icon" aria-hidden="true"></span><span id="title"></span>
+        </h1>
+        <div id="body" class="status-body"></div>
+        <ol id="steps" class="steps" hidden></ol>
+        <p id="lastSyncRow" class="meta" hidden>
+          <span class="meta-label" data-i18n="lastSync"></span>
+          <span id="lastSync" class="meta-value"></span>
+        </p>
 
-    <section id="pairSection" hidden>
-      <h2 data-i18n="connectTitle"></h2>
-      <label
-        ><span data-i18n="trackerUrl"></span
-        ><select id="trackerUrl"></select
-      ></label>
-      <label
-        ><span data-i18n="pairingCode"></span
-        ><input id="code" autocomplete="off" placeholder="XXXX-XXXX"
-      /></label>
-      <label><span data-i18n="deviceName"></span><input id="deviceName" maxlength="60" /></label>
-      <button id="pair" data-i18n="connect"></button>
-    </section>
+        <form id="pairForm" class="form" hidden>
+          <label id="trackerField" class="field" hidden>
+            <span class="field-label" data-i18n="trackerUrl"></span>
+            <select id="trackerUrl"></select>
+          </label>
+          <label class="field">
+            <span class="field-label" data-i18n="pairingCode"></span>
+            <input
+              id="code"
+              class="code"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="XXXX-XXXX"
+              required
+            />
+          </label>
+          <label class="field">
+            <span class="field-label" data-i18n="deviceName"></span>
+            <input id="deviceName" maxlength="60" />
+          </label>
+          <button id="pair" type="submit" class="btn btn-primary"></button>
+          <p class="help">
+            <span class="help-q" data-i18n="pairHelpQuestion"></span>
+            <span data-i18n="pairHelpAnswer"></span>
+          </p>
+        </form>
 
-    <section id="cfnSection" hidden>
-      <label><span data-i18n="cfnManual"></span><input id="cfnInput" inputmode="numeric" /></label>
-      <button id="saveCfn" data-i18n="save"></button>
-    </section>
+        <form id="cfnForm" class="form" hidden>
+          <label class="field">
+            <span class="field-label">CFN ID</span>
+            <input id="cfnInput" inputmode="numeric" autocomplete="off" required />
+          </label>
+          <button id="saveCfn" type="submit" class="btn btn-primary"></button>
+        </form>
 
-    <section id="actions" hidden>
-      <button id="test" data-i18n="testBuckler"></button>
-      <button id="sync" data-i18n="syncNow"></button>
-      <button id="disconnect" class="ghost" data-i18n="disconnect"></button>
-    </section>
+        <div class="actions">
+          <button id="primary" type="button" class="btn btn-primary" hidden></button>
+          <button id="secondary" type="button" class="btn btn-secondary" hidden></button>
+        </div>
+      </section>
 
-    <pre id="testResult" hidden></pre>
-    <p id="message" role="status"></p>
-    <p class="privacy" data-i18n="privacy"></p>
+      <section id="session" class="panel session" aria-labelledby="sessionHeading" hidden>
+        <h2 id="sessionHeading" class="label" data-i18n="sessionTitle"></h2>
+        <p class="session-state">
+          <span class="pip" aria-hidden="true"></span><span id="sessionState"></span>
+        </p>
+        <p id="sessionGuidance" class="session-guidance"></p>
+        <p class="meta">
+          <span class="meta-label" data-i18n="lastMatch"></span>
+          <span id="lastMatch" class="meta-value"></span>
+        </p>
+      </section>
+
+      <p id="closing" class="closing" hidden></p>
+      <button id="sync" type="button" class="btn btn-secondary" hidden></button>
+      <p id="message" class="message" role="status" aria-live="polite"></p>
+
+      <details id="diagnostics" class="diagnostics" hidden>
+        <summary data-i18n="diagnostics"></summary>
+        <div id="diagGroups"></div>
+        <pre id="debugTest" class="debug" hidden></pre>
+        <div class="diag-actions">
+          <button id="test" type="button" class="btn btn-secondary btn-small"></button>
+          <button id="copy" type="button" class="btn btn-secondary btn-small"></button>
+        </div>
+        <button id="disconnect" type="button" class="btn-danger"></button>
+      </details>
+    </main>
+
+    <footer class="privacy">
+      <p class="privacy-title" data-i18n="privacyTitle"></p>
+      <p data-i18n="privacyBody"></p>
+    </footer>
     <script src="popup.js" type="module"></script>
   </body>
 </html>

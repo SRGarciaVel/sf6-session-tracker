@@ -237,25 +237,27 @@ pnpm companion:build
 2. `chrome://extensions` (o `edge://`, `brave://`) → **Modo desarrollador** →
    **Cargar descomprimida** → `apps/companion-extension/dist`.
 3. Tras cada recompilación, pulsa **⟳** en la página de extensiones.
-4. Dashboard u onboarding → **Conectar Companion** → en el popup, elige el tracker, introduce el
-   código y pulsa **Conectar**.
-5. Con sesión iniciada en Buckler en ese navegador → **Probar conexión con Buckler** → debe
-   aparecer:
-
-   ```
-   Prueba Buckler: PASS
-   Modo: service_worker
-   Personajes: 32
-   Partidas recientes: 10
-   Idioma: es-es
-   ```
-
+4. Dashboard u onboarding → **Conectar Companion** → en el popup, introduce el código y pulsa
+   **Conectar con SST**. El selector de servidor solo aparece si la build permite más de un
+   origen (las builds de desarrollo); con uno solo se usa directamente.
+5. Con sesión iniciada en Buckler en ese navegador → **Prepara Buckler** → **Probar conexión** →
+   el popup pasa a **Todo listo**. En **Diagnóstico** aparecen el resultado (PASS), el transporte
+   (`service_worker`), los personajes, las partidas recientes y el idioma.
 6. **Sincronizar ahora** → el dashboard muestra tu perfil real → **Iniciar sesión de juego**.
+
+**Popup (estados).** El popup deriva su vista de `PublicStatus` con una función pura
+(`src/popup/popup-view.ts`): conectar, falta CFN, preparar Buckler, iniciar sesión en Buckler,
+abrir Buckler, Buckler en pausa (respeta el backoff: sin botón de reintento), Buckler sin respuesta,
+SST inaccesible, conexión revocada y **Todo listo** (con o sin sesión SST; no tener sesión activa
+nunca es un aviso). Los datos técnicos están en **Diagnóstico**; **Copiar diagnóstico** copia solo
+campos permitidos (nunca el token del dispositivo, cookies ni cuerpos). **Abrir SST** abre solo el
+origen permitido de la build (`chrome.tabs.create`, sin permiso `tabs`). El estado "ocupado" de
+los botones es local al popup y no se guarda.
 
 ### Diagnóstico (modo debug)
 
 - `pnpm companion:dev`, o `COMPANION_DEBUG=1 pnpm companion:build`.
-- El popup muestra además, por transporte:
+- **Diagnóstico** muestra además el último error interno y, por transporte:
   - la petición: ruta, `x-nextjs-data`, modos `credentials`/`cache`, ruta del Referer, navegador;
   - la respuesta: tipo, tamaños por clave y `common.statusCode`/`isError`/`loginUser.flg`.
 - Todo son metadatos seguros: nunca cuerpos, cookies ni tokens.
@@ -313,6 +315,9 @@ artifacts/sf6-session-companion-beta.{zip,sha256}         ← mismos bytes, nomb
 - **Validación antes de empaquetar** (si algo falla: no hay ZIP y exit ≠ 0):
   - MV3 y versión válida;
   - `manifest.json`, `background.js`, `popup.{html,js,css}` y `_locales/`;
+  - opcionales y solo con estos nombres: `brand/sst-*.svg` (la marca oficial, copiada de
+    `public/brand`) y `fonts/*.ttf` + `fonts/licenses/*-OFL.txt` (las fuentes OFL del informe PDF,
+    con sus licencias);
   - host permissions **exactamente** Buckler + el origen beta;
   - sin `cookies`, `webRequest`, `<all_urls>` ni `content_scripts`;
   - solo archivos esperados: nada de `.env`, `.map`, `.ts`, HAR ni carpetas extra;
@@ -447,11 +452,11 @@ Navegador Brave/Chromium normal, sesión de Buckler iniciada a mano, tracker loc
 
 1. Navegador con el companion y sesión de Buckler iniciada; tracker con `SF6_PROVIDER=companion`
    y OBS con el overlay.
-2. Popup → **Probar conexión con Buckler** → PASS. Dashboard → **Iniciar sesión de juego**.
+2. Popup → **Todo listo** (si no, **Probar conexión**). Dashboard → **Iniciar sesión de juego**.
 3. Juega **una** partida Ranked con tu personaje.
 4. En ≤ 30 s desde que la partida aparece en el battlelog de Buckler: el dashboard y el overlay
    muestran 1 partida con el W/L correcto, el personaje activo correcto y la variación de LP del
-   personaje. El popup marca "Última partida: hace … s".
+   personaje. El popup marca "Última partida: Hace … s".
 5. Pulsa **Sincronizar ahora** otra vez: no se duplica nada (deduplicación por `replay_id`).
    Después, **Terminar sesión**: el resumen queda congelado.
 

@@ -15,10 +15,10 @@
 7. Abre el **tracker** (la primera carga puede tardar ~1 min) → **Crear cuenta** → añade tu CFN
    User ID.
 8. En el dashboard: **Conectar Companion** → copia el código (`XXXX-XXXX`, dura 10 min).
-9. Abre el Companion → **Tracker:** `https://sf6-session-tracker-web.onrender.com` → pega el
-   código → **Conectar**.
-10. Comprueba **Tracker: Conectado** y **Buckler: Sesión iniciada**.
-11. Pulsa **Probar conexión con Buckler** → debe salir **PASS**.
+9. Abre el Companion → pega el código en **Código de conexión** → **Conectar con SST**.
+10. En **Prepara Buckler**, pulsa **Probar conexión**.
+11. Debe aparecer **Todo listo**. Los detalles (PASS, personajes, partidas) están en
+    **Diagnóstico**.
 12. En el dashboard: **Iniciar sesión de juego** y ¡a jugar! Deja el navegador abierto; cada
     partida aparece en unos 30 s.
 

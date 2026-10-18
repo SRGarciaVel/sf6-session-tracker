@@ -62,7 +62,7 @@ Detalle técnico completo: [docs/companion.md](../companion.md).
    `Documentos\SST Companion`. **No la borres ni la muevas** después de instalar: el
    navegador carga la extensión desde esa carpeta.
 3. Abre la carpeta y comprueba que dentro ves directamente el archivo **`manifest.json`**,
-   junto a `background.js`, `popup.html` y la carpeta `_locales`.
+   junto a `background.js`, `popup.html` y las carpetas `_locales`, `brand` y `fonts`.
 
 > Si al abrir la carpeta ves **otra carpeta** dentro, entra en ella: la carpeta correcta es la
 > que contiene `manifest.json`.
@@ -115,34 +115,26 @@ Detalle técnico completo: [docs/companion.md](../companion.md).
    **Conectar Companion**.
 2. Aparece un **código de vinculación**, con el formato `XXXX-XXXX`. Caduca en **10 minutos** y solo
    sirve una vez. Si caduca, genera otro.
-3. Abre el Companion: pulsa su icono (el que fijaste en el paso 3.6).
-4. En **Tracker**, comprueba que está seleccionado:
-
-   ```
-   https://sf6-session-tracker-web.onrender.com
-   ```
-
-   Es la única opción de esta versión.
-
-5. Escribe el código en **Código de vinculación**. El nombre del dispositivo es opcional.
-6. Pulsa **Conectar**.
+3. Abre el Companion: pulsa su icono (el que fijaste en el paso 3.6). Verás **Conecta el
+   Companion**. Esta versión solo se conecta a `https://sf6-session-tracker-web.onrender.com`,
+   así que no tienes que elegir servidor.
+4. Escribe el código en **Código de conexión**. El nombre del dispositivo es opcional.
+5. Pulsa **Conectar con SST**.
 
 ## 7. Comprobar que todo funciona
 
-1. En el Companion debe aparecer:
+1. Tras conectar, el Companion muestra **Prepara Buckler**. Pulsa **Probar conexión**.
+2. Si todo va bien verás **Todo listo** (en verde). **Sin sesión activa** es normal: solo indica
+   que aún no has iniciado una sesión en SST.
 
-   ```
-   Tracker: Conectado
-   Buckler: Sesión iniciada
-   ```
+   Si en cambio ves **Inicia sesión en Buckler**, vuelve al paso 4 y pulsa **Reintentar
+   conexión**. Si ves **Abre Buckler**, pulsa ese botón, deja la pestaña abierta y prueba de
+   nuevo.
 
-   Si Buckler dice **Inicia sesión en Buckler**, vuelve al paso 4. Si dice **Abre una pestaña de
-   Buckler's Boot Camp**, abre Buckler en una pestaña y déjala abierta.
-
-2. Pulsa **Probar conexión con Buckler**.
-3. Debe aparecer **Prueba Buckler: PASS**, junto con el número de personajes y de partidas
-   recientes. Si aparece **FAIL**, sigue la indicación que se muestra debajo. Si no se resuelve,
-   haz una captura **del popup** (nunca de tus cookies ni de la consola) y envíala al organizador.
+3. Los detalles técnicos (resultado de la prueba, personajes, partidas recientes, transporte)
+   están en **Diagnóstico**, al final del popup. Si algo no se resuelve, abre **Diagnóstico**,
+   pulsa **Copiar diagnóstico** y envía ese texto al organizador: no contiene tokens, cookies ni
+   contraseñas.
 4. En el panel de SST deberías ver tu perfil.
 
 ## 8. Jugar

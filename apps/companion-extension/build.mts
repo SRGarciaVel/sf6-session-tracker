@@ -20,6 +20,17 @@ import {
 } from "./src/lib/tracker-origins";
 
 const root = dirname(fileURLToPath(import.meta.url));
+const repoRoot = join(root, "../..");
+const FONT_DIR = "src/server/analytics/report/fonts";
+/** [repo source, package path] — local only, nothing fetched at build or run time. */
+const PACKAGED_ASSETS: ReadonlyArray<[string, string]> = [
+  ["public/brand/sst-monogram.svg", "brand/sst-monogram.svg"],
+  ...["Barlow-Regular", "Barlow-SemiBold", "BarlowCondensed-Bold", "JetBrainsMono-Medium"].map(
+    (f): [string, string] => [`${FONT_DIR}/${f}.ttf`, `fonts/${f}.ttf`],
+  ),
+  [`${FONT_DIR}/licenses/Barlow-OFL.txt`, "fonts/licenses/Barlow-OFL.txt"],
+  [`${FONT_DIR}/licenses/JetBrainsMono-OFL.txt`, "fonts/licenses/JetBrainsMono-OFL.txt"],
+];
 const out = join(root, "dist");
 const watch = process.argv.includes("--watch");
 const production = process.argv.includes("--production");
@@ -55,6 +66,9 @@ const copyStatic = () => {
   cpSync(join(root, "_locales"), join(out, "_locales"), { recursive: true });
   cpSync(join(root, "src/popup/popup.html"), join(out, "popup.html"));
   cpSync(join(root, "src/popup/popup.css"), join(out, "popup.css"));
+  // Canonical SST assets, copied (never redrawn or duplicated in source): the official
+  // monogram and the OFL fonts already committed for the review PDF, with their licenses.
+  for (const [from, to] of PACKAGED_ASSETS) cpSync(join(repoRoot, from), join(out, to));
 };
 
 const options: esbuild.BuildOptions = {
