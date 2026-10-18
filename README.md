@@ -311,8 +311,10 @@ pnpm companion:dev     # rebuild on change + debug diagnostics in the popup
 2. Run the tracker with `SF6_PROVIDER=companion`.
 3. Log in to **Buckler's Boot Camp** normally in the same browser.
 4. In the tracker, go to Dashboard or Onboarding → **Connect Companion** and copy the one-time code.
-5. In the extension popup, pick the tracker, enter the code and click **Connect**. Then click
-   **Test Buckler connection**. You should see PASS, the mode, 32 characters and 10 recent matches.
+5. In the extension popup, enter the code and click **Connect to SST** (a server picker only
+   appears in builds that allow several origins). Then click **Test connection**: the popup
+   switches to **All set**, and **Diagnostics** shows PASS, the transport, characters and recent
+   matches.
 6. Click **Sync now**. Your real profile appears and you can start a session.
 
 The extension only talks to Buckler and to the tracker origins fixed at build time. For a
