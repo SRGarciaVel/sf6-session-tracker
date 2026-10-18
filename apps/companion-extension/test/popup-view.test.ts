@@ -275,6 +275,31 @@ describe("main view semantics", () => {
     expect(v.body.map((b) => b.key)).toContain("state_buckler_paused_note");
   });
 
+  it("Buckler paused: Diagnostics' Test connection is hidden too (no manual queries in backoff)", () => {
+    for (const bucklerStatus of ["rate_limited", "blocked"] as const) {
+      const v = view(ready({ bucklerStatus }));
+      expect(v.diagnostics).not.toBeNull(); // still readable
+      expect(v.showDiagTest).toBe(false);
+    }
+    expect(view(ready()).showDiagTest).toBe(true);
+    expect(view(ready({ bucklerStatus: "login_required" })).showDiagTest).toBe(true);
+    expect(view(ready({ trackerStatus: "disconnected" })).showDiagTest).toBe(true);
+    expect(view(unpaired()).showDiagTest).toBe(false);
+  });
+
+  it("a remembered transport without a current observation is 'Configured', not 'Connected'", () => {
+    const bucklerRow = (v: PopupView) =>
+      v.diagnostics?.[0]?.rows.find((r) => "key" in r.label && r.label.key === "diagBuckler")
+        ?.value;
+    expect(bucklerRow(view(ready({ bucklerStatus: "unknown" })))).toEqual({
+      key: "statusConfigured",
+    });
+    expect(
+      bucklerRow(view(ready({ bucklerStatus: "unknown", transport: null, lastTest: null }))),
+    ).toEqual({ key: "statusNotTested" });
+    expect(bucklerRow(view(ready()))).toEqual({ key: "statusConnected" });
+  });
+
   it("login required: steps, retry the test, open Buckler", () => {
     const v = view(ready({ bucklerStatus: "login_required" }));
     expect(v.steps).toHaveLength(3);
@@ -398,6 +423,7 @@ describe("ES / EN copy", () => {
       ready({ bucklerStatus: "login_required" }),
       ready({ bucklerStatus: "rate_limited" }),
       ready({ bucklerStatus: "unavailable", lastError: "x" }),
+      ready({ bucklerStatus: "unknown" }),
     ];
     const keys = new Set(statuses.flatMap((s) => keysOf(view(s, { debug: true }))));
     for (const id of ["unpaired", "ready-idle"] as const) keys.add(`${stateKey(id)}_title`);

@@ -272,6 +272,9 @@
   "statusConnected": {
     "message": "Conectado"
   },
+  "statusConfigured": {
+    "message": "Configurado"
+  },
   "statusNotPaired": {
     "message": "Sin conectar"
   },

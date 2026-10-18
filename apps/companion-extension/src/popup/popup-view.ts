@@ -74,6 +74,11 @@ export interface PopupView {
   secondary: { action: PopupAction; label: Msg } | null;
   /** "Sync now" in the main view (hidden while Buckler is paused, never before pairing). */
   showSync: boolean;
+  /**
+   * "Test connection" inside Diagnostics. Hidden while Buckler is paused (403 / 429): a manual
+   * test would query Buckler during the worker's backoff.
+   */
+  showDiagTest: boolean;
   form: "pair" | "cfn" | null;
   /** The tracker select is only shown when the build allows more than one origin (dev). */
   showTrackerSelect: boolean;
@@ -171,7 +176,8 @@ function bucklerLabel(s: PublicStatus): Msg {
     case "ok":
       return m("statusConnected");
     case "unknown":
-      return m(s.transport ? "statusConnected" : "statusNotTested");
+      // A remembered transport is configuration, not a current observation of Buckler.
+      return m(s.transport ? "statusConfigured" : "statusNotTested");
     case "login_required":
       return m("statusLoginRequired");
     case "no_tab":
@@ -247,6 +253,7 @@ export function derivePopupView(s: PublicStatus, ctx: PopupContext): PopupView {
     primary: null,
     secondary: null,
     showSync: s.paired,
+    showDiagTest: s.paired,
     form: null,
     showTrackerSelect: false,
     diagnostics: s.paired ? diagnostics(s, ctx) : null,
@@ -293,6 +300,7 @@ export function derivePopupView(s: PublicStatus, ctx: PopupContext): PopupView {
       // The worker deliberately backs off after 403 / 429: no retry button in the main view.
       view.body.push(m("state_buckler_paused_note"));
       view.showSync = false;
+      view.showDiagTest = false;
       break;
     case "buckler-error":
       view.lastSync = s.lastSyncAt ? ago(s.lastSyncAt, ctx.now) : null;

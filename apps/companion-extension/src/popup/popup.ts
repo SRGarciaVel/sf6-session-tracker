@@ -161,7 +161,7 @@ function render() {
 
   $("diagnostics").hidden = v.diagnostics === null;
   renderDiagnostics(v);
-  setButton($("test"), t("actionTestConnection"), "test");
+  setButton($("test"), t("actionTestConnection"), "test", v.showDiagTest);
   setButton($("copy"), t("actionCopyDiagnostics"), null);
   setButton($("disconnect"), t("actionDisconnect"), "disconnect");
   // Exhaustive per-transport lines stay a debug-build feature (unchanged policy).
