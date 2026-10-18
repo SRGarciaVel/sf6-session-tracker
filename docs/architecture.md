@@ -633,8 +633,9 @@ filename="sst-review-<character | all-characters>-<mode>-<range>-<YYYY-MM-DD>.pd
 ### Privacy: data kept from CFN
 
 The player's CFN id, display name, main character, rank, LP and MR. For each match: id, timestamp,
-mode, result, both characters and the opponent's display name. Opponent CFN ids and raw payloads
-are **not** stored.
+mode, result, both characters, the player's control type and rating before/after, and the
+opponent's display name and rank. Opponent CFN ids and raw payloads are **not** stored. Analytics
+and the review report never expose opponent names (opponent character only).
 
 ## 9a. Visual system (dashboard + overlays)
 
