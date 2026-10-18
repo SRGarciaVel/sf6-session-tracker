@@ -84,6 +84,19 @@ describe.skipIf(!TEST_DB)("review report PDF route (integration)", () => {
   const get = (query: string, headers: Record<string, string> = {}) =>
     route.GET(new Request(`${origin}/dashboard/analytics/review.pdf${query}`, { headers }));
   const bytes = async (res: Response) => Buffer.from(await res.arrayBuffer());
+  /**
+   * The only bytes that legitimately differ between two renders of the same report: react-pdf's
+   * creation timestamp (fixed-length `(D:YYYYMMDDHHmmssZ)`) and the trailer `/ID` derived from it.
+   * Everything else (text, numbers, layout, embedded font subsets) must be identical.
+   */
+  const normalizePdf = (pdf: Buffer) =>
+    Buffer.from(
+      pdf
+        .toString("latin1")
+        .replace(/\(D:\d{14}Z\)/g, "(D:00000000000000Z)")
+        .replace(/\/ID \[<[0-9a-f]+> <[0-9a-f]+>\]/g, "/ID [<0> <0>]"),
+      "latin1",
+    );
   const today = () => new Date().toISOString().slice(0, 10);
 
   it("24. unauthenticated → 401, no PDF", async () => {
@@ -170,14 +183,34 @@ describe.skipIf(!TEST_DB)("review report PDF route (integration)", () => {
   it("Mutation A guard: client-sent signals / metrics change nothing (server recomputes)", async () => {
     const me = await signedIn();
     await seed(me.playerId, "matchupExposure");
-    const plain = await bytes(await get("?range=90d&mode=ranked", { cookie: me.cookie }));
-    const tampered = await bytes(
-      await get(`?range=90d&mode=ranked&winRate=99&deltaPp=50&review=${encodeURIComponent("{}")}`, {
-        cookie: me.cookie,
-      }),
-    );
-    // Same document apart from the creation timestamp: identical size.
-    expect(tampered.length).toBe(plain.length);
+    const tamperedQuery =
+      `range=90d&mode=ranked&winRate=99&deltaPp=50&totalEligible=0` +
+      `&signals=${encodeURIComponent('[{"id":"matchup:aki:jp","deltaPp":-99}]')}` +
+      `&review=${encodeURIComponent("{}")}`;
+
+    // Through the real route: the tampered request is still served the authenticated user's PDF.
+    const viaRoute = await get(`?${tamperedQuery}`, { cookie: me.cookie });
+    expect(viaRoute.status).toBe(200);
+    expect(viaRoute.headers.get("content-type")).toBe("application/pdf");
+
+    // Same response logic with ONE fixed clock for both requests. The visible "generated" time is
+    // then identical, so the documents must be byte-identical once the per-render PDF metadata is
+    // normalized. (Comparing raw lengths of two real-time renders was flaky: crossing a minute
+    // changes the footer time and therefore the deflated content-stream size by a few bytes.)
+    const now = new Date();
+    const render = async (query: string) =>
+      bytes(
+        await reviewPdfResponse(db, {
+          userId: me.userId,
+          locale: "es",
+          searchParams: new URLSearchParams(query),
+          now,
+        }),
+      );
+    const plain = await render("range=90d&mode=ranked");
+    const tampered = await render(tamperedQuery);
+    expect(plain.subarray(0, 5).toString()).toBe("%PDF-");
+    expect(normalizePdf(tampered).equals(normalizePdf(plain))).toBe(true);
   }, 60_000);
 
   it("35. the same range / mode drive the report (data outside the range ⇒ no signals)", async () => {
