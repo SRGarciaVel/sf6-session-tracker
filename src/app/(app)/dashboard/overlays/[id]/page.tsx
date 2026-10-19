@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { z } from "zod";
+import { isCreatableOverlayKind } from "@/domain/overlay/kind";
+import { presetKindOf } from "@/domain/overlay/presets";
 import { requirePlayer } from "@/server/auth/session";
 import { buildDashboardLiveState } from "@/server/dashboard/state";
 import { getDb } from "@/server/db/client";
@@ -26,6 +28,17 @@ export default async function OverlayBuilderPage({
   const db = getDb();
   const overlay = await getOwnedOverlay(db, user.id, id); // IDOR-safe
   if (!overlay) notFound();
+  // Kind is immutable and only implemented kinds have an editor (Phase 5.4A): a row of another /
+  // unknown kind is shown as not editable rather than opened in the wrong builder.
+  if (!isCreatableOverlayKind(overlay.storedKind)) {
+    const t = await getTranslations("Errors");
+    return (
+      <div className="hud-panel p-5" data-testid="overlay-kind-unsupported">
+        <p className="text-sm text-muted">{t("overlayKindUnsupported")}</p>
+      </div>
+    );
+  }
+  const kind = overlay.storedKind;
   const [live, entitlements, presets] = await Promise.all([
     buildDashboardLiveState(db, player.id),
     getEntitlements(db, user.id),
@@ -49,11 +62,14 @@ export default async function OverlayBuilderPage({
           characterRotation: entitlements.overlays.characterRotation,
           brandFlag: entitlements.overlays.brandFlag,
         }}
-        presets={presets.map((p) => ({
-          id: p.id,
-          name: p.name,
-          theme: p.appearance?.theme ?? null,
-        }))}
+        presets={presets
+          // Only presets of this overlay's kind (unusable ones stay listed so they can be removed).
+          .filter((p) => p.appearance === null || presetKindOf(p.appearance) === kind)
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            theme: p.appearance?.theme ?? null,
+          }))}
       />
     </LiveDashboardProvider>
   );

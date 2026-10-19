@@ -5,9 +5,14 @@
  * which stats are visible (booleans), the Creator block and theme variants. Never data: no
  * session/W-L/rating/rank/streak values, no player, CFN, token, title text, language or rating
  * character, and never the plan. The schema is strict (unknown keys rejected) and bounded.
+ *
+ * Phase 5.4A: presets are SESSION overlay presets. A preset carries the kind it was saved from;
+ * legacy presets (no kind) are Session presets. A preset only applies to an overlay of the same
+ * kind — never across kinds (no migration: the kind lives in the preset JSON).
  */
 import { z } from "zod";
 import { overlayConfigSchema, type OverlayConfig } from "./config";
+import type { OverlayKind } from "./kind";
 
 export const PRESET_NAME_MAX = 40;
 /** Technical safety limit per account (not a commercial policy). */
@@ -17,6 +22,8 @@ export const PRESET_CONFIG_MAX_BYTES = 8192;
 
 export const presetAppearanceSchema = overlayConfigSchema
   .pick({
+    // Optional: presets saved before Phase 5.4A have no kind (⇒ "session").
+    kind: true,
     theme: true,
     preset: true,
     fields: true,
@@ -48,6 +55,7 @@ export const presetNameSchema = z.string().trim().min(1).max(PRESET_NAME_MAX);
 /** The appearance part of an overlay config (what "save as preset" stores). */
 export function appearanceFromConfig(config: OverlayConfig): PresetAppearance {
   const {
+    kind,
     theme,
     preset,
     fields,
@@ -72,6 +80,7 @@ export function appearanceFromConfig(config: OverlayConfig): PresetAppearance {
     variants,
   } = config;
   return {
+    kind,
     theme,
     preset,
     fields,
@@ -109,7 +118,21 @@ export function applyPresetToConfig(
   const base = { ...config };
   delete base.creator;
   delete base.variants;
-  return { ...base, ...preset };
+  // The overlay's kind always wins (callers check compatibility first: presetAppliesTo).
+  return { ...base, ...preset, kind: config.kind };
+}
+
+/** Kind a preset was saved from: legacy presets (no kind) are Session presets. */
+export function presetKindOf(preset: PresetAppearance): OverlayKind {
+  return preset.kind ?? "session";
+}
+
+/** A preset applies only to an overlay of the same (known) kind. */
+export function presetAppliesTo(
+  preset: PresetAppearance,
+  overlayKind: OverlayKind | null,
+): boolean {
+  return overlayKind !== null && presetKindOf(preset) === overlayKind;
 }
 
 /** Lenient read of a stored preset; unusable ⇒ null (listed as broken, never applied). */

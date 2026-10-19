@@ -20,6 +20,12 @@ config schema that rejects unknown keys.
 Rank-aware themes derive their style from the **live** rank at render time. A preset never
 stores a rank or a rank style.
 
+**Kind (Phase 5.4A).** Presets are **Session overlay** presets. New ones store `kind: "session"`
+(the kind of the overlay they were saved from); presets saved earlier have none and read as
+Session. A preset only applies to an overlay of the same stored kind: otherwise the server answers
+`incompatible_kind` and writes nothing. The builder lists only presets of its kind (unusable ones
+stay listed so they can be deleted). There is no migration: the kind lives in the preset JSON.
+
 ## Storage
 
 Migration `drizzle/0010_creator_overlay_presets.sql` is **additive**. It doesn't touch `overlay`,

@@ -249,7 +249,10 @@
     "presetNameInvalid": "The preset name must be between 1 and 40 characters.",
     "presetsNotEntitled": "Creator presets are part of Creator Beta.",
     "presetLimit": "You can save up to {max} presets.",
-    "presetTooLarge": "This preset is too large to save."
+    "presetTooLarge": "This preset is too large to save.",
+    "overlayKindUnsupported": "This overlay type can't be created or edited yet.",
+    "overlayKindMismatch": "An overlay's type can't be changed. Create a new overlay instead.",
+    "presetIncompatibleKind": "This preset is for a different type of overlay."
   },
   "Dashboard": {
     "eyebrow": "Street Fighter 6",

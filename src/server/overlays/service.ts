@@ -4,6 +4,7 @@ import {
   parseOverlayConfig,
   type OverlayConfig,
 } from "@/domain/overlay/config";
+import { storedOverlayKind, type OverlayKind } from "@/domain/overlay/kind";
 import type { DbExecutor } from "@/server/db/client";
 import { overlay, overlayConnection, sf6Player, type OverlayRow } from "@/server/db/schema";
 import { publishEvent } from "@/server/realtime/events";
@@ -18,6 +19,12 @@ export interface OverlayView {
   publicToken: string;
   name: string;
   config: OverlayConfig;
+  /**
+   * Kind of the STORED config (Phase 5.4A): legacy rows without one are "session"; null = an
+   * unknown / unusable kind. Authoritative for edits (kind is immutable) — `config` is the lenient
+   * parse, which falls back to a Session default for rows it cannot read.
+   */
+  storedKind: OverlayKind | null;
   updatedAt: Date;
 }
 
@@ -28,6 +35,7 @@ function toView(row: OverlayRow): OverlayView {
     publicToken: row.publicToken,
     name: row.name,
     config: parseOverlayConfig(row.config),
+    storedKind: storedOverlayKind(row.config),
     updatedAt: row.updatedAt,
   };
 }

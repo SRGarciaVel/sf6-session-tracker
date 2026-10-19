@@ -1,11 +1,15 @@
 /**
  * Overlay configuration model. Persisted as JSON in `overlay.config`; validated on every write
  * and tolerant on read (missing keys fall back to defaults so old configs keep working).
+ *
+ * Phase 5.4A: the config is discriminated by `kind` (./kind.ts). Today the only implemented kind
+ * is the Session Stats overlay; configs stored before 5.4A have no `kind` and read as "session".
  */
 import { z } from "zod";
 import { CHARACTER_KEY_PATTERN } from "@/domain/sf6/rating";
 import { DEFAULT_LOCALE, LOCALES } from "@/i18n/locale";
 import { creatorCustomizationSchema, parseCreatorCustomization } from "./creator";
+import { storedOverlayKind, type CreatableOverlayKind } from "./kind";
 import { FONT_IDS } from "./fonts";
 import { THEME_IDS, type OverlayCanvasId, type ThemeId } from "./themes";
 import { parseThemeVariants, themeVariantsSchema } from "./variants";
@@ -56,7 +60,14 @@ const fieldsSchema = z.object({
   recentForm: z.boolean(),
 }) satisfies z.ZodType<Record<OverlayFieldId, boolean>>;
 
-export const overlayConfigSchema = z.object({
+/** The Session Stats overlay config (every overlay before Phase 5.4A). */
+export const sessionOverlayConfigSchema = z.object({
+  /**
+   * Phase 5.4A discriminant. Optional on INPUT (legacy configs and older editors send none) and
+   * always "session" on output. Any other value is rejected: a session config can never claim to
+   * be another kind. Same config version: adding the discriminant needs no migration.
+   */
+  kind: z.literal("session").default("session"),
   version: z.literal(1),
   theme: z.enum(OVERLAY_THEMES),
   preset: z.enum(PRESET_IDS),
@@ -106,9 +117,19 @@ export const overlayConfigSchema = z.object({
   variants: themeVariantsSchema.optional(),
 });
 
-export type OverlayConfig = z.infer<typeof overlayConfigSchema>;
+export type SessionOverlayConfig = z.infer<typeof sessionOverlayConfigSchema>;
 
-export const DEFAULT_OVERLAY_CONFIG: OverlayConfig = {
+/**
+ * Every overlay config, discriminated by `kind`. Phase 5.4A has one implemented kind; 5.4B adds
+ * the Rank Progress config here (and its parser / renderer / builder), nothing speculative before.
+ */
+export type OverlayConfig = SessionOverlayConfig;
+
+/** Strict schema of a config sent by the editor (only the Session editor exists today). */
+export const overlayConfigSchema = sessionOverlayConfigSchema;
+
+export const DEFAULT_SESSION_OVERLAY_CONFIG: SessionOverlayConfig = {
+  kind: "session",
   version: 1,
   theme: "competitive",
   preset: "standard",
@@ -146,6 +167,17 @@ export const DEFAULT_OVERLAY_CONFIG: OverlayConfig = {
   align: "left",
   animations: true,
 };
+
+/** Historical name, kept to avoid churn: the default overlay IS the default Session overlay. */
+export const DEFAULT_OVERLAY_CONFIG = DEFAULT_SESSION_OVERLAY_CONFIG;
+
+/** Default config of a new overlay of `kind` (only creatable kinds have one). */
+export function defaultOverlayConfigForKind(kind: CreatableOverlayKind): OverlayConfig {
+  switch (kind) {
+    case "session":
+      return DEFAULT_SESSION_OVERLAY_CONFIG;
+  }
+}
 
 export interface OverlayThemeMeta {
   id: OverlayThemeId;
@@ -243,10 +275,26 @@ export function applyThemeDefaults(config: OverlayConfig, theme: OverlayThemeId)
   return { ...config, ...OVERLAY_THEME_META[theme].defaults, theme };
 }
 
-/** Lenient read: merge stored JSON with defaults; fall back to defaults if it is unusable. */
+/**
+ * The single public parser of stored configs (lenient read). The kind decides the parser:
+ *   no kind / "session"  ⇒ the Session parser (legacy rows need no migration or backfill);
+ *   "rank-progress"      ⇒ not implemented before 5.4B — safe Session default (as for any
+ *                          unusable config); never interpreted as a Rank Progress overlay;
+ *   unknown / non-object ⇒ the safe Session default, as before.
+ * Reading never writes: rows keep their stored JSON until the owner saves.
+ */
 export function parseOverlayConfig(raw: unknown): OverlayConfig {
-  if (raw === null || typeof raw !== "object") return DEFAULT_OVERLAY_CONFIG;
-  const obj = raw as Record<string, unknown>;
+  switch (storedOverlayKind(raw)) {
+    case "session":
+      // storedOverlayKind() only answers "session" for a plain (non-array) object.
+      return parseSessionOverlayConfig(raw as Record<string, unknown>);
+    default:
+      return DEFAULT_SESSION_OVERLAY_CONFIG;
+  }
+}
+
+/** Lenient Session read: merge stored JSON with defaults; fall back to defaults if unusable. */
+function parseSessionOverlayConfig(obj: Record<string, unknown>): SessionOverlayConfig {
   const storedFields =
     obj.fields !== null && typeof obj.fields === "object" ? (obj.fields as object) : {};
   // Configs saved before i18n had no `locale` and stored the default title literally.
@@ -258,18 +306,43 @@ export function parseOverlayConfig(raw: unknown): OverlayConfig {
     ...DEFAULT_OVERLAY_CONFIG,
     ...obj,
     ...(legacy && obj.title === "SESSION" ? { title: "" } : {}),
+    kind: "session",
     version: 1,
     fields: { ...DEFAULT_OVERLAY_CONFIG.fields, ...storedFields },
     creator: undefined,
     variants: undefined,
   };
-  const parsed = overlayConfigSchema.safeParse(merged);
-  const base: OverlayConfig = parsed.success ? parsed.data : DEFAULT_OVERLAY_CONFIG;
+  const parsed = sessionOverlayConfigSchema.safeParse(merged);
+  const base: SessionOverlayConfig = parsed.success ? parsed.data : DEFAULT_SESSION_OVERLAY_CONFIG;
   return {
     ...base,
     ...(creator === undefined ? {} : { creator }),
     ...(variants === undefined ? {} : { variants }),
   };
+}
+
+/**
+ * What an overlay card shows about an overlay, per kind (Phase 5.4A): callers no longer assume
+ * every config has Session theme fields. For the Session overlay: its canvas, language and theme.
+ */
+export interface OverlayReadout {
+  kind: OverlayConfig["kind"];
+  canvas: { width: number; height: number };
+  locale: OverlayConfig["locale"];
+  /** Session theme; null for kinds without Session themes. */
+  theme: OverlayThemeId | null;
+}
+
+export function overlayReadout(config: OverlayConfig): OverlayReadout {
+  switch (config.kind) {
+    case "session":
+      return {
+        kind: config.kind,
+        canvas: OVERLAY_PRESETS[config.preset],
+        locale: config.locale,
+        theme: config.theme,
+      };
+  }
 }
 
 export function hexToRgba(hex: string, alpha: number): string {

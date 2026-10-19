@@ -58,22 +58,38 @@ const STATUS_CLASS: Record<SaveState, string> = {
   failed: "border-loss/60 text-loss",
 };
 
-export function OverlayBuilder({
-  overlayId,
-  initialName,
-  initialConfig,
-  url,
-  access,
-  presets,
-}: {
+interface OverlayBuilderProps {
   overlayId: string;
   initialName: string;
   initialConfig: OverlayConfig;
   url: string;
   /** Owner entitlements, resolved on the server (display only: saving is enforced server-side). */
   access: BuilderAccess;
+  /** Presets of THIS overlay's kind (Session presets for the Session builder). */
   presets: PresetSummary[];
-}) {
+}
+
+/**
+ * Overlay editor: dispatches on the config KIND (Phase 5.4A). Each kind owns its builder; the
+ * kind itself is never editable (create another overlay instead). Only the Session Stats builder
+ * exists today; 5.4B adds its Rank Progress case here.
+ */
+export function OverlayBuilder(props: OverlayBuilderProps) {
+  switch (props.initialConfig.kind) {
+    case "session":
+      return <SessionOverlayBuilder {...props} />;
+  }
+}
+
+/** The Session Stats builder (Appearance · Content · Style · Creator), unchanged. */
+function SessionOverlayBuilder({
+  overlayId,
+  initialName,
+  initialConfig,
+  url,
+  access,
+  presets,
+}: OverlayBuilderProps) {
   const router = useRouter();
   const t = useTranslations("Builder");
   const tc = useTranslations("Common");
