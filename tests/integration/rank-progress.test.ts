@@ -1,8 +1,9 @@
 /**
  * Phase 5.4B — Rank Progress overlay against a real Postgres (TEST_DATABASE_URL): created with its
  * own defaults in `overlay.config` (no migration), same token / public payload `{ config, live }`
- * as Session, same overlay limit, immutable kind both ways, no Session presets, and a rating
- * update reaching the projection through the existing payload path (no new query path).
+ * as Session, same overlay limit, immutable kind both ways, no Session presets, the real
+ * pre-first-session path (persisted profile, zero sessions) and a rating update reaching the
+ * projection through the existing payload path (no new query path).
  */
 import { randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
@@ -18,11 +19,13 @@ if (TEST_DB) process.env.DATABASE_URL = TEST_DB;
 process.env.LOG_LEVEL = "error";
 
 const { getDb, closeDb } = await import("@/server/db/client");
-const { authUser, entitlementGrant, overlay, sf6Player } = await import("@/server/db/schema");
-const { upsertPlayerForUser } = await import("@/server/players/service");
+const { authUser, entitlementGrant, gameSession, overlay, sf6Player } =
+  await import("@/server/db/schema");
+const { upsertPlayerForUser, updatePlayerProfile } = await import("@/server/players/service");
 const { MockSF6DataProvider } = await import("@/server/sf6/providers/mock");
 const { ResilientProvider } = await import("@/server/sf6/resilient");
-const { startSession } = await import("@/server/sessions/service");
+const { buildPlayerLiveState, startSession } = await import("@/server/sessions/service");
+const { pickRatingCharacter } = await import("@/domain/overlay/state");
 const { claimDuePlayers, pollPlayer } = await import("@/server/tracking/tracker");
 const { logger } = await import("@/server/logger");
 const service = await import("@/server/overlays/service");
@@ -174,13 +177,102 @@ describe.skipIf(!TEST_DB)("Rank Progress overlay (integration)", () => {
     expect(await storedJson(rp.id)).toEqual(before);
   });
 
-  it("no session ever: the live roster is empty today ⇒ neutral no-rating state (documented gap)", async () => {
-    const { rp } = await owner();
+  it("REAL pre-first-session path: persisted profile, zero sessions ⇒ roster + Rank Progress", async () => {
+    // Onboarding (upsertPlayerForUser) then a Companion profile push (updatePlayerProfile): the
+    // two production writers of player_character_rating. No session is ever started.
+    const userId = randomUUID();
+    await db.insert(authUser).values({ id: userId, name: "RP0", email: `${userId}@test.local` });
+    const cfn = String(6_600_000_000 + Math.floor(Math.random() * 99_999_999));
+    const profile = (lp: number) => ({
+      cfnUserId: cfn,
+      displayName: "Pre",
+      favoriteCharacterKey: "aki",
+      characters: [
+        {
+          characterKey: "aki",
+          characterName: "A.K.I.",
+          rank: "Diamond 3",
+          rankTier: null,
+          ratingSystem: "lp" as const,
+          leaguePoints: lp,
+          masterRate: null,
+          phase: null,
+        },
+        {
+          characterKey: "jp",
+          characterName: "JP",
+          rank: "Master",
+          rankTier: null,
+          ratingSystem: "mr" as const,
+          leaguePoints: null,
+          masterRate: 1642,
+          phase: null,
+        },
+        {
+          characterKey: "dee-jay",
+          characterName: "Dee Jay",
+          rank: null,
+          rankTier: null,
+          ratingSystem: null,
+          leaguePoints: null,
+          masterRate: null,
+          phase: null,
+        },
+      ],
+    });
+    const player = await upsertPlayerForUser(db, userId, profile(21800));
+    expect(await updatePlayerProfile(db, player.id, profile(21950))).toBe(true);
+    const rp = await service.createOverlay(db, player.id, "RP", {
+      ...DEFAULT_RANK_PROGRESS_OVERLAY_CONFIG,
+      locale: "en",
+    });
+
+    const live = (await buildPlayerLiveState(db, player.id))!;
+    expect(live.session.status).toBe("none");
+    expect(live.session.activeCharacterKey).toBe("aki");
+    // Exactly the persisted characters, current ratings as stored; unknown start ⇒ no delta.
+    expect(
+      live.session.characters.map((c) => [c.characterKey, c.current?.value ?? null, c.games]),
+    ).toEqual([
+      ["aki", 21950, 0],
+      ["dee-jay", null, 0],
+      ["jp", 1642, 0],
+    ]);
+    for (const c of live.session.characters) {
+      expect(c.initial).toBeNull();
+      expect(c.delta).toBeNull();
+      expect(c.baselineKnown).toBe(false);
+    }
+    expect(live.session.characters.find((c) => c.characterKey === "jp")?.current?.rank).toBe(
+      "High Master",
+    );
+
+    // Rank Progress through the real public payload: progress, no session delta.
     const p = (await loadOverlayPayload(rp.publicToken))!.payload;
-    expect(p.live.session.status).toBe("none");
-    expect(p.live.session.characters).toEqual([]);
-    const config = p.config.kind === "rank-progress" ? p.config : null;
-    expect(resolveRankProgressView(p.live.session, config!).state).toEqual({ kind: "no-rating" });
+    if (p.config.kind !== "rank-progress") throw new Error("kind");
+    const view = resolveRankProgressView(p.live.session, p.config);
+    expect(view.state).toMatchObject({
+      kind: "progress",
+      current: { value: 21950, label: "Diamond 3" },
+      target: { value: 22600, label: "Diamond 4" },
+      remaining: 650,
+    });
+    expect(view.sessionDelta).toBeNull();
+    expect(
+      resolveRankProgressView(p.live.session, { ...p.config, characterKey: "jp" }).state,
+    ).toMatchObject({ kind: "progress", target: { label: "Grand Master" }, remaining: 58 });
+    expect(
+      resolveRankProgressView(p.live.session, { ...p.config, characterKey: "dee-jay" }).state,
+    ).toEqual({ kind: "no-rating" });
+
+    // Session overlay (same payload): W/L untouched at zero; only the idle roster now has the
+    // already-known rating of the active character.
+    expect(p.live.session).toMatchObject({ status: "none", wins: 0, losses: 0, totalGames: 0 });
+    expect(pickRatingCharacter(p.live.session, null)?.current?.value).toBe(21950);
+
+    // Reading never creates a session.
+    const sessions = await db.select().from(gameSession).where(eq(gameSession.playerId, player.id));
+    expect(sessions).toEqual([]);
   });
 
   it("a rating update reaches the projection through the same payload path", async () => {

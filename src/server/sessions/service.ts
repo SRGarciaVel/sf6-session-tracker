@@ -8,7 +8,7 @@
 import { and, desc, eq, inArray, max, sql } from "drizzle-orm";
 import {
   DEFAULT_SESSION_FILTER,
-  computeCharacterProgress,
+  computeIdleRoster,
   resolveActiveCharacter,
   summarizeSession,
   type CharacterBaseline,
@@ -477,10 +477,11 @@ export async function buildPlayerLiveState(
   const ctx = await loadSessionContext(db, playerId, session ? [session.id] : []);
   const summary = session ? summarizeFromContext(session, player, ctx) : null;
 
-  // No session yet: show the player's characters as-is (no deltas).
+  // No session yet: the player's persisted roster as-is (current ratings, no deltas). Uses the rows
+  // loadSessionContext already read (listPlayerCharacters): no extra query.
   const snapshots = ctx.characters.map(characterRowToSnapshot);
   const idle = {
-    characters: computeCharacterProgress({ baselines: [], matches: [], current: snapshots }),
+    characters: computeIdleRoster(snapshots),
     activeCharacterKey: resolveActiveCharacter({
       matches: [],
       favoriteCharacterKey: player.favoriteCharacterKey,

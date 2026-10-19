@@ -751,12 +751,15 @@ A streamer may use Session Stats, Rank Progress or both (separate Browser Source
   (authoritative, never `initial + delta`).
 - **Session delta (optional):** the character's own engine `delta`, shown only when
   `baselineKnown` and non-null. Unknown is hidden (never "+0"); a KNOWN zero shows "±0".
-- **No session:** the projection works with `status: "none"`. **Known gap:** today
-  `buildPlayerLiveState` builds the idle roster from matches / baselines only (since 4ee1f6d), so a
-  player who has NEVER started a session gets `characters: []` and Rank Progress shows "No rating
-  data" until the first session. Between sessions (ended session) the roster and ratings are
-  present. Filling the idle roster would also change what the Session overlay shows in that state,
-  so it is left as a product decision (follow-up).
+- **No session needed:** a player who has never started a session still has a roster. Before
+  5.4B the idle live state built it with `computeCharacterProgress` (keys from matches / baselines
+  only), so it was always `characters: []` even though onboarding (`upsertPlayerForUser`) and the
+  Companion (`updatePlayerProfile`) had persisted `player_character_rating` — a real production
+  bug since 4ee1f6d. The idle state now uses the engine's additive `computeIdleRoster` over the
+  rows `loadSessionContext` already reads (no extra query): every persisted character, current
+  rating as stored, zero stats, unknown start (`initial`/`delta` null, `baselineKnown` false).
+  `status` stays `"none"` and no session is created. The only Session-overlay difference is in that
+  state: the active character's already-known rating now shows instead of "—".
 - **Renderer / builder:** `OverlayView` → `RankProgressOverlayView` (same root contract and
   fit-to-box as Session; `components/overlay/rank-progress.tsx` + OBS-safe `rank-progress.css`);
   `OverlayBuilder` → `RankProgressOverlayBuilder` (Content · Display · Appearance, preview with

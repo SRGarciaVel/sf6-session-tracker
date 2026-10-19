@@ -5,6 +5,7 @@ import {
   buildSessionState,
   calculateWinRate,
   computeCharacterProgress,
+  computeIdleRoster,
   computeSessionStats,
   emptySessionState,
   isMatchInSession,
@@ -627,5 +628,44 @@ describe("Phase 5.1: character-scoped session statistics", () => {
   it("16. empty session: no played character, global stats empty", () => {
     expect(progress([], [start("ryu", mr(1500))]).every((c) => c.games === 0)).toBe(true);
     expect(computeSessionStats([]).totalGames).toBe(0);
+  });
+});
+
+describe("computeIdleRoster (before the first session)", () => {
+  const at = new Date("2026-10-19T10:00:00Z");
+  const lp: RatingPoint = { system: "lp", value: 21950, rank: "Diamond 3" };
+  const mr: RatingPoint = { system: "mr", value: 1642, rank: "Master" };
+
+  it("lists every persisted character with its current rating; unknown start, no delta", () => {
+    const roster = computeIdleRoster([
+      { characterKey: "jp", characterName: "JP", rating: mr, observedAt: at },
+      { characterKey: "aki", characterName: "A.K.I.", rating: lp, observedAt: at },
+      { characterKey: "dee-jay", characterName: "Dee Jay", rating: null, observedAt: at },
+    ]);
+    expect(roster.map((c) => c.characterKey)).toEqual(["aki", "dee-jay", "jp"]);
+    const aki = roster[0]!;
+    expect(aki).toMatchObject({
+      games: 0,
+      wins: 0,
+      losses: 0,
+      totalGames: 0,
+      recentResults: [],
+      lastPlayedAt: null,
+      ratingSystem: "lp",
+      initial: null,
+      current: lp,
+      delta: null,
+      initialSource: "unknown",
+      currentSource: "snapshot",
+    });
+    expect(roster[1]).toMatchObject({
+      current: null,
+      ratingSystem: null,
+      currentSource: "unknown",
+    });
+  });
+
+  it("no snapshots ⇒ empty roster (never a fabricated character)", () => {
+    expect(computeIdleRoster([])).toEqual([]);
   });
 });

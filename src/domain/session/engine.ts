@@ -394,6 +394,33 @@ export function resolveActiveCharacter(input: {
   return input.characters.find((c) => c.rating !== null)?.characterKey ?? null;
 }
 
+/**
+ * The player's roster BEFORE their first session (no session ever started): every character SST
+ * already knows from the persisted profile, with its current rating as is. Additive and separate
+ * from computeCharacterProgress (whose session semantics are unchanged): no matches, so zero
+ * stats; no session start, so the starting rating is UNKNOWN (initial null ⇒ delta null, never a
+ * fabricated 0). Characters without a rating are listed with `current: null`. Same order as
+ * computeCharacterProgress for unplayed characters (by name).
+ */
+export function computeIdleRoster(current: readonly CharacterSnapshot[]): CharacterProgress[] {
+  return current
+    .map((c) => ({
+      ...EMPTY_STATS,
+      recentResults: [],
+      characterKey: c.characterKey,
+      characterName: c.characterName,
+      games: 0,
+      lastPlayedAt: null,
+      ratingSystem: c.rating?.system ?? null,
+      initial: null,
+      current: c.rating,
+      delta: null,
+      initialSource: "unknown" as const,
+      currentSource: c.rating ? ("snapshot" as const) : ("unknown" as const),
+    }))
+    .sort((a, b) => a.characterName.localeCompare(b.characterName));
+}
+
 export function summarizeSession(input: {
   status: SessionStatus;
   ratingModel: RatingModel;
