@@ -10,13 +10,21 @@ import { DEFAULT_BRAND_FLAG } from "@/domain/overlay/brand-flag";
 import {
   DEFAULT_OVERLAY_CONFIG,
   applyThemeDefaults,
-  parseOverlayConfig,
-  type OverlayConfig,
+  parseOverlayConfig as parseAnyOverlayConfig,
+  sessionConfigOf,
+  type SessionOverlayConfig,
 } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION } from "@/domain/overlay/creator";
 import { DEFAULT_CREATOR_MOTION } from "@/domain/overlay/motion";
 import { sampleLiveState } from "@/domain/overlay/state";
 import es from "@/i18n/messages/es.json";
+
+/** Session tests: parse and narrow (Phase 5.4B: the public parser returns any overlay kind). */
+function parseOverlayConfig(raw: unknown): SessionOverlayConfig {
+  const config = sessionConfigOf(parseAnyOverlayConfig(raw));
+  if (!config) throw new Error("expected a Session config");
+  return config;
+}
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: () => undefined, push: () => undefined }),
@@ -50,7 +58,7 @@ const presets = [
   { id: "00000000-0000-4000-8000-000000000001", name: "Gold look", theme: "prestige" as const },
 ];
 
-const render = (config: OverlayConfig) =>
+const render = (config: SessionOverlayConfig) =>
   renderToString(
     <NextIntlClientProvider locale="es" messages={es} timeZone="UTC">
       <OverlayBuilder
@@ -64,14 +72,14 @@ const render = (config: OverlayConfig) =>
     </NextIntlClientProvider>,
   );
 
-const withoutKind = (c: OverlayConfig) => {
+const withoutKind = (c: SessionOverlayConfig) => {
   const raw: Record<string, unknown> = { ...c };
   delete raw.kind;
   return raw;
 };
 
 describe("builder dispatch by kind", () => {
-  const configs: OverlayConfig[] = [
+  const configs: SessionOverlayConfig[] = [
     DEFAULT_OVERLAY_CONFIG,
     applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, "minimal"),
     {

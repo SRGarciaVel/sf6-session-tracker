@@ -14,7 +14,11 @@ import { useEffect, useRef, useState } from "react";
 import { OverlayView } from "@/components/overlay/OverlayView";
 import { usePrefersReducedMotion } from "@/components/overlay/motion";
 import { Button, cx } from "@/components/ui/primitives";
-import { OVERLAY_PRESETS, type OverlayConfig, type OverlayPresetId } from "@/domain/overlay/config";
+import {
+  OVERLAY_PRESETS,
+  type SessionOverlayConfig,
+  type OverlayPresetId,
+} from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION } from "@/domain/overlay/creator";
 import { DEFAULT_CHARACTER_ROTATION } from "@/domain/overlay/rotation";
 import { isTimedBrandMode } from "@/domain/overlay/brand-flag";
@@ -83,7 +87,7 @@ function usePaneWidth() {
  * Rotation test (Phase 5.2): the effective config with rotation switched on (the editor's own
  * rotation settings, else the defaults). Preview only — never saved.
  */
-function withTestRotation(config: OverlayConfig): OverlayConfig {
+function withTestRotation(config: SessionOverlayConfig): SessionOverlayConfig {
   const creator = config.creator;
   const rotation = creator?.characterRotation ?? DEFAULT_CHARACTER_ROTATION;
   return {
@@ -102,7 +106,7 @@ export function PreviewPane({
   rotationAvailable = false,
 }: {
   /** EFFECTIVE config (owner entitlements applied) — exactly what OBS renders. */
-  config: OverlayConfig;
+  config: SessionOverlayConfig;
   liveState: PlayerLiveState;
   onCanvasChange: (canvas: OverlayPresetId) => void;
   /** The owner may use character rotation (overlays.characterRotation). */

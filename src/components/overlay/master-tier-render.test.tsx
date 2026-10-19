@@ -12,7 +12,7 @@ import {
   DEFAULT_OVERLAY_CONFIG,
   OVERLAY_THEMES,
   applyThemeDefaults,
-  type OverlayConfig,
+  type SessionOverlayConfig,
 } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION } from "@/domain/overlay/creator";
 import { DEFAULT_CREATOR_MOTION } from "@/domain/overlay/motion";
@@ -114,10 +114,10 @@ function liveState(akumaMr: number, extraResults: MatchResult[] = []): PlayerLiv
 }
 
 const config = (
-  theme: OverlayConfig["theme"],
+  theme: SessionOverlayConfig["theme"],
   mode: PresentationMode | null,
   extras: { brand?: boolean } = {},
-): OverlayConfig => ({
+): SessionOverlayConfig => ({
   ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, theme),
   fields: { ...DEFAULT_OVERLAY_CONFIG.fields, rank: true, rating: true, ratingDelta: true },
   creator: {
@@ -141,7 +141,7 @@ const config = (
 
 let host: HTMLDivElement;
 let root: Root;
-const render = (cfg: OverlayConfig, live: PlayerLiveState) =>
+const render = (cfg: SessionOverlayConfig, live: PlayerLiveState) =>
   act(() => {
     root.render(
       <OverlayView config={cfg} live={live} sizing={{ mode: "box", width: 800, height: 180 }} />,

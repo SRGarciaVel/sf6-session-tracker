@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Button, Input, cx } from "@/components/ui/primitives";
-import type { OverlayConfig, OverlayThemeId } from "@/domain/overlay/config";
+import type { SessionOverlayConfig, OverlayThemeId } from "@/domain/overlay/config";
 import { PRESETS_PER_ACCOUNT_MAX, PRESET_NAME_MAX } from "@/domain/overlay/presets";
 import {
   applyPresetAction,
@@ -47,10 +47,10 @@ export function PresetsSection({
   overlayId: string;
   presets: PresetSummary[];
   /** Current editor config ("save current look" / "update from current"). */
-  config: OverlayConfig;
+  config: SessionOverlayConfig;
   enabled: boolean;
   dirty: boolean;
-  onApplied: (config: OverlayConfig) => void;
+  onApplied: (config: SessionOverlayConfig) => void;
 }) {
   const t = useTranslations("Builder.presetsCreator");
   const tb = useTranslations("Builder");

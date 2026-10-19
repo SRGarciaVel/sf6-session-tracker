@@ -11,7 +11,7 @@ import {
   OVERLAY_PRESETS,
   applyThemeDefaults,
   parseOverlayConfig,
-  type OverlayConfig,
+  type SessionOverlayConfig,
 } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION, getEffectiveOverlayConfig } from "@/domain/overlay/creator";
 import { DEFAULT_CREATOR_MOTION } from "@/domain/overlay/motion";
@@ -41,13 +41,13 @@ const FREE = {
   },
 };
 
-const withoutKind = (c: OverlayConfig) => {
+const withoutKind = (c: SessionOverlayConfig) => {
   const raw: Record<string, unknown> = { ...c };
   delete raw.kind;
   return raw;
 };
 
-function variantsOf(theme: OverlayConfig["theme"], preset: OverlayConfig["preset"]) {
+function variantsOf(theme: SessionOverlayConfig["theme"], preset: SessionOverlayConfig["preset"]) {
   const base = { ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, theme), preset };
   return {
     plain: base,
@@ -70,7 +70,7 @@ function variantsOf(theme: OverlayConfig["theme"], preset: OverlayConfig["preset
         brandFlag: { ...DEFAULT_BRAND_FLAG, enabled: true, mode: "content-interleave" },
       },
     },
-  } satisfies Record<string, OverlayConfig>;
+  } satisfies Record<string, SessionOverlayConfig>;
 }
 
 const render = (raw: unknown, ent: typeof ENTITLED | typeof FREE, multi: boolean) =>
@@ -86,7 +86,7 @@ describe("Session renderer equivalence: legacy (no kind) ≡ kind: session", () 
   for (const theme of THEME_IDS) {
     it(`${theme}: every canvas, scope, Creator motion / rotation / modes / brand flag`, () => {
       let compared = 0;
-      for (const preset of Object.keys(OVERLAY_PRESETS) as OverlayConfig["preset"][]) {
+      for (const preset of Object.keys(OVERLAY_PRESETS) as SessionOverlayConfig["preset"][]) {
         for (const cfg of Object.values(variantsOf(theme, preset))) {
           for (const ent of [ENTITLED, FREE]) {
             for (const multi of [false, true]) {
@@ -111,7 +111,7 @@ describe("Session renderer equivalence: legacy (no kind) ≡ kind: session", () 
         ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, "fighter"),
         ...withoutKind(cfg),
         theme: "fighter",
-      } as OverlayConfig),
+      } as SessionOverlayConfig),
       FREE,
       false,
     );

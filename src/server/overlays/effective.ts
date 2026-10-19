@@ -24,11 +24,11 @@ export async function getOverlayOwnerUserId(
   return row?.userId ?? null;
 }
 
-export async function resolveEffectiveOverlayConfig(
+export async function resolveEffectiveOverlayConfig<C extends OverlayConfig>(
   db: DbExecutor,
-  overlay: { playerId: string; config: OverlayConfig },
+  overlay: { playerId: string; config: C },
   now = new Date(),
-): Promise<OverlayConfig> {
+): Promise<C> {
   const ownerId = await getOverlayOwnerUserId(db, overlay.playerId);
   // No owner (should not happen: FK cascade) ⇒ safest is the Free rendering.
   if (!ownerId) return getEffectiveOverlayConfig(overlay.config, NOT_ENTITLED);
@@ -51,10 +51,10 @@ const NOT_ENTITLED = {
  * stored block is kept as is (Free can edit base options after a downgrade without losing it,
  * and a crafted request cannot add or change Creator values).
  */
-export async function prepareOverlayConfigForSave(
+export async function prepareOverlayConfigForSave<C extends OverlayConfig>(
   db: DbExecutor,
-  input: { userId: string; stored: OverlayConfig; incoming: OverlayConfig },
-): Promise<OverlayConfig> {
+  input: { userId: string; stored: C; incoming: C },
+): Promise<C> {
   const entitlements = await getEntitlements(db, input.userId);
   return mergeOverlayConfigForSave(input.stored, input.incoming, entitlements);
 }

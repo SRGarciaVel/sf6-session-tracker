@@ -18,5 +18,22 @@
     "minimalBest": "mejor <n></n>",
     "record": "Récord",
     "rank": "Rango"
+  },
+  "RankProgress": {
+    "title": "Progreso de rango",
+    "goal": {
+      "next-division": "Siguiente división",
+      "master": "Camino a Master",
+      "next-master-tier": "Siguiente nivel Master"
+    },
+    "remaining": "{remaining} {unit} para {target}",
+    "target": "Objetivo: {target}",
+    "session": "Sesión",
+    "reached": "Master alcanzado",
+    "legend": "Legend",
+    "legendRequirement": "Requiere Top 500",
+    "noRating": "Sin datos de rango",
+    "progressLabel": "Progreso hacia {target}",
+    "progressValue": "{current} de {target} {unit}"
   }
 }

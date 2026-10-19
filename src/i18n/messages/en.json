@@ -318,7 +318,21 @@
       "url": "URL",
       "language": "Language",
       "empty": "You don't have any overlays yet.",
-      "emptyAction": "Create one to add it to OBS."
+      "emptyAction": "Create one to add it to OBS.",
+      "type": "Type",
+      "style": "Style",
+      "chooseKind": "Choose an overlay type",
+      "cancelNew": "Cancel",
+      "kinds": {
+        "session": {
+          "name": "Session stats",
+          "description": "Wins, losses, rating, streaks and live session performance."
+        },
+        "rank-progress": {
+          "name": "Rank progress",
+          "description": "Show your current rank and progress toward the next goal."
+        }
+      }
     },
     "obs": {
       "title": "Add to OBS",
@@ -909,6 +923,52 @@
     "brandTest": {
       "reveal": "Test appearance",
       "hint": "Shows the tab once in the preview. Nothing is saved."
+    },
+    "rankProgress": {
+      "kindName": "Rank progress",
+      "sections": {
+        "content": "Content",
+        "display": "Display",
+        "appearance": "Appearance"
+      },
+      "character": "Character",
+      "characterAuto": "Active character (auto)",
+      "characterHint": "Auto follows the character of your latest Ranked match. A pinned character falls back to the active one if it isn't in your roster.",
+      "goal": "Goal",
+      "goals": {
+        "master": "Road to Master",
+        "auto": {
+          "lp": "Next division",
+          "mr": "Next Master tier"
+        }
+      },
+      "goalHint": {
+        "lp": "Next division measures the current division; Road to Master measures your current rank's climb to 25,000 LP.",
+        "mr": "Master League: progress to the next tier (High, Grand, Ultimate Master). Legend needs a Top 500 position and is not estimated."
+      },
+      "goalNormalized": "Road to Master applies to LP characters. This character is in Master League, so the overlay shows the next Master tier.",
+      "showCharacterName": "Show character name",
+      "showRemaining": "Show points remaining",
+      "showSessionDelta": "Show session change",
+      "sessionDeltaHint": "The session change appears only when the starting rating of this character is known.",
+      "style": "Style",
+      "styles": {
+        "broadcast": {
+          "name": "Broadcast",
+          "description": "Wide lower-third for the webcam or bottom area."
+        },
+        "compact": {
+          "name": "Compact",
+          "description": "Smaller card for a screen corner."
+        }
+      },
+      "previewData": "Preview data",
+      "samples": {
+        "live": "Live data",
+        "lp": "Sample · Diamond 3 · 21,950 LP",
+        "mr": "Sample · High Master · 1,642 MR",
+        "ultimate": "Sample · Ultimate Master · 2,134 MR"
+      }
     }
   },
   "NotFound": {

@@ -1,9 +1,21 @@
 import { createTranslator } from "next-intl";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_OVERLAY_CONFIG, parseOverlayConfig } from "@/domain/overlay/config";
+import {
+  DEFAULT_OVERLAY_CONFIG,
+  parseOverlayConfig as parseAnyOverlayConfig,
+  sessionConfigOf,
+  type SessionOverlayConfig,
+} from "@/domain/overlay/config";
 import { DEFAULT_LOCALE, isLocale, mergeMessages, resolveLocale, type Messages } from "./locale";
 import { RAW_APP_CATALOGS, getAppMessages } from "./messages";
 import { RAW_OVERLAY_CATALOGS, getOverlayMessages } from "./overlay-messages";
+
+/** Session tests: parse and narrow (Phase 5.4B: the public parser returns any overlay kind). */
+function parseOverlayConfig(raw: unknown): SessionOverlayConfig {
+  const config = sessionConfigOf(parseAnyOverlayConfig(raw));
+  if (!config) throw new Error("expected a Session config");
+  return config;
+}
 
 /** Concrete catalog shape so createTranslator can type-check keys. */
 type AppCatalog = typeof import("./messages/en.json");

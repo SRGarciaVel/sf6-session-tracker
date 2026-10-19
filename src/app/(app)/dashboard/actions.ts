@@ -15,6 +15,8 @@ import {
   applyThemeDefaults,
   defaultOverlayConfigForKind,
   overlayConfigSchema,
+  sessionOverlayConfigSchema,
+  type SessionOverlayConfig,
 } from "@/domain/overlay/config";
 import {
   checkOverlayKindEdit,
@@ -40,7 +42,6 @@ import {
   type PresetError,
 } from "@/server/overlays/presets";
 import { PRESETS_PER_ACCOUNT_MAX, presetNameSchema } from "@/domain/overlay/presets";
-import type { OverlayConfig } from "@/domain/overlay/config";
 import { devToolsEnabled } from "@/server/env";
 import { logger } from "@/server/logger";
 import {
@@ -122,15 +123,16 @@ export async function createOverlayAction(
     currentCount: (await listOverlays(db, ctx.player.id)).length,
   });
   if (!quota.ok) return fail(t("maxOverlays", { max: quota.max }));
+  // The kind's own defaults; the starting theme only exists for the Session overlay.
+  const defaults = defaultOverlayConfigForKind(kind);
+  const initial =
+    defaults.kind === "session" ? applyThemeDefaults(defaults, themeParsed.data) : defaults;
   const created = await createOverlay(
     db,
     ctx.player.id,
     name.data,
     // New overlays start in the streamer's language; they can be changed independently later.
-    {
-      ...applyThemeDefaults(defaultOverlayConfigForKind(kind), themeParsed.data),
-      locale: await getRequestLocale(),
-    },
+    { ...initial, locale: await getRequestLocale() },
   );
   revalidatePath("/dashboard");
   return ok({ overlayId: created.id });
@@ -156,8 +158,8 @@ export async function saveOverlayAction(
   const db = getDb();
   const target = await getOwnedOverlay(db, ctx.user.id, overlayId);
   if (!target) return fail(t("overlayNotFound"));
-  // Kind is immutable: the stored kind must be editable and the request of the same kind (the
-  // schema already rejects any kind but "session"; this guards the stored side too).
+  // Kind is immutable: the stored kind must be editable and the request of the SAME kind (a
+  // Session overlay never becomes Rank Progress or vice versa; create another overlay instead).
   const kindCheck = checkOverlayKindEdit(target.storedKind, config.data.kind);
   if (!kindCheck.ok) {
     return fail(
@@ -234,9 +236,10 @@ async function presetInput(input: { presetId?: string; name?: string; config?: u
     if (!parsed.success) return { valid: false, error: t("presetNameInvalid") } as const;
     name = parsed.data;
   }
-  let config: OverlayConfig | undefined;
+  // Presets are Session presets: only a Session config can be saved as / update one.
+  let config: SessionOverlayConfig | undefined;
   if (input.config !== undefined) {
-    const parsed = overlayConfigSchema.safeParse(input.config);
+    const parsed = sessionOverlayConfigSchema.safeParse(input.config);
     if (!parsed.success) return { valid: false, error: t("invalidInput") } as const;
     config = parsed.data;
   }
@@ -308,7 +311,7 @@ export async function deletePresetAction(input: { presetId: string }): Promise<A
 export async function applyPresetAction(input: {
   presetId: string;
   overlayId: string;
-}): Promise<ActionResult<{ config: OverlayConfig }>> {
+}): Promise<ActionResult<{ config: SessionOverlayConfig }>> {
   const v = await presetInput({ presetId: input.presetId });
   if (!v.valid) return fail(v.error);
   if (!uuid.safeParse(input.overlayId).success) return fail(await presetError("not_found"));

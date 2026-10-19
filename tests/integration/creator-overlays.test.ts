@@ -6,6 +6,7 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
+import type { OverlayConfig, SessionOverlayConfig } from "@/domain/overlay/config";
 import type { CreatorCustomization } from "@/domain/overlay/creator";
 
 try {
@@ -26,6 +27,14 @@ const { prepareOverlayConfigForSave, resolveEffectiveOverlayConfig } =
   await import("@/server/overlays/effective");
 const { loadOverlayPayload } = await import("@/server/overlays/public");
 const { DEFAULT_CREATOR_CUSTOMIZATION } = await import("@/domain/overlay/creator");
+const { sessionConfigOf } = await import("@/domain/overlay/config");
+
+/** Every overlay here is a Session overlay (Phase 5.4B: OverlayConfig is a union). */
+function session(config: OverlayConfig | undefined): SessionOverlayConfig {
+  const s = config && sessionConfigOf(config);
+  if (!s) throw new Error("expected a Session overlay");
+  return s;
+}
 
 const DAY = 86_400_000;
 const custom: CreatorCustomization = {
@@ -58,7 +67,7 @@ describe.skipIf(!TEST_DB)("Creator overlay customization (integration)", () => {
   const stored = async (overlayId: string) => {
     const view = await getOverlayById(db, overlayId);
     if (!view) throw new Error("gone");
-    return view;
+    return { ...view, config: session(view.config) };
   };
   /** The real save path: owner's entitlements + merge, then persist. */
   async function save(
@@ -141,7 +150,7 @@ describe.skipIf(!TEST_DB)("Creator overlay customization (integration)", () => {
       .where(eq(overlay.id, free.overlayId));
     const freeView = await stored(free.overlayId);
     const freePayload = await loadOverlayPayload(freeView.publicToken);
-    expect(freePayload?.payload.config.creator).toBeUndefined();
+    expect(session(freePayload?.payload.config).creator).toBeUndefined();
     expect(JSON.stringify(freePayload?.payload)).not.toContain("#ffb000");
     expect(JSON.stringify(freePayload?.payload)).not.toMatch(
       /creator_beta|advancedCustomization|plan/,
@@ -152,7 +161,7 @@ describe.skipIf(!TEST_DB)("Creator overlay customization (integration)", () => {
     await save(creator.userId, creator.overlayId, () => ({ creator: custom }));
     const view = await stored(creator.overlayId);
     const payload = await loadOverlayPayload(view.publicToken);
-    expect(payload?.payload.config.creator).toEqual(custom);
+    expect(session(payload?.payload.config).creator).toEqual(custom);
     // Another account's entitlements never affect this overlay.
     expect((await resolveEffectiveOverlayConfig(db, freeView)).creator).toBeUndefined();
   });

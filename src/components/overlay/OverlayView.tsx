@@ -13,7 +13,12 @@ import {
   type ReactNode,
 } from "react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
-import { OVERLAY_PRESETS, hexToRgba, type OverlayConfig } from "@/domain/overlay/config";
+import {
+  OVERLAY_PRESETS,
+  hexToRgba,
+  type OverlayConfig,
+  type SessionOverlayConfig,
+} from "@/domain/overlay/config";
 import { creatorClassNames, creatorCssVars } from "./creator-style";
 import { getOverlayMessages } from "@/i18n/overlay-messages";
 import {
@@ -52,6 +57,8 @@ import {
 } from "@/domain/overlay/brand-flag";
 import { formatWinRate } from "@/domain/format";
 import { BroadcastTheme, PrestigeTheme, RankCardTheme } from "./creator-themes";
+import type { RankProgressOverlayConfig } from "@/domain/overlay/rank-progress";
+import { RankProgressPanel, rankProgressRootClass, rankProgressStyle } from "./rank-progress";
 import {
   Animated,
   Cell,
@@ -76,7 +83,11 @@ export type OverlaySizing =
 
 type CssVars = CSSProperties & Record<`--${string}`, string>;
 
-export function overlayStyle(config: OverlayConfig, sizing: OverlaySizing, fit = 1): CssVars {
+export function overlayStyle(
+  config: SessionOverlayConfig,
+  sizing: OverlaySizing,
+  fit = 1,
+): CssVars {
   const preset = OVERLAY_PRESETS[config.preset];
   const base = PRESET_BASE_PX[config.preset] * config.scale * fit;
   const fontSize =
@@ -560,8 +571,8 @@ function useFitToBox() {
  */
 function overlaySummary(
   live: PlayerLiveState,
-  config: OverlayConfig,
-  display: OverlayConfig,
+  config: SessionOverlayConfig,
+  display: SessionOverlayConfig,
   stats: OverlayStats,
   rotating: boolean,
   view: PresentationView | null,
@@ -609,7 +620,7 @@ function withDisplayedStats(live: PlayerLiveState, stats: OverlayStats): PlayerL
 }
 
 /** Localized default session word in the OVERLAY's language (view identifier). */
-function sessionLabel(locale: OverlayConfig["locale"]): string {
+function sessionLabel(locale: SessionOverlayConfig["locale"]): string {
   const strings = getOverlayMessages(locale).Overlay;
   return typeof strings === "object" && typeof strings.session === "string" ? strings.session : "";
 }
@@ -658,18 +669,52 @@ function ThemeView({ config, live, viewLabel }: ThemeProps) {
 
 /**
  * Public overlay renderer: dispatches on the config KIND (Phase 5.4A). Same token, same payload
- * `{ config, live }` for every kind; each kind owns its renderer (and its sizing strategy). Only
- * the Session Stats overlay exists today; 5.4B adds its Rank Progress case here.
+ * `{ config, live }` for every kind; each kind owns its renderer (and its sizing strategy).
  */
 export function OverlayView(props: OverlayViewProps) {
-  switch (props.config.kind) {
+  const { config } = props;
+  switch (config.kind) {
     case "session":
-      return <SessionOverlayView {...props} />;
+      return <SessionOverlayView {...props} config={config} />;
+    case "rank-progress":
+      return <RankProgressOverlayView config={config} live={props.live} sizing={props.sizing} />;
   }
 }
 
+/** The Rank Progress overlay (Phase 5.4B): same root contract and auto-fit as the Session one. */
+function RankProgressOverlayView({
+  config,
+  live,
+  sizing,
+}: {
+  config: RankProgressOverlayConfig;
+  live: PlayerLiveState;
+  sizing: OverlaySizing;
+}) {
+  const { rootRef, fit } = useFitToBox();
+  return (
+    <NextIntlClientProvider locale={config.locale} messages={getOverlayMessages(config.locale)}>
+      <div
+        ref={rootRef}
+        lang={config.locale}
+        className={rankProgressRootClass(config)}
+        style={rankProgressStyle(config, sizing, fit)}
+        data-session-status={live.session.status}
+        data-kind="rank-progress"
+      >
+        <RankProgressPanel config={config} session={live.session} />
+      </div>
+    </NextIntlClientProvider>
+  );
+}
+
 /** The Session Stats overlay (every overlay before 5.4A): themes, scope, rotation, motion, flag. */
-function SessionOverlayView({ config, live, sizing, brandRevealSignal = 0 }: OverlayViewProps) {
+function SessionOverlayView({
+  config,
+  live,
+  sizing,
+  brandRevealSignal = 0,
+}: OverlayViewProps & { config: SessionOverlayConfig }) {
   const { rootRef, fit } = useFitToBox();
   // Creator motion (Phase 5.0): only an entitled owner's EFFECTIVE config carries `motion`;
   // Free, animations off and reduced motion all resolve to no profile (nothing extra renders).

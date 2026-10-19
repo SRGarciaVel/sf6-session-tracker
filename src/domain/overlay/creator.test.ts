@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_OVERLAY_CONFIG,
   overlayConfigSchema,
-  parseOverlayConfig,
-  type OverlayConfig,
+  parseOverlayConfig as parseAnyOverlayConfig,
+  sessionConfigOf,
+  type SessionOverlayConfig,
 } from "./config";
 import {
   DEFAULT_CREATOR_CUSTOMIZATION,
@@ -16,6 +17,13 @@ import { DEFAULT_CREATOR_MOTION } from "./motion";
 import { appearanceFromConfig, presetAppearanceSchema } from "./presets";
 import { CREATOR_THEME_IDS, FREE_THEME_IDS, THEME_REGISTRY } from "./themes";
 import { DEFAULT_THEME_VARIANTS } from "./variants";
+
+/** Session tests: parse and narrow (Phase 5.4B: the public parser returns any overlay kind). */
+function parseOverlayConfig(raw: unknown): SessionOverlayConfig {
+  const config = sessionConfigOf(parseAnyOverlayConfig(raw));
+  if (!config) throw new Error("expected a Session config");
+  return config;
+}
 
 const FREE = {
   overlays: {
@@ -41,7 +49,7 @@ const custom: CreatorCustomization = {
   numberScale: 1.15,
   show: { labels: false, units: true, characterName: false, decorations: true },
 };
-const withCreator: OverlayConfig = { ...DEFAULT_OVERLAY_CONFIG, creator: custom };
+const withCreator: SessionOverlayConfig = { ...DEFAULT_OVERLAY_CONFIG, creator: custom };
 
 describe("effective overlay config", () => {
   it("free + no creator block ⇒ exactly the stored config (pre-Phase-4 output)", () => {
@@ -156,7 +164,7 @@ describe("lenient stored read", () => {
 });
 
 describe("Phase 4.5: premium themes (stored vs effective)", () => {
-  const rankCard: OverlayConfig = {
+  const rankCard: SessionOverlayConfig = {
     ...DEFAULT_OVERLAY_CONFIG,
     theme: "rank-card",
     preset: "detailed",
@@ -289,7 +297,7 @@ describe("Phase 5.0: Creator motion (overlays.motionEffects)", () => {
     updateStyle: "impact" as const,
     intensity: "strong" as const,
   };
-  const withMotion: OverlayConfig = {
+  const withMotion: SessionOverlayConfig = {
     ...DEFAULT_OVERLAY_CONFIG,
     creator: { ...custom, motion },
   };

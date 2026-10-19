@@ -4,18 +4,21 @@ import {
   DEFAULT_OVERLAY_CONFIG,
   OVERLAY_THEMES,
   applyThemeDefaults,
-  type OverlayConfig,
+  type SessionOverlayConfig,
 } from "@/domain/overlay/config";
 import { DEFAULT_THEME_VARIANTS } from "@/domain/overlay/variants";
 import { sampleMultiCharacterState } from "@/domain/overlay/sample-session";
 import { OverlayView } from "./OverlayView";
 
 const live = sampleMultiCharacterState();
-const text = (config: OverlayConfig) =>
+const text = (config: SessionOverlayConfig) =>
   renderToStaticMarkup(<OverlayView config={config} live={live} sizing={{ mode: "viewport" }} />)
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ");
-const cfg = (theme: OverlayConfig["theme"], extra: Partial<OverlayConfig> = {}): OverlayConfig => ({
+const cfg = (
+  theme: SessionOverlayConfig["theme"],
+  extra: Partial<SessionOverlayConfig> = {},
+): SessionOverlayConfig => ({
   ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, theme),
   locale: "en",
   variants: DEFAULT_THEME_VARIANTS,

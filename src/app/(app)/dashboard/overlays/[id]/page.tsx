@@ -42,7 +42,9 @@ export default async function OverlayBuilderPage({
   const [live, entitlements, presets] = await Promise.all([
     buildDashboardLiveState(db, player.id),
     getEntitlements(db, user.id),
-    listPresets(db, user.id), // the signed-in account's own presets only
+    // The signed-in account's own presets; presets are Session presets (Phase 5.4B: a Rank
+    // Progress overlay has none, so they are not even read).
+    kind === "session" ? listPresets(db, user.id) : Promise.resolve([]),
   ]);
   if (!live) notFound();
 

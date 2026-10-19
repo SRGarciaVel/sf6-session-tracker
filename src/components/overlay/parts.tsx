@@ -5,7 +5,7 @@
 import { BrandInterleaveLayer, useBrandInterleave } from "./brand-flag";
 import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import type { OverlayConfig } from "@/domain/overlay/config";
+import type { SessionOverlayConfig } from "@/domain/overlay/config";
 import { pickRatingCharacter, type PlayerLiveState } from "@/domain/overlay/state";
 import { deltaTone, formatDelta, formatInteger } from "@/domain/format";
 import type { MatchResult } from "@/domain/sf6/types";
@@ -130,7 +130,7 @@ export function RecentForm({
 }
 
 export interface ThemeProps {
-  config: OverlayConfig;
+  config: SessionOverlayConfig;
   live: PlayerLiveState;
   /**
    * Presentation view identifier (Phase 5.3A mixed modes). Titled themes already get it through
@@ -143,7 +143,7 @@ export interface ThemeProps {
  * Rating of ONE character: the overlay's pinned `ratingCharacterKey`, else the active character
  * (latest Ranked match). W/L stays global; this never mixes characters.
  */
-export function ratingParts(live: PlayerLiveState, config: OverlayConfig) {
+export function ratingParts(live: PlayerLiveState, config: SessionOverlayConfig) {
   const c = pickRatingCharacter(live.session, config.ratingCharacterKey);
   const system = c?.current?.system ?? c?.ratingSystem ?? null;
   return {

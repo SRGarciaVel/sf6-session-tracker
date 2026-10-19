@@ -3,8 +3,9 @@ import { computeSessionStats } from "@/domain/session/engine";
 import {
   DEFAULT_OVERLAY_CONFIG,
   overlayConfigSchema,
-  parseOverlayConfig,
-  type OverlayConfig,
+  parseOverlayConfig as parseAnyOverlayConfig,
+  sessionConfigOf,
+  type SessionOverlayConfig,
 } from "./config";
 import { getEffectiveOverlayConfig, mergeOverlayConfigForSave } from "./creator";
 import { detectOverlayChange, type OverlaySummary } from "./motion";
@@ -12,6 +13,13 @@ import { appearanceFromConfig, applyPresetToConfig } from "./presets";
 import { sampleMultiCharacterState } from "./sample-session";
 import { resolveOverlayStats } from "./state";
 import { DEFAULT_THEME_VARIANTS } from "./variants";
+
+/** Session tests: parse and narrow (Phase 5.4B: the public parser returns any overlay kind). */
+function parseOverlayConfig(raw: unknown): SessionOverlayConfig {
+  const config = sessionConfigOf(parseAnyOverlayConfig(raw));
+  if (!config) throw new Error("expected a Session config");
+  return config;
+}
 
 const FREE = {
   overlays: {
@@ -43,7 +51,7 @@ describe("statsScope config", () => {
     }
   });
   it("23–25. saved and read back; a Free owner keeps it; stored premium config intact", () => {
-    const stored: OverlayConfig = {
+    const stored: SessionOverlayConfig = {
       ...DEFAULT_OVERLAY_CONFIG,
       theme: "rank-card",
       variants: DEFAULT_THEME_VARIANTS,

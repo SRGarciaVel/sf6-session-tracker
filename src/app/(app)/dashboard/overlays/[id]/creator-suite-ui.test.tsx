@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_OVERLAY_CONFIG,
   applyThemeDefaults,
-  type OverlayConfig,
+  type SessionOverlayConfig,
 } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION } from "@/domain/overlay/creator";
 import { DEFAULT_CREATOR_MOTION } from "@/domain/overlay/motion";
@@ -140,7 +140,7 @@ describe("CreatorPanel", () => {
     rotationViews: { views: ["Ryu", "Chun-Li", "Jamie"], sample: true },
   };
   it("Free with stored Creator data: ONE notice with both saved messages; controls disabled", () => {
-    const config: OverlayConfig = {
+    const config: SessionOverlayConfig = {
       ...DEFAULT_OVERLAY_CONFIG,
       creator: DEFAULT_CREATOR_CUSTOMIZATION,
     };
@@ -168,7 +168,7 @@ describe("CreatorPanel", () => {
   });
 
   it("Movement: stored motion stays visible (disabled) for Free; one notice covers it", () => {
-    const config: OverlayConfig = {
+    const config: SessionOverlayConfig = {
       ...DEFAULT_OVERLAY_CONFIG,
       creator: {
         ...DEFAULT_CREATOR_CUSTOMIZATION,
@@ -194,11 +194,11 @@ describe("CreatorPanel", () => {
   });
 
   it("Movement: rank reaction disabled with a note on themes without the emblem", () => {
-    const motionOn = (theme: OverlayConfig["theme"]): OverlayConfig => ({
+    const motionOn = (theme: SessionOverlayConfig["theme"]): SessionOverlayConfig => ({
       ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, theme),
       creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, motion: DEFAULT_CREATOR_MOTION },
     });
-    const render = (theme: OverlayConfig["theme"]) =>
+    const render = (theme: SessionOverlayConfig["theme"]) =>
       wrap(
         "en",
         <CreatorPanel
@@ -241,7 +241,7 @@ describe("CreatorPanel", () => {
 });
 
 describe("OverlayBuilder", () => {
-  const render = (access: typeof FREE, config: OverlayConfig = DEFAULT_OVERLAY_CONFIG) =>
+  const render = (access: typeof FREE, config: SessionOverlayConfig = DEFAULT_OVERLAY_CONFIG) =>
     wrap(
       "es",
       <OverlayBuilder
@@ -342,14 +342,16 @@ describe("Phase 5.2: character rotation (builder)", () => {
     presets: [],
     rotationViews: { views: ["Ryu", "Chun-Li", "Jamie"], sample: true },
   };
-  const withRotation = (over: Partial<typeof DEFAULT_CHARACTER_ROTATION> = {}): OverlayConfig => ({
+  const withRotation = (
+    over: Partial<typeof DEFAULT_CHARACTER_ROTATION> = {},
+  ): SessionOverlayConfig => ({
     ...DEFAULT_OVERLAY_CONFIG,
     creator: {
       ...DEFAULT_CREATOR_CUSTOMIZATION,
       characterRotation: { ...DEFAULT_CHARACTER_ROTATION, enabled: true, ...over },
     },
   });
-  const panel = (config: OverlayConfig, entitled: boolean) =>
+  const panel = (config: SessionOverlayConfig, entitled: boolean) =>
     wrap(
       "es",
       <CreatorPanel
@@ -439,7 +441,7 @@ describe("Phase 5.2: character rotation (builder)", () => {
   });
 
   it("74. the preview offers “Probar presentación” to Creator only; Content explains the override", () => {
-    const builder = (access: typeof FREE, config: OverlayConfig) =>
+    const builder = (access: typeof FREE, config: SessionOverlayConfig) =>
       wrap(
         "es",
         <OverlayBuilder
@@ -481,14 +483,14 @@ describe("Phase 5.3A: automatic presentation (builder)", () => {
     presets: [],
     rotationViews: { views: [null, "Ryu", null, "Chun-Li"], sample: true },
   };
-  const cfg = (over: Partial<typeof DEFAULT_CHARACTER_ROTATION> = {}): OverlayConfig => ({
+  const cfg = (over: Partial<typeof DEFAULT_CHARACTER_ROTATION> = {}): SessionOverlayConfig => ({
     ...DEFAULT_OVERLAY_CONFIG,
     creator: {
       ...DEFAULT_CREATOR_CUSTOMIZATION,
       characterRotation: { ...DEFAULT_CHARACTER_ROTATION, enabled: true, ...over },
     },
   });
-  const panel = (config: OverlayConfig) =>
+  const panel = (config: SessionOverlayConfig) =>
     wrap(
       "es",
       <CreatorPanel
@@ -542,8 +544,8 @@ describe("Phase 5.3B: SST branding (builder)", () => {
   };
   const cfg = (
     over: Partial<typeof DEFAULT_BRAND_FLAG> = {},
-    extra: Partial<OverlayConfig> = {},
-  ): OverlayConfig => ({
+    extra: Partial<SessionOverlayConfig> = {},
+  ): SessionOverlayConfig => ({
     ...DEFAULT_OVERLAY_CONFIG,
     ...extra,
     creator: {
@@ -551,7 +553,7 @@ describe("Phase 5.3B: SST branding (builder)", () => {
       brandFlag: { ...DEFAULT_BRAND_FLAG, enabled: true, ...over },
     },
   });
-  const panel = (config: OverlayConfig, entitled = true) =>
+  const panel = (config: SessionOverlayConfig, entitled = true) =>
     wrap(
       "es",
       <CreatorPanel
@@ -617,7 +619,7 @@ describe("Phase 5.3B: SST branding (builder)", () => {
   });
 
   it("the preview offers “Probar aparición” only with an effective periodic tab", () => {
-    const builder = (access: typeof FREE, config: OverlayConfig) =>
+    const builder = (access: typeof FREE, config: SessionOverlayConfig) =>
       wrap(
         "es",
         <OverlayBuilder
@@ -652,8 +654,8 @@ describe("Phase 5.3C: integrated branding (builder)", () => {
   };
   const cfg = (
     over: Partial<typeof DEFAULT_BRAND_FLAG> = {},
-    extra: Partial<OverlayConfig> = {},
-  ): OverlayConfig => ({
+    extra: Partial<SessionOverlayConfig> = {},
+  ): SessionOverlayConfig => ({
     ...DEFAULT_OVERLAY_CONFIG,
     ...extra,
     fields: { ...DEFAULT_OVERLAY_CONFIG.fields, recentForm: true, ...extra.fields },
@@ -668,7 +670,7 @@ describe("Phase 5.3C: integrated branding (builder)", () => {
       },
     },
   });
-  const group = (config: OverlayConfig) => {
+  const group = (config: SessionOverlayConfig) => {
     const html = wrap(
       "es",
       <CreatorPanel

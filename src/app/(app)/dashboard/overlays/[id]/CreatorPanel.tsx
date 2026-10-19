@@ -12,7 +12,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Badge, Button } from "@/components/ui/primitives";
-import type { OverlayConfig, OverlayThemeId } from "@/domain/overlay/config";
+import type { SessionOverlayConfig, OverlayThemeId } from "@/domain/overlay/config";
 import {
   DEFAULT_CREATOR_CUSTOMIZATION,
   NUMBER_SCALE_MAX,
@@ -91,7 +91,7 @@ export function CreatorPanel({
   dirty,
   onPresetApplied,
 }: {
-  config: OverlayConfig;
+  config: SessionOverlayConfig;
   update: Update;
   advancedCustomization: boolean;
   creatorPresets: boolean;
@@ -103,7 +103,7 @@ export function CreatorPanel({
   overlayId: string;
   presets: PresetSummary[];
   dirty: boolean;
-  onPresetApplied: (config: OverlayConfig) => void;
+  onPresetApplied: (config: SessionOverlayConfig) => void;
 }) {
   const t = useTranslations("Builder.creator");
   const tp = useTranslations("Builder.presetsCreator");
@@ -288,7 +288,7 @@ function MotionGroup({
   update,
   enabled,
 }: {
-  config: OverlayConfig;
+  config: SessionOverlayConfig;
   update: Update;
   enabled: boolean;
 }) {
@@ -387,7 +387,7 @@ function RotationGroup({
   enabled,
   views,
 }: {
-  config: OverlayConfig;
+  config: SessionOverlayConfig;
   update: Update;
   enabled: boolean;
   views: { views: Array<string | null>; sample: boolean };
@@ -584,7 +584,7 @@ function BrandFlagGroup({
   update,
   enabled,
 }: {
-  config: OverlayConfig;
+  config: SessionOverlayConfig;
   update: Update;
   enabled: boolean;
 }) {

@@ -127,6 +127,9 @@ Exact gates and selection rules: [docs/architecture.md § Review priorities](doc
 - Realtime updates over **SSE**.
 - **Free:** three themes (Minimal, Competitive, Street), three canvas sizes, stat toggles,
   session or character scope, bundled fonts, colours, frame and layout options.
+- **Rank Progress** (Free, a separate overlay): the current rank of one character and the progress
+  to the next division, to Master (LP) or to the next Master tier (MR), in Broadcast or Compact
+  style. Ultimate Master is terminal: Legend (top 500) is never estimated from MR.
 - **Creator Beta** (invite-only, unlocked with a Creator Key for 90 days; there is no billing):
   - three more themes (Rank Card, Broadcast, Prestige) with variants and rank-aware styling;
   - saved presets;

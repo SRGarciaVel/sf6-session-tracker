@@ -3,7 +3,7 @@ import {
   DEFAULT_OVERLAY_CONFIG,
   OVERLAY_FIELDS,
   applyThemeDefaults,
-  type OverlayConfig,
+  type SessionOverlayConfig,
 } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION } from "@/domain/overlay/creator";
 import { DEFAULT_THEME_VARIANTS } from "@/domain/overlay/variants";
@@ -20,12 +20,12 @@ import {
   themeDefault,
 } from "./builder-state";
 
-const base: OverlayConfig = { ...DEFAULT_OVERLAY_CONFIG };
-const snap = (config: OverlayConfig, name = "Overlay") => ({ name, config });
+const base: SessionOverlayConfig = { ...DEFAULT_OVERLAY_CONFIG };
+const snap = (config: SessionOverlayConfig, name = "Overlay") => ({ name, config });
 
 describe("dirty state", () => {
   it("is false initially and ignores key order and undefined members", () => {
-    const reordered = Object.fromEntries(Object.entries(base).reverse()) as OverlayConfig;
+    const reordered = Object.fromEntries(Object.entries(base).reverse()) as SessionOverlayConfig;
     expect(isDirty(snap(base), snap(reordered))).toBe(false);
     expect(isDirty(snap(base), snap({ ...base, creator: undefined }))).toBe(false);
     expect(canonicalJson({ b: 1, a: { d: 2, c: 3 } })).toBe(
@@ -119,7 +119,7 @@ describe("Phase 5.3B: brand flag edits", () => {
 
 describe("Phase 5.1: statsScope edits", () => {
   it("changing statsScope marks dirty; saving that state clears it", () => {
-    const scoped: OverlayConfig = { ...base, statsScope: "character" };
+    const scoped: SessionOverlayConfig = { ...base, statsScope: "character" };
     expect(isDirty(snap(base), snap(scoped))).toBe(true);
     expect(isDirty(snap(scoped), snap(scoped))).toBe(false);
     expect(isDirty(snap(scoped), snap({ ...scoped, ratingCharacterKey: "jamie" }))).toBe(true);
@@ -128,12 +128,12 @@ describe("Phase 5.1: statsScope edits", () => {
 
 describe("Free save safety (stored Creator state survives base edits)", () => {
   it("base edits never drop a stored premium theme, variants or Creator block", () => {
-    const stored: OverlayConfig = {
+    const stored: SessionOverlayConfig = {
       ...applyThemeDefaults(base, "rank-card"),
       variants: DEFAULT_THEME_VARIANTS,
       creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, numberScale: 1.2 },
     };
-    const edits: Array<(c: OverlayConfig) => OverlayConfig> = [
+    const edits: Array<(c: SessionOverlayConfig) => SessionOverlayConfig> = [
       (c) => ({ ...c, title: "GG" }),
       (c) => ({ ...c, locale: "en" }),
       (c) => ({ ...c, textColor: "#ffffff" }),

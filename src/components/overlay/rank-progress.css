@@ -1,0 +1,158 @@
+/*
+ * Rank Progress overlay (Phase 5.4B). Same OBS/CEF rules as overlay.css: hand-written, no
+ * Tailwind, no oklch()/color-mix()/container queries/:has(); everything in `em` of the root
+ * font-size computed for the canvas. Colors arrive as the shared --ov-* custom properties.
+ */
+
+.ov-rp {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.32em;
+  padding: 0.5em 0.85em 0.55em 1.05em;
+  clip-path: polygon(
+    var(--ov-notch) 0,
+    100% 0,
+    100% calc(100% - var(--ov-notch)),
+    calc(100% - var(--ov-notch)) 100%,
+    0 100%,
+    0 var(--ov-notch)
+  );
+}
+.ov-rp-broadcast {
+  width: 30.5em;
+}
+.ov-rp-compact {
+  width: 18.4em;
+  gap: 0.28em;
+  padding: 0.45em 0.7em 0.5em 0.9em;
+}
+
+/* Accent edge (SST HUD shape, no rank artwork). */
+.ov-rp-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0.22em;
+  background: var(--ov-accent);
+}
+
+.ov-rp-head,
+.ov-rp-main,
+.ov-rp-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8em;
+  min-width: 0;
+}
+
+.ov-rp-heading,
+.ov-rp-char {
+  font-size: 0.56em;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ov-rp-heading {
+  color: var(--ov-accent);
+}
+.ov-rp-char {
+  color: var(--ov-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ov-rp-rank {
+  font-size: 1.55em;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ov-rp-value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.22em;
+  font-size: 1.35em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ov-rp-compact .ov-rp-rank {
+  font-size: 1.2em;
+}
+.ov-rp-compact .ov-rp-value {
+  font-size: 1.1em;
+}
+
+/* Progress bar: the fill is scaled (scaleX of a clamped fraction), never sized by width. */
+.ov-rp-bar {
+  position: relative;
+  height: 0.42em;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.14);
+}
+.ov-rp-compact .ov-rp-bar {
+  height: 0.36em;
+}
+.ov-rp-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: var(--ov-accent);
+  transform-origin: 0 50%;
+  box-shadow: 0 0 0.5em var(--ov-accent);
+}
+.ov-animate .ov-rp-fill {
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ov-animate .ov-rp-fill {
+    transition: none;
+  }
+}
+
+.ov-rp-target,
+.ov-rp-legend,
+.ov-rp-delta {
+  font-size: 0.66em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ov-rp-target {
+  color: var(--ov-text);
+}
+.ov-rp-legend {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.6em;
+}
+.ov-rp-legend-name {
+  color: var(--ov-accent);
+}
+.ov-rp-legend-req {
+  color: var(--ov-muted);
+}
+.ov-rp-delta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4em;
+}
+.ov-rp-delta-label {
+  color: var(--ov-muted);
+}
+
+.ov-rp-empty {
+  font-size: 1.05em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ov-muted);
+  white-space: nowrap;
+}

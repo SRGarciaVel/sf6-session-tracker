@@ -19,19 +19,19 @@
  * "CHUN-LI"). A custom title is kept and the label appended ("RANKED · CHUN-LI"); with the title
  * hidden only the label shows. "characters" mode renders exactly as in Phase 5.2 (no label).
  */
-import type { OverlayConfig } from "./config";
+import type { SessionOverlayConfig } from "./config";
 import type { PresentationMode, PresentationView } from "./rotation";
 import type { LiveSessionState } from "./state";
 
 export interface Presentation {
   /** Config the themes render with (presentation only). */
-  config: OverlayConfig;
+  config: SessionOverlayConfig;
   /** View identifier shown to viewers (mixed modes), else null. */
   viewLabel: string | null;
 }
 
 export function resolvePresentation(
-  config: OverlayConfig,
+  config: SessionOverlayConfig,
   session: Pick<LiveSessionState, "activeCharacterKey" | "characters">,
   view: PresentationView | null,
   mode: PresentationMode,
@@ -40,7 +40,7 @@ export function resolvePresentation(
   if (view === null) return { config, viewLabel: null };
   const mixed = mode !== "characters";
   if (view.kind === "character") {
-    const projected: OverlayConfig = {
+    const projected: SessionOverlayConfig = {
       ...config,
       ratingCharacterKey: view.characterKey,
       statsScope: mixed ? "character" : config.statsScope,
@@ -51,7 +51,7 @@ export function resolvePresentation(
       view.characterKey;
     return { config: withViewTitle(projected, config, name), viewLabel: name };
   }
-  const projected: OverlayConfig = {
+  const projected: SessionOverlayConfig = {
     ...config,
     ratingCharacterKey: session.activeCharacterKey,
     statsScope: "session",
@@ -60,10 +60,10 @@ export function resolvePresentation(
 }
 
 function withViewTitle(
-  projected: OverlayConfig,
-  stored: OverlayConfig,
+  projected: SessionOverlayConfig,
+  stored: SessionOverlayConfig,
   label: string,
-): OverlayConfig {
+): SessionOverlayConfig {
   const custom = stored.showTitle ? stored.title.trim() : "";
   return { ...projected, showTitle: true, title: custom ? `${custom} · ${label}` : label };
 }

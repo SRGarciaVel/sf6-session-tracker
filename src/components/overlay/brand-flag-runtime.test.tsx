@@ -15,7 +15,7 @@ import {
   DEFAULT_OVERLAY_CONFIG,
   OVERLAY_THEMES,
   applyThemeDefaults,
-  type OverlayConfig,
+  type SessionOverlayConfig,
 } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION } from "@/domain/overlay/creator";
 import { DEFAULT_CREATOR_MOTION } from "@/domain/overlay/motion";
@@ -46,9 +46,9 @@ const FLAG: BrandFlag = {
 };
 const config = (
   flag: Partial<BrandFlag> | null = {},
-  over: Partial<OverlayConfig> = {},
+  over: Partial<SessionOverlayConfig> = {},
   extras: { motion?: boolean; mode?: PresentationMode } = {},
-): OverlayConfig => ({
+): SessionOverlayConfig => ({
   ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, over.theme ?? "competitive"),
   ...over,
   creator: {
@@ -81,7 +81,7 @@ const resend = (s: PlayerLiveState, ms = 1000): PlayerLiveState => ({
 
 let host: HTMLDivElement;
 let root: Root;
-const render = (cfg: OverlayConfig, live: PlayerLiveState = sample(), signal = 0) =>
+const render = (cfg: SessionOverlayConfig, live: PlayerLiveState = sample(), signal = 0) =>
   act(() => {
     root.render(
       <OverlayView

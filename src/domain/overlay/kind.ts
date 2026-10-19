@@ -1,12 +1,12 @@
 /**
- * Overlay kinds (Phase 5.4A — foundation only). An overlay row is one PRODUCT, chosen at creation
+ * Overlay kinds (Phase 5.4A foundation, 5.4B Rank Progress). An overlay row is one PRODUCT, chosen at creation
  * and immutable afterwards; its `overlay.config` JSON says which. Same row, same public token
  * (`/overlay/<token>`), same realtime payload `{ config, live }` — only the renderer / builder
  * differ per kind.
  *
  *   session        the Session Stats overlay (every overlay created before 5.4A)
- *   rank-progress  RESERVED for Phase 5.4B (LP / MR progress). Not implemented, not creatable:
- *                  nothing renders, edits or creates it yet.
+ *   rank-progress  the Rank Progress overlay (Phase 5.4B, ./rank-progress.ts): current rank and
+ *                  progress toward the next LP / MR goal of one character
  *
  * Stored configs written before 5.4A have no `kind`: they ARE session overlays (no migration,
  * nothing rewritten on read).
@@ -14,8 +14,11 @@
 export const OVERLAY_KINDS = ["session", "rank-progress"] as const;
 export type OverlayKind = (typeof OVERLAY_KINDS)[number];
 
-/** Kinds a user may create / edit today. 5.4B adds "rank-progress" here with its renderer. */
-export const CREATABLE_OVERLAY_KINDS = ["session"] as const satisfies readonly OverlayKind[];
+/** Kinds a user may create / edit (each has a parser, renderer, builder and defaults). */
+export const CREATABLE_OVERLAY_KINDS = [
+  "session",
+  "rank-progress",
+] as const satisfies readonly OverlayKind[];
 export type CreatableOverlayKind = (typeof CREATABLE_OVERLAY_KINDS)[number];
 
 export function isCreatableOverlayKind(kind: unknown): kind is CreatableOverlayKind {

@@ -355,3 +355,22 @@ disabled controls are a convenience.
   - 120 cycles.
 - Builder UI (order, disclosure, warnings, legibility note, preview button), dirty state and the
   integration lifecycle.
+
+## Rank Progress builder (Phase 5.4B)
+
+`OverlayBuilder` dispatches on `config.kind`; a Rank Progress overlay opens
+`RankProgressOverlayBuilder` (the Session builder is untouched). Simpler on purpose — no tabs, no
+Creator tab, no presets:
+
+- **Header:** name, kind tag, the same save states / Discard / Save and dirty rule (`isDirty`).
+- **Content:** character (auto + roster), goal (options depend on the selected character's CURRENT
+  system: LP → Next division · Road to Master; MR → Next Master tier; a stored goal that no longer
+  fits is explained, not rewritten), overlay language.
+- **Display:** show character name · points remaining · session change.
+- **Appearance:** style (Broadcast 640×140 / Compact 400×140, radio cards), font, text / label /
+  accent colors, background + opacity, border, radius, animations.
+- **Preview:** the real renderer with live data or an LP (Diamond 3 · 21,950), MR (High Master ·
+  1,642) or Ultimate Master (2,134) sample; preview-only, never saved. **OBS output** as Session.
+
+Tests: `rank-progress-builder.test.tsx` (dispatch, controls, dirty / save / failure / discard,
+ES/EN), `overlays-panel-kind.test.tsx` (kind picker, kind-aware cards).
