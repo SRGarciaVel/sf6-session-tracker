@@ -356,9 +356,11 @@ ZIP al organizador.
 2. Abre un PR con ese cambio (y lo que incluya la versión) y mergéalo en `main`.
 3. GitHub → Actions → **Release Companion Beta** → _Run workflow_ en `main`, escribe `publish`
    en `confirm` y, si quieres, notas.
-4. Comprueba la release `companion-v0.1.1`: título «SST Companion for Street Fighter 6 v0.1.1 (Beta)», assets
-   `sf6-session-companion-beta.zip` y `.sha256`, marcada **Latest**. El último paso del workflow
-   ya verifica que la URL estable sirve esa versión.
+4. Comprueba la release `companion-v0.1.1`: título «SST Companion for Street Fighter 6 v0.1.1 (Beta)»,
+   marcada **Latest**, con cuatro assets (el mismo ZIP con dos nombres):
+   `sf6-session-companion-v0.1.1-beta.zip` + `.sha256` (versionado, para saber qué versión se
+   descarga) y `sf6-session-companion-beta.zip` + `.sha256` (nombre estable de la URL
+   `latest`). El último paso del workflow ya verifica la URL versionada y la estable.
 5. En Render (web service) → Environment: `COMPANION_LATEST_VERSION=0.1.1`. Primera vez también
    `COMPANION_DOWNLOAD_URL` con la URL estable.
 6. Redeploy (Render lo hace al guardar variables). Desde ese momento el panel avisa a quien tenga
@@ -370,11 +372,12 @@ ZIP al organizador.
 - tests de la extensión, del core compartido y del empaquetado;
 - **guardia de versión:** falla si `companion-v<versión>` ya existe (tag o release) o si la
   versión no es mayor que todas las publicadas. Nunca reemplaza assets;
-- `pnpm companion:package:beta` + `pnpm companion:inspect:prod`; comprueba que los assets
-  estables son el paquete validado;
-- `gh release create companion-vX.Y.Z … --latest`, con el SHA-256 y el enlace a la guía en las
-  notas;
-- comprueba la URL estable.
+- `pnpm companion:package:beta` + `pnpm companion:inspect:prod`; comprueba que existen los
+  cuatro archivos, que el ZIP versionado y el estable son idénticos y que ambos `.sha256`
+  verifican y coinciden;
+- `gh release create companion-vX.Y.Z … --latest` con los cuatro assets; las notas incluyen la
+  guía, la descarga versionada, la descarga estable y el SHA-256;
+- comprueba la URL versionada y la estable.
 
 Permisos: `contents: write` solo en ese job, con el `GITHUB_TOKEN` interno; sin otros secretos.
 

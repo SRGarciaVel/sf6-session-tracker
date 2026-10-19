@@ -48,6 +48,23 @@ export function releaseName(version: string): string {
  * …/releases/latest/download/sf6-session-companion-beta.zip always serves the newest beta.
  */
 export const STABLE_ASSET_BASENAME = `${RELEASE_BASENAME}-${RELEASE_CHANNEL}`;
+/**
+ * The four files every GitHub Release carries (all the SAME ZIP bytes):
+ *   versioned  sf6-session-companion-v<version>-beta.{zip,sha256}  — the version is in the name
+ *   stable     sf6-session-companion-beta.{zip,sha256}             — …/releases/latest/download/…
+ * Each .sha256 is in `sha256sum -c` format and names its own ZIP.
+ */
+export function releaseAssets(version: string): {
+  versioned: { zip: string; sha256: string };
+  stable: { zip: string; sha256: string };
+} {
+  const name = releaseName(version);
+  return {
+    versioned: { zip: `${name}.zip`, sha256: `${name}.sha256` },
+    stable: { zip: `${STABLE_ASSET_BASENAME}.zip`, sha256: `${STABLE_ASSET_BASENAME}.sha256` },
+  };
+}
+
 /** Git tag of a companion release (kept apart from any future web-app tags). */
 export const releaseTag = (version: string): string => `companion-v${version}`;
 
