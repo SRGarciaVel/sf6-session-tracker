@@ -739,4 +739,123 @@ describe.skipIf(!TEST_DB)("analytics read model (integration)", () => {
       expect(payload).not.toMatch(/rating|"lp"|"mr"/i);
     });
   });
+
+  describe("replay selection (6.4C)", () => {
+    const at = (i: number) => new Date(daysAgo(1).getTime() + i * 4 * 60_000);
+    async function addRows(
+      playerId: string,
+      specs: Array<{ result: MatchResult; opponent?: string; characterKey?: string; when?: Date }>,
+    ) {
+      await db.insert(match).values(
+        specs.map((o, i) => {
+          const opponent = o.opponent ?? "ken";
+          return {
+            playerId,
+            sessionId: null,
+            externalMatchId: `rp-${++seq}`,
+            playedAt: o.when ?? at(i),
+            mode: "ranked" as const,
+            result: o.result,
+            characterKey: o.characterKey ?? "aki",
+            characterName: o.characterKey === "juri" ? "Juri" : "A.K.I.",
+            opponentName: SECRET_OPPONENT,
+            opponentCharacterKey: opponent,
+            opponentCharacter: opponent[0]!.toUpperCase() + opponent.slice(1),
+            ratingBeforeSystem: "lp" as const,
+            ratingBeforeValue: 19_000,
+          };
+        }),
+      );
+    }
+    const block = (w: number, l: number, o: { opponent?: string; characterKey?: string } = {}) => [
+      ...Array.from({ length: w }, () => ({ result: "win" as const, ...o })),
+      ...Array.from({ length: l }, () => ({ result: "loss" as const, ...o })),
+    ];
+
+    it("aligned with the selected signals; no candidates for unselected ones; same dataset", async () => {
+      // A.K.I. vs JP / Dee Jay underperform, Juri vs JP too, Ken exposure, recent shift: > 3 eligible.
+      await addRows(me.id, [
+        ...block(2, 10, { opponent: "jp" }),
+        ...block(2, 10, { opponent: "dee_jay" }),
+        ...block(2, 10, { opponent: "jp", characterKey: "juri" }),
+        ...block(30, 0, { characterKey: "juri" }),
+        ...block(40, 0),
+      ]);
+      const a = await analytics(me);
+      expect(a.summary.review.totalEligible).toBeGreaterThan(a.summary.review.signals.length);
+      expect(a.reviewReplays.map((r) => r.signalId)).toEqual(
+        a.summary.review.signals.map((s) => s.id),
+      );
+      const ids = new Set(
+        (
+          await db
+            .select({ id: match.externalMatchId })
+            .from(match)
+            .where(sql`${match.playerId} = ${me.id}`)
+        ).map((r) => r.id),
+      );
+      for (const sel of a.reviewReplays) {
+        for (const c of sel.groups.flatMap((g) => g.candidates)) {
+          expect(ids.has(c.externalMatchId)).toBe(true); // only this player's rows
+        }
+      }
+      const payload = JSON.stringify(a.reviewReplays);
+      expect(payload).not.toContain(SECRET_OPPONENT);
+      expect(payload).not.toContain("19000");
+      expect(payload).not.toMatch(/rating|opponentName|"rank"/i);
+    });
+
+    it("the character filter and the range bound every candidate", async () => {
+      await addRows(me.id, [
+        ...block(2, 10, { opponent: "jp" }),
+        ...block(20, 0),
+        ...block(2, 10, { opponent: "jp", characterKey: "juri" }),
+        ...block(20, 0, { characterKey: "juri" }),
+      ]);
+      // Old A.K.I. vs JP losses outside 30 days.
+      await addRows(
+        me.id,
+        block(0, 12, { opponent: "jp" }).map((r, i) => ({
+          ...r,
+          when: new Date(daysAgo(60).getTime() + i * 60_000),
+        })),
+      );
+      const juri = await analytics(me, "30d", "ranked", "juri");
+      const juriCandidates = juri.reviewReplays.flatMap((s) =>
+        s.groups.flatMap((g) => g.candidates),
+      );
+      expect(juriCandidates.length).toBeGreaterThan(0);
+      expect(juriCandidates.every((c) => c.characterKey === "juri")).toBe(true);
+      const aki = await analytics(me, "30d", "ranked", "aki");
+      const cutoff = daysAgo(30).getTime();
+      for (const c of aki.reviewReplays.flatMap((s) => s.groups.flatMap((g) => g.candidates))) {
+        expect(c.characterKey).toBe("aki");
+        expect(c.playedAt.getTime()).toBeGreaterThanOrEqual(cutoff);
+      }
+    });
+
+    it("no extra query: still the same 3 selects", async () => {
+      await addRows(me.id, [...block(2, 10, { opponent: "jp" }), ...block(20, 0)]);
+      let selects = 0;
+      const counting = new Proxy(db, {
+        get(target, prop, receiver) {
+          const value = Reflect.get(target, prop, receiver) as unknown;
+          if (prop === "select" && typeof value === "function") {
+            return (fields?: Record<string, unknown>) => {
+              selects++;
+              return (value as (f?: unknown) => unknown).call(target, fields);
+            };
+          }
+          return value;
+        },
+      });
+      const a = await getPlayerAnalyticsForUser(counting, me.userId, {
+        range: "90d",
+        mode: "ranked",
+        now: NOW,
+      });
+      expect(a?.reviewReplays.some((r) => r.totalCandidates > 0)).toBe(true);
+      expect(selects).toBe(3);
+    });
+  });
 });

@@ -1218,7 +1218,37 @@
           "knowledge": "Which matchup knowledge do you need again and again?"
         }
       },
-      "methodology": "To review: deterministic signals with product thresholds (not statistical significance). Matchup ≥ 10 decided vs the same own character with ≥ 30; latest 20 vs the previous 20 (≥ 10 decided each); halves with ≥ 5 segments and ≥ 20 decided per half; next match after a loss vs after a win (≥ 10 observations each, within the same segment); minimum difference 10 pp. Exposure: ≥ 20 matches and ≥ 10 % of matches with a known opponent. At most 3 signals, 2 per type."
+      "methodology": "To review: deterministic signals with product thresholds (not statistical significance). Matchup ≥ 10 decided vs the same own character with ≥ 30; latest 20 vs the previous 20 (≥ 10 decided each); halves with ≥ 5 segments and ≥ 20 decided per half; next match after a loss vs after a win (≥ 10 observations each, within the same segment); minimum difference 10 pp. Exposure: ≥ 20 matches and ≥ 10 % of matches with a known opponent. At most 3 signals, 2 per type.",
+      "replays": {
+        "title": "{count, plural, one {Replays to review (#)} other {Replays to review (#)}}",
+        "intro": {
+          "matchup": "These matches are examples from the evidence behind this review priority: the most recent ones in this matchup, won and lost.",
+          "recent": "These matches are examples from the evidence behind this review priority. Compare examples from both windows.",
+          "halves": "Compare matches from the beginning and end of a recent segment included in the sample. It is an example; it doesn't explain the overall difference.",
+          "postLoss": "Review the loss and the immediately following match, inside the same session segment.",
+          "exposure": "Recent matches against this character."
+        },
+        "groups": {
+          "recent": "Recent window",
+          "previous": "Previous window",
+          "firstHalf": "First half",
+          "secondHalf": "Second half"
+        },
+        "transition": "Transition {n}",
+        "afterLossLabel": "Loss",
+        "nextLabel": "Next match",
+        "pair": "{own} vs {opponent}",
+        "replayId": "Replay ID",
+        "copy": "Copy ID",
+        "copied": "Copied",
+        "copyFailed": "Copy failed",
+        "copyAria": "Copy Replay ID {id}",
+        "helpTitle": "How do I open a Replay ID?",
+        "helpIntro": "In Street Fighter 6:",
+        "helpPath": "CFN → Replays → Search → Keyword Search → Replay ID",
+        "helpNote": "SST doesn't open replays for you: copy the ID and search for it in the game.",
+        "disclaimer": "SST selects matches based on their relationship to the signal. It does not analyze what happened inside the replay or determine the cause of the result."
+      }
     },
     "reviewReport": {
       "title": "Performance review",

@@ -6,7 +6,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { renderReviewPlainText } from "@/components/analytics/review-text";
-import { computeAnalytics, type AnalyticsMatchRow } from "@/domain/analytics/aggregate";
+import { computeAnalyticsDetailed, type AnalyticsMatchRow } from "@/domain/analytics/aggregate";
 import { buildReviewReport } from "@/domain/analytics/review-report";
 import en from "@/i18n/messages/en.json";
 import es from "@/i18n/messages/es.json";
@@ -31,7 +31,7 @@ function data(
     characters: [{ characterKey: "aki", characterName: "A.K.I." }],
     from: null,
     generatedAt: new Date("2026-10-16T06:43:00Z"),
-    summary: computeAnalytics(rows, { character }),
+    ...computeAnalyticsDetailed(rows, { character }),
   };
 }
 const render = (d: PlayerAnalytics, locale: "es" | "en" = "es") =>

@@ -12,8 +12,10 @@
 import { CHARACTER_KEY_PATTERN, type CharacterKey, type MatchResult } from "@/domain/sf6/types";
 import { computeMatchupSection, type MatchupSection } from "./matchups";
 import { computeReviewSection, type ReviewSection } from "./review";
+import { computeReviewReplaySelections, type ReviewReplaySelection } from "./review-replays";
 import {
-  segmentSessionMatches,
+  aggregateSegment,
+  segmentSessionMatchRows,
   sessionAnalyticsOfSegments,
   type SessionAnalytics,
 } from "./sessions";
@@ -228,14 +230,41 @@ export function computeAnalytics(
   rows: readonly AnalyticsMatchRow[],
   options: { character?: CharacterKey | null } = {},
 ): AnalyticsSummary {
+  return computeAnalyticsDetailed(rows, options).summary;
+}
+
+export interface AnalyticsDetailed {
+  summary: AnalyticsSummary;
+  /**
+   * Replay Selection (Phase 6.4C): one entry per `summary.review.signals` item, same order. Kept
+   * OUT of the summary (and of ReviewReport / exports): it carries concrete replay ids.
+   */
+  reviewReplays: ReviewReplaySelection[];
+}
+
+/**
+ * computeAnalytics + Replay Selection from the SAME dataset in one pass: the row-aware session
+ * segments are built once and shared by session performance, review and replay selection.
+ */
+export function computeAnalyticsDetailed(
+  rows: readonly AnalyticsMatchRow[],
+  options: { character?: CharacterKey | null } = {},
+): AnalyticsDetailed {
   const all = [...rows].sort(newestFirst);
   const character = options.character ?? null;
   const newest = character ? all.filter((m) => m.characterKey === character) : all;
-  // Built once and shared by session performance and review (no recomputation).
+  // Built once and shared by session performance, review and replay selection.
   const matchups = computeMatchupSection(newest);
-  const segments = segmentSessionMatches(newest);
+  const rowSegments = segmentSessionMatchRows(newest);
+  const segments = rowSegments.map(aggregateSegment);
   const sessionPerformance = sessionAnalyticsOfSegments(segments);
-  return {
+  const review = computeReviewSection({
+    newest,
+    matchups,
+    segments,
+    halves: sessionPerformance.halves,
+  });
+  const summary: AnalyticsSummary = {
     character,
     overall: computeRecord(newest.map((m) => m.result)),
     recent: RECENT_WINDOWS.map((w) => computeRecentForm(newest, w)),
@@ -243,14 +272,17 @@ export function computeAnalytics(
     sessions: computeSessionCoverage(newest),
     matchups,
     sessionPerformance,
-    review: computeReviewSection({
-      newest,
-      matchups,
-      segments,
-      halves: sessionPerformance.halves,
-    }),
+    review,
     unknownModeMatches: newest.filter((m) => m.mode === "unknown").length,
     firstPlayedAt: newest[newest.length - 1]?.playedAt ?? null,
     lastPlayedAt: newest[0]?.playedAt ?? null,
+  };
+  return {
+    summary,
+    reviewReplays: computeReviewReplaySelections({
+      signals: review.signals,
+      newest,
+      segments: rowSegments,
+    }),
   };
 }

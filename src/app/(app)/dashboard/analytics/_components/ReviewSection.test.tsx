@@ -6,7 +6,11 @@
 import { NextIntlClientProvider } from "next-intl";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { computeAnalytics, type AnalyticsMatchRow } from "@/domain/analytics/aggregate";
+import {
+  computeAnalytics,
+  computeAnalyticsDetailed,
+  type AnalyticsMatchRow,
+} from "@/domain/analytics/aggregate";
 import { computeMatchupSection } from "@/domain/analytics/matchups";
 import { newestFirst } from "@/domain/analytics/record";
 import { computeSessionAnalytics } from "@/domain/analytics/sessions";
@@ -53,7 +57,7 @@ function data(rows: AnalyticsMatchRow[]): PlayerAnalytics {
     characters: [{ characterKey: "aki", characterName: "A.K.I." }],
     from: null,
     generatedAt: new Date(T0),
-    summary: computeAnalytics(rows),
+    ...computeAnalyticsDetailed(rows),
   };
 }
 const render = (rows: AnalyticsMatchRow[], locale: "es" | "en" = "es") =>

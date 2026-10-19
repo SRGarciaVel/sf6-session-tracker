@@ -71,14 +71,27 @@ function toSegment(sessionId: string, segmentIndex: number, rows: AnalyticsMatch
 }
 
 /**
- * Analytics segments of the dataset: grouped by real session_id (NULL excluded), in play order,
- * split where consecutive qualifying matches are ≥ `gapMs` apart. Segments are returned ordered
- * by first match (then session id), deterministic for any input order.
+ * A segment that keeps its ORIGINAL rows (play order). The single canonical segmentation: the
+ * aggregate AnalyticsSessionSegment is a projection of it, and Replay Selection (Phase 6.4C) reads
+ * the rows themselves.
  */
-export function segmentSessionMatches(
+export interface AnalyticsSessionMatchSegment {
+  sessionId: string;
+  segmentIndex: number;
+  /** Qualifying matches of the segment, oldest first (ties by external id ascending). */
+  rows: AnalyticsMatchRow[];
+}
+
+/**
+ * Analytics segments of the dataset WITH their rows: grouped by real session_id (NULL excluded),
+ * in play order, split where consecutive qualifying matches are ≥ `gapMs` apart. Segments are
+ * returned ordered by first match (then session id, then index), deterministic for any input
+ * order.
+ */
+export function segmentSessionMatchRows(
   rows: readonly AnalyticsMatchRow[],
   gapMs: number = SESSION_ANALYTICS_GAP_MS,
-): AnalyticsSessionSegment[] {
+): AnalyticsSessionMatchSegment[] {
   const bySession = new Map<string, AnalyticsMatchRow[]>();
   for (const m of rows) {
     if (m.sessionId === null) continue;
@@ -86,7 +99,7 @@ export function segmentSessionMatches(
     if (list) list.push(m);
     else bySession.set(m.sessionId, [m]);
   }
-  const segments: AnalyticsSessionSegment[] = [];
+  const segments: AnalyticsSessionMatchSegment[] = [];
   for (const [sessionId, list] of bySession) {
     list.sort(playOrder);
     let current: AnalyticsMatchRow[] = [];
@@ -94,19 +107,32 @@ export function segmentSessionMatches(
     for (const m of list) {
       const prev = current[current.length - 1];
       if (prev && m.playedAt.getTime() - prev.playedAt.getTime() >= gapMs) {
-        segments.push(toSegment(sessionId, index++, current));
+        segments.push({ sessionId, segmentIndex: index++, rows: current });
         current = [];
       }
       current.push(m);
     }
-    if (current.length > 0) segments.push(toSegment(sessionId, index, current));
+    if (current.length > 0) segments.push({ sessionId, segmentIndex: index, rows: current });
   }
   return segments.sort(
     (a, b) =>
-      a.firstPlayedAt.getTime() - b.firstPlayedAt.getTime() ||
+      a.rows[0]!.playedAt.getTime() - b.rows[0]!.playedAt.getTime() ||
       (a.sessionId < b.sessionId ? -1 : a.sessionId > b.sessionId ? 1 : 0) ||
       a.segmentIndex - b.segmentIndex,
   );
+}
+
+/** Aggregate projection of a row-aware segment (what session analytics and review read). */
+export function aggregateSegment(segment: AnalyticsSessionMatchSegment): AnalyticsSessionSegment {
+  return toSegment(segment.sessionId, segment.segmentIndex, segment.rows);
+}
+
+/** Aggregate analytics segments of the dataset (= segmentSessionMatchRows, projected). */
+export function segmentSessionMatches(
+  rows: readonly AnalyticsMatchRow[],
+  gapMs: number = SESSION_ANALYTICS_GAP_MS,
+): AnalyticsSessionSegment[] {
+  return segmentSessionMatchRows(rows, gapMs).map(aggregateSegment);
 }
 
 /** Median of finite values (mean of the two middle ones for even counts); null when empty. */

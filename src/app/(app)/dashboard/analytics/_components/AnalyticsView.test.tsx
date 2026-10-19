@@ -2,7 +2,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
-  computeAnalytics,
+  computeAnalyticsDetailed,
   type AnalyticsMatchRow,
   type AnalyticsMode,
   type AnalyticsRange,
@@ -44,7 +44,7 @@ function data(
     ],
     from: null,
     generatedAt: new Date(T0),
-    summary: computeAnalytics(rows, { character }),
+    ...computeAnalyticsDetailed(rows, { character }),
   };
 }
 

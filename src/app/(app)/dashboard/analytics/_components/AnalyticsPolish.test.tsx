@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { NextIntlClientProvider } from "next-intl";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { computeAnalytics, type AnalyticsMatchRow } from "@/domain/analytics/aggregate";
+import { computeAnalyticsDetailed, type AnalyticsMatchRow } from "@/domain/analytics/aggregate";
 import type { MatchResult } from "@/domain/sf6/types";
 import en from "@/i18n/messages/en.json";
 import es from "@/i18n/messages/es.json";
@@ -57,7 +57,7 @@ function manyOpponents(n: number): AnalyticsMatchRow[] {
 }
 
 function data(rows: AnalyticsMatchRow[], character: string | null = null): PlayerAnalytics {
-  const summary = computeAnalytics(rows, { character });
+  const { summary, reviewReplays } = computeAnalyticsDetailed(rows, { character });
   return {
     range: "90d",
     mode: "ranked",
@@ -69,6 +69,7 @@ function data(rows: AnalyticsMatchRow[], character: string | null = null): Playe
     from: null,
     generatedAt: new Date(T0),
     summary,
+    reviewReplays,
   };
 }
 const render = (d: PlayerAnalytics, locale: "es" | "en" = "es") =>
