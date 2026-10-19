@@ -656,7 +656,20 @@ function ThemeView({ config, live, viewLabel }: ThemeProps) {
   }
 }
 
-export function OverlayView({ config, live, sizing, brandRevealSignal = 0 }: OverlayViewProps) {
+/**
+ * Public overlay renderer: dispatches on the config KIND (Phase 5.4A). Same token, same payload
+ * `{ config, live }` for every kind; each kind owns its renderer (and its sizing strategy). Only
+ * the Session Stats overlay exists today; 5.4B adds its Rank Progress case here.
+ */
+export function OverlayView(props: OverlayViewProps) {
+  switch (props.config.kind) {
+    case "session":
+      return <SessionOverlayView {...props} />;
+  }
+}
+
+/** The Session Stats overlay (every overlay before 5.4A): themes, scope, rotation, motion, flag. */
+function SessionOverlayView({ config, live, sizing, brandRevealSignal = 0 }: OverlayViewProps) {
   const { rootRef, fit } = useFitToBox();
   // Creator motion (Phase 5.0): only an entitled owner's EFFECTIVE config carries `motion`;
   // Free, animations off and reduced motion all resolve to no profile (nothing extra renders).

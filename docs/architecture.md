@@ -656,6 +656,56 @@ never says why a match was won or lost: SST does not observe replay content.
 - **Custom CSS is deferred.** See §10 for how to add it safely. Creator customization, Creator
   themes and presets deliberately contain none.
 
+### Overlay kinds (Phase 5.4A — foundation)
+
+An overlay row is one **product**, chosen at creation: `OverlayKind` = `"session"` (Session Stats,
+every overlay so far) | `"rank-progress"` (**reserved** for 5.4B: not implemented, not creatable,
+nothing renders or edits it). The kind lives in `overlay.config` (`domain/overlay/kind.ts`); there
+is **no migration**, no new column and no config version bump.
+
+- **Legacy compatibility:** stored configs without `kind` ARE Session overlays.
+  - `parseOverlayConfig()` (still the single parser) dispatches by kind: none / `"session"` → the
+    Session parser, unchanged.
+  - Any other value, including the not-yet-implemented `"rank-progress"`, falls back to the safe
+    Session default, exactly like any other unusable config. No Creator block survives, so nothing
+    can bypass entitlement gating.
+  - Reading never rewrites a row. New overlays and every save write `kind: "session"`.
+- **Immutable kind:** `OverlayView.storedKind` is read from the RAW stored JSON (not the lenient
+  parse) and is authoritative for edits.
+  - A save needs an editable stored kind (`checkOverlayKindEdit`), and the editor schema only
+    accepts `kind: "session"` (missing = session for older clients).
+  - The save merge pins the stored kind, so a forged request cannot convert an overlay. To get
+    another kind, create another overlay.
+- **Same transport:** the same `/overlay/<token>`, `/state`, SSE stream and `{ config, live }`
+  payload for every kind (the config just carries its `kind`). No new endpoint, channel or query.
+- **Dispatch:**
+  - **Renderer:** `OverlayView` → `SessionOverlayView`, the previous component moved unchanged,
+    with its fit-to-box logic still Session-specific.
+  - **Builder:** `OverlayBuilder` → `SessionOverlayBuilder`.
+  - **Effective config:** `getEffectiveOverlayConfig` switches on kind, and the Session Creator
+    rules (premium-theme fallback, canvas normalization, motion / rotation / brand-flag gating,
+    variant stripping) apply only to Session configs.
+  - **Dashboard cards:** they read `overlayReadout(config)` instead of assuming Session fields.
+  - **Creation:** `createOverlayAction` takes a kind and accepts only `CREATABLE_OVERLAY_KINDS`
+    (Session today, so no picker is shown).
+- **Presets are Session presets.** New presets store the kind they were saved from, and legacy
+  presets (no kind) read as `"session"`. A preset applies only to an overlay of the same stored
+  kind (`incompatible_kind` otherwise), and the builder only lists presets of its kind.
+- **Evidence of no visible change:** a local matrix rendered 576 legacy configs through
+  parse → effective config → `OverlayView` on `main` and on this branch:
+  - 6 themes × 3 canvases;
+  - plain, character scope, Creator motion / rotation / modes / brand flag, and integrated
+    branding;
+  - entitled and Free owners;
+  - single- and multi-character state;
+  - viewport and box sizing.
+
+  The HTML was byte-identical.
+
+- **Rollback:** reverting to pre-5.4A code is safe today, since old code ignores `kind`. Once 5.4B
+  ships Rank Progress rows, old code would read them as Session configs. Remove or convert those
+  rows before rolling back, before anyone edits them with old code.
+
 ## 9. Security
 
 - Zod validation on every input: server actions, provider output, overlay config and env.

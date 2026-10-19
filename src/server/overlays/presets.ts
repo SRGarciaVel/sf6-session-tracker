@@ -15,6 +15,7 @@ import {
   appearanceFromConfig,
   applyPresetToConfig,
   parsePresetAppearance,
+  presetAppliesTo,
   type PresetAppearance,
 } from "@/domain/overlay/presets";
 import type { Database, DbExecutor } from "@/server/db/client";
@@ -32,7 +33,13 @@ export interface PresetView {
   updatedAt: Date;
 }
 
-export type PresetError = "not_entitled" | "not_found" | "limit" | "too_large";
+export type PresetError =
+  | "not_entitled"
+  | "not_found"
+  | "limit"
+  | "too_large"
+  /** Phase 5.4A: a preset applies only to an overlay of the same kind (Session presets today). */
+  | "incompatible_kind";
 export type PresetResult<T> = { ok: true; value: T } | { ok: false; error: PresetError };
 
 const ok = <T>(value: T): PresetResult<T> => ({ ok: true, value });
@@ -189,6 +196,8 @@ export async function applyPresetToOverlay(
   ]);
   const appearance = preset ? parsePresetAppearance(preset.config) : null;
   if (!appearance || !target) return err("not_found");
+  // Never across kinds; the overlay's STORED kind decides (not the lenient parse).
+  if (!presetAppliesTo(appearance, target.storedKind)) return err("incompatible_kind");
   const config = await prepareOverlayConfigForSave(db, {
     userId: input.userId,
     stored: target.config,

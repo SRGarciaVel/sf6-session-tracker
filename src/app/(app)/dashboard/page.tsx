@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { OVERLAY_PRESETS } from "@/domain/overlay/config";
+import { OVERLAY_PRESETS, overlayReadout } from "@/domain/overlay/config";
 import { requirePlayer } from "@/server/auth/session";
 import { buildDashboardLiveState } from "@/server/dashboard/state";
 import { getDb } from "@/server/db/client";
@@ -47,7 +47,9 @@ export default async function DashboardPage() {
     // Same effective config as OBS (Creator customization only while entitled).
     config: getEffectiveOverlayConfig(o.config, entitlements),
   }));
-  const firstPreset = OVERLAY_PRESETS[overlays[0]?.config.preset ?? "standard"];
+  const firstPreset = overlays[0]
+    ? overlayReadout(overlays[0].config).canvas
+    : OVERLAY_PRESETS.standard;
 
   // Not paired yet in companion mode: pairing is the first thing to do, so it leads the console.
   const { latestVersion, downloadUrl } = getCompanionRelease();

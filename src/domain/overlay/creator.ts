@@ -117,6 +117,8 @@ export interface OverlayCustomizationEntitlement {
 
 /** Fields of the overlay config this module reads (structural: avoids a cycle with config.ts). */
 interface CreatorAwareConfig {
+  /** Overlay kind (Phase 5.4A); absent in structural callers ⇒ the Session overlay. */
+  kind?: "session";
   theme: ThemeId;
   preset: OverlayCanvasId;
   creator?: CreatorCustomization;
@@ -132,6 +134,18 @@ interface CreatorAwareConfig {
  * canvas it supports (deterministic; the builder only offers those anyway).
  */
 export function getEffectiveOverlayConfig<C extends CreatorAwareConfig>(
+  stored: C,
+  entitlements: OverlayCustomizationEntitlement,
+): C {
+  // Per kind (Phase 5.4A): the Session Creator rules below never apply to another kind; 5.4B
+  // adds its own case. Exhaustive over the kinds a config can carry.
+  switch (stored.kind ?? "session") {
+    case "session":
+      return effectiveSessionConfig(stored, entitlements);
+  }
+}
+
+function effectiveSessionConfig<C extends CreatorAwareConfig>(
   stored: C,
   entitlements: OverlayCustomizationEntitlement,
 ): C {
@@ -236,7 +250,8 @@ export function mergeOverlayConfigForSave<C extends CreatorAwareConfig>(
       ? supportedCanvas(theme, incoming.preset)
       : incoming.preset;
 
-  const merged = { ...incoming, theme, preset };
+  // The stored kind is authoritative (immutable kind); callers reject a mismatch before this.
+  const merged = { ...incoming, ...(stored.kind ? { kind: stored.kind } : {}), theme, preset };
   delete merged.creator;
   delete merged.variants;
   return {

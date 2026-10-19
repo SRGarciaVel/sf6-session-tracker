@@ -13,9 +13,14 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   applyThemeDefaults,
-  DEFAULT_OVERLAY_CONFIG,
+  defaultOverlayConfigForKind,
   overlayConfigSchema,
 } from "@/domain/overlay/config";
+import {
+  checkOverlayKindEdit,
+  isCreatableOverlayKind,
+  type CreatableOverlayKind,
+} from "@/domain/overlay/kind";
 import { MATCH_MODES, MATCH_RESULTS } from "@/domain/sf6/types";
 import { fail, ok, type ActionResult } from "@/lib/action-result";
 import { getCurrentUser } from "@/server/auth/session";
@@ -99,12 +104,15 @@ const overlayNameSchema = z.string().trim().min(1).max(40);
 export async function createOverlayAction(
   rawName: string,
   theme: "minimal" | "competitive" | "fighter" = "competitive",
+  kind: CreatableOverlayKind = "session",
 ): Promise<ActionResult<{ overlayId: string }>> {
   const t = await getTranslations("Errors");
   const ctx = await authorizedPlayer();
   if (!ctx) return fail(t("sessionExpired"));
   const name = overlayNameSchema.safeParse(rawName);
   if (!name.success) return fail(t("overlayNameInvalid"));
+  // Kind is chosen at creation and never changes; only implemented kinds can be created.
+  if (!isCreatableOverlayKind(kind)) return fail(t("overlayKindUnsupported"));
   const themeParsed = z.enum(["minimal", "competitive", "fighter"]).safeParse(theme);
   if (!themeParsed.success) return fail(t("invalidTheme"));
 
@@ -120,7 +128,7 @@ export async function createOverlayAction(
     name.data,
     // New overlays start in the streamer's language; they can be changed independently later.
     {
-      ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, themeParsed.data),
+      ...applyThemeDefaults(defaultOverlayConfigForKind(kind), themeParsed.data),
       locale: await getRequestLocale(),
     },
   );
@@ -148,6 +156,14 @@ export async function saveOverlayAction(
   const db = getDb();
   const target = await getOwnedOverlay(db, ctx.user.id, overlayId);
   if (!target) return fail(t("overlayNotFound"));
+  // Kind is immutable: the stored kind must be editable and the request of the same kind (the
+  // schema already rejects any kind but "session"; this guards the stored side too).
+  const kindCheck = checkOverlayKindEdit(target.storedKind, config.data.kind);
+  if (!kindCheck.ok) {
+    return fail(
+      t(kindCheck.error === "kind_mismatch" ? "overlayKindMismatch" : "overlayKindUnsupported"),
+    );
+  }
   // Creator customization is persisted only for entitled owners; otherwise the stored block is
   // kept untouched (server-side; the editor's locked controls are only a convenience).
   const merged = await prepareOverlayConfigForSave(db, {
@@ -198,6 +214,8 @@ async function presetError(error: PresetError): Promise<string> {
       return t("presetLimit", { max: PRESETS_PER_ACCOUNT_MAX });
     case "too_large":
       return t("presetTooLarge");
+    case "incompatible_kind":
+      return t("presetIncompatibleKind");
     case "not_found":
       return t("presetNotFound");
   }

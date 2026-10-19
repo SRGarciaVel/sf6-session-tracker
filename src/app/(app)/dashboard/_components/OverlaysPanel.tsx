@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { OverlayView } from "@/components/overlay/OverlayView";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { Button, Dot, ErrorText, buttonClass } from "@/components/ui/primitives";
-import { OVERLAY_PRESETS, type OverlayConfig } from "@/domain/overlay/config";
+import { overlayReadout, type OverlayConfig } from "@/domain/overlay/config";
 import { createOverlayAction } from "../actions";
 import { useLiveDashboard } from "./LiveDashboard";
 
@@ -48,8 +48,8 @@ function MonitorPreview({ config }: { config: OverlayConfig }) {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const preset = OVERLAY_PRESETS[config.preset];
-  const height = Math.round((width * preset.height) / preset.width);
+  const { canvas } = overlayReadout(config);
+  const height = Math.round((width * canvas.height) / canvas.width);
   return (
     // "Program monitor": dark gameplay-ish backdrop with corner brackets.
     <div ref={ref} className="relative">
@@ -84,9 +84,12 @@ export function OverlaysPanel({ overlays }: { overlays: OverlaySummary[] }) {
   const create = () => {
     setError(null);
     startTransition(async () => {
+      // Kind is chosen at creation (Phase 5.4A); Session Stats is the only kind offered until
+      // another one is implemented, so no picker is shown yet.
       const res = await createOverlayAction(
         t("newOverlayName", { number: overlays.length + 1 }),
         "minimal",
+        "session",
       );
       if (res.ok) router.push(`/dashboard/overlays/${res.data.overlayId}`);
       else setError(res.error);
@@ -116,7 +119,7 @@ export function OverlaysPanel({ overlays }: { overlays: OverlaySummary[] }) {
       )}
       <ul className="mt-3 space-y-5">
         {overlays.map((o) => {
-          const preset = OVERLAY_PRESETS[o.config.preset];
+          const readout = overlayReadout(o.config);
           return (
             <li key={o.id} className="space-y-3">
               <div className="flex items-end justify-between gap-3">
@@ -138,21 +141,23 @@ export function OverlaysPanel({ overlays }: { overlays: OverlaySummary[] }) {
                 <div className="py-2 pr-2">
                   <dt className="hud-label text-xs">{t("canvas")}</dt>
                   <dd className="font-display text-base font-semibold tabular">
-                    {preset.width} × {preset.height}
+                    {readout.canvas.width} × {readout.canvas.height}
                   </dd>
                 </div>
                 <div className="border-l border-line px-3 py-2">
                   <dt className="hud-label text-xs">{t("language")}</dt>
                   <dd className="font-display text-base font-semibold">
-                    {tc(`languageNames.${o.config.locale}`)}
+                    {tc(`languageNames.${readout.locale}`)}
                   </dd>
                 </div>
-                <div className="border-l border-line py-2 pl-3">
-                  <dt className="hud-label text-xs">{tb("sectionTheme")}</dt>
-                  <dd className="font-display text-base font-semibold">
-                    {tb(`themes.${o.config.theme}.name`)}
-                  </dd>
-                </div>
+                {readout.theme !== null && (
+                  <div className="border-l border-line py-2 pl-3">
+                    <dt className="hud-label text-xs">{tb("sectionTheme")}</dt>
+                    <dd className="font-display text-base font-semibold">
+                      {tb(`themes.${readout.theme}.name`)}
+                    </dd>
+                  </div>
+                )}
               </dl>
 
               <label className="block">
