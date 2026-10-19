@@ -118,6 +118,21 @@ describe("ranking endpoint (same _next/data machinery)", () => {
     expect(rankingPaths(t.paths)).toHaveLength(1);
   });
 
+  it("a response for another page (current_page ≠ requested) is invalid, never used", async () => {
+    const page25 = fixtureJson("ranking-master-page-25.json");
+    const t = fixtureTransport("service_worker", {
+      "master.json?page=26&": {
+        status: 200,
+        contentType: "application/json",
+        text: JSON.stringify(page25),
+      },
+    });
+    const err = await new CompanionBucklerClient(t)
+      .getMasterRankingPage(CFN, 26)
+      .catch((e: unknown) => e);
+    expect((err as BucklerError).kind).toBe("invalid_response");
+  });
+
   it("a page that does not match the schema is invalid (never a silent success)", async () => {
     const t = fixtureTransport("service_worker", {
       "ranking/master.json": {
@@ -231,6 +246,70 @@ describe("cycle: cadence, eligibility, failure isolation, data minimization", ()
     expect(new Date(r.store.bucklerBackoffUntil!).getTime()).toBe(
       NOW.getTime() + COMPANION_POLLING.bucklerBackoffMs,
     );
+  });
+
+  it("ranking-only login refusal (403 app page) ⇒ Buckler NOT paused; ranking backs off 1 h", async () => {
+    const loginWall: RawResponse = {
+      status: 403,
+      contentType: "text/html",
+      text: '<script id="__NEXT_DATA__" type="application/json">{"page":"/ranking/master"}</script>',
+    };
+    const r = await run({ "play.json": ultimatePlay(), "ranking/master.json": loginWall });
+    expect(r.outcome).toBe("synced");
+    expect(r.tracker.sent[0]?.profile).not.toBeNull();
+    expect(r.store.bucklerStatus).toBe("ok");
+    expect(r.store.bucklerBackoffUntil).toBeNull();
+    expect(r.store.legendBackoffUntil).toBe(
+      new Date(NOW.getTime() + LEGEND_REFERENCE.refusalBackoffMs).toISOString(),
+    );
+    // 20 min later (past the 15 min attempt throttle): still no ranking request.
+    expect(
+      isLegendLookupDue(r.store, { cfnUserId: CFN, displayName: "x", characters: [] }, 0),
+    ).toBe(false);
+    const later = NOW.getTime() + 20 * 60_000;
+    const eligible = {
+      cfnUserId: CFN,
+      displayName: "x",
+      characters: [
+        {
+          characterKey: "ryu",
+          characterName: "Ryu",
+          rank: null,
+          rankTier: null,
+          ratingSystem: "mr" as const,
+          leaguePoints: 0,
+          masterRate: 2189,
+          leaderboardPosition: 530,
+        },
+      ],
+    };
+    expect(isLegendLookupDue(r.store, eligible, later)).toBe(false);
+    expect(isLegendLookupDue(r.store, eligible, NOW.getTime() + 61 * 60_000)).toBe(true);
+  });
+
+  it("ranking 429 ⇒ Buckler pause (site-level) AND the ranking backoff (≤ one pause per hour)", async () => {
+    const r = await run({
+      "play.json": ultimatePlay(),
+      "ranking/master.json": { status: 429, contentType: "application/json", text: "{}" },
+    });
+    expect(r.store.bucklerStatus).toBe("rate_limited");
+    expect(r.store.legendBackoffUntil).toBe(
+      new Date(NOW.getTime() + LEGEND_REFERENCE.refusalBackoffMs).toISOString(),
+    );
+  });
+
+  it("a successful lookup clears the ranking backoff; unpairing forgets it", async () => {
+    const r = await run(
+      { "play.json": ultimatePlay() },
+      { legendBackoffUntil: ago(1), legendAttemptAt: ago(LEGEND_REFERENCE.refreshMs) },
+    );
+    expect(r.tracker.sent[0]?.legend).toBeDefined();
+    expect(r.store.legendBackoffUntil).toBeNull();
+    const st = await storage({ legendBackoffUntil: ago(-60_000), legendAttemptAt: ago(1) });
+    await st.resetPairing();
+    const reset = await st.load();
+    expect(reset.legendBackoffUntil).toBeNull();
+    expect(reset.legendAttemptAt).toBeNull();
   });
 
   it("boundary not provable within the cap ⇒ nothing sent, never a guess", async () => {

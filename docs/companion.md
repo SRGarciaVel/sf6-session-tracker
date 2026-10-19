@@ -209,10 +209,35 @@ SST (autoritativo)
   - **Minimización:** las filas del ranking se reducen a números al parsear y se descartan en la
     Companion. Nunca se envían filas, nombres, CFN de otros jugadores ni JSON de Buckler.
   - **Fallos:** un 5xx, una página inválida o una frontera no demostrada no afectan al sync (perfil y
-    partidas se envían igual). Un 401/403/429 del ranking pausa Buckler como cualquier otro rechazo
-    (afecta a toda la sesión de Buckler), pero **después** de enviar lo ya descargado en ese ciclo.
+    partidas se envían igual) y se reintentan como pronto a los 15 min. Un 401/403 de login **solo
+    del ranking** (justo después de que `play.json` funcionara con la misma sesión) no pausa Buckler:
+    solo aplaza el ranking 1 h. Un bloqueo WAF (403 sin `__NEXT_DATA__`) o un 429 pausan Buckler
+    10 min como cualquier otro rechazo, **después** de enviar lo ya descargado, y además aplazan el
+    ranking 1 h (como mucho una pausa por hora aunque el bloqueo sea solo del ranking).
   - **Compatibilidad:** el servidor acepta payloads sin `legend` ni puestos (Companion 0.3.0). Como
     la raíz es estricta, **primero se despliega el servidor**; después la Companion nueva.
+
+### Smoke test manual de Legend (Fase 5.4C, pendiente con sesión real)
+
+No verificado aún con una sesión de Buckler real (la forma del ranking viene de la captura del
+2026-10-19 documentada en el prompt de la fase; los fixtures son reconstrucciones saneadas). Con
+una cuenta que tenga un personaje Ultimate Master (MR ≥ 1800), en un navegador con sesión de Buckler:
+
+1. Carga la build nueva (unpacked) y empareja contra un entorno de pruebas del tracker (nunca
+   compartas cookies ni el HAR).
+2. `chrome://extensions` → service worker de la Companion → pestaña **Network**; pulsa
+   «Sincronizar ahora».
+3. **PASS** si: aparece `…/_next/data/<buildId>/<locale>/ranking/master.json?page=25&season_type=1`
+   (y como mucho 4 páginas más) con 200; el POST `/api/companion/sync` lleva
+   `legend: { cutoffMr, lastLegendPosition ≤ 500, firstNonLegendPosition > 500, firstNonLegendMr }`
+   y `profile.characters[].leaderboardPosition` para los personajes MR; el cuerpo del POST no
+   contiene `ranking_fighter_list`, nombres ni CFN de otros jugadores; no hay cabeceras
+   `Cookie`/`Authorization` hacia el tracker; un segundo «Sincronizar ahora» antes de 15 min no
+   vuelve a pedir el ranking.
+4. **FAIL** (anótalo sin pegar cuerpos ni cabeceras): 401/403/404 persistentes en `ranking/master`,
+   `legend` ausente con un personaje ≥ 1800, `current_page` distinto del pedido, o filas con
+   `master_rating_ranking` no ordenado. Comprueba también que el overlay Rank Progress muestra el
+   puesto `#N` y, con un corte reciente, «N MR para el corte actual».
 
 ## 8. Datos que NUNCA se envían
 

@@ -800,7 +800,11 @@ leaderboardPosition })`). Ties share a position and skip the next ones (observed
   ≤ 500 to > 500 is observed inside one page or across two consecutive pages; cutoff = minimum MR
   of the Legend rows at that boundary. Bounded search: start on the page that should hold #500
   (20 rows/page observed; corrected once from the real page size), step ±1, at most 5 pages,
-  otherwise unavailable — never guessed. `master_league` is diagnostic only.
+  otherwise unavailable — never guessed. `master_league` is diagnostic only. Competition-ranking
+  check at the boundary: when the last Legend tie group's start is observed, the jump to the next
+  position must equal the group size (493×4 → 497, 497×8 → 505); otherwise rows are missing
+  (truncated page) and nothing is trusted. A group missing at the very start of the observed
+  window is not detectable from positions alone.
 - **Cadence:** only for a profile with an MR ≥ 1800 character that is not already Legend, at most
   every 15 min (attempts included), never on the 30 s battlelog beat, never coupled to a session.
 - **Transport / storage:** additive optional `legend` object in the sync (four numbers; strict).
@@ -810,17 +814,30 @@ leaderboardPosition })`). Ties share a position and skip the next ones (observed
   purpose (no singleton, scheduler, worker or cross-account dependency); each relevant Companion
   refreshes its own copy infrequently. No history table.
 - **Freshness** (one module, `capcom-core/legend.ts`): fresh while age ≤ 30 min (inclusive), stale
-  after. Decided in the domain projection with an injected clock; the OBS page follows a minute
-  clock so a cutoff ages out without new snapshots. Stale / missing ⇒ the 5.4B Ultimate Master
-  terminal ("Legend · Top 500 required"), never a numeric cutoff.
+  after. Decided in the domain projection with an injected clock. The renderer's clock runs on
+  the SERVER timeline (`generatedAt` + time elapsed since the snapshot arrived, so the OBS
+  machine's clock never matters) and is re-evaluated exactly at the edges of the cutoff's fresh
+  window (`legendCutoffFreshWindow`): a source left open with no new snapshot drops a stale cutoff
+  the moment it expires (pre-merge fix: a minute-rounded tick lagged up to ~2 min). Stale /
+  missing ⇒ the 5.4B Ultimate Master terminal ("Legend · Top 500 required"), never a numeric
+  cutoff. Authoritative Legend never depends on the cutoff.
 - **Rank Progress states (MR):** below 1800 unchanged. ≥ 1800 and not Legend: `legend-chase` (bar
   1800 → cutoff, "N MR to current cutoff", never "to Legend") when MR < fresh cutoff;
   `legend-boundary` (no bar, "Current Legend cutoff X MR · Top 500 required") when MR ≥ fresh
   cutoff — reaching the number never makes anyone Legend; `ultimate-master` without a fresh
   cutoff. Authoritative position ≤ 500 ⇒ terminal `legend` (#position, no bar). LP unchanged.
 - **Failure isolation:** a ranking failure never fails the Companion sync (profile and matches
-  are still sent); 401/403/429 pause Buckler like any other refusal, after this cycle's data is
-  reported.
+  are still sent). A ranking login refusal (401 / 403 app page) right after `play.json` succeeded
+  with the same session is ranking-specific: ranking-only backoff of 1 h, Buckler keeps working.
+  A WAF block (403 without `__NEXT_DATA__`) or 429 is a site / IP-level signal: the usual 10 min
+  Buckler pause (after this cycle's data is reported) plus the 1 h ranking backoff, so even a
+  persistent ranking-only refusal costs at most one pause per hour. Other failures (5xx, invalid,
+  404 after the buildId retry): the 15 min attempt throttle (persisted before the tracker call,
+  so restarts and tracker outages never cause extra lookups).
+- **Ordering caveat (pre-existing, not specific to 5.4C):** profile and cutoff writes are ordered
+  by server ACCEPTANCE time, as the MR always was; a request delayed in flight by seconds from a
+  second paired browser can overwrite data observed seconds later. The position always moves
+  with its own MR, and client timestamps never affect ordering or freshness.
 - **Query impact:** none. `buildPlayerLiveState` already reads the player row (`findPlayerById`)
   and the character rows (`listPlayerCharacters`); the new columns ride on them. No new route,
   channel or polling; pool unchanged (`max: 5`).
@@ -828,6 +845,13 @@ leaderboardPosition })`). Ties share a position and skip the next ones (observed
   reference. It never stores or receives leaderboard rows, other players' names / CFNs / clubs,
   or raw ranking pages.
 - **Migration** `0011_legend_reference`: additive nullable columns only, no backfill.
+- **Rollout** (production migrations are explicit, never run by the Render build):
+  1. `DATABASE_URL=<admin url> pnpm db:migrate` (0011; table-level grants of `sf6_app` already
+     cover new columns); 2. deploy web (+ worker) from `main`; 3. verify a 0.3.0 Companion still
+     syncs (`companion_sync` logs, `legend: "absent"`) and Session / Rank Progress overlays render;
+  2. bump the Companion to 0.4.0 and run the release workflow; 5. set
+     `COMPANION_LATEST_VERSION=0.4.0`; 6. with an Ultimate Master account, confirm
+     `legend: "reported"` in the logs, `sf6_player.legend_cutoff_*` set and the OBS chase.
 - **Rollback:** code can be reverted with the columns in place (old code ignores them; old
   Companions keep syncing). Companions ≥ the Legend release must not talk to an older server
   (strict sync root rejects `legend`): roll the Companion back first, or keep the server.

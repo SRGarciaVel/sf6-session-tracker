@@ -156,6 +156,31 @@ describe.skipIf(!TEST_DB)("Legend reference (integration)", () => {
     expect(await rating("ryu")).toMatchObject({ masterRate: 2201, masterRatingRanking: null });
   });
 
+  it("a client timestamp can't extend freshness: the server stores ITS acceptance time", async () => {
+    const { userId, playerRow } = await setup();
+    const [device] = await db
+      .select()
+      .from(companionDevice)
+      .where(eq(companionDevice.userId, userId));
+    const future = new Date(T0.getTime() + 365 * 86_400_000).toISOString();
+    const res = await applyCompanionSync(
+      db,
+      device!,
+      core.companionSyncRequestSchema.parse({
+        cfnUserId: CFN,
+        observedAt: future, // client-asserted, ignored for ordering / freshness
+        profile: null,
+        matches: [],
+        gapSuspected: false,
+        legend: boundary,
+        client: { version: "0.4.0", transport: "service_worker" },
+      }),
+      T0,
+    );
+    expect(res.ok).toBe(true);
+    expect((await playerRow()).legendCutoffObservedAt).toEqual(T0);
+  });
+
   it("legend ordering: an earlier acceptance never overwrites a later one", async () => {
     const { player, playerRow, sync } = await setup();
     const later = new Date(T0.getTime() + 5 * 60_000);

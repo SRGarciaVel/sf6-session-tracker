@@ -19,6 +19,7 @@ import {
   findLegendBoundary,
   isLegendCutoffFresh,
   isLegendPosition,
+  legendCutoffFreshWindow,
   isLegendReferenceEligible,
   nextLegendSearchStep,
 } from "../src/legend";
@@ -253,6 +254,36 @@ describe("tie-safe boundary (position field only)", () => {
     expect(findLegendBoundary([page(25, [[497, 2196]]), page(25, [[505, 2195]])])).toBeNull();
   });
 
+  it("a truncated page (rows missing at the boundary) is never trusted", () => {
+    // 497×8 expected before #505; only 6 present ⇒ rows missing ⇒ the cutoff could be wrong.
+    const truncated: Array<[number, number]> = [
+      [493, 2197],
+      ...Array.from({ length: 6 }, () => [497, 2196] as [number, number]),
+      [505, 2195],
+    ];
+    expect(findLegendBoundary([page(25, truncated)])).toBeNull();
+    // Missing the WHOLE #497 group: …, 493×4 then #505 (jump 12 ≠ 4).
+    const missingGroup: Array<[number, number]> = [
+      [490, 2199],
+      ...Array.from({ length: 4 }, () => [493, 2197] as [number, number]),
+      [505, 2195],
+    ];
+    expect(findLegendBoundary([page(25, missingGroup)])).toBeNull();
+  });
+
+  it("a tie group that may continue from an unfetched earlier page is accepted when ≤ the jump", () => {
+    const startsWithTies: Array<[number, number]> = [
+      ...Array.from({ length: 3 }, () => [497, 2196] as [number, number]),
+      [505, 2195],
+    ];
+    expect(findLegendBoundary([page(26, startsWithTies)])).toMatchObject({ cutoffMr: 2196 });
+    const tooMany: Array<[number, number]> = [
+      ...Array.from({ length: 9 }, () => [497, 2196] as [number, number]),
+      [505, 2195],
+    ];
+    expect(findLegendBoundary([page(26, tooMany)])).toBeNull(); // 9 tied rows cannot precede #505
+  });
+
   it("duplicate (tied) rows are fine; master_league disagreement is only diagnostic", () => {
     const b = findLegendBoundary([
       {
@@ -304,6 +335,48 @@ describe("bounded page search", () => {
     });
   });
 
+  it("a stale page-size hint (10, real 20) is corrected with one jump back", () => {
+    expect(nextLegendSearchStep([], { pageSizeHint: 10 })).toEqual({ kind: "fetch", page: 50 });
+    const p50 = page(
+      50,
+      Array.from({ length: 20 }, (_, i) => [981 + i, 1990 - i] as [number, number]),
+    );
+    expect(nextLegendSearchStep([p50], { pageSizeHint: 10 })).toEqual({ kind: "fetch", page: 25 });
+  });
+
+  it("an inconsistent total_page (0 / below the page) never extends the search", () => {
+    expect(
+      nextLegendSearchStep([
+        page(
+          25,
+          [
+            [480, 2210],
+            [481, 2209],
+          ],
+          0,
+        ),
+      ]),
+    ).toEqual({
+      kind: "unavailable",
+      reason: "out_of_range",
+    });
+    expect(
+      nextLegendSearchStep([
+        page(
+          25,
+          [
+            [480, 2210],
+            [481, 2209],
+          ],
+          25,
+        ),
+      ]),
+    ).toEqual({
+      kind: "unavailable",
+      reason: "out_of_range",
+    });
+  });
+
   it("smaller pages (10 rows) start at page 50 when hinted", () => {
     expect(nextLegendSearchStep([], { pageSizeHint: 10 })).toEqual({ kind: "fetch", page: 50 });
   });
@@ -341,6 +414,16 @@ describe("bounded page search", () => {
 describe("freshness (injected clock)", () => {
   const at = Date.parse("2026-10-19T12:00:00Z");
   const iso = (msAgo: number) => new Date(at - msAgo).toISOString();
+  it("fresh window edges are exact (for renderers that re-evaluate at the edges)", () => {
+    const t = Date.parse("2026-10-19T11:40:00Z");
+    expect(legendCutoffFreshWindow(new Date(t).toISOString())).toEqual({
+      from: t - LEGEND_REFERENCE.futureToleranceMs,
+      until: t + LEGEND_REFERENCE.freshMs,
+    });
+    expect(legendCutoffFreshWindow("nope")).toBeNull();
+    expect(legendCutoffFreshWindow(null)).toBeNull();
+  });
+
   it("≤ 30 min fresh (inclusive), > 30 min stale", () => {
     expect(isLegendCutoffFresh(iso(10 * 60_000), at)).toBe(true);
     expect(isLegendCutoffFresh(iso(30 * 60_000), at)).toBe(true);

@@ -74,6 +74,8 @@ export interface CompanionStore {
   legendAttemptAt: string | null;
   /** Rows per Master leaderboard page seen last time (better first guess next time). */
   legendPageSize: number | null;
+  /** Ranking-only backoff after the leaderboard refused (401 / 403 / 429); null = none. */
+  legendBackoffUntil: string | null;
 }
 
 export const DEFAULT_STORE: CompanionStore = {
@@ -95,6 +97,7 @@ export const DEFAULT_STORE: CompanionStore = {
   lastTest: null,
   legendAttemptAt: null,
   legendPageSize: null,
+  legendBackoffUntil: null,
 };
 
 /** Minimal async key-value area; chrome.storage.local in the extension, a Map in tests. */
@@ -129,6 +132,7 @@ export class CompanionStorage {
       "lastProfileAt",
       "lastMatchAt",
       "legendAttemptAt",
+      "legendBackoffUntil",
     ]);
     await this.area.set({ trackerStatus: "unpaired" });
   }

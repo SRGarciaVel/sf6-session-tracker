@@ -69,15 +69,21 @@ export function computeDueWork(
   };
 }
 
-/** Legend-boundary lookup due? Eligible profile (fetched this cycle) and ≥ 15 min since the last ATTEMPT. */
+/**
+ * Legend-boundary lookup due? Eligible profile (fetched this cycle), ≥ 15 min since the last
+ * ATTEMPT, and no ranking-only backoff after a refusal.
+ */
 export function isLegendLookupDue(
-  store: Pick<CompanionStore, "legendAttemptAt">,
+  store: Pick<CompanionStore, "legendAttemptAt"> &
+    Partial<Pick<CompanionStore, "legendBackoffUntil">>,
   profile: NormalizedPlayerProfile | null,
   nowMs: number,
 ): boolean {
+  const backoff = store.legendBackoffUntil ? Date.parse(store.legendBackoffUntil) : Number.NaN;
   return (
     isLegendReferenceEligible(profile) &&
-    since(store.legendAttemptAt, nowMs) >= LEGEND_REFERENCE.refreshMs
+    since(store.legendAttemptAt, nowMs) >= LEGEND_REFERENCE.refreshMs &&
+    !(backoff > nowMs)
   );
 }
 
@@ -257,18 +263,24 @@ export async function runCycle(deps: CycleDeps, manual = false): Promise<CycleOu
   /*
    * 2b. Optional Legend reference (Phase 5.4C): only for an Ultimate Master profile, at most every
    * 15 min (attempts included). It never fails the cycle: profile + matches are synced anyway.
-   * A refusal (login / 403 / 429) pauses Buckler like any other refusal — it concerns the whole
-   * Buckler session — but only AFTER this cycle's already-fetched data is reported.
+   * Refusals of this OPTIONAL request:
+   *   login_required (401 / 403 app page) right after play.json succeeded with the same browser
+   *     session ⇒ ranking-specific: ranking-only backoff (1 h), Buckler keeps working;
+   *   blocked (WAF 403) / rate_limited (429) ⇒ site / IP-level signals: the usual Buckler pause
+   *     (after this cycle's data is reported) AND the ranking-only backoff, so even a persistent
+   *     ranking-only block costs at most one pause per hour, never most of every 15 min.
    */
   let legend: LegendBoundary | null = null;
   let legendRefusal: BucklerError | null = null;
   let legendPageSize = store.legendPageSize;
+  let legendBackoffUntil = store.legendBackoffUntil;
   const legendDue = isLegendLookupDue(store, profile, nowMs);
   if (legendDue) {
     const lookup = await lookupLegendBoundary(deps.buckler, cfnUserId, store.legendPageSize);
     if (lookup.kind === "found") {
       legend = lookup.boundary;
       legendPageSize = lookup.pageSize ?? legendPageSize;
+      legendBackoffUntil = null;
       if (!lookup.boundary.leagueConsistent) log("companion_legend_league_mismatch", {});
     } else if (lookup.kind === "unavailable") {
       legendPageSize = lookup.pageSize ?? legendPageSize;
@@ -276,13 +288,18 @@ export async function runCycle(deps: CycleDeps, manual = false): Promise<CycleOu
     } else {
       const kind = lookup.error instanceof BucklerError ? lookup.error.kind : "unavailable";
       if (kind === "login_required" || kind === "blocked" || kind === "rate_limited") {
-        legendRefusal = lookup.error as BucklerError;
+        legendBackoffUntil = new Date(nowMs + LEGEND_REFERENCE.refusalBackoffMs).toISOString();
+        if (kind !== "login_required") legendRefusal = lookup.error as BucklerError;
       }
       log("companion_legend_failed", { kind, pages: lookup.pages });
     }
     // Recorded at once (not after the tracker answers): a tracker outage must not turn into a
     // leaderboard lookup on every cycle.
-    await deps.storage.patch({ legendAttemptAt: now().toISOString(), legendPageSize });
+    await deps.storage.patch({
+      legendAttemptAt: now().toISOString(),
+      legendPageSize,
+      legendBackoffUntil,
+    });
   }
 
   const normalized = normalizeCapcomMatches(replays, { trackedCfnId: cfnUserId, now: now() });

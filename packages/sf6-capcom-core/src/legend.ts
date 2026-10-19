@@ -26,6 +26,8 @@ export const LEGEND_REFERENCE = {
   maxPages: 5,
   /** First guess of rows per page (observed: 20). Corrected from the actual responses. */
   assumedPageSize: 20,
+  /** Companion: ranking-only backoff after the leaderboard refused (401 / 403 / 429). */
+  refusalBackoffMs: 60 * 60_000,
   /** Clock skew tolerated for a cutoff observed "in the future" before it is distrusted. */
   futureToleranceMs: 5 * 60_000,
 } as const;
@@ -101,6 +103,15 @@ export function findLegendBoundary(pages: readonly MasterRankingPage[]): LegendB
     const lastLegend = legend[legend.length - 1]!;
     const cutoffMr = Math.min(...legend.map((r) => r.rating));
     if (first.rating > cutoffMr) return null; // inconsistent ordering at the boundary
+    // Competition ranking (observed: 493×4 → 497, 497×8 → 505): the jump after a tie group equals
+    // its size. When the group's start is observed, a different jump means rows are missing
+    // (truncated / partial page) and the cutoff could be wrong: never trusted. When the group may
+    // continue from an unfetched earlier page, it can only be smaller than the jump (a group missing
+    // at the very start of the observed window is not detectable from positions alone).
+    const tied = legend.filter((r) => r.position === lastLegend.position).length;
+    const gap = first.position - lastLegend.position;
+    const groupStartObserved = legend.length > tied;
+    if (groupStartObserved ? tied !== gap : tied > gap) return null;
     const legendLeagues = new Set(legend.map((r) => r.masterLeague));
     const outside = window.slice(split).map((r) => r.masterLeague);
     return {
@@ -174,9 +185,20 @@ export function nextLegendSearchStep(
  * boundary itself is fresh); older, unparsable, or too far in the future = stale.
  */
 export function isLegendCutoffFresh(observedAt: string | Date | null, nowMs: number): boolean {
-  if (observedAt === null) return false;
+  const window = legendCutoffFreshWindow(observedAt);
+  return window !== null && nowMs >= window.from && nowMs <= window.until;
+}
+
+/**
+ * The exact instants (ms) between which a stored cutoff is fresh: [observedAt − future tolerance,
+ * observedAt + freshMs], both inclusive. Lets a long-open renderer re-evaluate precisely at the
+ * edges instead of on a coarse tick. null = unusable timestamp (never fresh).
+ */
+export function legendCutoffFreshWindow(
+  observedAt: string | Date | null,
+): { from: number; until: number } | null {
+  if (observedAt === null) return null;
   const t = typeof observedAt === "string" ? Date.parse(observedAt) : observedAt.getTime();
-  if (!Number.isFinite(t)) return false;
-  const age = nowMs - t;
-  return age >= -LEGEND_REFERENCE.futureToleranceMs && age <= LEGEND_REFERENCE.freshMs;
+  if (!Number.isFinite(t)) return null;
+  return { from: t - LEGEND_REFERENCE.futureToleranceMs, until: t + LEGEND_REFERENCE.freshMs };
 }

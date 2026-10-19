@@ -4,7 +4,8 @@
  * Two Free styles (Broadcast, Compact); SST shapes and text only (no official rank artwork).
  */
 import { useTranslations } from "next-intl";
-import { useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { legendCutoffFreshWindow } from "@sf6/capcom-core/legend";
 import { formatInteger } from "@/domain/format";
 import { hexToRgba } from "@/domain/overlay/config";
 import {
@@ -71,36 +72,39 @@ export function rankProgressRootClass(config: RankProgressOverlayConfig): string
 /** MR / LP are official game terms: not translated. */
 const unit = (system: RatingSystemId) => (system === "mr" ? "MR" : "LP");
 
-/** Minute clock shared by every Rank Progress overlay on the page (one interval at most). */
-const minuteClock = {
-  listeners: new Set<() => void>(),
-  timer: null as ReturnType<typeof setInterval> | null,
-  subscribe(listener: () => void) {
-    minuteClock.listeners.add(listener);
-    minuteClock.timer ??= setInterval(() => minuteClock.listeners.forEach((l) => l()), 60_000);
-    return () => {
-      minuteClock.listeners.delete(listener);
-      if (minuteClock.listeners.size === 0 && minuteClock.timer !== null) {
-        clearInterval(minuteClock.timer);
-        minuteClock.timer = null;
-      }
-    };
-  },
-  /** Stable within a minute (a snapshot must not change on every read). */
-  now: () => Math.floor(Date.now() / 60_000) * 60_000,
-};
+/** setTimeout's maximum delay (≈ 24.8 days); longer waits are clamped. */
+const MAX_TIMEOUT_MS = 2_147_483_647;
 
 /**
- * Clock for the Legend cutoff freshness decision (made in the domain, not here). Server render and
- * hydration use the snapshot time; the browser then follows the real clock minute by minute, so a
- * cutoff ages into "stale" in OBS even when no new snapshot arrives.
+ * Clock for the Legend cutoff freshness decision (the decision itself is in the domain). It runs
+ * on the SERVER timeline: the snapshot's `generatedAt` plus the time elapsed since this snapshot
+ * reached the browser, so the OBS machine's own clock (possibly skewed) never matters. It is
+ * re-evaluated EXACTLY at the edges of the cutoff's fresh window, so a source left open with no
+ * new snapshot (Companion disconnected, overnight) drops a stale cutoff the moment it expires.
+ * Server render and hydration use `generatedAt` itself (identical markup).
  */
-function useFreshnessClock(generatedAt: string): number {
-  return useSyncExternalStore(
-    minuteClock.subscribe,
-    minuteClock.now,
-    () => Date.parse(generatedAt) || 0,
-  );
+function useFreshnessClock(
+  generatedAt: string,
+  window: { from: number; until: number } | null,
+): number {
+  const base = Date.parse(generatedAt) || 0;
+  const [tick, setTick] = useState({ base, now: base });
+  const from = window?.from ?? null;
+  const until = window?.until ?? null;
+  useEffect(() => {
+    const receivedAt = Date.now();
+    const serverNow = () => base + (Date.now() - receivedAt);
+    const timers = [from, until]
+      .filter((edge): edge is number => edge !== null)
+      .map((edge) => edge - serverNow() + 1)
+      .filter((wait) => wait > 0)
+      .map((wait) =>
+        setTimeout(() => setTick({ base, now: serverNow() }), Math.min(wait, MAX_TIMEOUT_MS)),
+      );
+    return () => timers.forEach(clearTimeout);
+  }, [base, from, until]);
+  // A newer snapshot restarts the clock from its own generatedAt.
+  return tick.base === base ? tick.now : base;
 }
 
 export function RankProgressPanel({
@@ -110,7 +114,10 @@ export function RankProgressPanel({
   config: RankProgressOverlayConfig;
   live: PlayerLiveState;
 }) {
-  const nowMs = useFreshnessClock(live.generatedAt);
+  const nowMs = useFreshnessClock(
+    live.generatedAt,
+    legendCutoffFreshWindow(live.legendCutoff?.observedAt ?? null),
+  );
   const view = resolveRankProgressView(live.session, config, {
     legendCutoff: live.legendCutoff ?? null,
     nowMs,
