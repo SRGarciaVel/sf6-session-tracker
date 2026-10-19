@@ -1,6 +1,6 @@
 /**
- * Phase 5.4A — overlay kind foundation: legacy configs (no kind) ARE Session overlays, the kind is
- * immutable, unknown kinds fail safe, and Session presets never cross kinds.
+ * Phase 5.4A/B — overlay kinds: legacy configs (no kind) ARE Session overlays, the kind is
+ * immutable (both directions), unknown kinds fail safe, and Session presets never cross kinds.
  */
 import { describe, expect, it } from "vitest";
 import { DEFAULT_BRAND_FLAG } from "./brand-flag";
@@ -12,7 +12,8 @@ import {
   overlayConfigSchema,
   overlayReadout,
   parseOverlayConfig,
-  type OverlayConfig,
+  sessionConfigOf,
+  type SessionOverlayConfig,
 } from "./config";
 import {
   DEFAULT_CREATOR_CUSTOMIZATION,
@@ -56,13 +57,13 @@ const NONE = {
 };
 
 /** A stored row as the DB holds it before 5.4A: no `kind`. */
-function legacy(config: OverlayConfig): Record<string, unknown> {
+function legacy(config: SessionOverlayConfig): Record<string, unknown> {
   const raw: Record<string, unknown> = { ...config };
   delete raw.kind;
   return raw;
 }
 
-const creatorConfig: OverlayConfig = {
+const creatorConfig: SessionOverlayConfig = {
   ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, "rank-card"),
   creator: {
     ...DEFAULT_CREATOR_CUSTOMIZATION,
@@ -74,12 +75,13 @@ const creatorConfig: OverlayConfig = {
 };
 
 describe("kinds", () => {
-  it("session is the only creatable kind; rank-progress is reserved", () => {
+  it("session and rank-progress are both creatable (Phase 5.4B); nothing else is", () => {
     expect(OVERLAY_KINDS).toEqual(["session", "rank-progress"]);
-    expect(CREATABLE_OVERLAY_KINDS).toEqual(["session"]);
+    expect(CREATABLE_OVERLAY_KINDS).toEqual(["session", "rank-progress"]);
     expect(isCreatableOverlayKind("session")).toBe(true);
-    expect(isCreatableOverlayKind("rank-progress")).toBe(false);
+    expect(isCreatableOverlayKind("rank-progress")).toBe(true);
     expect(isCreatableOverlayKind("evil-widget")).toBe(false);
+    expect(isCreatableOverlayKind(null)).toBe(false);
   });
 
   it("stored kind: missing ⇒ session (legacy); known ⇒ itself; anything else ⇒ null", () => {
@@ -114,18 +116,20 @@ describe("parseOverlayConfig (single public parser)", () => {
     expect(parseOverlayConfig(null)).toEqual(DEFAULT_SESSION_OVERLAY_CONFIG);
   });
 
-  it("4. unknown / reserved kinds fail safe: Session default, never their own fields", () => {
-    for (const kind of ["evil-widget", "rank-progress", 42]) {
+  it("4. unknown kinds fail safe: Session default, never their own fields, never Rank Progress", () => {
+    for (const kind of ["evil-widget", "RANK-PROGRESS", "rank_progress", 42, null]) {
       const parsed = parseOverlayConfig({ ...legacy(creatorConfig), kind });
       expect(parsed).toEqual(DEFAULT_SESSION_OVERLAY_CONFIG);
       // No Creator block survives ⇒ nothing to bypass entitlement gating with.
-      expect(parsed.creator).toBeUndefined();
+      expect(sessionConfigOf(parsed)?.creator).toBeUndefined();
       expect(getEffectiveOverlayConfig(parsed, ALL)).toEqual(DEFAULT_SESSION_OVERLAY_CONFIG);
     }
   });
 
   it("5. old Creator configs without kind still parse (Creator block, variants, scope)", () => {
-    const parsed = parseOverlayConfig({ ...legacy(creatorConfig), statsScope: "character" });
+    const parsed = sessionConfigOf(
+      parseOverlayConfig({ ...legacy(creatorConfig), statsScope: "character" }),
+    )!;
     expect(parsed.kind).toBe("session");
     expect(parsed.creator).toEqual(creatorConfig.creator);
     expect(parsed.theme).toBe("rank-card");
@@ -168,7 +172,7 @@ describe("creation defaults", () => {
       accentColor: "#2fe0ff",
       backgroundOpacity: 0.82,
     });
-    expect(applyThemeDefaults(created, "minimal").kind).toBe("session");
+    expect(applyThemeDefaults(DEFAULT_SESSION_OVERLAY_CONFIG, "minimal").kind).toBe("session");
   });
 
   it("readout for dashboard cards is kind-aware (Session: canvas, language, theme)", () => {
@@ -177,6 +181,7 @@ describe("creation defaults", () => {
       canvas: { width: 600, height: 120 },
       locale: DEFAULT_OVERLAY_CONFIG.locale,
       theme: "minimal",
+      style: null,
     });
   });
 });
@@ -188,10 +193,13 @@ describe("immutable kind", () => {
       ok: false,
       error: "kind_mismatch",
     });
-    expect(checkOverlayKindEdit("rank-progress", "rank-progress")).toEqual({
+    // Phase 5.4B: Rank Progress is editable, and is just as immutable the other way round.
+    expect(checkOverlayKindEdit("rank-progress", "rank-progress")).toEqual({ ok: true });
+    expect(checkOverlayKindEdit("rank-progress", "session")).toEqual({
       ok: false,
-      error: "unsupported_kind",
+      error: "kind_mismatch",
     });
+    expect(checkOverlayKindEdit("session", null)).toEqual({ ok: false, error: "kind_mismatch" });
     expect(checkOverlayKindEdit(null, "session")).toEqual({
       ok: false,
       error: "unsupported_kind",
@@ -199,7 +207,7 @@ describe("immutable kind", () => {
   });
 
   it("the save merge keeps the stored kind even if a forged incoming config claims another", () => {
-    const forged = { ...creatorConfig, kind: "rank-progress" } as unknown as OverlayConfig;
+    const forged = { ...creatorConfig, kind: "rank-progress" } as unknown as SessionOverlayConfig;
     for (const ent of [ALL, NONE]) {
       expect(mergeOverlayConfigForSave(DEFAULT_OVERLAY_CONFIG, forged, ent).kind).toBe("session");
     }
@@ -207,7 +215,7 @@ describe("immutable kind", () => {
 });
 
 describe("effective config / save merge equivalence (legacy vs explicit)", () => {
-  const cases: OverlayConfig[] = [
+  const cases: SessionOverlayConfig[] = [
     DEFAULT_OVERLAY_CONFIG,
     applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, "fighter"),
     creatorConfig,
@@ -222,13 +230,14 @@ describe("effective config / save merge equivalence (legacy vs explicit)", () =>
       }
     }
     // Free owner of a Creator theme still gets the registered Free fallback.
-    expect(getEffectiveOverlayConfig(parseOverlayConfig(legacy(creatorConfig)), NONE).theme).toBe(
-      "competitive",
-    );
+    expect(
+      sessionConfigOf(getEffectiveOverlayConfig(parseOverlayConfig(legacy(creatorConfig)), NONE))
+        ?.theme,
+    ).toBe("competitive");
   });
 
   it("Free save after a downgrade still preserves the stored Creator block", () => {
-    const stored = parseOverlayConfig(legacy(creatorConfig));
+    const stored = sessionConfigOf(parseOverlayConfig(legacy(creatorConfig)))!;
     const incoming = { ...stored, creator: undefined, accentColor: "#123456" };
     const merged = mergeOverlayConfigForSave(stored, incoming, NONE);
     expect(merged.creator).toEqual(creatorConfig.creator);

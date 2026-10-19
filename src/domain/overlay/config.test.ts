@@ -4,9 +4,18 @@ import {
   applyThemeDefaults,
   hexToRgba,
   overlayConfigSchema,
-  parseOverlayConfig,
+  parseOverlayConfig as parseAnyOverlayConfig,
+  sessionConfigOf,
+  type SessionOverlayConfig,
 } from "./config";
 import { formatDelta, formatWinRate } from "@/domain/format";
+
+/** Session tests: parse and narrow (Phase 5.4B: the public parser returns any overlay kind). */
+function parseOverlayConfig(raw: unknown): SessionOverlayConfig {
+  const config = sessionConfigOf(parseAnyOverlayConfig(raw));
+  if (!config) throw new Error("expected a Session config");
+  return config;
+}
 
 describe("overlay config", () => {
   it("default config is valid", () => {

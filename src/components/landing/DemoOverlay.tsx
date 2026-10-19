@@ -6,7 +6,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { OverlayView } from "@/components/overlay/OverlayView";
-import { OVERLAY_PRESETS, type OverlayConfig } from "@/domain/overlay/config";
+import { OVERLAY_PRESETS, type SessionOverlayConfig } from "@/domain/overlay/config";
 import type { PlayerLiveState } from "@/domain/overlay/state";
 
 export function DemoOverlay({
@@ -14,7 +14,7 @@ export function DemoOverlay({
   live,
   className,
 }: {
-  config: OverlayConfig;
+  config: SessionOverlayConfig;
   live: PlayerLiveState;
   className?: string;
 }) {

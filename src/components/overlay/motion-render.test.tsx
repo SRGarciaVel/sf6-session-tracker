@@ -4,7 +4,7 @@ import {
   DEFAULT_OVERLAY_CONFIG,
   OVERLAY_THEMES,
   applyThemeDefaults,
-  type OverlayConfig,
+  type SessionOverlayConfig,
 } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION, getEffectiveOverlayConfig } from "@/domain/overlay/creator";
 import { DEFAULT_CREATOR_MOTION } from "@/domain/overlay/motion";
@@ -29,11 +29,11 @@ const CREATOR = {
     brandFlag: true,
   },
 };
-const render = (config: OverlayConfig) =>
+const render = (config: SessionOverlayConfig) =>
   renderToStaticMarkup(
     <OverlayView config={config} live={sampleLiveState()} sizing={{ mode: "viewport" }} />,
   );
-const withMotion = (theme: OverlayConfig["theme"]): OverlayConfig => ({
+const withMotion = (theme: SessionOverlayConfig["theme"]): SessionOverlayConfig => ({
   ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, theme),
   creator: {
     ...DEFAULT_CREATOR_CUSTOMIZATION,

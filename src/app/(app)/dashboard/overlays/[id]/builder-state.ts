@@ -8,6 +8,7 @@ import {
   OVERLAY_FIELDS,
   OVERLAY_THEME_META,
   type OverlayConfig,
+  type SessionOverlayConfig,
   type OverlayFieldId,
 } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION, type CreatorCustomization } from "@/domain/overlay/creator";
@@ -25,6 +26,7 @@ export function canonicalJson(value: unknown): string {
   return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`).join(",")}}`;
 }
 
+/** Any kind's editor (Session and Rank Progress builders share the dirty rule). */
 export interface EditorSnapshot {
   name: string;
   config: OverlayConfig;
@@ -46,7 +48,7 @@ export const FIELD_GROUPS: ReadonlyArray<{ id: "session" | "rating"; fields: Ove
   { id: "rating", fields: ["rating", "ratingDelta", "rank"] },
 ];
 
-export function setAllFields(config: OverlayConfig, on: boolean): OverlayConfig {
+export function setAllFields(config: SessionOverlayConfig, on: boolean): SessionOverlayConfig {
   const fields = { ...config.fields };
   for (const f of OVERLAY_FIELDS) fields[f] = on;
   return { ...config, fields };
@@ -64,23 +66,23 @@ export type ResettableKey =
 
 /** The theme's own value for a style key (existing resolver: theme meta → global defaults). */
 export function themeDefault<K extends ResettableKey>(
-  config: OverlayConfig,
+  config: SessionOverlayConfig,
   key: K,
-): OverlayConfig[K] {
+): SessionOverlayConfig[K] {
   const fromTheme = OVERLAY_THEME_META[config.theme].defaults[key];
-  return (fromTheme ?? DEFAULT_OVERLAY_CONFIG[key]) as OverlayConfig[K];
+  return (fromTheme ?? DEFAULT_OVERLAY_CONFIG[key]) as SessionOverlayConfig[K];
 }
 
 /** Patch the optional Creator block, creating it with neutral defaults when first touched. */
 export function patchCreator(
-  config: OverlayConfig,
+  config: SessionOverlayConfig,
   patch: Partial<CreatorCustomization>,
-): OverlayConfig {
+): SessionOverlayConfig {
   return { ...config, creator: { ...(config.creator ?? DEFAULT_CREATOR_CUSTOMIZATION), ...patch } };
 }
 
 /** Turn Creator motion on (with the considered defaults) or off (removes only the motion block). */
-export function setMotionEnabled(config: OverlayConfig, on: boolean): OverlayConfig {
+export function setMotionEnabled(config: SessionOverlayConfig, on: boolean): SessionOverlayConfig {
   if (on) return patchCreator(config, { motion: config.creator?.motion ?? DEFAULT_CREATOR_MOTION });
   if (!config.creator?.motion) return config;
   const creator = { ...config.creator };
@@ -88,7 +90,10 @@ export function setMotionEnabled(config: OverlayConfig, on: boolean): OverlayCon
   return { ...config, creator };
 }
 
-export function patchMotion(config: OverlayConfig, patch: Partial<CreatorMotion>): OverlayConfig {
+export function patchMotion(
+  config: SessionOverlayConfig,
+  patch: Partial<CreatorMotion>,
+): SessionOverlayConfig {
   return patchCreator(config, {
     motion: { ...(config.creator?.motion ?? DEFAULT_CREATOR_MOTION), ...patch },
   });
@@ -99,9 +104,9 @@ export function patchMotion(config: OverlayConfig, patch: Partial<CreatorMotion>
  * keeps every preference (enabled: false), so turning it back on restores them.
  */
 export function patchRotation(
-  config: OverlayConfig,
+  config: SessionOverlayConfig,
   patch: Partial<CharacterRotation>,
-): OverlayConfig {
+): SessionOverlayConfig {
   return patchCreator(config, {
     characterRotation: {
       ...(config.creator?.characterRotation ?? DEFAULT_CHARACTER_ROTATION),
@@ -111,7 +116,10 @@ export function patchRotation(
 }
 
 /** SST Brand Flag (Phase 5.3B): patch the block, creating it from the defaults. */
-export function patchBrandFlag(config: OverlayConfig, patch: Partial<BrandFlag>): OverlayConfig {
+export function patchBrandFlag(
+  config: SessionOverlayConfig,
+  patch: Partial<BrandFlag>,
+): SessionOverlayConfig {
   return patchCreator(config, {
     brandFlag: { ...(config.creator?.brandFlag ?? DEFAULT_BRAND_FLAG), ...patch },
   });

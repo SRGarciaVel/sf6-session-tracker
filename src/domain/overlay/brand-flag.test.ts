@@ -25,8 +25,9 @@ import {
   OVERLAY_THEMES,
   DEFAULT_OVERLAY_CONFIG,
   overlayConfigSchema,
-  parseOverlayConfig,
-  type OverlayConfig,
+  parseOverlayConfig as parseAnyOverlayConfig,
+  sessionConfigOf,
+  type SessionOverlayConfig,
 } from "./config";
 import { THEME_REGISTRY } from "./themes";
 import {
@@ -38,8 +39,15 @@ import {
 import { PLAN_ENTITLEMENTS } from "@/domain/entitlements/plans";
 import { presetAppearanceSchema } from "./presets";
 
+/** Session tests: parse and narrow (Phase 5.4B: the public parser returns any overlay kind). */
+function parseOverlayConfig(raw: unknown): SessionOverlayConfig {
+  const config = sessionConfigOf(parseAnyOverlayConfig(raw));
+  if (!config) throw new Error("expected a Session config");
+  return config;
+}
+
 const ON: BrandFlag = { ...DEFAULT_BRAND_FLAG, enabled: true };
-const withFlag = (flag: BrandFlag = ON): OverlayConfig => ({
+const withFlag = (flag: BrandFlag = ON): SessionOverlayConfig => ({
   ...DEFAULT_OVERLAY_CONFIG,
   creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, brandFlag: flag },
 });
@@ -184,8 +192,8 @@ describe("entitlements: stored vs effective (41–49)", () => {
     expect(mergeOverlayConfigForSave(stored, forged, ent()).creator?.brandFlag).toEqual(
       stored.creator?.brandFlag,
     );
-    const edit: OverlayConfig = { ...stored, title: "FREE", creator: undefined };
-    const merged = mergeOverlayConfigForSave<OverlayConfig>(stored, edit, ent());
+    const edit: SessionOverlayConfig = { ...stored, title: "FREE", creator: undefined };
+    const merged = mergeOverlayConfigForSave<SessionOverlayConfig>(stored, edit, ent());
     expect(merged).toMatchObject({
       title: "FREE",
       creator: { brandFlag: stored.creator?.brandFlag },

@@ -706,6 +706,78 @@ is **no migration**, no new column and no config version bump.
   ships Rank Progress rows, old code would read them as Session configs. Remove or convert those
   rows before rolling back, before anyone edits them with old code.
 
+### Rank Progress overlay (Phase 5.4B)
+
+`"rank-progress"` is now a real, creatable overlay kind: an **independent, optional** OBS product
+("where am I now, and how far am I from my next rank goal?"). It is not a Session theme, not a
+Session stat, not Analytics and not a rating trend: current-state presentation of ONE character.
+A streamer may use Session Stats, Rank Progress or both (separate Browser Sources).
+
+- **Config:** its own minimal schema (`domain/overlay/rank-progress.ts`), stored in `overlay.config`
+  like every kind — **no migration**, no column, no table. `OverlayConfig` is now a discriminated
+  union (`SessionOverlayConfig | RankProgressOverlayConfig`). Fields: `locale`, `characterKey`
+  (null = active character), `goal` (`"auto"` | `"master"`), `style` (`"broadcast"` |
+  `"compact"`), three display toggles, font, colors, background, border, `animations`. No Session
+  field (stat toggles, scope, themes, Creator block) exists on it.
+- **Parser:** `parseOverlayConfig()` stays the single public parser: no kind / `"session"` →
+  Session; `"rank-progress"` → the Rank Progress parser (an unusable row is the Rank Progress
+  default, never another kind); unknown → the safe Session default (never read as Rank Progress).
+  The editor schema is the union; a body never validates as the other kind.
+- **Domain (pure, `domain/sf6/rank-progress.ts`):** the ONLY owner of LP thresholds and progress
+  math; the renderer formats a ready projection (`resolveRankProgressView`).
+  - **LP ladder (fixed):** Rookie 0/200/400/600/800 · Iron 1000/1400/1800/2200/2600 · Bronze
+    3000/3400/3800/4200/4600 · Silver 5000/5800/6600/7400/8200 · Gold 9000/9800/10600/11400/12200 ·
+    Platinum 13000/14200/15400/16600/17800 · Diamond 19000/20200/21400/22600/23800 · Master 25000.
+    Labels are derived from the value, never parsed from a display string.
+  - **Next division:** bar from the division start to the next division start
+    (Diamond 3 · 21,950 LP → 650 to Diamond 4, 45.8 %).
+  - **Road to Master:** bar from the current MAJOR rank's start (its division 1) to 25,000 LP —
+    progress through the current rank's climb, not lifetime LP from zero.
+  - **LP ≥ 25,000:** goal reached (Master), no bar beyond it.
+  - **MR (fixed Master tiers, `master-tier.ts`):** Master → 1600, High Master 1600 → 1700, Grand
+    Master 1700 → 1800. Below 1600 the bar starts at a 1500 **presentation floor** (the MR a player
+    enters Master with); below 1500 it starts at the current value (0 %), so it never implies
+    "below Master" — 1500 is not a rank cutoff and the remaining MR stays exact.
+  - **Ultimate Master (≥ 1800):** terminal ("Legend · Top 500 required"); no progress or "MR to
+    Legend". **Legend is never inferred from MR** (no 2196-style threshold): it needs an
+    authoritative top-500 position, which `PlayerLiveState` does not carry, so no Legend state is
+    rendered in 5.4B (5.4C).
+  - **Goal normalization:** the goal a character can use depends on its CURRENT system, which can
+    change (auto character, LP → MR). An MR character always measures the next Master tier; a
+    stored `"master"` goal is normalized at render time and never rewritten.
+  - **Clamping:** progress ∈ [0, 1] (NaN ⇒ 0); the bar is a `scaleX()` of it — never a CSS width.
+- **Character selection:** `pickRatingCharacter()` — the Session overlay's own rule (pinned key if
+  known, else the active character). No second algorithm. Current value = `current.value`
+  (authoritative, never `initial + delta`).
+- **Session delta (optional):** the character's own engine `delta`, shown only when
+  `baselineKnown` and non-null. Unknown is hidden (never "+0"); a KNOWN zero shows "±0".
+- **No session needed:** a player who has never started a session still has a roster. Before
+  5.4B the idle live state built it with `computeCharacterProgress` (keys from matches / baselines
+  only), so it was always `characters: []` even though onboarding (`upsertPlayerForUser`) and the
+  Companion (`updatePlayerProfile`) had persisted `player_character_rating` — a real production
+  bug since 4ee1f6d. The idle state now uses the engine's additive `computeIdleRoster` over the
+  rows `loadSessionContext` already reads (no extra query): every persisted character, current
+  rating as stored, zero stats, unknown start (`initial`/`delta` null, `baselineKnown` false).
+  `status` stays `"none"` and no session is created. The only Session-overlay difference is in that
+  state: the active character's already-known rating now shows instead of "—".
+- **Renderer / builder:** `OverlayView` → `RankProgressOverlayView` (same root contract and
+  fit-to-box as Session; `components/overlay/rank-progress.tsx` + OBS-safe `rank-progress.css`);
+  `OverlayBuilder` → `RankProgressOverlayBuilder` (Content · Display · Appearance, preview with
+  live data or LP / MR / Ultimate samples, OBS output). Canvases: Broadcast 640×140, Compact
+  400×140. Progress bar: `role="progressbar"` with real LP/MR `aria-valuemin/max/now`; terminal
+  and empty states render no progressbar. Animation: bar transition + the existing number tick,
+  off with `animations: false` or `prefers-reduced-motion`.
+- **Free:** no entitlement, no Creator rules (`getEffectiveOverlayConfig` returns it as stored),
+  no premium styles or motion. **Presets are not supported:** Session presets never list in, nor
+  apply to, a Rank Progress overlay (`incompatible_kind`); no Rank Progress preset schema.
+- **Transport unchanged:** same `/overlay/<token>`, `/state`, SSE stream, `{ config, live }`; no new
+  endpoint, channel, polling, Companion request or leaderboard fetch. Both kinds count toward the
+  same overlay limit.
+- **Rollback:** reverting to 5.4A is safe: 5.4A reads stored `"rank-progress"` rows as the Session
+  default for rendering and refuses to edit them (`overlayKindUnsupported`), never rewriting them;
+  re-applying 5.4B restores them intact. Before reverting past 5.4A, delete or convert Rank
+  Progress rows (see above).
+
 ## 9. Security
 
 - Zod validation on every input: server actions, provider output, overlay config and env.

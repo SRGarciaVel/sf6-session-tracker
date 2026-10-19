@@ -9,7 +9,7 @@
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_OVERLAY_CONFIG, type OverlayConfig } from "@/domain/overlay/config";
+import { DEFAULT_OVERLAY_CONFIG, type SessionOverlayConfig } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION } from "@/domain/overlay/creator";
 import { DEFAULT_CREATOR_MOTION } from "@/domain/overlay/motion";
 import { sampleLiveState, type PlayerLiveState } from "@/domain/overlay/state";
@@ -32,7 +32,7 @@ const { LiveDashboardProvider, useLiveDashboard } =
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const motionConfig = (over: Partial<OverlayConfig> = {}): OverlayConfig => ({
+const motionConfig = (over: Partial<SessionOverlayConfig> = {}): SessionOverlayConfig => ({
   ...DEFAULT_OVERLAY_CONFIG,
   ...over,
   creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, motion: DEFAULT_CREATOR_MOTION },

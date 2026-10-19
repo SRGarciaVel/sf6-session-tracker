@@ -25,6 +25,14 @@ const { buildPlayerLiveState, endSession, listSessionHistory, startSession } =
 const { loadOverlayPayload } = await import("@/server/overlays/public");
 const { listOverlays, updateOverlay } = await import("@/server/overlays/service");
 const { pickRatingCharacter, resolveOverlayStats } = await import("@/domain/overlay/state");
+const { sessionConfigOf } = await import("@/domain/overlay/config");
+
+/** The player's overlays here are Session overlays (Phase 5.4B: OverlayConfig is a union). */
+async function sessionPayload(token: string) {
+  const payload = (await loadOverlayPayload(token))?.payload;
+  const config = payload && sessionConfigOf(payload.config);
+  return payload && config ? { ...payload, config } : undefined;
+}
 const { MockSF6DataProvider } = await import("@/server/sf6/providers/mock");
 const { ResilientProvider } = await import("@/server/sf6/resilient");
 const { claimDuePlayers, pollPlayer } = await import("@/server/tracking/tracker");
@@ -138,14 +146,16 @@ describe.skipIf(!TEST_DB)("per-character ratings (integration)", () => {
     const [overlay] = await listOverlays(db, playerId);
     if (!overlay) throw new Error("no overlay");
 
-    let payload = (await loadOverlayPayload(overlay.publicToken))?.payload;
+    let payload = await sessionPayload(overlay.publicToken);
     expect(payload?.live.session).toMatchObject({ wins: 1, losses: 1 });
     expect(
       pickRatingCharacter(payload!.live.session, payload!.config.ratingCharacterKey)?.characterKey,
     ).toBe("kimberly");
 
-    await updateOverlay(db, overlay, { config: { ...overlay.config, ratingCharacterKey: "aki" } });
-    payload = (await loadOverlayPayload(overlay.publicToken))?.payload;
+    const stored = sessionConfigOf(overlay.config);
+    if (!stored) throw new Error("not a Session overlay");
+    await updateOverlay(db, overlay, { config: { ...stored, ratingCharacterKey: "aki" } });
+    payload = await sessionPayload(overlay.publicToken);
     expect(
       pickRatingCharacter(payload!.live.session, payload!.config.ratingCharacterKey)?.characterKey,
     ).toBe("aki");
@@ -275,16 +285,18 @@ describe.skipIf(!TEST_DB)("per-character ratings (integration)", () => {
 
     const [overlay] = await listOverlays(db, playerId);
     if (!overlay) throw new Error("no overlay");
-    let payload = (await loadOverlayPayload(overlay.publicToken))?.payload;
+    let payload = await sessionPayload(overlay.publicToken);
     expect(resolveOverlayStats(payload!.live.session, payload!.config)).toMatchObject({
       scope: "session",
       wins: 3,
       losses: 1,
     });
+    const stored = sessionConfigOf(overlay.config);
+    if (!stored) throw new Error("not a Session overlay");
     await updateOverlay(db, overlay, {
-      config: { ...overlay.config, statsScope: "character", ratingCharacterKey: "kimberly" },
+      config: { ...stored, statsScope: "character", ratingCharacterKey: "kimberly" },
     });
-    payload = (await loadOverlayPayload(overlay.publicToken))?.payload;
+    payload = await sessionPayload(overlay.publicToken);
     expect(payload?.config.statsScope).toBe("character");
     expect(resolveOverlayStats(payload!.live.session, payload!.config)).toMatchObject({
       scope: "character",
@@ -340,7 +352,7 @@ describe.skipIf(!TEST_DB)("per-character ratings (integration)", () => {
     // The public payload carries everything rotation needs (no new endpoint or SSE field).
     const [overlay] = await listOverlays(db, playerId);
     if (!overlay) throw new Error("no overlay");
-    const payload = (await loadOverlayPayload(overlay.publicToken))?.payload;
+    const payload = await sessionPayload(overlay.publicToken);
     expect(
       payload?.live.session.characters.find((c) => c.characterKey === "aki")?.lastPlayedAt,
     ).toEqual(expect.any(String));
@@ -359,7 +371,7 @@ describe.skipIf(!TEST_DB)("per-character ratings (integration)", () => {
 
     const [overlay] = await listOverlays(db, playerId);
     if (!overlay) throw new Error("no overlay");
-    const payload = (await loadOverlayPayload(overlay.publicToken))?.payload;
+    const payload = await sessionPayload(overlay.publicToken);
     if (!payload) throw new Error("no payload");
     const session = payload.live.session;
     const order = rotationOrder(session.characters, "recent");

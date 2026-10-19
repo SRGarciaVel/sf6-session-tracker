@@ -8,7 +8,7 @@ import {
   DEFAULT_OVERLAY_CONFIG,
   OVERLAY_THEMES,
   applyThemeDefaults,
-  type OverlayConfig,
+  type SessionOverlayConfig,
   type OverlayThemeId,
 } from "@/domain/overlay/config";
 import { sampleLiveState, type PlayerLiveState } from "@/domain/overlay/state";
@@ -117,8 +117,8 @@ export const STAGE_SCALE = 1.5;
 export function landingOverlayConfig(
   theme: OverlayThemeId,
   locale: Locale,
-  extra: Partial<OverlayConfig> = {},
-): OverlayConfig {
+  extra: Partial<SessionOverlayConfig> = {},
+): SessionOverlayConfig {
   const base = applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, theme);
   return {
     ...base,
@@ -136,7 +136,7 @@ export const SHOWCASE_THEMES: readonly OverlayThemeId[] = OVERLAY_THEMES;
 export const CREATOR_SEQUENCE = ["theme", "variant", "density", "glow", "preset"] as const;
 export type CreatorStep = (typeof CREATOR_SEQUENCE)[number];
 
-export function creatorPreviewConfig(step: CreatorStep, locale: Locale): OverlayConfig {
+export function creatorPreviewConfig(step: CreatorStep, locale: Locale): SessionOverlayConfig {
   const at = CREATOR_SEQUENCE.indexOf(step);
   if (step === "preset") {
     return landingOverlayConfig("prestige", locale, {

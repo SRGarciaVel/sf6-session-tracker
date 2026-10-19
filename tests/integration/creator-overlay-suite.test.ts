@@ -6,7 +6,7 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
-import type { OverlayConfig } from "@/domain/overlay/config";
+import type { OverlayConfig, SessionOverlayConfig } from "@/domain/overlay/config";
 
 try {
   process.loadEnvFile(".env");
@@ -29,6 +29,14 @@ const presets = await import("@/server/overlays/presets");
 const { DEFAULT_THEME_VARIANTS } = await import("@/domain/overlay/variants");
 const { PRESETS_PER_ACCOUNT_MAX } = await import("@/domain/overlay/presets");
 const { DEFAULT_CREATOR_CUSTOMIZATION } = await import("@/domain/overlay/creator");
+const { sessionConfigOf } = await import("@/domain/overlay/config");
+
+/** Every overlay in this suite is a Session overlay (Phase 5.4B: OverlayConfig is a union). */
+function session(config: OverlayConfig): SessionOverlayConfig {
+  const s = sessionConfigOf(config);
+  if (!s) throw new Error("expected a Session overlay");
+  return s;
+}
 
 const DAY = 86_400_000;
 
@@ -65,10 +73,10 @@ describe.skipIf(!TEST_DB)("Creator Overlay Suite (integration)", () => {
   const stored = async (overlayId: string) => {
     const view = await getOverlayById(db, overlayId);
     if (!view) throw new Error("gone");
-    return view;
+    return { ...view, config: session(view.config) };
   };
   /** The real save path (owner entitlements + merge), as saveOverlayAction does. */
-  async function save(userId: string, overlayId: string, edit: Partial<OverlayConfig>) {
+  async function save(userId: string, overlayId: string, edit: Partial<SessionOverlayConfig>) {
     const view = await stored(overlayId);
     const merged = await prepareOverlayConfigForSave(db, {
       userId,
@@ -80,7 +88,7 @@ describe.skipIf(!TEST_DB)("Creator Overlay Suite (integration)", () => {
   const payloadOf = async (overlayId: string) => {
     const p = await loadOverlayPayload((await stored(overlayId)).publicToken);
     if (!p) throw new Error("no payload");
-    return p.payload;
+    return { ...p.payload, config: session(p.payload.config) };
   };
   const variants = {
     ...DEFAULT_THEME_VARIANTS,
@@ -152,7 +160,7 @@ describe.skipIf(!TEST_DB)("Creator Overlay Suite (integration)", () => {
 
     const c = await owner();
     await grant(c.userId);
-    const cfg: OverlayConfig = {
+    const cfg: SessionOverlayConfig = {
       ...(await stored(c.overlayId)).config,
       theme: "prestige",
       preset: "detailed",
@@ -388,9 +396,9 @@ describe.skipIf(!TEST_DB)("Phase 5.0: Creator motion lifecycle (integration)", (
     const current = async () => {
       const v = await getOverlayById(db, ov.id);
       if (!v) throw new Error("gone");
-      return v;
+      return { ...v, config: session(v.config) };
     };
-    const save = async (edit: Partial<OverlayConfig>) => {
+    const save = async (edit: Partial<SessionOverlayConfig>) => {
       const v = await current();
       const merged = await prepareOverlayConfigForSave(db, {
         userId,
@@ -399,7 +407,10 @@ describe.skipIf(!TEST_DB)("Phase 5.0: Creator motion lifecycle (integration)", (
       });
       await updateOverlay(db, v, { config: merged });
     };
-    const payload = async () => (await loadOverlayPayload((await current()).publicToken))?.payload;
+    const payload = async () => {
+      const p = (await loadOverlayPayload((await current()).publicToken))?.payload;
+      return p && { ...p, config: session(p.config) };
+    };
 
     await save({ creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, motion } });
     expect((await payload())?.config.creator?.motion).toEqual(motion);
@@ -469,9 +480,9 @@ describe.skipIf(!TEST_DB)("Phase 5.2: character rotation lifecycle (integration)
     const current = async () => {
       const v = await getOverlayById(db, ov.id);
       if (!v) throw new Error("gone");
-      return v;
+      return { ...v, config: session(v.config) };
     };
-    const save = async (edit: Partial<OverlayConfig>) => {
+    const save = async (edit: Partial<SessionOverlayConfig>) => {
       const v = await current();
       const merged = await prepareOverlayConfigForSave(db, {
         userId,
@@ -480,7 +491,10 @@ describe.skipIf(!TEST_DB)("Phase 5.2: character rotation lifecycle (integration)
       });
       await updateOverlay(db, v, { config: merged });
     };
-    const payload = async () => (await loadOverlayPayload((await current()).publicToken))?.payload;
+    const payload = async () => {
+      const p = (await loadOverlayPayload((await current()).publicToken))?.payload;
+      return p && { ...p, config: session(p.config) };
+    };
     const withRotation = (r: typeof rotation) => ({
       creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, characterRotation: r },
     });
@@ -571,9 +585,9 @@ describe.skipIf(!TEST_DB)("Phase 5.3A: presentation modes lifecycle (integration
     const current = async () => {
       const v = await getOverlayById(db, ov.id);
       if (!v) throw new Error("gone");
-      return v;
+      return { ...v, config: session(v.config) };
     };
-    const save = async (edit: Partial<OverlayConfig>) => {
+    const save = async (edit: Partial<SessionOverlayConfig>) => {
       const v = await current();
       const merged = await prepareOverlayConfigForSave(db, {
         userId,
@@ -582,7 +596,10 @@ describe.skipIf(!TEST_DB)("Phase 5.3A: presentation modes lifecycle (integration
       });
       await updateOverlay(db, v, { config: merged });
     };
-    const payload = async () => (await loadOverlayPayload((await current()).publicToken))?.payload;
+    const payload = async () => {
+      const p = (await loadOverlayPayload((await current()).publicToken))?.payload;
+      return p && { ...p, config: session(p.config) };
+    };
     const [g] = await db
       .insert(entitlementGrant)
       .values({
@@ -645,9 +662,9 @@ describe.skipIf(!TEST_DB)("Phase 5.3B: SST brand flag lifecycle (integration)", 
     const current = async () => {
       const v = await getOverlayById(db, ov.id);
       if (!v) throw new Error("gone");
-      return v;
+      return { ...v, config: session(v.config) };
     };
-    const save = async (edit: Partial<OverlayConfig>) => {
+    const save = async (edit: Partial<SessionOverlayConfig>) => {
       const v = await current();
       const merged = await prepareOverlayConfigForSave(db, {
         userId,
@@ -656,7 +673,10 @@ describe.skipIf(!TEST_DB)("Phase 5.3B: SST brand flag lifecycle (integration)", 
       });
       await updateOverlay(db, v, { config: merged });
     };
-    const payload = async () => (await loadOverlayPayload((await current()).publicToken))?.payload;
+    const payload = async () => {
+      const p = (await loadOverlayPayload((await current()).publicToken))?.payload;
+      return p && { ...p, config: session(p.config) };
+    };
     const withFlag = (f: typeof flag) => ({
       creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, brandFlag: f },
     });
@@ -732,9 +752,9 @@ describe.skipIf(!TEST_DB)("Phase 5.3C: integrated branding lifecycle (integratio
     const current = async () => {
       const v = await getOverlayById(db, ov.id);
       if (!v) throw new Error("gone");
-      return v;
+      return { ...v, config: session(v.config) };
     };
-    const save = async (edit: Partial<OverlayConfig>) => {
+    const save = async (edit: Partial<SessionOverlayConfig>) => {
       const v = await current();
       const merged = await prepareOverlayConfigForSave(db, {
         userId,
@@ -743,7 +763,10 @@ describe.skipIf(!TEST_DB)("Phase 5.3C: integrated branding lifecycle (integratio
       });
       await updateOverlay(db, v, { config: merged });
     };
-    const payload = async () => (await loadOverlayPayload((await current()).publicToken))?.payload;
+    const payload = async () => {
+      const p = (await loadOverlayPayload((await current()).publicToken))?.payload;
+      return p && { ...p, config: session(p.config) };
+    };
     const withFlag = (f: typeof flag) => ({
       creator: { ...DEFAULT_CREATOR_CUSTOMIZATION, brandFlag: f },
     });

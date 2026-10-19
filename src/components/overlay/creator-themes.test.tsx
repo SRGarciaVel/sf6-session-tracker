@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_OVERLAY_CONFIG,
   applyThemeDefaults,
-  type OverlayConfig,
+  type SessionOverlayConfig,
 } from "@/domain/overlay/config";
 import { getEffectiveOverlayConfig } from "@/domain/overlay/creator";
 import { sampleLiveState, type SampleRank } from "@/domain/overlay/state";
@@ -31,14 +31,17 @@ const CREATOR = {
 };
 const allFields = Object.fromEntries(
   Object.keys(DEFAULT_OVERLAY_CONFIG.fields).map((k) => [k, true]),
-) as OverlayConfig["fields"];
+) as SessionOverlayConfig["fields"];
 
-const premium = (theme: CreatorThemeId, extra: Partial<OverlayConfig> = {}): OverlayConfig => ({
+const premium = (
+  theme: CreatorThemeId,
+  extra: Partial<SessionOverlayConfig> = {},
+): SessionOverlayConfig => ({
   ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, theme),
   fields: allFields,
   ...extra,
 });
-const html = (config: OverlayConfig, sample?: SampleRank) =>
+const html = (config: SessionOverlayConfig, sample?: SampleRank) =>
   renderToStaticMarkup(
     <OverlayView config={config} live={sampleLiveState(sample)} sizing={{ mode: "viewport" }} />,
   );

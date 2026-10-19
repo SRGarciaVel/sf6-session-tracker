@@ -24,7 +24,9 @@ stores a rank or a rank style.
 (the kind of the overlay they were saved from); presets saved earlier have none and read as
 Session. A preset only applies to an overlay of the same stored kind: otherwise the server answers
 `incompatible_kind` and writes nothing. The builder lists only presets of its kind (unusable ones
-stay listed so they can be deleted). There is no migration: the kind lives in the preset JSON.
+stay listed so they can be deleted). There is no migration: the kind lives in the preset JSON. Phase 5.4B: Rank Progress overlays have
+no presets — Session presets are never listed in their builder (not even read) and never apply to
+them, and a Rank Progress config cannot be saved as a preset.
 
 ## Storage
 

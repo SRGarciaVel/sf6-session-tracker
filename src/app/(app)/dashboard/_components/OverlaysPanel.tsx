@@ -8,6 +8,7 @@ import { OverlayView } from "@/components/overlay/OverlayView";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { Button, Dot, ErrorText, buttonClass } from "@/components/ui/primitives";
 import { overlayReadout, type OverlayConfig } from "@/domain/overlay/config";
+import { CREATABLE_OVERLAY_KINDS, type CreatableOverlayKind } from "@/domain/overlay/kind";
 import { createOverlayAction } from "../actions";
 import { useLiveDashboard } from "./LiveDashboard";
 
@@ -79,17 +80,17 @@ export function OverlaysPanel({ overlays }: { overlays: OverlaySummary[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [choosing, setChoosing] = useState(false);
   const connected = state.overlayConnections;
 
-  const create = () => {
+  // Kind is chosen at creation and never changes (Phase 5.4A); both count toward the same limit.
+  const create = (kind: CreatableOverlayKind) => {
     setError(null);
     startTransition(async () => {
-      // Kind is chosen at creation (Phase 5.4A); Session Stats is the only kind offered until
-      // another one is implemented, so no picker is shown yet.
       const res = await createOverlayAction(
         t("newOverlayName", { number: overlays.length + 1 }),
         "minimal",
-        "session",
+        kind,
       );
       if (res.ok) router.push(`/dashboard/overlays/${res.data.overlayId}`);
       else setError(res.error);
@@ -125,6 +126,9 @@ export function OverlaysPanel({ overlays }: { overlays: OverlaySummary[] }) {
               <div className="flex items-end justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate font-display text-xl leading-tight font-bold">{o.name}</p>
+                  <span className="hud-tag mt-1" data-testid="overlay-kind">
+                    {t(`kinds.${readout.kind}.name`)}
+                  </span>
                 </div>
                 <Link
                   href={`/dashboard/overlays/${o.id}`}
@@ -158,6 +162,14 @@ export function OverlaysPanel({ overlays }: { overlays: OverlaySummary[] }) {
                     </dd>
                   </div>
                 )}
+                {readout.style !== null && (
+                  <div className="border-l border-line py-2 pl-3">
+                    <dt className="hud-label text-xs">{t("style")}</dt>
+                    <dd className="font-display text-base font-semibold">
+                      {tb(`rankProgress.styles.${readout.style}.name`)}
+                    </dd>
+                  </div>
+                )}
               </dl>
 
               <label className="block">
@@ -186,9 +198,45 @@ export function OverlaysPanel({ overlays }: { overlays: OverlaySummary[] }) {
         })}
       </ul>
       <div className="mt-4 border-t border-dashed border-line pt-3">
-        <Button variant="ghost" size="sm" onClick={create} disabled={pending}>
-          {t("newOverlay")}
-        </Button>
+        {choosing ? (
+          <div className="space-y-2" role="group" aria-labelledby="new-overlay-kind">
+            <p id="new-overlay-kind" className="hud-label text-xs">
+              {t("chooseKind")}
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {CREATABLE_OVERLAY_KINDS.map((kind) => (
+                <button
+                  key={kind}
+                  type="button"
+                  onClick={() => create(kind)}
+                  disabled={pending}
+                  data-testid={`new-overlay-${kind}`}
+                  className="border border-line-strong bg-surface-2/60 px-3 py-2.5 text-left transition-colors hover:border-cyan focus-visible:outline-2 focus-visible:outline-cyan disabled:opacity-50"
+                >
+                  <span className="block font-display text-base font-semibold tracking-[0.04em] uppercase">
+                    {t(`kinds.${kind}.name`)}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-muted">
+                    {t(`kinds.${kind}.description`)}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setChoosing(false)} disabled={pending}>
+              {t("cancelNew")}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setChoosing(true)}
+            disabled={pending}
+            data-testid="new-overlay"
+          >
+            {t("newOverlay")}
+          </Button>
+        )}
         <ErrorText>{error}</ErrorText>
       </div>
     </div>

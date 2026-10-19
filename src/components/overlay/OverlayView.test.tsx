@@ -3,14 +3,14 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_OVERLAY_CONFIG,
   applyThemeDefaults,
-  type OverlayConfig,
+  type SessionOverlayConfig,
 } from "@/domain/overlay/config";
 import { sampleLiveState } from "@/domain/overlay/state";
 import type { Locale } from "@/i18n/locale";
 import { OverlayView } from "./OverlayView";
 
 /** Visible text only (tags stripped, NBSP normalized). */
-function render(config: OverlayConfig): string {
+function render(config: SessionOverlayConfig): string {
   const html = renderToStaticMarkup(
     <OverlayView config={config} live={sampleLiveState()} sizing={{ mode: "viewport" }} />,
   );
@@ -21,7 +21,7 @@ function render(config: OverlayConfig): string {
 }
 
 const all = { ...DEFAULT_OVERLAY_CONFIG.fields, totalGames: true, bestStreak: true };
-const cfg = (theme: OverlayConfig["theme"], locale: Locale): OverlayConfig => ({
+const cfg = (theme: SessionOverlayConfig["theme"], locale: Locale): SessionOverlayConfig => ({
   ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, theme),
   fields: all,
   locale,
@@ -117,7 +117,7 @@ describe("OverlayView i18n", () => {
         baselineKnown: true,
       },
     ];
-    const html = (config: OverlayConfig, l = live) =>
+    const html = (config: SessionOverlayConfig, l = live) =>
       renderToStaticMarkup(<OverlayView config={config} live={l} sizing={{ mode: "viewport" }} />)
         .replace(/<[^>]+>/g, " ")
         .replace(/\s+/g, " ");

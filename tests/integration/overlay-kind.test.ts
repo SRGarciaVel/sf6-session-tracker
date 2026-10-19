@@ -31,9 +31,11 @@ const { appearanceFromConfig } = await import("@/domain/overlay/presets");
 const { checkOverlayKindEdit } = await import("@/domain/overlay/kind");
 const {
   DEFAULT_OVERLAY_CONFIG,
+  DEFAULT_SESSION_OVERLAY_CONFIG,
   applyThemeDefaults,
   defaultOverlayConfigForKind,
   overlayConfigSchema,
+  sessionConfigOf,
 } = await import("@/domain/overlay/config");
 
 describe.skipIf(!TEST_DB)("overlay kind foundation (integration)", () => {
@@ -85,8 +87,9 @@ describe.skipIf(!TEST_DB)("overlay kind foundation (integration)", () => {
     const view = await service.getOwnedOverlay(db, userId, row.id);
     expect(view?.storedKind).toBe("session");
     expect(view?.config.kind).toBe("session");
-    expect(view?.config.title).toBe("LEGACY");
-    expect(view?.config.theme).toBe("fighter");
+    const config = view && sessionConfigOf(view.config);
+    expect(config?.title).toBe("LEGACY");
+    expect(config?.theme).toBe("fighter");
     await service.getOverlayByToken(db, row.publicToken);
     await service.listOverlays(db, playerId);
     expect("kind" in (await storedJson(row.id))).toBe(false); // untouched
@@ -112,8 +115,9 @@ describe.skipIf(!TEST_DB)("overlay kind foundation (integration)", () => {
     const { playerId } = await owner();
     const [onboarding] = await service.listOverlays(db, playerId);
     expect((await storedJson(onboarding!.id)).kind).toBe("session");
+    expect(defaultOverlayConfigForKind("session")).toBe(DEFAULT_SESSION_OVERLAY_CONFIG);
     const created = await service.createOverlay(db, playerId, "New", {
-      ...applyThemeDefaults(defaultOverlayConfigForKind("session"), "minimal"),
+      ...applyThemeDefaults(DEFAULT_SESSION_OVERLAY_CONFIG, "minimal"),
       locale: "en",
     });
     const json = await storedJson(created.id);
@@ -122,21 +126,21 @@ describe.skipIf(!TEST_DB)("overlay kind foundation (integration)", () => {
     expect(created.storedKind).toBe("session");
   });
 
-  it("forged / unknown stored kinds are not editable and render the safe default", async () => {
+  it("unknown stored kinds are not editable and render the safe Session default", async () => {
     const { userId, playerId } = await owner();
-    for (const kind of ["rank-progress", "evil-widget"]) {
-      const row = await rawRow(playerId, { ...legacyJson(), kind });
-      const view = (await service.getOwnedOverlay(db, userId, row.id))!;
-      expect(view.storedKind).toBe(kind === "rank-progress" ? "rank-progress" : null);
-      expect(view.config).toEqual(DEFAULT_OVERLAY_CONFIG); // lenient parse ⇒ safe default
-      expect(checkOverlayKindEdit(view.storedKind, "session")).toEqual({
+    const row = await rawRow(playerId, { ...legacyJson(), kind: "evil-widget" });
+    const view = (await service.getOwnedOverlay(db, userId, row.id))!;
+    expect(view.storedKind).toBeNull();
+    expect(view.config).toEqual(DEFAULT_OVERLAY_CONFIG); // lenient parse ⇒ safe default
+    for (const incoming of ["session", "rank-progress"] as const) {
+      expect(checkOverlayKindEdit(view.storedKind, incoming)).toEqual({
         ok: false,
         error: "unsupported_kind",
       });
-      // Public route still answers (no crash), with the Session default.
-      const p = await loadOverlayPayload(row.publicToken);
-      expect(p?.payload.config.kind).toBe("session");
     }
+    // Public route still answers (no crash), with the Session default; never Rank Progress.
+    const p = await loadOverlayPayload(row.publicToken);
+    expect(p?.payload.config.kind).toBe("session");
   });
 
   it("a crafted save claiming another kind is rejected; the stored kind always wins", async () => {

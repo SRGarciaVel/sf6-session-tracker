@@ -126,6 +126,20 @@ interface CreatorAwareConfig {
 }
 
 /**
+ * A config of a kind without any Creator feature (Phase 5.4B Rank Progress: Free). Creator rules
+ * never apply to it: its effective config is its stored config.
+ */
+interface CreatorFreeConfig {
+  kind: "rank-progress";
+}
+
+type KindedConfig = CreatorAwareConfig | CreatorFreeConfig;
+
+function isSessionConfig<C extends KindedConfig>(config: C): config is C & CreatorAwareConfig {
+  return config.kind !== "rank-progress";
+}
+
+/**
  * EFFECTIVE config for rendering (dashboard preview, OBS page, /state, SSE). Pure: never
  * mutates the stored config. Not entitled ⇒
  *  - the Creator block is ignored (the theme's own look renders);
@@ -133,16 +147,14 @@ interface CreatorAwareConfig {
  * Stored values are kept for when access returns. An entitled Creator theme always gets a
  * canvas it supports (deterministic; the builder only offers those anyway).
  */
-export function getEffectiveOverlayConfig<C extends CreatorAwareConfig>(
+export function getEffectiveOverlayConfig<C extends KindedConfig>(
   stored: C,
   entitlements: OverlayCustomizationEntitlement,
 ): C {
-  // Per kind (Phase 5.4A): the Session Creator rules below never apply to another kind; 5.4B
-  // adds its own case. Exhaustive over the kinds a config can carry.
-  switch (stored.kind ?? "session") {
-    case "session":
-      return effectiveSessionConfig(stored, entitlements);
-  }
+  // Per kind (Phase 5.4A/B): the Session Creator rules never apply to another kind. Rank Progress
+  // is Free (no Creator block, no premium styles): it renders exactly as stored.
+  if (!isSessionConfig(stored)) return stored;
+  return effectiveSessionConfig(stored, entitlements);
 }
 
 function effectiveSessionConfig<C extends CreatorAwareConfig>(
@@ -217,7 +229,20 @@ function effectiveCreator(
  *    explicit switch to a Free theme is a Free choice and is saved.
  * An entitled save normalizes the canvas to one the Creator theme supports.
  */
-export function mergeOverlayConfigForSave<C extends CreatorAwareConfig>(
+export function mergeOverlayConfigForSave<C extends KindedConfig>(
+  stored: C,
+  incoming: C,
+  entitlements: OverlayCustomizationEntitlement,
+): C {
+  // The stored kind is authoritative (immutable kind; callers reject a mismatch before this). A
+  // request of another kind can never turn into a save: the stored config is kept as is.
+  if (!isSessionConfig(stored)) return incoming.kind === stored.kind ? incoming : stored;
+  if (!isSessionConfig(incoming)) return stored;
+  return mergeSessionConfigForSave(stored, incoming, entitlements);
+}
+
+/** Session save merge (the Creator rules above). */
+function mergeSessionConfigForSave<C extends CreatorAwareConfig>(
   stored: C,
   incoming: C,
   entitlements: OverlayCustomizationEntitlement,

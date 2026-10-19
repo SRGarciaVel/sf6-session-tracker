@@ -18,7 +18,7 @@ import type {
 import { EMPTY_STATS } from "@/domain/session/engine";
 import { resolveDisplayRank } from "@/domain/sf6/master-tier";
 import type { CharacterKey, MatchResult, RatingSystem } from "@/domain/sf6/types";
-import type { OverlayConfig } from "./config";
+import type { OverlayConfig, SessionOverlayConfig } from "./config";
 
 export interface LiveRating {
   system: RatingSystem;
@@ -297,7 +297,7 @@ const NEUTRAL_STATS = {
  */
 export function resolveOverlayStats(
   session: LiveSessionState,
-  config: Pick<OverlayConfig, "statsScope" | "ratingCharacterKey">,
+  config: Pick<SessionOverlayConfig, "statsScope" | "ratingCharacterKey">,
 ): OverlayStats {
   if (config.statsScope !== "character") {
     return {

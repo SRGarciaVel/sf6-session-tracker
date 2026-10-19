@@ -12,7 +12,7 @@ import {
   OVERLAY_FONTS,
   STATS_SCOPES,
   applyThemeDefaults,
-  type OverlayConfig,
+  type SessionOverlayConfig,
   type StatsScope,
   type OverlayFontId,
 } from "@/domain/overlay/config";
@@ -23,7 +23,7 @@ import { ColorField, Group, Segmented, Slider, Toggle, selectClass } from "./con
 import { ThemePicker } from "./ThemePicker";
 import { ThemeVariantsSection } from "./ThemeVariantsSection";
 
-export type Update = (fn: (c: OverlayConfig) => OverlayConfig) => void;
+export type Update = (fn: (c: SessionOverlayConfig) => SessionOverlayConfig) => void;
 
 /* ───────────────────────── Appearance ───────────────────────── */
 
@@ -32,7 +32,7 @@ export function AppearancePanel({
   update,
   premiumThemes,
 }: {
-  config: OverlayConfig;
+  config: SessionOverlayConfig;
   update: Update;
   premiumThemes: boolean;
 }) {
@@ -71,7 +71,7 @@ export function ContentPanel({
   defaultTitle,
   rotationActive = false,
 }: {
-  config: OverlayConfig;
+  config: SessionOverlayConfig;
   update: Update;
   characters: ReadonlyArray<{ characterKey: string; characterName: string }>;
   defaultTitle: string;
@@ -211,7 +211,7 @@ export function StylePanel({
   update,
   onOpenCreator,
 }: {
-  config: OverlayConfig;
+  config: SessionOverlayConfig;
   update: Update;
   onOpenCreator: () => void;
 }) {

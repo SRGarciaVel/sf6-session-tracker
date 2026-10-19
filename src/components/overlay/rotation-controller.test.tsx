@@ -10,7 +10,7 @@ import {
   DEFAULT_OVERLAY_CONFIG,
   OVERLAY_THEMES,
   applyThemeDefaults,
-  type OverlayConfig,
+  type SessionOverlayConfig,
 } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION } from "@/domain/overlay/creator";
 import { DEFAULT_CREATOR_MOTION } from "@/domain/overlay/motion";
@@ -24,9 +24,9 @@ import { OverlayView } from "./OverlayView";
 const ROT: CharacterRotation = { ...DEFAULT_CHARACTER_ROTATION, enabled: true };
 const config = (
   rotation: Partial<CharacterRotation> | null = {},
-  over: Partial<OverlayConfig> = {},
+  over: Partial<SessionOverlayConfig> = {},
   motion = false,
-): OverlayConfig => ({
+): SessionOverlayConfig => ({
   ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, over.theme ?? "competitive"),
   fields: { ...DEFAULT_OVERLAY_CONFIG.fields, rank: true, totalGames: true },
   ...over,
@@ -46,7 +46,7 @@ const resend = (s: PlayerLiveState, ms = 1000): PlayerLiveState => ({
 
 let host: HTMLDivElement;
 let root: Root;
-const render = (cfg: OverlayConfig, live: PlayerLiveState) =>
+const render = (cfg: SessionOverlayConfig, live: PlayerLiveState) =>
   act(() => {
     root.render(
       <OverlayView config={cfg} live={live} sizing={{ mode: "box", width: 800, height: 180 }} />,
@@ -338,7 +338,7 @@ describe("statistics stay coherent with the rotated character (37–43)", () => 
 });
 
 describe("Creator Motion with rotation (45–54)", () => {
-  const cfg = (over: Partial<OverlayConfig> = {}, rot: Partial<CharacterRotation> = {}) =>
+  const cfg = (over: Partial<SessionOverlayConfig> = {}, rot: Partial<CharacterRotation> = {}) =>
     config({ intervalSeconds: 5, ...rot }, { statsScope: "character", ...over }, true);
 
   it("45/51. rotation steps and the first render never set data-update", () => {

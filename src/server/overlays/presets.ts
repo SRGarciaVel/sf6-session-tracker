@@ -8,7 +8,7 @@
  *    → persisted; renderers then use the effective config as always.
  */
 import { and, asc, count, eq, sql } from "drizzle-orm";
-import type { OverlayConfig } from "@/domain/overlay/config";
+import { sessionConfigOf, type SessionOverlayConfig } from "@/domain/overlay/config";
 import {
   PRESETS_PER_ACCOUNT_MAX,
   PRESET_CONFIG_MAX_BYTES,
@@ -107,7 +107,7 @@ async function insertPreset(
 
 export async function createPreset(
   db: Database,
-  input: { userId: string; name: string; config: OverlayConfig },
+  input: { userId: string; name: string; config: SessionOverlayConfig },
 ): Promise<PresetResult<PresetView>> {
   if (!(await entitled(db, input.userId))) return err("not_entitled");
   return insertPreset(db, input.userId, input.name, appearanceFromConfig(input.config));
@@ -145,7 +145,7 @@ export async function renamePreset(
 /** Overwrite a preset with the current editor appearance ("update from current"). */
 export async function updatePresetFromConfig(
   db: DbExecutor,
-  input: { userId: string; presetId: string; config: OverlayConfig },
+  input: { userId: string; presetId: string; config: SessionOverlayConfig },
 ): Promise<PresetResult<null>> {
   if (!(await entitled(db, input.userId))) return err("not_entitled");
   const appearance = appearanceFromConfig(input.config);
@@ -188,7 +188,7 @@ export async function deletePreset(
 export async function applyPresetToOverlay(
   db: DbExecutor,
   input: { userId: string; presetId: string; overlayId: string },
-): Promise<PresetResult<OverlayConfig>> {
+): Promise<PresetResult<SessionOverlayConfig>> {
   if (!(await entitled(db, input.userId))) return err("not_entitled");
   const [preset, target] = await Promise.all([
     getOwnedPreset(db, input.userId, input.presetId),
@@ -196,12 +196,16 @@ export async function applyPresetToOverlay(
   ]);
   const appearance = preset ? parsePresetAppearance(preset.config) : null;
   if (!appearance || !target) return err("not_found");
-  // Never across kinds; the overlay's STORED kind decides (not the lenient parse).
-  if (!presetAppliesTo(appearance, target.storedKind)) return err("incompatible_kind");
+  // Never across kinds; the overlay's STORED kind decides (not the lenient parse). Presets are
+  // Session presets: a Rank Progress (or unknown-kind) overlay never receives one.
+  const stored = sessionConfigOf(target.config);
+  if (!presetAppliesTo(appearance, target.storedKind) || !stored) {
+    return err("incompatible_kind");
+  }
   const config = await prepareOverlayConfigForSave(db, {
     userId: input.userId,
-    stored: target.config,
-    incoming: applyPresetToConfig(target.config, appearance),
+    stored,
+    incoming: applyPresetToConfig(stored, appearance),
   });
   await updateOverlay(db, target, { config });
   return ok(config);

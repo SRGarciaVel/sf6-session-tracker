@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_OVERLAY_CONFIG, type OverlayConfig } from "./config";
+import { DEFAULT_OVERLAY_CONFIG, type SessionOverlayConfig } from "./config";
 import { resolvePresentation } from "./presentation";
 import { SESSION_VIEW, characterView } from "./rotation";
 import { sampleMultiCharacterState } from "./sample-session";
@@ -8,7 +8,7 @@ import { pickRatingCharacter, resolveOverlayStats } from "./state";
 // Sample: Chun-Li 2-1, Jamie 3-5, Ryu 9-8 ⇒ 14-14; active (latest match) = Ryu; Cammy unplayed.
 const session = sampleMultiCharacterState().session;
 const LABELS = { session: "Sesión" };
-const stored = (over: Partial<OverlayConfig> = {}): OverlayConfig => ({
+const stored = (over: Partial<SessionOverlayConfig> = {}): SessionOverlayConfig => ({
   ...DEFAULT_OVERLAY_CONFIG,
   statsScope: "character",
   ratingCharacterKey: "jamie",

@@ -318,7 +318,21 @@
       "url": "URL",
       "language": "Idioma",
       "empty": "Aún no tienes overlays configurados.",
-      "emptyAction": "Crea uno para añadirlo a OBS."
+      "emptyAction": "Crea uno para añadirlo a OBS.",
+      "type": "Tipo",
+      "style": "Estilo",
+      "chooseKind": "Elige el tipo de overlay",
+      "cancelNew": "Cancelar",
+      "kinds": {
+        "session": {
+          "name": "Estadísticas de sesión",
+          "description": "Victorias, derrotas, rating, rachas y rendimiento de la sesión."
+        },
+        "rank-progress": {
+          "name": "Progreso de rango",
+          "description": "Muestra tu rango actual y cuánto falta para tu próximo objetivo."
+        }
+      }
     },
     "obs": {
       "title": "Añadir a OBS",
@@ -909,6 +923,52 @@
     "brandTest": {
       "reveal": "Probar aparición",
       "hint": "Muestra la pestaña una vez en la vista previa. No guarda nada."
+    },
+    "rankProgress": {
+      "kindName": "Progreso de rango",
+      "sections": {
+        "content": "Contenido",
+        "display": "Visualización",
+        "appearance": "Apariencia"
+      },
+      "character": "Personaje",
+      "characterAuto": "Personaje activo (auto)",
+      "characterHint": "Auto sigue al personaje de tu última partida Ranked. Un personaje fijado vuelve al activo si no está en tu roster.",
+      "goal": "Objetivo",
+      "goals": {
+        "master": "Camino a Master",
+        "auto": {
+          "lp": "Siguiente división",
+          "mr": "Siguiente nivel Master"
+        }
+      },
+      "goalHint": {
+        "lp": "Siguiente división mide la división actual; Camino a Master mide la subida de tu rango actual hasta 25.000 LP.",
+        "mr": "Master League: progreso hacia el siguiente nivel (High, Grand, Ultimate Master). Legend requiere una posición Top 500 y no se estima."
+      },
+      "goalNormalized": "Camino a Master se aplica a personajes con LP. Este personaje está en Master League, así que el overlay muestra el siguiente nivel Master.",
+      "showCharacterName": "Mostrar nombre del personaje",
+      "showRemaining": "Mostrar puntos restantes",
+      "showSessionDelta": "Mostrar cambio de la sesión",
+      "sessionDeltaHint": "El cambio de la sesión solo aparece cuando se conoce el rating inicial de este personaje.",
+      "style": "Estilo",
+      "styles": {
+        "broadcast": {
+          "name": "Broadcast",
+          "description": "Franja ancha para la zona de la webcam o la parte inferior."
+        },
+        "compact": {
+          "name": "Compacto",
+          "description": "Tarjeta más pequeña para una esquina de la pantalla."
+        }
+      },
+      "previewData": "Datos de la vista previa",
+      "samples": {
+        "live": "Datos reales",
+        "lp": "Ejemplo · Diamond 3 · 21.950 LP",
+        "mr": "Ejemplo · High Master · 1.642 MR",
+        "ultimate": "Ejemplo · Ultimate Master · 2.134 MR"
+      }
     }
   },
   "NotFound": {

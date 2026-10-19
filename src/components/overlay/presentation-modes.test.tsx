@@ -11,7 +11,7 @@ import {
   DEFAULT_OVERLAY_CONFIG,
   OVERLAY_THEMES,
   applyThemeDefaults,
-  type OverlayConfig,
+  type SessionOverlayConfig,
 } from "@/domain/overlay/config";
 import { DEFAULT_CREATOR_CUSTOMIZATION } from "@/domain/overlay/creator";
 import { DEFAULT_CREATOR_MOTION } from "@/domain/overlay/motion";
@@ -24,9 +24,9 @@ import { OverlayView } from "./OverlayView";
 
 const config = (
   rotation: Partial<CharacterRotation> = {},
-  over: Partial<OverlayConfig> = {},
+  over: Partial<SessionOverlayConfig> = {},
   motion = true,
-): OverlayConfig => ({
+): SessionOverlayConfig => ({
   ...applyThemeDefaults(DEFAULT_OVERLAY_CONFIG, over.theme ?? "competitive"),
   fields: { ...DEFAULT_OVERLAY_CONFIG.fields, rank: true, totalGames: true },
   ...over,
@@ -61,7 +61,7 @@ const L = (characterKey: SampleExtraMatch["characterKey"]): SampleExtraMatch => 
 
 let host: HTMLDivElement;
 let root: Root;
-const render = (cfg: OverlayConfig, live: PlayerLiveState) =>
+const render = (cfg: SessionOverlayConfig, live: PlayerLiveState) =>
   act(() => {
     root.render(
       <OverlayView config={cfg} live={live} sizing={{ mode: "box", width: 800, height: 180 }} />,

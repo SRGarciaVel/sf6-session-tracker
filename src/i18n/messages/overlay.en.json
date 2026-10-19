@@ -18,5 +18,22 @@
     "minimalBest": "best <n></n>",
     "record": "Record",
     "rank": "Rank"
+  },
+  "RankProgress": {
+    "title": "Rank progress",
+    "goal": {
+      "next-division": "Next division",
+      "master": "Road to Master",
+      "next-master-tier": "Next Master tier"
+    },
+    "remaining": "{remaining} {unit} to {target}",
+    "target": "Goal: {target}",
+    "session": "Session",
+    "reached": "Master reached",
+    "legend": "Legend",
+    "legendRequirement": "Top 500 required",
+    "noRating": "No rating data",
+    "progressLabel": "Progress to {target}",
+    "progressValue": "{current} of {target} {unit}"
   }
 }

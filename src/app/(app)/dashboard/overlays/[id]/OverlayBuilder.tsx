@@ -26,11 +26,15 @@ import {
 } from "react";
 import { Button, Input, cx } from "@/components/ui/primitives";
 import { getEffectiveOverlayConfig } from "@/domain/overlay/creator";
-import { OVERLAY_PRESETS, type OverlayConfig } from "@/domain/overlay/config";
+import {
+  OVERLAY_PRESETS,
+  type OverlayConfig,
+  type SessionOverlayConfig,
+} from "@/domain/overlay/config";
 import { getOverlayMessages } from "@/i18n/overlay-messages";
 import { saveOverlayAction } from "../../actions";
 import { useLiveDashboard } from "../../_components/LiveDashboard";
-import { EDITOR_TABS, isDirty, type EditorSnapshot, type EditorTab } from "./builder-state";
+import { EDITOR_TABS, isDirty, type EditorTab } from "./builder-state";
 import { DEFAULT_CHARACTER_ROTATION } from "@/domain/overlay/rotation";
 import { CreatorPanel } from "./CreatorPanel";
 import { rotationViewSequence } from "./rotation-preview";
@@ -38,6 +42,7 @@ import { ObsOutput } from "./ObsOutput";
 import { AppearancePanel, ContentPanel, StylePanel, type Update } from "./panels";
 import { PreviewPane } from "./PreviewPane";
 import type { PresetSummary } from "./PresetsSection";
+import { RankProgressOverlayBuilder } from "./RankProgressBuilder";
 
 /** Creator capabilities of the owner (booleans only; never the plan). */
 export interface BuilderAccess {
@@ -58,7 +63,7 @@ const STATUS_CLASS: Record<SaveState, string> = {
   failed: "border-loss/60 text-loss",
 };
 
-interface OverlayBuilderProps {
+export interface OverlayBuilderProps {
   overlayId: string;
   initialName: string;
   initialConfig: OverlayConfig;
@@ -71,13 +76,23 @@ interface OverlayBuilderProps {
 
 /**
  * Overlay editor: dispatches on the config KIND (Phase 5.4A). Each kind owns its builder; the
- * kind itself is never editable (create another overlay instead). Only the Session Stats builder
- * exists today; 5.4B adds its Rank Progress case here.
+ * kind itself is never editable (create another overlay instead).
  */
 export function OverlayBuilder(props: OverlayBuilderProps) {
-  switch (props.initialConfig.kind) {
+  const config = props.initialConfig;
+  switch (config.kind) {
     case "session":
-      return <SessionOverlayBuilder {...props} />;
+      return <SessionOverlayBuilder {...props} initialConfig={config} />;
+    case "rank-progress":
+      // Free product: no Creator tab, no presets (Session presets never reach it).
+      return (
+        <RankProgressOverlayBuilder
+          overlayId={props.overlayId}
+          initialName={props.initialName}
+          initialConfig={config}
+          url={props.url}
+        />
+      );
   }
 }
 
@@ -89,7 +104,7 @@ function SessionOverlayBuilder({
   url,
   access,
   presets,
-}: OverlayBuilderProps) {
+}: OverlayBuilderProps & { initialConfig: SessionOverlayConfig }) {
   const router = useRouter();
   const t = useTranslations("Builder");
   const tc = useTranslations("Common");
@@ -97,7 +112,10 @@ function SessionOverlayBuilder({
 
   const [name, setName] = useState(initialName);
   const [config, setConfig] = useState(initialConfig);
-  const [saved, setSaved] = useState<EditorSnapshot>({ name: initialName, config: initialConfig });
+  const [saved, setSaved] = useState<{ name: string; config: SessionOverlayConfig }>({
+    name: initialName,
+    config: initialConfig,
+  });
   const [tab, setTab] = useState<EditorTab>("appearance");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null);

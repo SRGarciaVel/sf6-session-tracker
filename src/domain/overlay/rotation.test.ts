@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_OVERLAY_CONFIG,
   overlayConfigSchema,
-  parseOverlayConfig,
-  type OverlayConfig,
+  parseOverlayConfig as parseAnyOverlayConfig,
+  sessionConfigOf,
+  type SessionOverlayConfig,
 } from "./config";
 import {
   DEFAULT_CREATOR_CUSTOMIZATION,
@@ -45,6 +46,13 @@ import {
 } from "./rotation";
 import { sampleMultiCharacterState } from "./sample-session";
 import { resolveOverlayStats } from "./state";
+
+/** Session tests: parse and narrow (Phase 5.4B: the public parser returns any overlay kind). */
+function parseOverlayConfig(raw: unknown): SessionOverlayConfig {
+  const config = sessionConfigOf(parseAnyOverlayConfig(raw));
+  if (!config) throw new Error("expected a Session config");
+  return config;
+}
 
 const at = (min: number) => new Date(Date.UTC(2026, 0, 1, 18, min)).toISOString();
 const c = (
@@ -378,8 +386,8 @@ describe("entitlements: stored vs effective (55–60, 63)", () => {
     const plain = { ...DEFAULT_OVERLAY_CONFIG };
     expect(mergeOverlayConfigForSave(plain, crafted, FREE_ENT).creator).toBeUndefined();
     // A Free base edit (title) after a downgrade keeps it.
-    const edit: OverlayConfig = { ...stored, title: "FREE", creator: undefined };
-    const merged = mergeOverlayConfigForSave<OverlayConfig>(stored, edit, FREE_ENT);
+    const edit: SessionOverlayConfig = { ...stored, title: "FREE", creator: undefined };
+    const merged = mergeOverlayConfigForSave<SessionOverlayConfig>(stored, edit, FREE_ENT);
     expect(merged).toMatchObject({ title: "FREE" });
     expect(merged.creator?.characterRotation).toEqual(stored.creator.characterRotation);
   });

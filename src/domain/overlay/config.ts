@@ -2,14 +2,23 @@
  * Overlay configuration model. Persisted as JSON in `overlay.config`; validated on every write
  * and tolerant on read (missing keys fall back to defaults so old configs keep working).
  *
- * Phase 5.4A: the config is discriminated by `kind` (./kind.ts). Today the only implemented kind
- * is the Session Stats overlay; configs stored before 5.4A have no `kind` and read as "session".
+ * Phase 5.4A/B: the config is discriminated by `kind` (./kind.ts): the Session Stats overlay
+ * ("session"; configs stored before 5.4A have no `kind` and read as it) and the Rank Progress
+ * overlay ("rank-progress", ./rank-progress.ts). Each kind has its own schema and parser.
  */
 import { z } from "zod";
 import { CHARACTER_KEY_PATTERN } from "@/domain/sf6/rating";
 import { DEFAULT_LOCALE, LOCALES } from "@/i18n/locale";
 import { creatorCustomizationSchema, parseCreatorCustomization } from "./creator";
 import { storedOverlayKind, type CreatableOverlayKind } from "./kind";
+import {
+  DEFAULT_RANK_PROGRESS_OVERLAY_CONFIG,
+  RANK_PROGRESS_CANVASES,
+  parseRankProgressOverlayConfig,
+  rankProgressOverlayConfigSchema,
+  type RankProgressOverlayConfig,
+  type RankProgressStyle,
+} from "./rank-progress";
 import { FONT_IDS } from "./fonts";
 import { THEME_IDS, type OverlayCanvasId, type ThemeId } from "./themes";
 import { parseThemeVariants, themeVariantsSchema } from "./variants";
@@ -119,14 +128,24 @@ export const sessionOverlayConfigSchema = z.object({
 
 export type SessionOverlayConfig = z.infer<typeof sessionOverlayConfigSchema>;
 
-/**
- * Every overlay config, discriminated by `kind`. Phase 5.4A has one implemented kind; 5.4B adds
- * the Rank Progress config here (and its parser / renderer / builder), nothing speculative before.
- */
-export type OverlayConfig = SessionOverlayConfig;
+export type { RankProgressOverlayConfig } from "./rank-progress";
 
-/** Strict schema of a config sent by the editor (only the Session editor exists today). */
-export const overlayConfigSchema = sessionOverlayConfigSchema;
+/** Every overlay config, discriminated by `kind` (narrow on `config.kind`). */
+export type OverlayConfig = SessionOverlayConfig | RankProgressOverlayConfig;
+
+/** The config if it is a Session Stats one, else null (for Session-only callers: presets…). */
+export function sessionConfigOf(config: OverlayConfig): SessionOverlayConfig | null {
+  return config.kind === "session" ? config : null;
+}
+
+/**
+ * Strict schema of a config sent by an editor, any kind. Rank Progress requires its literal kind;
+ * a body without `kind` is a (legacy) Session config. A config never validates as another kind's.
+ */
+export const overlayConfigSchema = z.union([
+  rankProgressOverlayConfigSchema,
+  sessionOverlayConfigSchema,
+]);
 
 export const DEFAULT_SESSION_OVERLAY_CONFIG: SessionOverlayConfig = {
   kind: "session",
@@ -176,13 +195,15 @@ export function defaultOverlayConfigForKind(kind: CreatableOverlayKind): Overlay
   switch (kind) {
     case "session":
       return DEFAULT_SESSION_OVERLAY_CONFIG;
+    case "rank-progress":
+      return DEFAULT_RANK_PROGRESS_OVERLAY_CONFIG;
   }
 }
 
 export interface OverlayThemeMeta {
   id: OverlayThemeId;
   /** Applied when the streamer switches to this theme in the builder. */
-  defaults: Partial<OverlayConfig>;
+  defaults: Partial<SessionOverlayConfig>;
 }
 
 /** HUD palettes shared by every theme (cyan / magenta on deep navy). */
@@ -191,7 +212,7 @@ const HUD_PALETTE = {
   mutedColor: "#a3acd0",
   winColor: "#29f0a8",
   lossColor: "#ff3b72",
-} as const satisfies Partial<OverlayConfig>;
+} as const satisfies Partial<SessionOverlayConfig>;
 
 export const OVERLAY_THEME_META: Record<OverlayThemeId, OverlayThemeMeta> = {
   minimal: {
@@ -271,23 +292,28 @@ export const OVERLAY_THEME_META: Record<OverlayThemeId, OverlayThemeMeta> = {
   },
 };
 
-export function applyThemeDefaults(config: OverlayConfig, theme: OverlayThemeId): OverlayConfig {
+export function applyThemeDefaults(
+  config: SessionOverlayConfig,
+  theme: OverlayThemeId,
+): SessionOverlayConfig {
   return { ...config, ...OVERLAY_THEME_META[theme].defaults, theme };
 }
 
 /**
  * The single public parser of stored configs (lenient read). The kind decides the parser:
  *   no kind / "session"  ⇒ the Session parser (legacy rows need no migration or backfill);
- *   "rank-progress"      ⇒ not implemented before 5.4B — safe Session default (as for any
- *                          unusable config); never interpreted as a Rank Progress overlay;
- *   unknown / non-object ⇒ the safe Session default, as before.
+ *   "rank-progress"      ⇒ the Rank Progress parser (an unusable one ⇒ the Rank Progress
+ *                          default: a row never changes kind on read);
+ *   unknown / non-object ⇒ the safe Session default, as before (never read as Rank Progress).
  * Reading never writes: rows keep their stored JSON until the owner saves.
  */
 export function parseOverlayConfig(raw: unknown): OverlayConfig {
   switch (storedOverlayKind(raw)) {
     case "session":
-      // storedOverlayKind() only answers "session" for a plain (non-array) object.
+      // storedOverlayKind() only answers a kind for a plain (non-array) object.
       return parseSessionOverlayConfig(raw as Record<string, unknown>);
+    case "rank-progress":
+      return parseRankProgressOverlayConfig(raw as Record<string, unknown>);
     default:
       return DEFAULT_SESSION_OVERLAY_CONFIG;
   }
@@ -323,7 +349,8 @@ function parseSessionOverlayConfig(obj: Record<string, unknown>): SessionOverlay
 
 /**
  * What an overlay card shows about an overlay, per kind (Phase 5.4A): callers no longer assume
- * every config has Session theme fields. For the Session overlay: its canvas, language and theme.
+ * every config has Session theme fields. Session: canvas, language, theme. Rank Progress: canvas,
+ * language, style.
  */
 export interface OverlayReadout {
   kind: OverlayConfig["kind"];
@@ -331,6 +358,8 @@ export interface OverlayReadout {
   locale: OverlayConfig["locale"];
   /** Session theme; null for kinds without Session themes. */
   theme: OverlayThemeId | null;
+  /** Rank Progress style; null for kinds without one. */
+  style: RankProgressStyle | null;
 }
 
 export function overlayReadout(config: OverlayConfig): OverlayReadout {
@@ -341,6 +370,15 @@ export function overlayReadout(config: OverlayConfig): OverlayReadout {
         canvas: OVERLAY_PRESETS[config.preset],
         locale: config.locale,
         theme: config.theme,
+        style: null,
+      };
+    case "rank-progress":
+      return {
+        kind: config.kind,
+        canvas: RANK_PROGRESS_CANVASES[config.style],
+        locale: config.locale,
+        theme: null,
+        style: config.style,
       };
   }
 }
