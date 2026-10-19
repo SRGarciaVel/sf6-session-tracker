@@ -6,7 +6,9 @@
  *
  *   artifacts/sf6-session-companion-v<manifest.version>-beta.zip
  *   artifacts/sf6-session-companion-v<manifest.version>-beta.sha256   (sha256sum -c format)
- *   artifacts/sf6-session-companion-beta.{zip,sha256}                  (stable names for Releases)
+ *   artifacts/sf6-session-companion-beta.{zip,sha256}                  (stable names)
+ *
+ * The release workflow publishes all four (releaseAssets).
  *
  * Any failed check ⇒ no package and a non-zero exit code.
  */
@@ -20,8 +22,7 @@ import {
   createZip,
   readBuildDir,
   readZip,
-  releaseName,
-  STABLE_ASSET_BASENAME,
+  releaseAssets,
   sha256,
   validateBuild,
 } from "./release";
@@ -43,12 +44,12 @@ function fail(message: string, details: readonly string[] = []): never {
 const sourceVersion = (
   JSON.parse(readFileSync(join(extensionDir, "manifest.json"), "utf8")) as { version: string }
 ).version;
-const name = releaseName(sourceVersion);
-const zipPath = join(artifactsDir, `${name}.zip`);
-const sumPath = join(artifactsDir, `${name}.sha256`);
+const assets = releaseAssets(sourceVersion);
+const zipPath = join(artifactsDir, assets.versioned.zip);
+const sumPath = join(artifactsDir, assets.versioned.sha256);
 // Stable names for GitHub Releases (…/releases/latest/download/<stable>.zip): same bytes.
-const stableZipPath = join(artifactsDir, `${STABLE_ASSET_BASENAME}.zip`);
-const stableSumPath = join(artifactsDir, `${STABLE_ASSET_BASENAME}.sha256`);
+const stableZipPath = join(artifactsDir, assets.stable.zip);
+const stableSumPath = join(artifactsDir, assets.stable.sha256);
 for (const p of [zipPath, sumPath, stableZipPath, stableSumPath]) rmSync(p, { force: true });
 rmSync(distDir, { recursive: true, force: true });
 const env: NodeJS.ProcessEnv = { ...process.env, COMPANION_TRACKER_ORIGINS: BETA_TRACKER_ORIGIN };
@@ -75,9 +76,9 @@ if (!roundTrip.ok) fail("packaged ZIP failed validation", roundTrip.errors);
 
 const hash = sha256(zip);
 writeFileSync(zipPath, zip);
-writeFileSync(sumPath, checksumLine(hash, `${name}.zip`));
+writeFileSync(sumPath, checksumLine(hash, assets.versioned.zip));
 writeFileSync(stableZipPath, zip);
-writeFileSync(stableSumPath, checksumLine(hash, `${STABLE_ASSET_BASENAME}.zip`));
+writeFileSync(stableSumPath, checksumLine(hash, assets.stable.zip));
 
 console.log(`\n✓ SST Companion for Street Fighter 6 ${result.version} (beta) packaged`);
 console.log(`  tracker:  ${BETA_TRACKER_ORIGIN}`);

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   BETA_TRACKER_ORIGIN,
@@ -6,6 +7,7 @@ import {
   createZip,
   isValidChromeVersion,
   readZip,
+  releaseAssets,
   releaseName,
   releaseTag,
   STABLE_ASSET_BASENAME,
@@ -191,6 +193,57 @@ describe("companion beta release", () => {
   it("stable release asset name and companion tag", () => {
     expect(STABLE_ASSET_BASENAME).toBe("sf6-session-companion-beta");
     expect(releaseTag("0.1.1")).toBe("companion-v0.1.1");
+  });
+
+  it("each release has versioned + stable assets; versioned names come from manifest.version", () => {
+    expect(releaseAssets("0.3.1")).toEqual({
+      versioned: {
+        zip: "sf6-session-companion-v0.3.1-beta.zip",
+        sha256: "sf6-session-companion-v0.3.1-beta.sha256",
+      },
+      stable: {
+        zip: "sf6-session-companion-beta.zip",
+        sha256: "sf6-session-companion-beta.sha256",
+      },
+    });
+    const { version } = JSON.parse(
+      readFileSync(new URL("../manifest.json", import.meta.url), "utf8"),
+    ) as { version: string };
+    expect(releaseAssets(version).versioned.zip).toBe(`${releaseName(version)}.zip`);
+    expect(() => releaseAssets("0.3.1-beta")).toThrow();
+  });
+
+  it("versioned and stable checksum files describe the same bytes, each naming its own ZIP", () => {
+    const zip = createZip(build());
+    const a = releaseAssets("0.3.1");
+    const versioned = checksumLine(sha256(zip), a.versioned.zip);
+    const stable = checksumLine(sha256(zip), a.stable.zip);
+    expect(versioned.split("  ")[0]).toBe(stable.split("  ")[0]);
+    expect(versioned).toBe(`${sha256(zip)}  sf6-session-companion-v0.3.1-beta.zip\n`);
+    expect(stable).toBe(`${sha256(zip)}  sf6-session-companion-beta.zip\n`);
+  });
+
+  it("the release workflow uploads all four assets and still verifies the stable latest URL", () => {
+    const wf = readFileSync(
+      new URL("../../../.github/workflows/companion-release.yml", import.meta.url),
+      "utf8",
+    );
+    const create = wf.slice(wf.indexOf("gh release create"), wf.indexOf("--target"));
+    for (const asset of [
+      '"artifacts/$VZIP"', // sf6-session-companion-v${VERSION}-beta.zip
+      '"artifacts/sf6-session-companion-v${VERSION}-beta.sha256"',
+      "artifacts/sf6-session-companion-beta.zip",
+      "artifacts/sf6-session-companion-beta.sha256",
+    ]) {
+      expect(create).toContain(asset);
+    }
+    expect(wf).toContain('VZIP="sf6-session-companion-v${VERSION}-beta.zip"');
+    expect(wf).toContain("--latest");
+    expect(wf).toContain("releases/latest/download/sf6-session-companion-beta.sha256");
+    expect(wf).toContain('cmp "artifacts/$VZIP" artifacts/sf6-session-companion-beta.zip');
+    // Permissions unchanged: only contents: write for the release job.
+    expect(wf).toContain("permissions: {}");
+    expect(wf.match(/contents: write/g)).toHaveLength(1);
   });
 
   it("release guard: first release, newer release", () => {

@@ -2,7 +2,8 @@ name: Release Companion Beta
 
 # Manual only. Publishes the closed-beta companion as a GitHub Release from main:
 #   tag      companion-v<manifest.version>
-#   assets   sf6-session-companion-beta.zip + sf6-session-companion-beta.sha256 (stable names)
+#   assets   sf6-session-companion-v<version>-beta.zip + .sha256  (versioned: the version is visible)
+#            sf6-session-companion-beta.zip + .sha256            (stable names, same ZIP bytes)
 # so https://github.com/<repo>/releases/latest/download/sf6-session-companion-beta.zip always
 # serves the newest beta. It is a NORMAL release marked latest: GitHub never treats prereleases
 # (or drafts) as "latest", which would break that stable URL.
@@ -31,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: write # create the tag + release and upload its two assets (GITHUB_TOKEN only)
+      contents: write # create the tag + release and upload its four assets (GITHUB_TOKEN only)
     env:
       GH_TOKEN: ${{ github.token }}
       CONFIRM: ${{ inputs.confirm }}
@@ -87,12 +88,20 @@ jobs:
       - run: pnpm companion:package:beta
       - run: pnpm companion:inspect:prod
 
-      - name: Stable assets are the validated package
+      - name: Versioned and stable assets are the same validated package
         env:
           VERSION: ${{ steps.guard.outputs.version }}
         run: |
-          cmp "artifacts/sf6-session-companion-v${VERSION}-beta.zip" artifacts/sf6-session-companion-beta.zip
-          (cd artifacts && sha256sum -c sf6-session-companion-beta.sha256)
+          VZIP="sf6-session-companion-v${VERSION}-beta.zip"
+          VSUM="sf6-session-companion-v${VERSION}-beta.sha256"
+          for f in "$VZIP" "$VSUM" sf6-session-companion-beta.zip sf6-session-companion-beta.sha256; do
+            test -s "artifacts/$f" || { echo "::error::missing artifacts/$f"; exit 1; }
+          done
+          cmp "artifacts/$VZIP" artifacts/sf6-session-companion-beta.zip
+          (cd artifacts && sha256sum -c "$VSUM" && sha256sum -c sf6-session-companion-beta.sha256)
+          if [ "$(cut -d' ' -f1 "artifacts/$VSUM")" != "$(cut -d' ' -f1 artifacts/sf6-session-companion-beta.sha256)" ]; then
+            echo "::error::versioned and stable checksums differ"; exit 1
+          fi
 
       - name: Create release (normal release, marked latest)
         env:
@@ -101,14 +110,18 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           SHA256=$(cut -d' ' -f1 artifacts/sf6-session-companion-beta.sha256)
+          VZIP="sf6-session-companion-v${VERSION}-beta.zip"
           {
             if [ -n "$NOTES" ]; then printf '%s\n\n' "$NOTES"; fi
             printf 'SST Companion for Street Fighter 6 v%s — closed beta (Chrome, Brave, Edge: Load unpacked).\n\n' "$VERSION"
             printf 'Install / update guide: https://sf6-session-tracker-web.onrender.com/help/companion\n\n'
-            printf 'SHA-256 (sf6-session-companion-beta.zip): %s\n\n' "\`$SHA256\`"
-            printf 'Stable download: https://github.com/%s/releases/latest/download/sf6-session-companion-beta.zip\n' "$REPO"
+            printf 'Versioned download (this release): https://github.com/%s/releases/download/%s/%s\n\n' "$REPO" "$TAG" "$VZIP"
+            printf 'Stable download (always the latest beta): https://github.com/%s/releases/latest/download/sf6-session-companion-beta.zip\n\n' "$REPO"
+            printf 'Both files are the same package. SHA-256: %s\n' "\`$SHA256\`"
           } > release-notes.md
           gh release create "$TAG" \
+            "artifacts/$VZIP" \
+            "artifacts/sf6-session-companion-v${VERSION}-beta.sha256" \
             artifacts/sf6-session-companion-beta.zip \
             artifacts/sf6-session-companion-beta.sha256 \
             --target "$(git rev-parse HEAD)" \
@@ -119,8 +132,14 @@ jobs:
       - name: Stable URL serves this release
         env:
           VERSION: ${{ steps.guard.outputs.version }}
+          TAG: ${{ steps.guard.outputs.tag }}
           REPO: ${{ github.repository }}
         run: |
+          VSUM="sf6-session-companion-v${VERSION}-beta.sha256"
+          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o versioned.sha256 \
+            "https://github.com/$REPO/releases/download/$TAG/$VSUM"
+          cmp versioned.sha256 "artifacts/$VSUM"
+          echo "Versioned URL OK"
           URL="https://github.com/$REPO/releases/latest/download/sf6-session-companion-beta.sha256"
           for i in 1 2 3 4 5 6; do
             if curl -fsSL -o latest.sha256 "$URL" && cmp -s latest.sha256 artifacts/sf6-session-companion-beta.sha256; then
