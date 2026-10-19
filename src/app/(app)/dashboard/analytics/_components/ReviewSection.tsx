@@ -8,10 +8,12 @@ import { REVIEW_DESTINATION_KEYS } from "@/components/analytics/review-content";
 import { describeReviewSignal, renderReviewPlainText } from "@/components/analytics/review-text";
 import { cx } from "@/components/ui/primitives";
 import type { ReviewDirection, ReviewSignal } from "@/domain/analytics/review";
+import type { ReviewReplaySelection } from "@/domain/analytics/review-replays";
 import { buildReviewReport } from "@/domain/analytics/review-report";
 import type { PlayerAnalytics } from "@/server/analytics/service";
 import { AnalyticsSection, reviewPdfHref } from "./parts";
 import { ReviewExportActions } from "./ReviewExportActions";
+import { ReplayIdHelp, ReviewReplayDisclosure } from "./ReviewReplays";
 
 /** Direction is carried by an arrow AND words, never colour alone. */
 const TONE: Record<ReviewDirection, { border: string; arrow: string }> = {
@@ -25,6 +27,9 @@ export function ReviewSection({ data }: { data: PlayerAnalytics }) {
   const ta = useTranslations("Analytics");
   const { signals, totalEligible } = data.summary.review;
   const hidden = totalEligible - signals.length;
+  // Replay Selection is aligned with the selected signals (looked up by id, never re-ranked).
+  const replays = new Map(data.reviewReplays.map((r) => [r.signalId, r]));
+  const anyReplays = data.reviewReplays.some((r) => r.totalCandidates > 0);
   return (
     <AnalyticsSection
       id="review"
@@ -45,7 +50,7 @@ export function ReviewSection({ data }: { data: PlayerAnalytics }) {
           >
             {signals.map((s) => (
               <li key={s.id} className="min-w-0">
-                <SignalCard signal={s} />
+                <SignalCard signal={s} replays={replays.get(s.id)} />
               </li>
             ))}
           </ul>
@@ -60,7 +65,13 @@ export function ReviewSection({ data }: { data: PlayerAnalytics }) {
             data-testid="review-disclaimer"
           >
             {t("disclaimer")}
+            {anyReplays && (
+              <span className="mt-1 block" data-testid="review-replay-disclaimer">
+                {t("replays.disclaimer")}
+              </span>
+            )}
           </p>
+          {anyReplays && <ReplayIdHelp />}
           <ReviewExport data={data} />
         </>
       )}
@@ -68,7 +79,13 @@ export function ReviewSection({ data }: { data: PlayerAnalytics }) {
   );
 }
 
-function SignalCard({ signal }: { signal: ReviewSignal }) {
+function SignalCard({
+  signal,
+  replays,
+}: {
+  signal: ReviewSignal;
+  replays: ReviewReplaySelection | undefined;
+}) {
   const t = useTranslations("Analytics.review");
   const locale = useLocale();
   const tone = TONE[signal.direction];
@@ -119,6 +136,8 @@ function SignalCard({ signal }: { signal: ReviewSignal }) {
           ))}
         </ul>
       </details>
+
+      <ReviewReplayDisclosure selection={replays} />
 
       <a
         href={signal.destination}

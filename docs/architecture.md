@@ -530,6 +530,46 @@ filename="sst-review-<character | all-characters>-<mode>-<range>-<YYYY-MM-DD>.pd
 - **Never:** ratings (6.3 stays blocked), replay telemetry, causes / tilt / fatigue, generative AI,
   stored reports, or editable PDF fields.
 
+#### Replay selection (Phase 6.4C)
+
+A review priority says **what** recorded pattern deserves review. Replay selection lists
+**which** concrete recorded matches belong to that evidence, so they can be found in the game. It
+never says why a match was won or lost: SST does not observe replay content.
+
+- **Pure and deterministic:** `domain/analytics/review-replays.ts`. Its inputs are the selected
+  `summary.review.signals` and the SAME dataset (range + mode + character), newest first, plus the
+  row-aware session segments.
+  - Order: `played_at` DESC, ties by external id DESC.
+  - No score, no ratings, no opponent player identity (opponent CHARACTER only).
+  - Signals are never changed or re-ranked.
+- **Rules ("decided" = win or loss):**
+
+  | Signal         | Candidates                                                                                                                                                                |
+  | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | Matchup        | the 3 newest decided matches of that own × opponent pair (wins **and** losses)                                                                                            |
+  | Recent shift   | up to 2 decided matches from the signal's exact latest-20 window and up to 2 from the previous-20 window. Windows are sliced first; a draw is skipped, never back-filled. |
+  | Session halves | the most recent segment with ≥ 4 matches that has a decided match in both halves (first half = ceil(N / 2)); its newest decided match in each half                        |
+  | Post-loss      | the 2 most recent pairs of a loss and the IMMEDIATELY next match of the same segment (any result; never across a session or a ≥ 45 min split)                             |
+  | Exposure       | the 3 newest matches against that opponent character, any result                                                                                                          |
+
+  `session_id = NULL` takes part in matchup, recent and exposure selections, not in halves or
+  post-loss. An empty selection just hides the disclosure.
+
+- **One segmentation:** `segmentSessionMatchRows()` keeps the rows. `segmentSessionMatches()` is
+  its aggregate projection, so the Phase 6.2 semantics are unchanged; a legacy-oracle equivalence
+  test covers that. `computeAnalyticsDetailed()` segments once for session analytics, review and
+  replay selection.
+- **Server-side, no extra query:** `PlayerAnalytics.reviewReplays` is aligned with the selected
+  signals and computed in memory from the rows already loaded. The 3 selects are unchanged; there
+  is no migration and no API.
+- **UI only:** each review card has a collapsed «Replays para revisar (N)» disclosure showing the
+  result, characters, time, the **Replay ID** and a copy button (copies exactly the id).
+  - At section level: a «¿Cómo abro un Replay ID?» help (in SF6: CFN → Replays → Search → Keyword
+    Search) and the disclaimer that SST does not analyze the replay or determine the cause.
+  - There is no Buckler deep link and no third-party site.
+- **Export boundary:** replay ids are **not** in ReviewReport, the plain-text summary or the PDF
+  (shareable artifacts with a different privacy surface); tests enforce it.
+
 ## 7. Realtime
 
 - Worker/web → `pg_notify('sf6_events', {kind, playerId, overlayId?})` after commit.

@@ -13,8 +13,12 @@ import {
   computeSessionHalves,
   computeSessionStreaks,
   median,
+  segmentSessionMatchRows,
   segmentSessionMatches,
+  sessionAnalyticsOfSegments,
+  type AnalyticsSessionSegment,
 } from "./sessions";
+import { computeRecord } from "./record";
 
 const T0 = Date.parse("2026-10-14T12:00:00.000Z");
 const MIN = 60_000;
@@ -344,5 +348,124 @@ describe("42. no NaN / Infinity anywhere", () => {
   it.each(["", "W", "D", "DDD", "LWLWDL", "WWWWWWWWWWWWWW"])("results %j", (results) => {
     assertFinite(computeSessionAnalytics(run(results)));
     assertFinite(computeSessionAnalytics([...run(results), ...run(results, 500)]));
+  });
+});
+
+/**
+ * Phase 6.4C refactor guard: the row-aware segmentation must project to EXACTLY what the previous
+ * implementation produced. The pre-refactor algorithm is kept here verbatim as the oracle.
+ */
+function legacySegmentSessionMatches(
+  rows: readonly AnalyticsMatchRow[],
+  gapMs: number = SESSION_ANALYTICS_GAP_MS,
+): AnalyticsSessionSegment[] {
+  const playOrder = (a: AnalyticsMatchRow, b: AnalyticsMatchRow) =>
+    a.playedAt.getTime() - b.playedAt.getTime() ||
+    (a.externalMatchId < b.externalMatchId ? -1 : a.externalMatchId > b.externalMatchId ? 1 : 0);
+  const toSegment = (sessionId: string, segmentIndex: number, list: AnalyticsMatchRow[]) => {
+    const first = list[0]!;
+    const last = list[list.length - 1]!;
+    const results = list.map((r) => r.result);
+    return {
+      sessionId,
+      segmentIndex,
+      results,
+      record: computeRecord(results),
+      matchCount: list.length,
+      firstPlayedAt: first.playedAt,
+      lastPlayedAt: last.playedAt,
+      gameplayDurationMs: last.playedAt.getTime() - first.playedAt.getTime(),
+    };
+  };
+  const bySession = new Map<string, AnalyticsMatchRow[]>();
+  for (const r of rows) {
+    if (r.sessionId === null) continue;
+    const list = bySession.get(r.sessionId);
+    if (list) list.push(r);
+    else bySession.set(r.sessionId, [r]);
+  }
+  const segments: AnalyticsSessionSegment[] = [];
+  for (const [sessionId, list] of bySession) {
+    list.sort(playOrder);
+    let current: AnalyticsMatchRow[] = [];
+    let index = 0;
+    for (const r of list) {
+      const prev = current[current.length - 1];
+      if (prev && r.playedAt.getTime() - prev.playedAt.getTime() >= gapMs) {
+        segments.push(toSegment(sessionId, index++, current));
+        current = [];
+      }
+      current.push(r);
+    }
+    if (current.length > 0) segments.push(toSegment(sessionId, index, current));
+  }
+  return segments.sort(
+    (a, b) =>
+      a.firstPlayedAt.getTime() - b.firstPlayedAt.getTime() ||
+      (a.sessionId < b.sessionId ? -1 : a.sessionId > b.sessionId ? 1 : 0) ||
+      a.segmentIndex - b.segmentIndex,
+  );
+}
+
+describe("row-aware segmentation ≡ previous aggregate segmentation (Phase 6.4C refactor)", () => {
+  /** Deterministic pseudo-random datasets: sessions, NULL history, gaps around 45 min, ties. */
+  function dataset(seed: number): AnalyticsMatchRow[] {
+    let x = seed;
+    const rand = () => {
+      x = (x * 1103515245 + 12345) % 2_147_483_648;
+      return x / 2_147_483_648;
+    };
+    const rows: AnalyticsMatchRow[] = [];
+    const gaps = [0, 4, 4, 30, 44, 45, 46, 120];
+    for (let s = 0; s < 6; s++) {
+      let minute = s * 10_000;
+      const n = 1 + Math.floor(rand() * 14);
+      for (let i = 0; i < n; i++) {
+        minute += gaps[Math.floor(rand() * gaps.length)]!;
+        const r = rand();
+        rows.push(
+          m(r < 0.45 ? "W" : r < 0.9 ? "L" : "D", minute, {
+            sessionId: rand() < 0.15 ? null : `s${s % 4}`,
+          }),
+        );
+      }
+    }
+    return rows;
+  }
+
+  it("same segments (order, split, results, counts, timestamps, duration) for many datasets", () => {
+    for (let seed = 1; seed <= 40; seed++) {
+      const rows = dataset(seed);
+      for (const input of [rows, [...rows].reverse()]) {
+        expect(segmentSessionMatches(input)).toEqual(legacySegmentSessionMatches(input));
+      }
+    }
+  });
+
+  it("same session analytics (streaks, recovery, halves, positions, duration) for many datasets", () => {
+    for (let seed = 41; seed <= 70; seed++) {
+      const rows = dataset(seed);
+      expect(sessionAnalyticsOfSegments(segmentSessionMatches(rows))).toEqual(
+        sessionAnalyticsOfSegments(legacySegmentSessionMatches(rows)),
+      );
+      expect(computeSessionAnalytics(rows)).toEqual(
+        sessionAnalyticsOfSegments(legacySegmentSessionMatches(rows)),
+      );
+    }
+  });
+
+  it("row-aware segments keep the original rows in play order, NULL excluded", () => {
+    const rows = dataset(99);
+    const withRows = segmentSessionMatchRows(rows);
+    const aggregate = legacySegmentSessionMatches(rows);
+    expect(withRows.map((s) => s.rows.map((r) => r.result))).toEqual(
+      aggregate.map((s) => s.results),
+    );
+    for (const seg of withRows) {
+      expect(seg.rows.every((r) => r.sessionId === seg.sessionId)).toBe(true);
+    }
+    expect(withRows.flatMap((s) => s.rows).length).toBe(
+      rows.filter((r) => r.sessionId !== null).length,
+    );
   });
 });

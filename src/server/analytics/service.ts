@@ -14,13 +14,14 @@
  */
 import { and, desc, eq, gte, sql, type SQL } from "drizzle-orm";
 import {
-  computeAnalytics,
+  computeAnalyticsDetailed,
   rangeStart,
   type AnalyticsMatchRow,
   type AnalyticsMode,
   type AnalyticsRange,
   type AnalyticsSummary,
 } from "@/domain/analytics/aggregate";
+import type { ReviewReplaySelection } from "@/domain/analytics/review-replays";
 import type { CharacterKey } from "@/domain/sf6/types";
 import type { DbExecutor } from "@/server/db/client";
 import { match } from "@/server/db/schema";
@@ -44,6 +45,13 @@ export interface PlayerAnalytics {
   from: Date | null;
   generatedAt: Date;
   summary: AnalyticsSummary;
+  /**
+   * Replay Selection (Phase 6.4C), aligned with `summary.review.signals`: concrete recorded
+   * matches of each selected signal's evidence, computed in memory from the SAME rows (no extra
+   * query). Authenticated Analytics page only — never part of ReviewReport, the plain-text summary
+   * or the PDF.
+   */
+  reviewReplays: ReviewReplaySelection[];
 }
 
 /** The analytics projection of a player's recorded matches, newest first. Private. */
@@ -132,6 +140,7 @@ async function analyticsForOwnedPlayer(
   const character =
     requested && characters.some((c) => c.characterKey === requested) ? requested : null;
   const rows = await loadAnalyticsRows(db, playerId, { from, mode: options.mode });
+  const { summary, reviewReplays } = computeAnalyticsDetailed(rows, { character });
   return {
     range: options.range,
     mode: options.mode,
@@ -139,6 +148,7 @@ async function analyticsForOwnedPlayer(
     characters,
     from,
     generatedAt: now,
-    summary: computeAnalytics(rows, { character }),
+    summary,
+    reviewReplays,
   };
 }

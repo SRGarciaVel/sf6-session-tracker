@@ -1218,7 +1218,37 @@
           "knowledge": "¿Qué conocimiento del enfrentamiento necesitas una y otra vez?"
         }
       },
-      "methodology": "Para revisar: señales deterministas con umbrales de producto (no significación estadística). Enfrentamiento ≥ 10 decididas frente al mismo personaje propio con ≥ 30; últimas 20 frente a las 20 anteriores (≥ 10 decididas cada una); mitades con ≥ 5 segmentos y ≥ 20 decididas por mitad; partida siguiente tras derrota frente a tras victoria (≥ 10 observaciones cada una, dentro del mismo segmento); diferencia mínima de 10 pp. Exposición: ≥ 20 partidas y ≥ 10 % del total con rival conocido. Máximo 3 señales y 2 por tipo."
+      "methodology": "Para revisar: señales deterministas con umbrales de producto (no significación estadística). Enfrentamiento ≥ 10 decididas frente al mismo personaje propio con ≥ 30; últimas 20 frente a las 20 anteriores (≥ 10 decididas cada una); mitades con ≥ 5 segmentos y ≥ 20 decididas por mitad; partida siguiente tras derrota frente a tras victoria (≥ 10 observaciones cada una, dentro del mismo segmento); diferencia mínima de 10 pp. Exposición: ≥ 20 partidas y ≥ 10 % del total con rival conocido. Máximo 3 señales y 2 por tipo.",
+      "replays": {
+        "title": "{count, plural, one {Replays para revisar (#)} other {Replays para revisar (#)}}",
+        "intro": {
+          "matchup": "Ejemplos de partidas que forman parte de la evidencia de esta prioridad: las más recientes de este enfrentamiento, ganadas y perdidas.",
+          "recent": "Ejemplos de partidas que forman parte de la evidencia de esta prioridad. Compara ejemplos de ambas ventanas.",
+          "halves": "Compara partidas del inicio y del final de un segmento reciente incluido en la muestra. Es un ejemplo, no explica la diferencia global.",
+          "postLoss": "Revisa la derrota y la partida inmediatamente posterior, dentro del mismo segmento de sesión.",
+          "exposure": "Partidas recientes contra este personaje."
+        },
+        "groups": {
+          "recent": "Ventana reciente",
+          "previous": "Ventana anterior",
+          "firstHalf": "Primera mitad",
+          "secondHalf": "Segunda mitad"
+        },
+        "transition": "Transición {n}",
+        "afterLossLabel": "Derrota",
+        "nextLabel": "Partida siguiente",
+        "pair": "{own} vs {opponent}",
+        "replayId": "Replay ID",
+        "copy": "Copiar ID",
+        "copied": "Copiado",
+        "copyFailed": "No se pudo copiar",
+        "copyAria": "Copiar Replay ID {id}",
+        "helpTitle": "¿Cómo abro un Replay ID?",
+        "helpIntro": "En Street Fighter 6:",
+        "helpPath": "CFN → Replays → Search → Keyword Search → Replay ID",
+        "helpNote": "SST no abre replays por ti: copia el ID y búscalo en el juego.",
+        "disclaimer": "SST selecciona partidas por su relación con la señal. No analiza lo ocurrido dentro del replay ni determina la causa del resultado."
+      }
     },
     "reviewReport": {
       "title": "Revisión de rendimiento",

@@ -1,12 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import type { CharacterKey, MatchResult } from "@/domain/sf6/types";
-import { computeAnalytics, type AnalyticsMatchRow, type AnalyticsSummary } from "./aggregate";
+import {
+  computeAnalytics,
+  computeAnalyticsDetailed,
+  type AnalyticsMatchRow,
+  type AnalyticsSummary,
+} from "./aggregate";
 import { selectReviewSignals } from "./review";
 import {
   buildReviewReport,
   hasReviewPriorities,
   isoDate,
   reviewReportFilename,
+  type ReviewReport,
   type ReviewReportInput,
 } from "./review-report";
 
@@ -169,6 +175,33 @@ describe("buildReviewReport", () => {
     const report = buildReviewReport({ ...i, summary });
     expect(report.priorities).toHaveLength(1);
     expect(report.omittedPriorities).toBe(4);
+  });
+});
+
+describe("export boundary (Phase 6.4C)", () => {
+  it("replay selections never enter ReviewReport (same keys, no replay ids)", () => {
+    const rows = MANY;
+    const detailed = computeAnalyticsDetailed(rows);
+    const ids = detailed.reviewReplays.flatMap((r) =>
+      r.groups.flatMap((g) => g.candidates.map((c) => c.externalMatchId)),
+    );
+    expect(ids.length).toBeGreaterThan(0);
+    // The page passes PlayerAnalytics (which now carries reviewReplays) straight in.
+    const pageData = { ...input(rows), reviewReplays: detailed.reviewReplays };
+    const report = buildReviewReport(pageData);
+    expect(Object.keys(report).sort()).toEqual(
+      ["context", "omittedPriorities", "priorities", "snapshot"].sort(),
+    );
+    expect(Object.keys(report.priorities[0]!).sort()).toEqual(["index", "signal"]);
+    const json = JSON.stringify(report);
+    for (const id of ids) expect(json).not.toContain(id);
+    expect(json).not.toMatch(/reviewReplays|candidates|externalMatchId/);
+  });
+
+  it("type-level: ReviewReport has no replay field", () => {
+    expectTypeOf<keyof ReviewReport>().toEqualTypeOf<
+      "context" | "snapshot" | "priorities" | "omittedPriorities"
+    >();
   });
 });
 
