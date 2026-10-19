@@ -1,0 +1,470 @@
+{
+ "pageProps": {
+  "master_rating_ranking": {
+   "current_page": 25,
+   "total_page": 1500,
+   "total_count": 30000,
+   "ranking_fighter_list": [
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2208,
+     "master_rating_ranking": 481,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2207,
+     "master_rating_ranking": 482,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2206,
+     "master_rating_ranking": 483,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2205,
+     "master_rating_ranking": 484,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2204,
+     "master_rating_ranking": 485,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2203,
+     "master_rating_ranking": 486,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2202,
+     "master_rating_ranking": 487,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2201,
+     "master_rating_ranking": 488,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2200,
+     "master_rating_ranking": 489,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2199,
+     "master_rating_ranking": 490,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2199,
+     "master_rating_ranking": 491,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2199,
+     "master_rating_ranking": 492,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2197,
+     "master_rating_ranking": 493,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2197,
+     "master_rating_ranking": 493,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2197,
+     "master_rating_ranking": 493,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2197,
+     "master_rating_ranking": 493,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2196,
+     "master_rating_ranking": 497,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2196,
+     "master_rating_ranking": 497,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2196,
+     "master_rating_ranking": 497,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    },
+    {
+     "fighter_banner_info": {
+      "personal_info": {
+       "fighter_id": "SANITIZED",
+       "short_id": 0,
+       "platform_name": "SANITIZED"
+      },
+      "main_circle": {
+       "circle_name": "SANITIZED"
+      },
+      "favorite_character_name": "SANITIZED",
+      "title_data": {
+       "title_data_val": "SANITIZED"
+      }
+     },
+     "rating": 2196,
+     "master_rating_ranking": 497,
+     "master_league": 37,
+     "character_name": "SANITIZED",
+     "character_tool_name": "sanitized",
+     "league_rank": 36
+    }
+   ],
+   "my_ranking_info": {
+    "fighter_banner_info": {
+     "personal_info": {
+      "fighter_id": "SANITIZED",
+      "short_id": 0
+     }
+    },
+    "rating": 0,
+    "master_rating_ranking": 0
+   }
+  },
+  "common": {
+   "statusCode": 200,
+   "isError": false,
+   "loginUser": {
+    "flg": true
+   }
+  },
+  "__namespaces": {}
+ },
+ "__N_SSP": true
+}

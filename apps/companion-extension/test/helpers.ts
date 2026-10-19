@@ -78,6 +78,15 @@ export function fixtureTransport(
       const m = /\/_next\/data\/([^/]+)\/([a-z-]+)\/profile\/(\d+)\/(play|battlelog)\.json$/.exec(
         p,
       );
+      // Phase 5.4C: sanitized Master leaderboard pages (ranking-master-page-N.json).
+      const r = /\/_next\/data\/([^/]+)\/([a-z-]+)\/ranking\/master\.json$/.exec(p);
+      if (r && r[1] === BUILD_ID) {
+        if (!served.includes(r[2]!)) return LOCALE_REFUSED_400;
+        const file = `ranking-master-page-${url.searchParams.get("page") ?? "1"}.json`;
+        if (url.searchParams.get("season_type") === "1" && existsSync(`${DIR}${file}`)) {
+          return ok(read(file));
+        }
+      }
       if (m && m[1] === BUILD_ID) {
         if (!served.includes(m[2]!)) return LOCALE_REFUSED_400;
         const file =

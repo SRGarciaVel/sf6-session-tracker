@@ -56,6 +56,21 @@ export const bucklerPaths = {
     const qs = page === 1 ? `sid=${seg(cfnId)}` : `page=${page}&sid=${seg(cfnId)}`;
     return `${BUCKLER_BASE_PATH}/_next/data/${seg(buildId)}/${checkLocale(locale)}/profile/${seg(cfnId)}/battlelog.json?${qs}`;
   },
+  /**
+   * Master leaderboard page (observed 2026-10-19: `ranking/master.json?page=N&season_type=1`).
+   * `season_type=1` = the CURRENT phase (the previous phase is never used).
+   */
+  masterRanking: (
+    buildId: string,
+    page: number,
+    locale: string = BUCKLER_DEFAULT_LOCALE,
+    seasonType = 1,
+  ) => {
+    if (!Number.isInteger(page) || page < 1) throw new RangeError(`invalid ranking page ${page}`);
+    if (!Number.isInteger(seasonType) || seasonType < 1)
+      throw new RangeError(`invalid season_type ${seasonType}`);
+    return `${BUCKLER_BASE_PATH}/_next/data/${seg(buildId)}/${checkLocale(locale)}/ranking/master.json?page=${page}&season_type=${seasonType}`;
+  },
 };
 
 /**

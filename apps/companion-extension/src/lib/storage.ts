@@ -67,6 +67,13 @@ export interface CompanionStore {
   /** Local cache of replay ids already accepted by the tracker (the DB stays authoritative). */
   seenReplayIds: string[];
   lastTest: ConnectionTestReport | null;
+  /**
+   * Phase 5.4C: last Legend-boundary lookup ATTEMPT (success or not) — gates the 15 min cadence,
+   * so a failing lookup is not retried every cycle.
+   */
+  legendAttemptAt: string | null;
+  /** Rows per Master leaderboard page seen last time (better first guess next time). */
+  legendPageSize: number | null;
 }
 
 export const DEFAULT_STORE: CompanionStore = {
@@ -86,6 +93,8 @@ export const DEFAULT_STORE: CompanionStore = {
   lastError: null,
   seenReplayIds: [],
   lastTest: null,
+  legendAttemptAt: null,
+  legendPageSize: null,
 };
 
 /** Minimal async key-value area; chrome.storage.local in the extension, a Map in tests. */
@@ -119,6 +128,7 @@ export class CompanionStorage {
       "lastBattlelogAt",
       "lastProfileAt",
       "lastMatchAt",
+      "legendAttemptAt",
     ]);
     await this.area.set({ trackerStatus: "unpaired" });
   }

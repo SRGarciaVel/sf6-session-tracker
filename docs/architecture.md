@@ -778,6 +778,60 @@ A streamer may use Session Stats, Rank Progress or both (separate Browser Source
   re-applying 5.4B restores them intact. Before reverting past 5.4A, delete or convert Rank
   Progress rows (see above).
 
+### Dynamic Legend (Phase 5.4C)
+
+Completes Rank Progress for the Master League. Core question: "am I Legend, and if not, how far is
+my MR from the CURRENT Legend cutoff?" Legend is never an MR threshold.
+
+- **Legend = authoritative leaderboard position 1…500** (`masterTierFromMr(mr, {
+leaderboardPosition })`). Ties share a position and skip the next ones (observed 2026-10-19:
+  eight rows at #497 / 2196 MR, then #505 / 2195 MR; there is no #500), so neither a row index, "the
+  500th row" nor `position === 500` is ever used.
+- **Own position (per character):** `play.json` `league_info.master_rating_ranking`, normalized in
+  `@sf6/capcom-core` as `leaderboardPosition` (MR only, positive integer, else null). Persisted in
+  `player_character_rating.master_rating_ranking` in the SAME upsert / `observed_at` guard as the MR:
+  never new MR + old position; a later profile without it clears it. Not in session baselines.
+  The live state exposes it only when the character's current rating IS that observation (same
+  MR) and never for an ended session, so `resolveDisplayRank` can show "Legend" for current data
+  while frozen history is never relabelled.
+- **Legend cutoff (global, contextual):** derived ONLY in the Companion from
+  `ranking/master.json?page=N&season_type=1` (current phase) with the existing `_next/data`
+  machinery. Pure, tie-safe boundary (`capcom-core/legend.ts`): proven only when a transition from
+  ≤ 500 to > 500 is observed inside one page or across two consecutive pages; cutoff = minimum MR
+  of the Legend rows at that boundary. Bounded search: start on the page that should hold #500
+  (20 rows/page observed; corrected once from the real page size), step ±1, at most 5 pages,
+  otherwise unavailable — never guessed. `master_league` is diagnostic only.
+- **Cadence:** only for a profile with an MR ≥ 1800 character that is not already Legend, at most
+  every 15 min (attempts included), never on the 30 s battlelog beat, never coupled to a session.
+- **Transport / storage:** additive optional `legend` object in the sync (four numbers; strict).
+  Stored on the owner's `sf6_player` (`legend_cutoff_mr`, `legend_cutoff_observed_at`,
+  `legend_last_position`, `legend_first_non_legend_position`, `legend_first_non_legend_mr`) at
+  SERVER acceptance time; an earlier acceptance never overwrites a later one. Per player on
+  purpose (no singleton, scheduler, worker or cross-account dependency); each relevant Companion
+  refreshes its own copy infrequently. No history table.
+- **Freshness** (one module, `capcom-core/legend.ts`): fresh while age ≤ 30 min (inclusive), stale
+  after. Decided in the domain projection with an injected clock; the OBS page follows a minute
+  clock so a cutoff ages out without new snapshots. Stale / missing ⇒ the 5.4B Ultimate Master
+  terminal ("Legend · Top 500 required"), never a numeric cutoff.
+- **Rank Progress states (MR):** below 1800 unchanged. ≥ 1800 and not Legend: `legend-chase` (bar
+  1800 → cutoff, "N MR to current cutoff", never "to Legend") when MR < fresh cutoff;
+  `legend-boundary` (no bar, "Current Legend cutoff X MR · Top 500 required") when MR ≥ fresh
+  cutoff — reaching the number never makes anyone Legend; `ultimate-master` without a fresh
+  cutoff. Authoritative position ≤ 500 ⇒ terminal `legend` (#position, no bar). LP unchanged.
+- **Failure isolation:** a ranking failure never fails the Companion sync (profile and matches
+  are still sent); 401/403/429 pause Buckler like any other refusal, after this cycle's data is
+  reported.
+- **Query impact:** none. `buildPlayerLiveState` already reads the player row (`findPlayerById`)
+  and the character rows (`listPlayerCharacters`); the new columns ride on them. No new route,
+  channel or polling; pool unchanged (`max: 5`).
+- **Privacy:** SST stores the tracked user's own per-character position and a derived cutoff
+  reference. It never stores or receives leaderboard rows, other players' names / CFNs / clubs,
+  or raw ranking pages.
+- **Migration** `0011_legend_reference`: additive nullable columns only, no backfill.
+- **Rollback:** code can be reverted with the columns in place (old code ignores them; old
+  Companions keep syncing). Companions ≥ the Legend release must not talk to an older server
+  (strict sync root rejects `legend`): roll the Companion back first, or keep the server.
+
 ## 9. Security
 
 - Zod validation on every input: server actions, provider output, overlay config and env.

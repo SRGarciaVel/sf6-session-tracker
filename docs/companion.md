@@ -187,6 +187,32 @@ SST (autoritativo)
     campos opcionales y después la nueva Companion. La versión no se incrementa ni se publica
     automáticamente.
 - **Cliente:** versión y transporte.
+- **Puesto propio por personaje** (Fase 5.4C, opcional y aditivo): `profile.characters[].leaderboardPosition`.
+  - Es `league_info.master_rating_ranking` de **`play.json`**, la misma página que trae el MR: sin
+    peticiones extra.
+  - Solo para personajes MR, entero positivo; 0 o inválido → `null`. Nunca se calcula a partir
+    del MR.
+  - El servidor lo guarda en la misma fila y con la misma guarda `observed_at` que el MR
+    (`player_character_rating.master_rating_ranking`): un perfil sin el puesto lo **borra**.
+- **Referencia de Legend** (Fase 5.4C, opcional y aditiva):
+  `legend: { cutoffMr, lastLegendPosition, firstNonLegendPosition, firstNonLegendMr }`.
+  - La deriva **la Companion** a partir de `ranking/master.json?page=N&season_type=1` (fase actual),
+    con la misma maquinaria `_next/data` (buildId y locale de la página, un reintento por buildId
+    obsoleto, un fallback a `en`, `x-nextjs-data: 1`, transporte del navegador).
+  - **Legend = puesto 1…500** (`master_rating_ranking`), nunca un umbral de MR ni un índice de
+    fila. Los empates comparten puesto y saltan los siguientes (observado: ocho filas en #497 con
+    2196 MR y después #505 con 2195; no existe la fila #500).
+  - La frontera solo se acepta cuando se observa la transición de ≤ 500 a > 500 (en una página o
+    entre páginas consecutivas), con como mucho **5 páginas** por consulta. Si no, no se envía nada.
+  - Solo se consulta con un personaje **MR ≥ 1800** que no sea ya Legend, y como mucho **cada 15 min**
+    (también tras un fallo). Nunca al ritmo de 30 s del battlelog.
+  - **Minimización:** las filas del ranking se reducen a números al parsear y se descartan en la
+    Companion. Nunca se envían filas, nombres, CFN de otros jugadores ni JSON de Buckler.
+  - **Fallos:** un 5xx, una página inválida o una frontera no demostrada no afectan al sync (perfil y
+    partidas se envían igual). Un 401/403/429 del ranking pausa Buckler como cualquier otro rechazo
+    (afecta a toda la sesión de Buckler), pero **después** de enviar lo ya descargado en ese ciclo.
+  - **Compatibilidad:** el servidor acepta payloads sin `legend` ni puestos (Companion 0.3.0). Como
+    la raíz es estricta, **primero se despliega el servidor**; después la Companion nueva.
 
 ## 8. Datos que NUNCA se envían
 
@@ -195,6 +221,8 @@ SST (autoritativo)
   Están bloqueados por `findForbiddenKeys`, con tests de la lista completa.
 - CFN del rival, clubes, comentarios, títulos, likes, redes, emblemas y estadísticas no usadas.
 - HTML o JSON en bruto de Buckler.
+- Filas del ranking Master, nombres, CFN, clubes o avatares de otros jugadores (solo la frontera
+  derivada: cuatro números).
 
 ## 9. Estado del tracker (`GET /api/companion/state`)
 
@@ -210,11 +238,12 @@ No incluye datos de diagnóstico.
 
 La configuración central es `COMPANION_POLLING`; el servidor la devuelve en cada `state`.
 
-| Situación         | Buckler                                        | Tracker                |
-| ----------------- | ---------------------------------------------- | ---------------------- |
-| Sesión activa     | battlelog p1 cada **30 s**, play cada **90 s** | `state` en cada alarma |
-| Sin sesión        | battlelog + play cada **120 s**                | `state` cada 30 s      |
-| 403 / 429 / login | pausa de 10 min, **sin reintentos**            | sigue                  |
+| Situación         | Buckler                                                 | Tracker                |
+| ----------------- | ------------------------------------------------------- | ---------------------- |
+| Sesión activa     | battlelog p1 cada **30 s**, play cada **90 s**          | `state` en cada alarma |
+| Sin sesión        | battlelog + play cada **120 s**                         | `state` cada 30 s      |
+| 403 / 429 / login | pausa de 10 min, **sin reintentos**                     | sigue                  |
+| Ultimate Master   | ranking Master: como mucho cada **15 min**, ≤ 5 páginas | —                      |
 
 - **Despertar:** `chrome.alarms` (30 s, el mínimo de MV3; no hay trucos para mantener vivo el
   service worker).

@@ -10,9 +10,16 @@
  * LP ladder (fixed, documented by the project owner): Rookie → Diamond, five divisions each, then
  * Master at 25,000 LP. MR (Master League) tiers come from ./master-tier.ts:
  *   < 1600 Master · 1600 High Master · 1700 Grand Master · 1800+ Ultimate Master.
- * Legend is NOT an MR threshold (top-500 leaderboard position only): it is never inferred here,
- * and there is no progress "to Legend" — Ultimate Master is a terminal state.
+ * Legend is NOT an MR threshold (top-500 leaderboard position only): it is never inferred from MR.
+ *
+ * Phase 5.4C (dynamic Legend): with the character's AUTHORITATIVE leaderboard position and the
+ * latest FRESH Legend cutoff (capcom-core legend.ts), the MR ladder continues past Ultimate Master:
+ *   position 1…500                 ⇒ Legend (terminal; position shown, no bar)
+ *   ≥ 1800, MR < fresh cutoff      ⇒ legend-chase: bar 1800 → current cutoff, "MR to current cutoff"
+ *   ≥ 1800, MR ≥ fresh cutoff      ⇒ legend-boundary: NOT Legend (Top 500 still required), no bar
+ *   ≥ 1800, no fresh cutoff        ⇒ ultimate-master terminal (as 5.4B)
  */
+import { LEGEND_REFERENCE, isLegendCutoffFresh } from "@sf6/capcom-core/legend";
 import { MASTER_MR_THRESHOLDS, MASTER_TIER_LABELS, masterTierFromMr } from "./master-tier";
 import type { MasterTier } from "./master-tier";
 
@@ -111,8 +118,33 @@ export type RankProgressState =
     }
   /** LP ≥ 25,000: Master reached on the LP ladder (no bar beyond it). */
   | { kind: "goal-reached"; system: "lp"; goal: EffectiveRankGoal; current: RankPoint }
-  /** MR ≥ 1800 without an authoritative top-500 position: terminal, no progress to Legend. */
-  | { kind: "ultimate-master"; system: "mr"; current: RankPoint }
+  /** MR ≥ 1800, not Legend, no fresh cutoff: terminal ("Top 500 required"). */
+  | { kind: "ultimate-master"; system: "mr"; current: RankPoint; position: number | null }
+  /** MR ≥ 1800, not Legend, below the FRESH current cutoff: bar 1800 → cutoff. */
+  | {
+      kind: "legend-chase";
+      system: "mr";
+      current: RankPoint;
+      position: number | null;
+      cutoff: { value: number; observedAt: string };
+      start: RankPoint;
+      /** MR remaining to the CURRENT cutoff (> 0). Not "to Legend": position decides Legend. */
+      remaining: number;
+      progress: number;
+    }
+  /**
+   * MR ≥ 1800 and at/above the FRESH current cutoff but NOT authoritatively Legend (position > 500
+   * or unknown). No bar and no "0 MR": the remaining condition is positional (Top 500).
+   */
+  | {
+      kind: "legend-boundary";
+      system: "mr";
+      current: RankPoint;
+      position: number | null;
+      cutoff: { value: number; observedAt: string };
+    }
+  /** Authoritative Legend: leaderboard position 1…500 (terminal; no bar). */
+  | { kind: "legend"; system: "mr"; current: RankPoint; position: number }
   /** Nothing usable (no character, no rating, invalid value). Never a fabricated zero. */
   | { kind: "no-rating" };
 
@@ -204,9 +236,23 @@ function nextMrTier(value: number): { minMr: number; tier: MasterTier } | null {
  * MR ≥ 1800            Ultimate Master: terminal (Legend needs an authoritative top-500 position,
  *                      which SST does not have).
  */
+/** Legend context of ONE character's current observation (Phase 5.4C). */
+export interface LegendContext {
+  /** Authoritative leaderboard position of the SAME observation as the MR (null = unknown). */
+  position?: number | null;
+  /** Latest stored Legend boundary of the player (any age; freshness decided here). */
+  cutoff?: { cutoffMr: number; observedAt: string } | null;
+  /** Injected clock (ms) for the freshness decision. */
+  nowMs?: number;
+}
+
+const validPosition = (p: number | null | undefined): number | null =>
+  typeof p === "number" && Number.isInteger(p) && p > 0 ? p : null;
+
 export function rankProgress(
   point: { system: RatingSystemId; value: number } | null | undefined,
   goal: RankProgressGoal,
+  legend: LegendContext = {},
 ): RankProgressState {
   if (!point || !Number.isFinite(point.value)) return { kind: "no-rating" };
   const effective = effectiveRankGoal(point.system, goal);
@@ -236,12 +282,39 @@ export function rankProgress(
     return bar("lp", effective, current, { value: pos.divisionStart, label: pos.label }, pos.next);
   }
 
-  // MR: no authoritative leaderboard position is ever passed ⇒ Legend is never produced.
-  const tier = masterTierFromMr(point.value);
+  // MR. Legend ONLY from the authoritative position (masterTierFromMr), never from MR or cutoff.
+  const position = validPosition(legend.position);
+  const tier = masterTierFromMr(point.value, { leaderboardPosition: position });
   if (tier === null) return { kind: "no-rating" };
   const current = { value: point.value, label: MASTER_TIER_LABELS[tier] };
+  if (tier === "legend" && position !== null) {
+    return { kind: "legend", system: "mr", current, position };
+  }
   const next = nextMrTier(point.value);
-  if (!next) return { kind: "ultimate-master", system: "mr", current };
+  if (!next) {
+    const cutoff = legend.cutoff ?? null;
+    const usable =
+      cutoff !== null &&
+      Number.isInteger(cutoff.cutoffMr) &&
+      cutoff.cutoffMr > LEGEND_REFERENCE.eligibleMinMr &&
+      isLegendCutoffFresh(cutoff.observedAt, legend.nowMs ?? Date.now());
+    if (!usable) return { kind: "ultimate-master", system: "mr", current, position };
+    const ref = { value: cutoff.cutoffMr, observedAt: cutoff.observedAt };
+    if (point.value >= cutoff.cutoffMr) {
+      return { kind: "legend-boundary", system: "mr", current, position, cutoff: ref };
+    }
+    const start = LEGEND_REFERENCE.eligibleMinMr;
+    return {
+      kind: "legend-chase",
+      system: "mr",
+      current,
+      position,
+      cutoff: ref,
+      start: { value: start, label: MASTER_TIER_LABELS["ultimate-master"] },
+      remaining: cutoff.cutoffMr - point.value,
+      progress: clampProgress((point.value - start) / (cutoff.cutoffMr - start)),
+    };
+  }
   const startValue =
     tier === "master"
       ? Math.min(MASTER_MR_DISPLAY_FLOOR, point.value)

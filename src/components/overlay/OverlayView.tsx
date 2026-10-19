@@ -702,7 +702,7 @@ function RankProgressOverlayView({
         data-session-status={live.session.status}
         data-kind="rank-progress"
       >
-        <RankProgressPanel config={config} session={live.session} />
+        <RankProgressPanel config={config} live={live} />
       </div>
     </NextIntlClientProvider>
   );

@@ -20,6 +20,7 @@ import { onlineStatusOfBanner } from "./presence";
 import {
   battlelogPageSchema,
   cardSchema,
+  masterRankingPageSchema,
   playPageSchema,
   replaySchema,
   type CapcomFighterBanner,
@@ -45,6 +46,11 @@ function parseOrThrow<T>(schema: z.ZodType<T>, raw: unknown, what: string): T {
     );
   }
   return parsed.data;
+}
+
+/** A leaderboard position is a positive integer; anything else (0, negative, NaN) is unknown. */
+export function validLeaderboardPosition(raw: unknown): number | null {
+  return typeof raw === "number" && Number.isInteger(raw) && raw > 0 ? raw : null;
 }
 
 export const isValidCharacterKey = (key: string): boolean =>
@@ -168,6 +174,11 @@ export function normalizeCapcomProfile(
       leaguePoints: league.leaguePoints,
       masterRate: league.masterRate,
       phase: null,
+      // Same observation as masterRate; only meaningful for an MR-rated character.
+      leaderboardPosition:
+        league.ratingSystem === "mr" && league.masterRate !== null
+          ? validLeaderboardPosition(c.league_info.master_rating_ranking)
+          : null,
     });
     details.push({
       characterKey: key,
@@ -455,4 +466,39 @@ export function normalizeCapcomMatches(
     });
   }
   return out;
+}
+
+/* ───────── master leaderboard (Legend boundary) ───────── */
+
+/** A leaderboard row reduced to numbers: no identity of any other player survives parsing. */
+export interface MasterRankingRow {
+  /** Master Rate. */
+  rating: number;
+  /** Authoritative leaderboard position. */
+  position: number;
+  /** Diagnostic only. */
+  masterLeague: number;
+}
+
+export interface MasterRankingPage {
+  page: number;
+  totalPages: number;
+  totalCount: number;
+  rows: MasterRankingRow[];
+}
+
+/** GET /_next/data/{buildId}/{locale}/ranking/master.json?page=N&season_type=1 */
+export function parseCapcomMasterRankingPayload(raw: unknown): MasterRankingPage {
+  const r = parseOrThrow(masterRankingPageSchema, raw, "master ranking").pageProps
+    .master_rating_ranking;
+  return {
+    page: r.current_page,
+    totalPages: r.total_page,
+    totalCount: r.total_count,
+    rows: r.ranking_fighter_list.map((row) => ({
+      rating: row.rating,
+      position: row.master_rating_ranking,
+      masterLeague: row.master_league,
+    })),
+  };
 }

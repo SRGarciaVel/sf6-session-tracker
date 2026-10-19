@@ -49,6 +49,30 @@ export interface LiveCharacterProgress {
   delta: number | null;
   /** false when the starting rating of this character is unknown. */
   baselineKnown: boolean;
+  /**
+   * Phase 5.4C: authoritative global Master leaderboard position of THIS character, from the same
+   * profile observation as `current` (null when unknown, not MR, or `current` comes from a newer
+   * match / a frozen ended session). Optional: absent in older payloads = unknown.
+   */
+  leaderboardPosition?: number | null;
+}
+
+/**
+ * Phase 5.4C: latest Legend boundary reported by the player's Companion (derived numbers only).
+ * `observedAt` = server acceptance time; freshness is decided in the domain (capcom-core legend).
+ */
+export interface LiveLegendCutoff {
+  cutoffMr: number;
+  observedAt: string;
+  lastLegendPosition: number;
+  firstNonLegendPosition: number;
+}
+
+/** Leaderboard position known for a character's CURRENT profile observation. */
+export interface CurrentLeaderboardPosition {
+  system: RatingSystem;
+  value: number;
+  position: number | null;
 }
 
 export interface LiveSessionState {
@@ -77,6 +101,8 @@ export interface LiveSessionState {
 export interface PlayerLiveState {
   player: { displayName: string };
   session: LiveSessionState;
+  /** Phase 5.4C (optional: absent in older payloads / samples = no reference). */
+  legendCutoff?: LiveLegendCutoff | null;
   /** Server time when this snapshot was built; clients drop snapshots older than the current. */
   generatedAt: string;
 }
@@ -94,15 +120,30 @@ export function roundOneDecimal(n: number): number {
  * @param deriveTier  true for current presentation (active session, idle profile): a valid MR
  *   displays its Master tier. false for ended sessions: their stored labels are preserved.
  */
-function toLiveCharacter(p: CharacterProgress, deriveTier: boolean): LiveCharacterProgress {
-  const live = (r: CharacterProgress["current"]): LiveRating | null =>
+function toLiveCharacter(
+  p: CharacterProgress,
+  deriveTier: boolean,
+  known?: CurrentLeaderboardPosition,
+): LiveCharacterProgress {
+  // The position belongs to ONE profile observation: it is used only for current presentation and
+  // only when `current` IS that observation (same system and value) — never new MR + old position.
+  const position =
+    deriveTier &&
+    known &&
+    p.current &&
+    p.current.system === "mr" &&
+    known.system === p.current.system &&
+    known.value === p.current.value
+      ? known.position
+      : null;
+  const live = (r: CharacterProgress["current"], leaderboardPosition: number | null) =>
     r
       ? {
           system: r.system,
           value: r.value,
           rank: resolveDisplayRank(
             { system: r.system, value: r.value, rank: r.rank ?? null },
-            { derive: deriveTier },
+            { derive: deriveTier, leaderboardPosition },
           ),
         }
       : null;
@@ -120,10 +161,11 @@ function toLiveCharacter(p: CharacterProgress, deriveTier: boolean): LiveCharact
     bestWinStreak: p.bestWinStreak,
     recentResults: p.recentResults,
     ratingSystem: p.ratingSystem,
-    initial: live(p.initial),
-    current: live(p.current),
+    initial: live(p.initial, null),
+    current: live(p.current, position),
     delta: p.delta,
     baselineKnown: p.initial !== null,
+    leaderboardPosition: position,
   };
 }
 
@@ -131,6 +173,8 @@ export function toLiveSessionState(
   sessionId: string | null,
   summary: SessionSummary | null,
   idle: { characters: CharacterProgress[]; activeCharacterKey: CharacterKey | null },
+  /** Phase 5.4C: per-character position of the CURRENT profile observation (by characterKey). */
+  positions: ReadonlyMap<CharacterKey, CurrentLeaderboardPosition> = new Map(),
 ): LiveSessionState {
   if (summary === null) {
     return {
@@ -143,7 +187,9 @@ export function toLiveSessionState(
       recentResults: [],
       activeCharacterKey: idle.activeCharacterKey,
       // No session: the latest profile, i.e. current data ⇒ current Master tiers.
-      characters: idle.characters.map((c) => toLiveCharacter(c, true)),
+      characters: idle.characters.map((c) =>
+        toLiveCharacter(c, true, positions.get(c.characterKey)),
+      ),
     };
   }
   return {
@@ -163,7 +209,9 @@ export function toLiveSessionState(
     recentResults: summary.recentResults,
     activeCharacterKey: summary.activeCharacterKey,
     // Ended sessions keep their frozen ranks (no retroactive relabelling with today's rules).
-    characters: summary.characters.map((c) => toLiveCharacter(c, summary.status !== "ended")),
+    characters: summary.characters.map((c) =>
+      toLiveCharacter(c, summary.status !== "ended", positions.get(c.characterKey)),
+    ),
   };
 }
 

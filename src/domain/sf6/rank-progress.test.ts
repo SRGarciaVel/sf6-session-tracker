@@ -190,6 +190,7 @@ describe("MR · fixed Master tiers", () => {
         kind: "ultimate-master",
         system: "mr",
         current: { value, label: "Ultimate Master" },
+        position: null,
       });
     },
   );

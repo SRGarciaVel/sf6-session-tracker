@@ -4,7 +4,7 @@
  * Two Free styles (Broadcast, Compact); SST shapes and text only (no official rank artwork).
  */
 import { useTranslations } from "next-intl";
-import type { CSSProperties } from "react";
+import { useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { formatInteger } from "@/domain/format";
 import { hexToRgba } from "@/domain/overlay/config";
 import {
@@ -13,7 +13,7 @@ import {
   type RankProgressOverlayConfig,
   type RankProgressView,
 } from "@/domain/overlay/rank-progress";
-import type { LiveSessionState } from "@/domain/overlay/state";
+import type { PlayerLiveState } from "@/domain/overlay/state";
 import type { RatingSystemId } from "@/domain/sf6/rank-progress";
 import { Animated, Delta } from "./parts";
 import type { OverlaySizing } from "./OverlayView";
@@ -71,14 +71,50 @@ export function rankProgressRootClass(config: RankProgressOverlayConfig): string
 /** MR / LP are official game terms: not translated. */
 const unit = (system: RatingSystemId) => (system === "mr" ? "MR" : "LP");
 
+/** Minute clock shared by every Rank Progress overlay on the page (one interval at most). */
+const minuteClock = {
+  listeners: new Set<() => void>(),
+  timer: null as ReturnType<typeof setInterval> | null,
+  subscribe(listener: () => void) {
+    minuteClock.listeners.add(listener);
+    minuteClock.timer ??= setInterval(() => minuteClock.listeners.forEach((l) => l()), 60_000);
+    return () => {
+      minuteClock.listeners.delete(listener);
+      if (minuteClock.listeners.size === 0 && minuteClock.timer !== null) {
+        clearInterval(minuteClock.timer);
+        minuteClock.timer = null;
+      }
+    };
+  },
+  /** Stable within a minute (a snapshot must not change on every read). */
+  now: () => Math.floor(Date.now() / 60_000) * 60_000,
+};
+
+/**
+ * Clock for the Legend cutoff freshness decision (made in the domain, not here). Server render and
+ * hydration use the snapshot time; the browser then follows the real clock minute by minute, so a
+ * cutoff ages into "stale" in OBS even when no new snapshot arrives.
+ */
+function useFreshnessClock(generatedAt: string): number {
+  return useSyncExternalStore(
+    minuteClock.subscribe,
+    minuteClock.now,
+    () => Date.parse(generatedAt) || 0,
+  );
+}
+
 export function RankProgressPanel({
   config,
-  session,
+  live,
 }: {
   config: RankProgressOverlayConfig;
-  session: LiveSessionState;
+  live: PlayerLiveState;
 }) {
-  const view = resolveRankProgressView(session, config);
+  const nowMs = useFreshnessClock(live.generatedAt);
+  const view = resolveRankProgressView(live.session, config, {
+    legendCutoff: live.legendCutoff ?? null,
+    nowMs,
+  });
   return <RankProgressCard config={config} view={view} />;
 }
 
@@ -101,7 +137,33 @@ function RankProgressCard({
   const heading =
     state.kind === "progress" || state.kind === "goal-reached"
       ? t(`goal.${state.goal}`)
-      : t("title");
+      : state.kind === "legend-chase" || state.kind === "legend-boundary"
+        ? t("goal.legend")
+        : t("title");
+
+  /** "#530" — authoritative position only (never for LP, never 0 / invalid). */
+  const position = (p: number | null): ReactNode =>
+    p === null ? null : (
+      <span
+        className="ov-rp-pos"
+        aria-label={t("positionAria", { position: num(p) })}
+        data-testid="rp-position"
+      >
+        {t("position", { position: num(p) })}
+      </span>
+    );
+  const mainRow = (label: string, value: number, system: RatingSystemId, pos: number | null) => (
+    <div className="ov-rp-main">
+      <span className="ov-rp-rank">{label}</span>
+      <span className="ov-rp-right">
+        {position(pos)}
+        <span className="ov-rp-value">
+          <Animated value={num(value)} />
+          <span className="ov-unit">{unit(system)}</span>
+        </span>
+      </span>
+    </div>
+  );
 
   const delta = view.sessionDelta ? (
     <span className="ov-rp-delta" data-testid="rp-session-delta">
@@ -122,16 +184,73 @@ function RankProgressCard({
         </div>
       );
       break;
+    case "legend":
+      body = (
+        <>
+          {mainRow(state.current.label, state.current.value, state.system, state.position)}
+          <div className="ov-rp-foot">
+            <span className="ov-rp-target ov-accent" data-testid="rp-legend">
+              {t("legendTop500")}
+            </span>
+            {delta}
+          </div>
+        </>
+      );
+      break;
+    case "legend-boundary":
+      body = (
+        <>
+          {mainRow(state.current.label, state.current.value, state.system, state.position)}
+          <div className="ov-rp-foot">
+            <span className="ov-rp-legend" data-testid="rp-cutoff-reached">
+              <span className="ov-rp-legend-name">
+                {t("currentCutoff", { cutoff: num(state.cutoff.value) })}
+              </span>
+              <span className="ov-rp-legend-req">{t("legendRequirement")}</span>
+            </span>
+            {delta}
+          </div>
+        </>
+      );
+      break;
+    case "legend-chase":
+      body = (
+        <>
+          {mainRow(state.current.label, state.current.value, state.system, state.position)}
+          <div
+            className="ov-rp-bar"
+            role="progressbar"
+            aria-valuemin={state.start.value}
+            aria-valuemax={state.cutoff.value}
+            aria-valuenow={state.current.value}
+            aria-label={t("progressToCutoff")}
+            aria-valuetext={t("progressValue", {
+              current: num(state.current.value),
+              target: num(state.cutoff.value),
+              unit: unit(state.system),
+            })}
+            data-testid="rp-bar"
+          >
+            <span className="ov-rp-fill" style={{ transform: `scaleX(${state.progress})` }} />
+          </div>
+          <div className="ov-rp-foot">
+            <span className="ov-rp-target" data-testid="rp-target">
+              {config.showRemaining
+                ? t("remainingToCutoff", {
+                    remaining: num(state.remaining),
+                    cutoff: num(state.cutoff.value),
+                  })
+                : t("currentCutoff", { cutoff: num(state.cutoff.value) })}
+            </span>
+            {delta}
+          </div>
+        </>
+      );
+      break;
     case "ultimate-master":
       body = (
         <>
-          <div className="ov-rp-main">
-            <span className="ov-rp-rank">{state.current.label}</span>
-            <span className="ov-rp-value">
-              <Animated value={num(state.current.value)} />
-              <span className="ov-unit">{unit(state.system)}</span>
-            </span>
-          </div>
+          {mainRow(state.current.label, state.current.value, state.system, state.position)}
           <div className="ov-rp-foot">
             <span className="ov-rp-legend" data-testid="rp-legend-requirement">
               <span className="ov-rp-legend-name">{t("legend")}</span>

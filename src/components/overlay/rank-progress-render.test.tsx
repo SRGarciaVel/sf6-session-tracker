@@ -218,3 +218,140 @@ describe("OBS-safe CSS", () => {
     expect(css).not.toMatch(/oklch\(|color-mix\(|@container|:has\(|@apply|@tailwind/);
   });
 });
+
+/* ───────── Phase 5.4C — dynamic Legend ───────── */
+
+const GEN = "2026-10-19T12:00:00.000Z";
+/** Ultimate / Legend live state: own position + the player's cutoff (fresh unless `cutoffAgeMin`). */
+function legendLive(
+  value: number,
+  position: number | null,
+  opts: { cutoffAgeMin?: number | null; delta?: number | null } = {},
+): PlayerLiveState {
+  const base = live(
+    { system: "mr", value },
+    { delta: opts.delta === undefined ? null : opts.delta },
+  );
+  const age = opts.cutoffAgeMin === undefined ? 10 : opts.cutoffAgeMin;
+  return {
+    ...base,
+    generatedAt: GEN,
+    legendCutoff:
+      age === null
+        ? null
+        : {
+            cutoffMr: 2196,
+            observedAt: new Date(Date.parse(GEN) - age * 60_000).toISOString(),
+            lastLegendPosition: 497,
+            firstNonLegendPosition: 505,
+          },
+    session: {
+      ...base.session,
+      characters: base.session.characters.map((c) => ({ ...c, leaderboardPosition: position })),
+    },
+  };
+}
+
+for (const style of RANK_PROGRESS_STYLES) {
+  describe(`${style}: dynamic Legend`, () => {
+    it("A · 2189 #530, fresh cutoff 2196 ⇒ chase bar 1800 → 2196, '7 MR to current cutoff'", () => {
+      const html = render({ style, locale: "en" }, legendLive(2189, 530));
+      expect(html).toContain('data-rp-state="legend-chase"');
+      expect(attr(html, "aria-valuemin")).toBe("1800");
+      expect(attr(html, "aria-valuemax")).toBe("2196");
+      expect(attr(html, "aria-valuenow")).toBe("2189");
+      expect(html.match(/role="progressbar"[^>]*aria-label="([^"]*)"/)?.[1]).toBe(
+        "Progress to the current Legend cutoff",
+      );
+      const t = text(html);
+      expect(t).toContain("Road to Legend");
+      expect(t).toContain("Ultimate Master");
+      expect(t).toContain("#530");
+      expect(t).toContain("2,189");
+      expect(t).toContain("7 MR to current cutoff · 2,196 MR");
+      expect(t).not.toMatch(/MR to Legend|Legend reached/);
+    });
+
+    it("B · 2196 #505 at the cutoff ⇒ NOT Legend: no bar, no '0 MR', Top 500 required", () => {
+      const html = render({ style, locale: "en" }, legendLive(2196, 505));
+      expect(html).toContain('data-rp-state="legend-boundary"');
+      expect(html).not.toContain('role="progressbar"');
+      const t = text(html);
+      expect(t).toContain("#505");
+      expect(t).toContain("Current Legend cutoff 2,196 MR");
+      expect(t).toContain("Top 500 required");
+      expect(t).not.toMatch(/\b0 MR|Legend reached|Global top 500/);
+    });
+
+    it("C · 2200 with unknown position ⇒ NOT Legend, no position shown", () => {
+      const html = render({ style, locale: "en" }, legendLive(2200, null));
+      expect(html).toContain('data-rp-state="legend-boundary"');
+      expect(html).not.toContain("rp-position");
+      expect(text(html)).toContain("Top 500 required");
+    });
+
+    it("D · Legend #327 ⇒ terminal, position, no progressbar", () => {
+      const html = render({ style, locale: "en" }, legendLive(2241, 327));
+      expect(html).toContain('data-rp-state="legend"');
+      expect(html).not.toContain('role="progressbar"');
+      const t = text(html);
+      expect(t).toContain("Legend");
+      expect(t).toContain("#327");
+      expect(t).toContain("2,241");
+      expect(t).toContain("Global top 500");
+      expect(attr(html, "aria-label")).toBe("Rank #327");
+    });
+
+    it("E · stale cutoff ⇒ 5.4B terminal, never a numeric cutoff", () => {
+      const html = render({ style, locale: "en" }, legendLive(2134, null, { cutoffAgeMin: 31 }));
+      expect(html).toContain('data-rp-state="ultimate-master"');
+      expect(text(html)).not.toMatch(/2,196|cutoff/i);
+      expect(text(html)).toContain("Top 500 required");
+    });
+
+    it("F · no cutoff ⇒ 5.4B terminal (position still shown when known)", () => {
+      const html = render({ style, locale: "en" }, legendLive(2189, 530, { cutoffAgeMin: null }));
+      expect(html).toContain('data-rp-state="ultimate-master"');
+      expect(text(html)).toContain("#530");
+      expect(text(html)).not.toMatch(/cutoff/i);
+    });
+
+    it("session delta is independent of the Legend state", () => {
+      expect(text(render({ style, locale: "en" }, legendLive(2189, 530, { delta: 31 })))).toMatch(
+        /Session ▲ \+31 MR/,
+      );
+      expect(text(render({ style, locale: "en" }, legendLive(2241, 327, { delta: -12 })))).toMatch(
+        /Session ▼ -12 MR/,
+      );
+      expect(render({ style, locale: "en" }, legendLive(2196, 505))).not.toContain(
+        "rp-session-delta",
+      );
+    });
+
+    it("ES copy", () => {
+      const chase = text(render({ style, locale: "es" }, legendLive(2189, 530)));
+      expect(chase).toContain("Camino a Legend");
+      expect(chase).toContain("7 MR para el corte actual · 2196 MR");
+      const boundary = text(render({ style, locale: "es" }, legendLive(2196, 505)));
+      expect(boundary).toContain("Corte actual de Legend 2196 MR");
+      expect(boundary).toContain("Requiere Top 500");
+      const legend = render({ style, locale: "es" }, legendLive(2241, 327));
+      expect(text(legend)).toContain("Top 500 mundial");
+      expect(attr(legend, "aria-label")).toBe("Puesto #327");
+    });
+  });
+}
+
+describe("LP characters never show a position", () => {
+  it("a stray position on an LP rating is not rendered", () => {
+    const base = live({ system: "lp", value: 21950 });
+    const s: PlayerLiveState = {
+      ...base,
+      session: {
+        ...base.session,
+        characters: base.session.characters.map((c) => ({ ...c, leaderboardPosition: 12 })),
+      },
+    };
+    expect(render({ locale: "en" }, s)).not.toContain("rp-position");
+  });
+});

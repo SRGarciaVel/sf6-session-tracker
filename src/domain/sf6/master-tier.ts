@@ -11,12 +11,14 @@
  *   1800 +           Ultimate Master
  *   Legend           NOT an MR threshold: it depends on the global leaderboard position (top
  *                    500). It is only produced from an AUTHORITATIVE leaderboard position, never
- *                    from MR alone. SST has no such signal today, so Legend never appears.
+ *                    from MR alone. Since Phase 5.4C the position comes per character from
+ *                    play.json (`master_rating_ranking`) for CURRENT presentation only.
  *
  * Tiers are DERIVED ON READ for current/live presentation only; persisted raw ranks are never
  * rewritten, and ended sessions keep their frozen labels (thresholds may change between phases;
  * an old session must not be relabelled by today's constants).
  */
+import { LEGEND_MAX_POSITION } from "@sf6/capcom-core/legend";
 
 export const MASTER_TIERS = [
   "master",
@@ -43,8 +45,8 @@ export const MASTER_MR_THRESHOLDS: ReadonlyArray<{ minMr: number; tier: MasterTi
   { minMr: 1600, tier: "high-master" },
 ];
 
-/** Legend = this many best players on the global leaderboard (authoritative position only). */
-export const LEGEND_MAX_POSITION = 500;
+/** Legend = this many best players on the global leaderboard (single source: capcom-core). */
+export { LEGEND_MAX_POSITION };
 
 /**
  * Master tier of a character known to be rated in MR.
@@ -94,11 +96,20 @@ export interface RankSourcePoint {
  */
 export function resolveDisplayRank(
   point: RankSourcePoint | null,
-  opts: { derive: boolean },
+  opts: {
+    derive: boolean;
+    /**
+     * Authoritative leaderboard position of the SAME observation as `point` (Phase 5.4C). Only
+     * used when deriving (current presentation): 1…500 ⇒ Legend. Ended sessions never pass one.
+     */
+    leaderboardPosition?: number | null;
+  },
 ): string | null {
   if (!point) return null;
   if (opts.derive && point.system === "mr") {
-    const tier = masterTierFromMr(point.value);
+    const tier = masterTierFromMr(point.value, {
+      leaderboardPosition: opts.leaderboardPosition ?? null,
+    });
     if (tier) return MASTER_TIER_LABELS[tier];
   }
   return point.rank ?? null;

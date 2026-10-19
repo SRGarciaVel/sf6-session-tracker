@@ -156,3 +156,34 @@
   color: var(--ov-muted);
   white-space: nowrap;
 }
+
+/* Phase 5.4C — leaderboard position and Legend states. */
+.ov-rp-right {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.55em;
+  white-space: nowrap;
+}
+.ov-rp-pos {
+  font-size: 0.82em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ov-accent);
+  white-space: nowrap;
+}
+.ov-rp-compact .ov-rp-pos {
+  font-size: 0.72em;
+}
+/* Authoritative Legend: terminal, achieved — SST accents only (no official badge art). */
+.ov-rp[data-rp-state="legend"] .ov-rp-edge {
+  width: 0.34em;
+  background: linear-gradient(180deg, var(--ov-accent), var(--ov-magenta));
+}
+.ov-rp[data-rp-state="legend"] .ov-rp-rank {
+  color: var(--ov-accent);
+  letter-spacing: 0.08em;
+}
+.ov-rp[data-rp-state="legend"] .ov-rp-head {
+  border-bottom: 0.06em solid var(--ov-accent);
+  padding-bottom: 0.18em;
+}

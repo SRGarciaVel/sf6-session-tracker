@@ -16,7 +16,11 @@ import {
   type SessionSummary,
 } from "@/domain/session/engine";
 import type { LifecycleDecision } from "@/domain/session/lifecycle";
-import { toLiveSessionState, type PlayerLiveState } from "@/domain/overlay/state";
+import {
+  toLiveSessionState,
+  type LiveLegendCutoff,
+  type PlayerLiveState,
+} from "@/domain/overlay/state";
 import { ratingPointOf } from "@/domain/sf6/rating";
 import type { NormalizedPlayerProfile, NormalizedSF6Match, RatingPoint } from "@/domain/sf6/types";
 import type { Database, DbExecutor } from "@/server/db/client";
@@ -466,6 +470,24 @@ export async function summarizeSessionRow(
   return summarizeFromContext(session, player, ctx);
 }
 
+/** The player's stored Legend boundary, if complete (no freshness decision here: domain). */
+function legendCutoffOf(player: Sf6PlayerRow): LiveLegendCutoff | null {
+  if (
+    player.legendCutoffMr === null ||
+    player.legendCutoffObservedAt === null ||
+    player.legendLastPosition === null ||
+    player.legendFirstNonLegendPosition === null
+  ) {
+    return null;
+  }
+  return {
+    cutoffMr: player.legendCutoffMr,
+    observedAt: player.legendCutoffObservedAt.toISOString(),
+    lastLegendPosition: player.legendLastPosition,
+    firstNonLegendPosition: player.legendFirstNonLegendPosition,
+  };
+}
+
 /** Authoritative live snapshot for overlays and the dashboard. */
 export async function buildPlayerLiveState(
   db: DbExecutor,
@@ -488,9 +510,24 @@ export async function buildPlayerLiveState(
       characters: snapshots,
     }),
   };
+  // Phase 5.4C: position + Legend reference come from rows already read above (player row,
+  // listPlayerCharacters): no extra query. A position only applies to the SAME observation.
+  const positions = new Map(
+    ctx.characters.flatMap((c) =>
+      c.ratingSystem === "mr" && c.masterRate !== null
+        ? [
+            [
+              c.characterKey,
+              { system: "mr" as const, value: c.masterRate, position: c.masterRatingRanking },
+            ] as const,
+          ]
+        : [],
+    ),
+  );
   return {
     player: { displayName: player.displayName },
-    session: toLiveSessionState(session?.id ?? null, summary, idle),
+    session: toLiveSessionState(session?.id ?? null, summary, idle, positions),
+    legendCutoff: legendCutoffOf(player),
     generatedAt: new Date().toISOString(),
   };
 }
