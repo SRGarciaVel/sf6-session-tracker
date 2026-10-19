@@ -46,6 +46,8 @@ export const characterRatingProfileSchema = z.object({
   leaguePoints: nullableInt,
   masterRate: nullableInt,
   phase: z.number().int().nullable().optional(),
+  /** Optional and additive (Phase 5.4C): older Companions omit it. */
+  leaderboardPosition: z.number().int().positive().nullable().optional(),
 }) satisfies z.ZodType<CharacterRatingProfile>;
 
 export const normalizedProfileSchema = z.object({

@@ -944,7 +944,7 @@
       },
       "goalHint": {
         "lp": "Siguiente división mide la división actual; Camino a Master mide la subida de tu rango actual hasta 25.000 LP.",
-        "mr": "Master League: progreso hacia el siguiente nivel (High, Grand, Ultimate Master). Legend requiere una posición Top 500 y no se estima."
+        "mr": "Master League: progreso hacia el siguiente nivel (High, Grand, Ultimate Master). Desde Ultimate Master, progreso hacia el corte ACTUAL de Legend cuando tu Companion ha informado uno reciente. Legend es un puesto en el Top 500: nunca se estima a partir del MR."
       },
       "goalNormalized": "Camino a Master se aplica a personajes con LP. Este personaje está en Master League, así que el overlay muestra el siguiente nivel Master.",
       "showCharacterName": "Mostrar nombre del personaje",
@@ -967,7 +967,10 @@
         "live": "Datos reales",
         "lp": "Ejemplo · Diamond 3 · 21.950 LP",
         "mr": "Ejemplo · High Master · 1.642 MR",
-        "ultimate": "Ejemplo · Ultimate Master · 2.134 MR"
+        "ultimate": "Ejemplo · Ultimate Master · 2.134 MR",
+        "legendChase": "Ejemplo · Ultimate Master #530 · 2.189 MR (corte 2.196)",
+        "legendBoundary": "Ejemplo · Ultimate Master #505 · 2.196 MR (en el corte)",
+        "legend": "Ejemplo · Legend #327 · 2.241 MR"
       }
     }
   },

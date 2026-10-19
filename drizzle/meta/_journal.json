@@ -78,6 +78,13 @@
       "when": 1791255846073,
       "tag": "0010_creator_overlay_presets",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792444941135,
+      "tag": "0011_legend_reference",
+      "breakpoints": true
     }
   ]
 }

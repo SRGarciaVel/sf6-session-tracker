@@ -7,6 +7,7 @@
  */
 import { z } from "zod";
 import { cfnUserIdSchema, normalizedMatchSchema, normalizedProfileSchema } from "./contract";
+import { LEGEND_MAX_POSITION, type LegendBoundary } from "./legend";
 import { MAX_ONLINE_STATUS_CODE } from "./presence";
 import type { NormalizedPlayerProfile, NormalizedSF6Match } from "./types";
 
@@ -101,6 +102,23 @@ export const companionMatchWireSchema = normalizedMatchSchema.extend({
   playedAt: isoDate.transform((s) => new Date(s)),
 });
 
+/**
+ * Legend boundary derived IN THE COMPANION from the Master leaderboard (legend.ts). Derived numbers
+ * only — never leaderboard rows, names, CFNs or raw Buckler JSON. Strict: anything else rejects.
+ */
+export const companionLegendReferenceSchema = z
+  .strictObject({
+    cutoffMr: z.number().int().positive(),
+    lastLegendPosition: z.number().int().min(1).max(LEGEND_MAX_POSITION),
+    firstNonLegendPosition: z
+      .number()
+      .int()
+      .min(LEGEND_MAX_POSITION + 1),
+    firstNonLegendMr: z.number().int().positive(),
+  })
+  .refine((l) => l.firstNonLegendMr <= l.cutoffMr, "first non-Legend MR above the cutoff");
+export type CompanionLegendReference = z.infer<typeof companionLegendReferenceSchema>;
+
 /** Top level is STRICT: an unexpected key (e.g. "cookies") rejects the whole request. */
 export const companionSyncRequestSchema = z.strictObject({
   cfnUserId: cfnUserIdSchema,
@@ -125,6 +143,12 @@ export const companionSyncRequestSchema = z.strictObject({
    * matches. Optional and additive: absent (older Companions) = no proven match observation.
    */
   battlelogObserved: z.boolean().optional(),
+  /**
+   * Phase 5.4C: Legend boundary looked up THIS cycle (at most every 15 min, only for Ultimate
+   * Master profiles). Optional and additive: absent = no new reference (older Companions, or no
+   * lookup due / possible this cycle).
+   */
+  legend: companionLegendReferenceSchema.optional(),
   client: z.strictObject({
     version: z.string().max(20),
     transport: z.enum(COMPANION_TRANSPORTS),
@@ -163,6 +187,16 @@ export function toWireMatch(m: NormalizedSF6Match) {
   };
 }
 
+/** Whitelist of the derived boundary (the diagnostic `leagueConsistent` stays in the Companion). */
+export function toWireLegend(b: LegendBoundary): CompanionLegendReference {
+  return {
+    cutoffMr: b.cutoffMr,
+    lastLegendPosition: b.lastLegendPosition,
+    firstNonLegendPosition: b.firstNonLegendPosition,
+    firstNonLegendMr: b.firstNonLegendMr,
+  };
+}
+
 export function toWireProfile(p: NormalizedPlayerProfile) {
   return {
     cfnUserId: p.cfnUserId,
@@ -177,6 +211,7 @@ export function toWireProfile(p: NormalizedPlayerProfile) {
       leaguePoints: c.leaguePoints,
       masterRate: c.masterRate,
       phase: c.phase ?? null,
+      leaderboardPosition: c.leaderboardPosition ?? null,
     })),
   };
 }

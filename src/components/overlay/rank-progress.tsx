@@ -4,7 +4,8 @@
  * Two Free styles (Broadcast, Compact); SST shapes and text only (no official rank artwork).
  */
 import { useTranslations } from "next-intl";
-import type { CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { legendCutoffFreshWindow } from "@sf6/capcom-core/legend";
 import { formatInteger } from "@/domain/format";
 import { hexToRgba } from "@/domain/overlay/config";
 import {
@@ -13,7 +14,7 @@ import {
   type RankProgressOverlayConfig,
   type RankProgressView,
 } from "@/domain/overlay/rank-progress";
-import type { LiveSessionState } from "@/domain/overlay/state";
+import type { PlayerLiveState } from "@/domain/overlay/state";
 import type { RatingSystemId } from "@/domain/sf6/rank-progress";
 import { Animated, Delta } from "./parts";
 import type { OverlaySizing } from "./OverlayView";
@@ -71,14 +72,56 @@ export function rankProgressRootClass(config: RankProgressOverlayConfig): string
 /** MR / LP are official game terms: not translated. */
 const unit = (system: RatingSystemId) => (system === "mr" ? "MR" : "LP");
 
+/** setTimeout's maximum delay (≈ 24.8 days); longer waits are clamped. */
+const MAX_TIMEOUT_MS = 2_147_483_647;
+
+/**
+ * Clock for the Legend cutoff freshness decision (the decision itself is in the domain). It runs
+ * on the SERVER timeline: the snapshot's `generatedAt` plus the time elapsed since this snapshot
+ * reached the browser, so the OBS machine's own clock (possibly skewed) never matters. It is
+ * re-evaluated EXACTLY at the edges of the cutoff's fresh window, so a source left open with no
+ * new snapshot (Companion disconnected, overnight) drops a stale cutoff the moment it expires.
+ * Server render and hydration use `generatedAt` itself (identical markup).
+ */
+function useFreshnessClock(
+  generatedAt: string,
+  window: { from: number; until: number } | null,
+): number {
+  const base = Date.parse(generatedAt) || 0;
+  const [tick, setTick] = useState({ base, now: base });
+  const from = window?.from ?? null;
+  const until = window?.until ?? null;
+  useEffect(() => {
+    const receivedAt = Date.now();
+    const serverNow = () => base + (Date.now() - receivedAt);
+    const timers = [from, until]
+      .filter((edge): edge is number => edge !== null)
+      .map((edge) => edge - serverNow() + 1)
+      .filter((wait) => wait > 0)
+      .map((wait) =>
+        setTimeout(() => setTick({ base, now: serverNow() }), Math.min(wait, MAX_TIMEOUT_MS)),
+      );
+    return () => timers.forEach(clearTimeout);
+  }, [base, from, until]);
+  // A newer snapshot restarts the clock from its own generatedAt.
+  return tick.base === base ? tick.now : base;
+}
+
 export function RankProgressPanel({
   config,
-  session,
+  live,
 }: {
   config: RankProgressOverlayConfig;
-  session: LiveSessionState;
+  live: PlayerLiveState;
 }) {
-  const view = resolveRankProgressView(session, config);
+  const nowMs = useFreshnessClock(
+    live.generatedAt,
+    legendCutoffFreshWindow(live.legendCutoff?.observedAt ?? null),
+  );
+  const view = resolveRankProgressView(live.session, config, {
+    legendCutoff: live.legendCutoff ?? null,
+    nowMs,
+  });
   return <RankProgressCard config={config} view={view} />;
 }
 
@@ -101,7 +144,33 @@ function RankProgressCard({
   const heading =
     state.kind === "progress" || state.kind === "goal-reached"
       ? t(`goal.${state.goal}`)
-      : t("title");
+      : state.kind === "legend-chase" || state.kind === "legend-boundary"
+        ? t("goal.legend")
+        : t("title");
+
+  /** "#530" — authoritative position only (never for LP, never 0 / invalid). */
+  const position = (p: number | null): ReactNode =>
+    p === null ? null : (
+      <span
+        className="ov-rp-pos"
+        aria-label={t("positionAria", { position: num(p) })}
+        data-testid="rp-position"
+      >
+        {t("position", { position: num(p) })}
+      </span>
+    );
+  const mainRow = (label: string, value: number, system: RatingSystemId, pos: number | null) => (
+    <div className="ov-rp-main">
+      <span className="ov-rp-rank">{label}</span>
+      <span className="ov-rp-right">
+        {position(pos)}
+        <span className="ov-rp-value">
+          <Animated value={num(value)} />
+          <span className="ov-unit">{unit(system)}</span>
+        </span>
+      </span>
+    </div>
+  );
 
   const delta = view.sessionDelta ? (
     <span className="ov-rp-delta" data-testid="rp-session-delta">
@@ -122,16 +191,73 @@ function RankProgressCard({
         </div>
       );
       break;
+    case "legend":
+      body = (
+        <>
+          {mainRow(state.current.label, state.current.value, state.system, state.position)}
+          <div className="ov-rp-foot">
+            <span className="ov-rp-target ov-accent" data-testid="rp-legend">
+              {t("legendTop500")}
+            </span>
+            {delta}
+          </div>
+        </>
+      );
+      break;
+    case "legend-boundary":
+      body = (
+        <>
+          {mainRow(state.current.label, state.current.value, state.system, state.position)}
+          <div className="ov-rp-foot">
+            <span className="ov-rp-legend" data-testid="rp-cutoff-reached">
+              <span className="ov-rp-legend-name">
+                {t("currentCutoff", { cutoff: num(state.cutoff.value) })}
+              </span>
+              <span className="ov-rp-legend-req">{t("legendRequirement")}</span>
+            </span>
+            {delta}
+          </div>
+        </>
+      );
+      break;
+    case "legend-chase":
+      body = (
+        <>
+          {mainRow(state.current.label, state.current.value, state.system, state.position)}
+          <div
+            className="ov-rp-bar"
+            role="progressbar"
+            aria-valuemin={state.start.value}
+            aria-valuemax={state.cutoff.value}
+            aria-valuenow={state.current.value}
+            aria-label={t("progressToCutoff")}
+            aria-valuetext={t("progressValue", {
+              current: num(state.current.value),
+              target: num(state.cutoff.value),
+              unit: unit(state.system),
+            })}
+            data-testid="rp-bar"
+          >
+            <span className="ov-rp-fill" style={{ transform: `scaleX(${state.progress})` }} />
+          </div>
+          <div className="ov-rp-foot">
+            <span className="ov-rp-target" data-testid="rp-target">
+              {config.showRemaining
+                ? t("remainingToCutoff", {
+                    remaining: num(state.remaining),
+                    cutoff: num(state.cutoff.value),
+                  })
+                : t("currentCutoff", { cutoff: num(state.cutoff.value) })}
+            </span>
+            {delta}
+          </div>
+        </>
+      );
+      break;
     case "ultimate-master":
       body = (
         <>
-          <div className="ov-rp-main">
-            <span className="ov-rp-rank">{state.current.label}</span>
-            <span className="ov-rp-value">
-              <Animated value={num(state.current.value)} />
-              <span className="ov-unit">{unit(state.system)}</span>
-            </span>
-          </div>
+          {mainRow(state.current.label, state.current.value, state.system, state.position)}
           <div className="ov-rp-foot">
             <span className="ov-rp-legend" data-testid="rp-legend-requirement">
               <span className="ov-rp-legend-name">{t("legend")}</span>

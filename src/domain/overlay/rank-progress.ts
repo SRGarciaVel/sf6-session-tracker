@@ -20,7 +20,7 @@ import {
 } from "@/domain/sf6/rank-progress";
 import { DEFAULT_LOCALE, LOCALES } from "@/i18n/locale";
 import { FONT_IDS } from "./fonts";
-import { pickRatingCharacter, type LiveSessionState } from "./state";
+import { pickRatingCharacter, type LiveLegendCutoff, type LiveSessionState } from "./state";
 
 /** Rank Progress styles (NOT Session themes: never in THEME_IDS). Both Free. */
 export const RANK_PROGRESS_STYLES = ["broadcast", "compact"] as const;
@@ -123,10 +123,19 @@ export interface RankProgressView {
 export function resolveRankProgressView(
   session: LiveSessionState,
   config: Pick<RankProgressOverlayConfig, "characterKey" | "goal" | "showSessionDelta">,
+  /**
+   * Phase 5.4C: the player's latest Legend boundary (any age) and the clock deciding whether it is
+   * fresh. The selected character's own position comes with its rating (same observation).
+   */
+  reference: { legendCutoff?: LiveLegendCutoff | null; nowMs?: number } = {},
 ): RankProgressView {
   const character = pickRatingCharacter(session, config.characterKey);
   const current = character?.current ?? null;
-  const state = rankProgress(current, config.goal);
+  const state = rankProgress(current, config.goal, {
+    position: character?.leaderboardPosition ?? null,
+    cutoff: reference.legendCutoff ?? null,
+    ...(reference.nowMs === undefined ? {} : { nowMs: reference.nowMs }),
+  });
   const sessionDelta =
     config.showSessionDelta &&
     state.kind !== "no-rating" &&

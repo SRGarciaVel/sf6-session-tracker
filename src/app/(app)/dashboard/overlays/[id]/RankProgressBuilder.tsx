@@ -50,13 +50,45 @@ const STATUS_CLASS: Record<SaveState, string> = {
   failed: "border-loss/60 text-loss",
 };
 
-/** Preview samples (official SF6 rank names shown as data; values on the documented ladders). */
+/**
+ * Preview samples (official SF6 rank names shown as data; values on the documented ladders).
+ * Phase 5.4C samples carry an authoritative position and a FRESH sample cutoff (2196 MR).
+ */
 export const RANK_PROGRESS_SAMPLES = {
   lp: { rank: "Diamond 3", system: "lp", value: 21_950 },
   mr: { rank: "High Master", system: "mr", value: 1_642 },
   ultimate: { rank: "Ultimate Master", system: "mr", value: 2_134 },
-} as const satisfies Record<string, SampleRank>;
+  legendChase: { rank: "Ultimate Master", system: "mr", value: 2_189, position: 530 },
+  legendBoundary: { rank: "Ultimate Master", system: "mr", value: 2_196, position: 505 },
+  legend: { rank: "Legend", system: "mr", value: 2_241, position: 327 },
+} as const satisfies Record<string, SampleRank & { position?: number }>;
 type PreviewSource = "live" | keyof typeof RANK_PROGRESS_SAMPLES;
+const SAMPLE_CUTOFF_MR = 2_196;
+
+/** Preview-only live state for a sample (cutoff observed "now" so it is fresh). */
+export function rankProgressSampleState(source: Exclude<PreviewSource, "live">): PlayerLiveState {
+  const sample = RANK_PROGRESS_SAMPLES[source];
+  const base = sampleLiveState(sample);
+  if (!("position" in sample)) return base;
+  const now = new Date().toISOString();
+  return {
+    ...base,
+    generatedAt: now,
+    legendCutoff: {
+      cutoffMr: SAMPLE_CUTOFF_MR,
+      observedAt: now,
+      lastLegendPosition: 497,
+      firstNonLegendPosition: 505,
+    },
+    session: {
+      ...base.session,
+      characters: base.session.characters.map((c) => ({
+        ...c,
+        leaderboardPosition: sample.position,
+      })),
+    },
+  };
+}
 type PreviewBg = "checker" | "dark" | "light";
 
 const PREVIEW_BG: Record<PreviewBg, string> = {
@@ -561,7 +593,7 @@ function RankProgressPreview({
   const scale = Math.min(1, width / canvas.width);
   const boxWidth = Math.round(canvas.width * scale);
   const boxHeight = Math.round(canvas.height * scale);
-  const live = source === "live" ? liveState : sampleLiveState(RANK_PROGRESS_SAMPLES[source]);
+  const live = source === "live" ? liveState : rankProgressSampleState(source);
 
   return (
     <section aria-labelledby="preview-title" className="hud-panel" data-testid="preview-pane">
@@ -608,6 +640,9 @@ function RankProgressPreview({
             <option value="lp">{tr("samples.lp")}</option>
             <option value="mr">{tr("samples.mr")}</option>
             <option value="ultimate">{tr("samples.ultimate")}</option>
+            <option value="legendChase">{tr("samples.legendChase")}</option>
+            <option value="legendBoundary">{tr("samples.legendBoundary")}</option>
+            <option value="legend">{tr("samples.legend")}</option>
           </select>
         </label>
       </div>

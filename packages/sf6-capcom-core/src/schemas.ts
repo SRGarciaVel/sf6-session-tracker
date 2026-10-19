@@ -120,3 +120,31 @@ export const battlelogPageSchema = z.looseObject({
     replay_list: z.array(z.unknown()),
   }),
 });
+
+/* ───────── GET /_next/data/{buildId}/{locale}/ranking/master.json?page=N&season_type=1 ───────── */
+
+/**
+ * One Master leaderboard row — ONLY the three numbers the Legend boundary needs. Rows also carry
+ * other players' identities (fighter name, CFN, club, avatar…): they are never modelled, read or
+ * kept; the parser below maps each row to these numbers and drops everything else.
+ */
+export const masterRankingRowSchema = z.looseObject({
+  /** The row's Master Rate. */
+  rating: int.positive(),
+  /** Authoritative leaderboard position (ties share a position and skip the following ones). */
+  master_rating_ranking: int.positive(),
+  /** Capcom's league bucket (diagnostic only; never the Legend rule). */
+  master_league: int.nonnegative(),
+});
+
+/** Every row must be valid: a boundary is only trusted from fully understood pages. */
+export const masterRankingPageSchema = z.looseObject({
+  pageProps: z.looseObject({
+    master_rating_ranking: z.looseObject({
+      current_page: int.positive(),
+      total_page: int.nonnegative(),
+      total_count: int.nonnegative(),
+      ranking_fighter_list: z.array(masterRankingRowSchema),
+    }),
+  }),
+});

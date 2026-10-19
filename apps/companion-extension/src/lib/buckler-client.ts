@@ -15,6 +15,7 @@ import {
   NEXT_DATA_REQUEST_HEADERS,
   TtlCache,
   parseCapcomBattlelogPayload,
+  parseCapcomMasterRankingPayload,
   parseCapcomPlayPayload,
   replaySchema,
   bucklerPaths,
@@ -129,7 +130,7 @@ export class CompanionBucklerClient {
    */
   private async nextData(
     cfnId: string,
-    endpoint: "play" | "battlelog",
+    endpoint: "play" | "battlelog" | "master-ranking",
     pathFor: (buildId: string, locale: string) => string,
     isValid: (data: unknown) => boolean,
   ): Promise<unknown> {
@@ -216,6 +217,26 @@ export class CompanionBucklerClient {
       (data) => {
         try {
           return String(parseCapcomPlayPayload(data).sid) === cfnId;
+        } catch {
+          return false;
+        }
+      },
+    );
+  }
+
+  /**
+   * Master leaderboard page, CURRENT phase (Phase 5.4C Legend boundary). Same page metadata,
+   * stale-buildId retry, locale fallback and failure classification as play / battlelog: the
+   * cfnId only selects the profile page used to discover buildId + locale.
+   */
+  getMasterRankingPage(cfnId: string, page: number): Promise<unknown> {
+    return this.nextData(
+      cfnId,
+      "master-ranking",
+      (b, l) => bucklerPaths.masterRanking(b, page, l),
+      (data) => {
+        try {
+          return parseCapcomMasterRankingPayload(data).page === page;
         } catch {
           return false;
         }

@@ -944,7 +944,7 @@
       },
       "goalHint": {
         "lp": "Next division measures the current division; Road to Master measures your current rank's climb to 25,000 LP.",
-        "mr": "Master League: progress to the next tier (High, Grand, Ultimate Master). Legend needs a Top 500 position and is not estimated."
+        "mr": "Master League: progress to the next tier (High, Grand, Ultimate Master). From Ultimate Master, progress to the CURRENT Legend cutoff when your Companion has reported a recent one. Legend itself is a Top 500 position: it is never estimated from MR."
       },
       "goalNormalized": "Road to Master applies to LP characters. This character is in Master League, so the overlay shows the next Master tier.",
       "showCharacterName": "Show character name",
@@ -967,7 +967,10 @@
         "live": "Live data",
         "lp": "Sample · Diamond 3 · 21,950 LP",
         "mr": "Sample · High Master · 1,642 MR",
-        "ultimate": "Sample · Ultimate Master · 2,134 MR"
+        "ultimate": "Sample · Ultimate Master · 2,134 MR",
+        "legendChase": "Sample · Ultimate Master #530 · 2,189 MR (cutoff 2,196)",
+        "legendBoundary": "Sample · Ultimate Master #505 · 2,196 MR (at cutoff)",
+        "legend": "Sample · Legend #327 · 2,241 MR"
       }
     }
   },

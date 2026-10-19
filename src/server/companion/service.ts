@@ -40,7 +40,11 @@ import {
 import { getEnv } from "@/server/env";
 import { ingestMatches } from "@/server/ingestion/ingest";
 import { logger } from "@/server/logger";
-import { findPlayerByUserId, updatePlayerProfile } from "@/server/players/service";
+import {
+  findPlayerByUserId,
+  storeLegendReference,
+  updatePlayerProfile,
+} from "@/server/players/service";
 import { publishEvent } from "@/server/realtime/events";
 import { getActiveSession } from "@/server/sessions/service";
 
@@ -393,6 +397,15 @@ export async function applyCompanionSync(
     }
   }
 
+  /*
+   * Legend boundary (Phase 5.4C): derived in the Companion, stored on the OWNER's player only, at
+   * server acceptance time (newer wins). Independent of ingestion mode and of any session.
+   */
+  if (payload.legend && player) {
+    const stored = await storeLegendReference(db, player.id, payload.legend, now);
+    if (stored) await publishEvent(db, { kind: "player", playerId: player.id });
+  }
+
   log.info("companion_sync", {
     deviceId: device.id,
     matches: payload.matches.length,
@@ -402,6 +415,7 @@ export async function applyCompanionSync(
     gapSuspected: payload.gapSuspected,
     presence: payload.presence ? presenceFromOnlineStatus(payload.presence.onlineStatus) : "absent",
     battlelogObserved: payload.battlelogObserved ?? "absent",
+    legend: payload.legend ? "reported" : "absent",
     transport: payload.client.transport,
     version: isValidExtensionVersion(version) ? version : "invalid",
   });

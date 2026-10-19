@@ -8,8 +8,15 @@
  * The tracker stays authoritative: this only REPORTS observations. No session math here.
  */
 import {
+  LEGEND_REFERENCE,
   collectMatchesSince,
   findForbiddenKeys,
+  isLegendReferenceEligible,
+  nextLegendSearchStep,
+  parseCapcomMasterRankingPayload,
+  toWireLegend,
+  type LegendBoundary,
+  type MasterRankingPage,
   normalizeCapcomMatches,
   normalizeCapcomProfile,
   parseCapcomBattlelogPayload,
@@ -62,6 +69,77 @@ export function computeDueWork(
   };
 }
 
+/**
+ * Legend-boundary lookup due? Eligible profile (fetched this cycle), ≥ 15 min since the last
+ * ATTEMPT, and no ranking-only backoff after a refusal.
+ */
+export function isLegendLookupDue(
+  store: Pick<CompanionStore, "legendAttemptAt"> &
+    Partial<Pick<CompanionStore, "legendBackoffUntil">>,
+  profile: NormalizedPlayerProfile | null,
+  nowMs: number,
+): boolean {
+  const backoff = store.legendBackoffUntil ? Date.parse(store.legendBackoffUntil) : Number.NaN;
+  return (
+    isLegendReferenceEligible(profile) &&
+    since(store.legendAttemptAt, nowMs) >= LEGEND_REFERENCE.refreshMs &&
+    !(backoff > nowMs)
+  );
+}
+
+export type LegendLookup =
+  | { kind: "found"; boundary: LegendBoundary; pageSize: number | null; pages: number }
+  | { kind: "unavailable"; reason: string; pageSize: number | null; pages: number }
+  | { kind: "failed"; error: BucklerError | Error; pages: number };
+
+/**
+ * Find the Legend boundary with as few leaderboard pages as possible (legend.ts search, hard cap).
+ * Rows are reduced to numbers by the parser and dropped here: only the derived boundary leaves.
+ */
+export async function lookupLegendBoundary(
+  buckler: CompanionBucklerClient,
+  cfnUserId: string,
+  pageSizeHint: number | null,
+): Promise<LegendLookup> {
+  const pages: MasterRankingPage[] = [];
+  const pageSizeOf = () => {
+    const full = pages.filter((p) => p.page < p.totalPages).map((p) => p.rows.length);
+    return full.length > 0 ? Math.max(...full) : null;
+  };
+  try {
+    for (;;) {
+      const step = nextLegendSearchStep(pages, {
+        ...(pageSizeHint ? { pageSizeHint } : {}),
+      });
+      if (step.kind === "found") {
+        return {
+          kind: "found",
+          boundary: step.boundary,
+          pageSize: pageSizeOf(),
+          pages: pages.length,
+        };
+      }
+      if (step.kind === "unavailable") {
+        return {
+          kind: "unavailable",
+          reason: step.reason,
+          pageSize: pageSizeOf(),
+          pages: pages.length,
+        };
+      }
+      pages.push(
+        parseCapcomMasterRankingPayload(await buckler.getMasterRankingPage(cfnUserId, step.page)),
+      );
+    }
+  } catch (err) {
+    return {
+      kind: "failed",
+      error: err instanceof Error ? err : new Error(String(err)),
+      pages: pages.length,
+    };
+  }
+}
+
 export function buildSyncPayload(input: {
   cfnUserId: string;
   observedAt: Date;
@@ -72,6 +150,8 @@ export function buildSyncPayload(input: {
   onlineStatus: number | null;
   /** The battlelog was fetched (successfully) in this cycle: `matches` is a match observation. */
   battlelogObserved: boolean;
+  /** Legend boundary derived this cycle (derived numbers only); null = none. */
+  legend?: LegendBoundary | null;
   transport: CompanionTransportKind;
 }): CompanionSyncRequest {
   const payload: CompanionSyncRequest = {
@@ -82,6 +162,7 @@ export function buildSyncPayload(input: {
     gapSuspected: input.gapSuspected,
     presence: { onlineStatus: input.onlineStatus },
     battlelogObserved: input.battlelogObserved,
+    ...(input.legend ? { legend: toWireLegend(input.legend) } : {}),
     client: { version: COMPANION_VERSION, transport: input.transport },
   };
   const leaks = findForbiddenKeys(payload);
@@ -179,6 +260,48 @@ export async function runCycle(deps: CycleDeps, manual = false): Promise<CycleOu
     return handleBucklerError(deps, err, nowMs, state, log);
   }
 
+  /*
+   * 2b. Optional Legend reference (Phase 5.4C): only for an Ultimate Master profile, at most every
+   * 15 min (attempts included). It never fails the cycle: profile + matches are synced anyway.
+   * Refusals of this OPTIONAL request:
+   *   login_required (401 / 403 app page) right after play.json succeeded with the same browser
+   *     session ⇒ ranking-specific: ranking-only backoff (1 h), Buckler keeps working;
+   *   blocked (WAF 403) / rate_limited (429) ⇒ site / IP-level signals: the usual Buckler pause
+   *     (after this cycle's data is reported) AND the ranking-only backoff, so even a persistent
+   *     ranking-only block costs at most one pause per hour, never most of every 15 min.
+   */
+  let legend: LegendBoundary | null = null;
+  let legendRefusal: BucklerError | null = null;
+  let legendPageSize = store.legendPageSize;
+  let legendBackoffUntil = store.legendBackoffUntil;
+  const legendDue = isLegendLookupDue(store, profile, nowMs);
+  if (legendDue) {
+    const lookup = await lookupLegendBoundary(deps.buckler, cfnUserId, store.legendPageSize);
+    if (lookup.kind === "found") {
+      legend = lookup.boundary;
+      legendPageSize = lookup.pageSize ?? legendPageSize;
+      legendBackoffUntil = null;
+      if (!lookup.boundary.leagueConsistent) log("companion_legend_league_mismatch", {});
+    } else if (lookup.kind === "unavailable") {
+      legendPageSize = lookup.pageSize ?? legendPageSize;
+      log("companion_legend_unavailable", { reason: lookup.reason, pages: lookup.pages });
+    } else {
+      const kind = lookup.error instanceof BucklerError ? lookup.error.kind : "unavailable";
+      if (kind === "login_required" || kind === "blocked" || kind === "rate_limited") {
+        legendBackoffUntil = new Date(nowMs + LEGEND_REFERENCE.refusalBackoffMs).toISOString();
+        if (kind !== "login_required") legendRefusal = lookup.error as BucklerError;
+      }
+      log("companion_legend_failed", { kind, pages: lookup.pages });
+    }
+    // Recorded at once (not after the tracker answers): a tracker outage must not turn into a
+    // leaderboard lookup on every cycle.
+    await deps.storage.patch({
+      legendAttemptAt: now().toISOString(),
+      legendPageSize,
+      legendBackoffUntil,
+    });
+  }
+
   const normalized = normalizeCapcomMatches(replays, { trackedCfnId: cfnUserId, now: now() });
   const fresh = normalized.matches.filter((m) => !known.has(m.externalMatchId));
 
@@ -192,6 +315,7 @@ export async function runCycle(deps: CycleDeps, manual = false): Promise<CycleOu
     onlineStatus,
     // Reaching this point means every due Buckler read succeeded (errors return above).
     battlelogObserved: due.battlelog,
+    legend,
     transport: deps.buckler.transport.kind,
   });
   let response;
@@ -208,22 +332,30 @@ export async function runCycle(deps: CycleDeps, manual = false): Promise<CycleOu
       (a, b) => Math.max(a, b),
       store.lastMatchAt ? new Date(store.lastMatchAt).getTime() : 0,
     );
+  const pausedFor = legendRefusal?.kind ?? null;
   await deps.storage.patch({
     lastState: response.state,
     trackerStatus: "connected",
-    bucklerStatus: "ok",
-    bucklerBackoffUntil: null,
+    bucklerStatus: pausedFor ?? "ok",
+    bucklerBackoffUntil: pausedFor
+      ? new Date(nowMs + state.polling.bucklerBackoffMs).toISOString()
+      : null,
     lastSyncAt: at,
     lastBattlelogAt: due.battlelog ? at : store.lastBattlelogAt,
     lastProfileAt: due.profile ? at : store.lastProfileAt,
     lastMatchAt: newest > 0 ? new Date(newest).toISOString() : null,
-    lastError: null,
+    lastError: pausedFor ? `buckler:${pausedFor}` : null,
     seenReplayIds: [...fresh.map((m) => m.externalMatchId), ...store.seenReplayIds].slice(
       0,
       SEEN_CACHE,
     ),
   });
-  log("companion_sync", { sent: fresh.length, inserted: response.inserted, profile: !!profile });
+  log("companion_sync", {
+    sent: fresh.length,
+    inserted: response.inserted,
+    profile: !!profile,
+    legend: legend !== null,
+  });
   return "synced";
 }
 

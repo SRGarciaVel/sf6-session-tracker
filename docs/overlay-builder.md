@@ -374,3 +374,9 @@ Creator tab, no presets:
 
 Tests: `rank-progress-builder.test.tsx` (dispatch, controls, dirty / save / failure / discard,
 ES/EN), `overlays-panel-kind.test.tsx` (kind picker, kind-aware cards).
+
+**Phase 5.4C (dynamic Legend).** No new control: an MR character continues automatically from
+Ultimate Master to the CURRENT Legend cutoff (when the Companion reported a fresh one) and to a
+terminal Legend state (authoritative top-500 position). Preview samples add Ultimate below the
+cutoff (#530 · 2,189), at the cutoff but outside the top 500 (#505 · 2,196) and Legend (#327 ·
+2,241), each with a fresh sample cutoff of 2,196 MR.

@@ -12,5 +12,6 @@ export * from "./pagination";
 export * from "./presence";
 export * from "./build-id";
 export * from "./buckler";
+export * from "./legend";
 export * from "./companion";
 export * from "./version";

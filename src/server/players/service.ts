@@ -1,4 +1,4 @@
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { DEFAULT_OVERLAY_CONFIG } from "@/domain/overlay/config";
 import { ratingPointEquals, ratingPointOf } from "@/domain/sf6/rating";
 import type { NormalizedPlayerProfile } from "@/domain/sf6/types";
@@ -137,6 +137,8 @@ async function upsertCharacterRatings(
         leaguePoints: c.leaguePoints,
         masterRate: c.masterRate,
         phase: c.phase ?? null,
+        // Same observation as the MR: a profile without it CLEARS it (never a stale position).
+        masterRatingRanking: c.ratingSystem === "mr" ? (c.leaderboardPosition ?? null) : null,
         observedAt,
       })),
     )
@@ -150,6 +152,7 @@ async function upsertCharacterRatings(
         leaguePoints: sql`excluded.league_points`,
         masterRate: sql`excluded.master_rate`,
         phase: sql`excluded.phase`,
+        masterRatingRanking: sql`excluded.master_rating_ranking`,
         observedAt: sql`excluded.observed_at`,
         updatedAt: sql`now()`,
       },
@@ -198,7 +201,9 @@ export async function updatePlayerProfile(
     return (
       !prev ||
       prev.characterName !== c.characterName ||
-      !ratingPointEquals(ratingPointOf(prev), ratingPointOf(c))
+      !ratingPointEquals(ratingPointOf(prev), ratingPointOf(c)) ||
+      (prev.leaderboardPosition ?? null) !==
+        (c.ratingSystem === "mr" ? (c.leaderboardPosition ?? null) : null)
     );
   });
   return (
@@ -206,4 +211,45 @@ export async function updatePlayerProfile(
     before.displayName !== profile.displayName ||
     before.favoriteCharacterKey !== (profile.favoriteCharacterKey ?? null)
   );
+}
+
+/** Legend boundary as reported by the Companion (derived numbers only; see capcom-core legend.ts). */
+export interface LegendReferenceInput {
+  cutoffMr: number;
+  lastLegendPosition: number;
+  firstNonLegendPosition: number;
+  firstNonLegendMr: number;
+}
+
+/**
+ * Store the latest Legend boundary on the player (Phase 5.4C). Ordered by SERVER acceptance time:
+ * a reference accepted earlier never overwrites a later one (two devices / a slow request).
+ * Returns true when it was stored.
+ */
+export async function storeLegendReference(
+  db: DbExecutor,
+  playerId: string,
+  reference: LegendReferenceInput,
+  acceptedAt: Date,
+): Promise<boolean> {
+  const updated = await db
+    .update(sf6Player)
+    .set({
+      legendCutoffMr: reference.cutoffMr,
+      legendCutoffObservedAt: acceptedAt,
+      legendLastPosition: reference.lastLegendPosition,
+      legendFirstNonLegendPosition: reference.firstNonLegendPosition,
+      legendFirstNonLegendMr: reference.firstNonLegendMr,
+    })
+    .where(
+      and(
+        eq(sf6Player.id, playerId),
+        or(
+          isNull(sf6Player.legendCutoffObservedAt),
+          lt(sf6Player.legendCutoffObservedAt, acceptedAt),
+        ),
+      ),
+    )
+    .returning({ id: sf6Player.id });
+  return updated.length === 1;
 }

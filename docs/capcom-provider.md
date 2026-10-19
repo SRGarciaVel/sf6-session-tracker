@@ -25,13 +25,14 @@ Código: `src/server/sf6/providers/capcom/`.
 
 Base: `https://www.streetfighter.com/6/buckler`
 
-| Endpoint                                                                         | Uso en el provider                                                       |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `GET /profile/{cfnId}` (HTML, `__NEXT_DATA__`)                                   | Solo para descubrir el `buildId`                                         |
-| `GET /_next/data/{buildId}/en/profile/{cfnId}/play.json?sid={cfnId}`             | **Perfil**: `fighter_banner_info` + `play.character_league_infos[]`      |
-| `GET /_next/data/{buildId}/en/profile/{cfnId}/battlelog.json?sid={cfnId}`        | **Partidas**, página 1                                                   |
-| `GET /_next/data/{buildId}/en/profile/{cfnId}/battlelog.json?page=N&sid={cfnId}` | Página N                                                                 |
-| `GET /api/en/card/{cfnId}`                                                       | Parser disponible (`parseCapcomCardPayload`); el provider no lo necesita |
+| Endpoint                                                                         | Uso en el provider                                                                                         |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `GET /profile/{cfnId}` (HTML, `__NEXT_DATA__`)                                   | Solo para descubrir el `buildId`                                                                           |
+| `GET /_next/data/{buildId}/en/profile/{cfnId}/play.json?sid={cfnId}`             | **Perfil**: `fighter_banner_info` + `play.character_league_infos[]`                                        |
+| `GET /_next/data/{buildId}/en/profile/{cfnId}/battlelog.json?sid={cfnId}`        | **Partidas**, página 1                                                                                     |
+| `GET /_next/data/{buildId}/en/profile/{cfnId}/battlelog.json?page=N&sid={cfnId}` | Página N                                                                                                   |
+| `GET /api/en/card/{cfnId}`                                                       | Parser disponible (`parseCapcomCardPayload`); el provider no lo necesita                                   |
+| `GET /_next/data/{buildId}/{locale}/ranking/master.json?page=N&season_type=1`    | **Solo la Companion** (Fase 5.4C): frontera de Legend (`master_rating_ranking`, `rating`, `master_league`) |
 
 - **Sin usar:** los POST `/api/profile/play/act/*` (characterwinrate, leagueinfo,
   highest/master_rating_info, characterwinratebyrivalcharacter).
@@ -154,9 +155,14 @@ Fuente: umbrales actuales de la Master League de SF6 documentados por el respons
 proyecto. Se actualizan en una sola constante (`MASTER_MR_THRESHOLDS`).
 
 - **Legend** no se infiere nunca del MR: depende de la posición en la clasificación global (top
-  500). Solo se mostraría con una posición **autoritativa** (`leaderboardPosition` 1…500). SST
-  no tiene esa señal hoy: `master_rating_ranking` existe en el payload, pero su significado no
-  está probado. Por tanto Legend no aparece.
+  500). Desde la Fase 5.4C se muestra con la posición **autoritativa** de cada personaje:
+  `play.character_league_infos[].league_info.master_rating_ranking` (HAR del 2026-10-19: en el
+  ranking, #497 con 2196 MR seguía siendo Legend y #505 con 2195 era Ultimate Master; en el
+  fixture de `play.json`, los personajes MR traen su puesto y los LP traen 0). Se normaliza como
+  `leaderboardPosition` (solo MR, entero > 0) y solo cuenta para el estado **actual**.
+- **Corte de Legend** (contexto, no prueba): lo deriva la Companion del ranking Master (ver
+  docs/companion.md §7). `master_league` (37 Legend / 42 Ultimate Master en el HAR) es solo
+  diagnóstico: manda la posición.
 - **Precedencia del rank mostrado:**
   1. etiqueta de Capcom compatible (hoy no se guarda ninguna para MR);
   2. MR válido → tier derivado;

@@ -133,6 +133,17 @@ export const sf6Player = pgTable(
     lastError: text("last_error"),
     leaseOwner: text("lease_owner"),
     leaseExpiresAt: tz("lease_expires_at"),
+    /**
+     * Latest Legend boundary reported by this player's Companion (Phase 5.4C): derived numbers
+     * only (no leaderboard rows). `legend_cutoff_observed_at` = SERVER acceptance time; it orders
+     * updates (newer wins) and drives freshness. Global data stored per player on purpose: no
+     * singleton, scheduler or cross-account dependency.
+     */
+    legendCutoffMr: integer("legend_cutoff_mr"),
+    legendCutoffObservedAt: tz("legend_cutoff_observed_at"),
+    legendLastPosition: integer("legend_last_position"),
+    legendFirstNonLegendPosition: integer("legend_first_non_legend_position"),
+    legendFirstNonLegendMr: integer("legend_first_non_legend_mr"),
     createdAt: createdAt(),
   },
   (t) => [
@@ -242,6 +253,13 @@ export const playerCharacterRating = pgTable(
     leaguePoints: integer("league_points"),
     masterRate: integer("master_rate"),
     phase: integer("phase"),
+    /**
+     * Authoritative global Master leaderboard position of THIS character (play.json
+     * `master_rating_ranking`, Phase 5.4C). Same observation as `master_rate` (same row, same
+     * observed_at guard); null = unknown / not MR. Current-state metadata: never in session
+     * baselines, so ended sessions are never relabelled.
+     */
+    masterRatingRanking: integer("master_rating_ranking"),
     /** When the provider reported this value (guards against older snapshots overwriting newer). */
     observedAt: tz("observed_at").notNull(),
     updatedAt: tz("updated_at").notNull().defaultNow(),

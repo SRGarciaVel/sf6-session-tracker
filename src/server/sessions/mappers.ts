@@ -71,6 +71,7 @@ export function characterRowToProfile(row: PlayerCharacterRatingRow): CharacterR
     leaguePoints: row.leaguePoints,
     masterRate: row.masterRate,
     phase: row.phase,
+    leaderboardPosition: row.masterRatingRanking,
   };
 }
 

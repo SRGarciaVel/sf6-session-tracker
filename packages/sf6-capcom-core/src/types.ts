@@ -45,6 +45,12 @@ export interface CharacterRatingProfile {
   masterRate: number | null;
   /** MR phase / season, if the source exposes it. Ratings of different phases are not comparable. */
   phase?: number | null;
+  /**
+   * Authoritative global Master leaderboard position of THIS character (Buckler play.json
+   * `league_info.master_rating_ranking`). MR characters only; a positive integer or null. Part of
+   * the same observation as `masterRate`. Legend = position 1…500 (never inferred from MR).
+   */
+  leaderboardPosition?: number | null;
 }
 
 export interface NormalizedPlayerProfile {
