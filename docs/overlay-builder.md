@@ -380,3 +380,12 @@ Ultimate Master to the CURRENT Legend cutoff (when the Companion reported a fres
 terminal Legend state (authoritative top-500 position). Preview samples add Ultimate below the
 cutoff (#530 · 2,189), at the cutoff but outside the top 500 (#505 · 2,196) and Legend (#327 ·
 2,241), each with a fresh sample cutoff of 2,196 MR.
+
+## Rating transition (Phase 5.5)
+
+Style tab, next to **Animate changes**: **Rating transition** (Count · Fade · Instant) and, for
+Count, **Count speed** (Fast 300 ms · Normal 550 ms · Slow 800 ms). New overlays use Count /
+Normal; overlays saved before 5.5 show Instant (their actual behaviour) until changed. The preview
+uses the production renderer, so **Play update** shows the chosen transition. Whatever the mode,
+a rating whose post-match value is still pending keeps the last confirmed value (up to 3 min)
+instead of "—". Tests: `rating-transition-builder.test.tsx`.
