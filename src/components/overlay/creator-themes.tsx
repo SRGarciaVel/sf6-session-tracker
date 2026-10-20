@@ -14,7 +14,15 @@ import { formatWinRate } from "@/domain/format";
 import { DEFAULT_THEME_VARIANTS, type ThemeVariants } from "@/domain/overlay/variants";
 import { rankPrestige, type RankPrestige } from "@/domain/sf6/rank-prestige";
 import { MotionFx } from "./motion";
-import { Animated, Delta, Ratio, RecentForm, ratingParts, type ThemeProps } from "./parts";
+import {
+  Animated,
+  Delta,
+  RatingValue,
+  Ratio,
+  RecentForm,
+  ratingParts,
+  type ThemeProps,
+} from "./parts";
 
 type CssVars = CSSProperties & Record<`--${string}`, string>;
 
@@ -128,7 +136,7 @@ export function RankCardTheme({ config, live }: ThemeProps) {
           <div className="ov-rc-rating">
             {f.rating && (
               <>
-                <Animated value={r.value} />
+                <RatingValue parts={r} />
                 <span className="ov-unit">{r.label}</span>
               </>
             )}
@@ -193,7 +201,7 @@ export function BroadcastTheme({ config, live }: ThemeProps) {
         <>
           {f.rating && (
             <>
-              <Animated value={r.value} />
+              <RatingValue parts={r} />
               <span className="ov-unit">{r.label}</span>
             </>
           )}
@@ -299,7 +307,7 @@ export function PrestigeTheme({ config, live }: ThemeProps) {
             <span className="ov-char ov-pr-char">{r.character}</span>
             {f.rating && (
               <>
-                <Animated value={r.value} />
+                <RatingValue parts={r} />
                 <span className="ov-unit">{r.label}</span>
               </>
             )}

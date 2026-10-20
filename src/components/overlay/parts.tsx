@@ -3,9 +3,9 @@
  * creator-themes.tsx). Pure presentation: values arrive pre-computed from the server.
  */
 import { BrandInterleaveLayer, useBrandInterleave } from "./brand-flag";
-import { useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import type { SessionOverlayConfig } from "@/domain/overlay/config";
+import type { RatingTransition, SessionOverlayConfig } from "@/domain/overlay/config";
 import { pickRatingCharacter, type PlayerLiveState } from "@/domain/overlay/state";
 import { deltaTone, formatDelta, formatInteger } from "@/domain/format";
 import type { MatchResult } from "@/domain/sf6/types";
@@ -156,7 +156,133 @@ export function ratingParts(live: PlayerLiveState, config: SessionOverlayConfig)
     /** Raw rank label (null = unknown) and system, for rank-aware Creator themes. */
     rankLabel: c?.current?.rank ?? c?.initial?.rank ?? null,
     system,
+    /** Phase 5.5: the authoritative number and whose it is (for rating transitions). */
+    rawValue: c?.current?.value ?? null,
+    characterKey: c?.characterKey ?? null,
+    locale: config.locale,
   };
+}
+
+/* ───────── Phase 5.5: rating transitions ───────── */
+
+export interface RatingTransitionContextValue {
+  /** Effective mode: "instant" whenever animations are off or reduced motion is preferred. */
+  mode: RatingTransition;
+  /** Count duration (ms). */
+  durationMs: number;
+  /** Session + player identity: a transition never spans two of them. */
+  scope: string;
+}
+
+const RatingTransitionContext = createContext<RatingTransitionContextValue>({
+  mode: "instant",
+  durationMs: 0,
+  scope: "",
+});
+export const RatingTransitionProvider = RatingTransitionContext.Provider;
+
+/** Broadcast-friendly easing: fast start, gentle landing (monotonic: never overshoots). */
+const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
+
+/**
+ * The rating number of a Session theme. "instant" is exactly the pre-5.5 markup (`Animated`).
+ * "count" / "fade" animate only between two authoritative values of the SAME session, player,
+ * character and rating system; anything else (first render, identity change, unknown value)
+ * shows the target directly.
+ */
+export function RatingValue({ parts }: { parts: ReturnType<typeof ratingParts> }) {
+  const t = useContext(RatingTransitionContext);
+  const identity = `${t.scope}|${parts.characterKey ?? ""}|${parts.system ?? ""}`;
+  if (t.mode === "count" && t.durationMs > 0) {
+    return (
+      <CountingNumber
+        target={parts.rawValue}
+        formatted={parts.value}
+        locale={parts.locale}
+        identity={identity}
+        durationMs={t.durationMs}
+      />
+    );
+  }
+  if (t.mode === "fade") {
+    return <FadingNumber formatted={parts.value} identity={identity} />;
+  }
+  return <Animated value={parts.value} />;
+}
+
+interface CountState {
+  identity: string;
+  target: number | null;
+  /** Number on screen right now. */
+  value: number | null;
+  /** Start of the running count (null = at rest). */
+  from: number | null;
+}
+
+/**
+ * Progressive count. State is adjusted DURING render when a new target arrives (no frame showing
+ * the final value before the count), the frames run on requestAnimationFrame with a monotonic
+ * clock (a throttled / resumed tab simply lands on the target), a newer target retargets from the
+ * number currently on screen, and cleanup cancels the frame (no stale completion, no leak).
+ */
+function CountingNumber({
+  target,
+  formatted,
+  locale,
+  identity,
+  durationMs,
+}: {
+  target: number | null;
+  formatted: string;
+  locale: string;
+  identity: string;
+  durationMs: number;
+}) {
+  const [s, setS] = useState<CountState>({ identity, target, value: target, from: null });
+  if (s.identity !== identity || s.target !== target) {
+    const animate =
+      s.identity === identity && s.value !== null && target !== null && s.value !== target;
+    setS({ identity, target, value: animate ? s.value : target, from: animate ? s.value : null });
+  }
+
+  const { from } = s;
+  useEffect(() => {
+    if (from === null || target === null) return;
+    const start = performance.now();
+    let raf = requestAnimationFrame(function frame(now) {
+      const p = Math.min(1, Math.max(0, (now - start) / durationMs));
+      const value = p >= 1 ? target : Math.round(from + (target - from) * easeOutCubic(p));
+      setS((prev) =>
+        prev.target === target && prev.identity === identity
+          ? { ...prev, value, from: p >= 1 ? null : prev.from }
+          : prev,
+      );
+      if (p < 1) raf = requestAnimationFrame(frame);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [from, target, identity, durationMs]);
+
+  if (s.from === null) return <span className="ov-num">{formatted}</span>;
+  // Counting: the intermediate integers are hidden from assistive tech; the final value is not.
+  return (
+    <span className="ov-num ov-counting">
+      <span aria-hidden="true">{formatInteger(s.value, locale)}</span>
+      <span className="ov-sr">{formatted}</span>
+    </span>
+  );
+}
+
+/** Discreet fade-in of a new value of the same identity (no overlap: one number at a time). */
+function FadingNumber({ formatted, identity }: { formatted: string; identity: string }) {
+  const [s, setS] = useState({ formatted, identity, version: 0, fade: false });
+  if (s.formatted !== formatted || s.identity !== identity) {
+    setS({ formatted, identity, version: s.version + 1, fade: s.identity === identity });
+  }
+  return (
+    <span key={s.version} className={s.fade ? "ov-num ov-rt-fade" : "ov-num"}>
+      {formatted}
+    </span>
+  );
 }
 
 /** Joins nodes with a separator element (no per-stat boxes). */
