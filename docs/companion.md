@@ -462,6 +462,25 @@ título.
 - Mientras la extensión sea descomprimida, la actualización es **manual**: no hay `update_url`,
   CRX propio ni descargas automáticas.
 
+### Notas de la versión 0.4.0 (candidata, pendiente de validación manual)
+
+- **Progreso dinámico hacia Legend** (Fase 5.4C) para el overlay Rank Progress.
+- **Puesto propio por personaje:** envía `master_rating_ranking` de `play.json` (solo personajes MR,
+  entero > 0) como `leaderboardPosition`. Legend = puesto 1…500, nunca un umbral de MR.
+- **Corte actual de Legend:** con un personaje MR ≥ 1800 que no sea ya Legend, lee el ranking Master
+  (`ranking/master.json?page=N&season_type=1`, buildId y locale de la página) como mucho cada 15 min
+  y ≤ 5 páginas. Calcula la frontera con empates en la propia extensión y envía solo
+  cuatro números derivados.
+- **Aislamiento de fallos:** un fallo del ranking nunca impide el sync de perfil y partidas. Un
+  rechazo solo del ranking lo aplaza 1 h sin pausar Buckler; 429 / bloqueo WAF pausan Buckler
+  10 min como siempre.
+- **Compatibilidad:** requiere el backend con la migración `0011_legend_reference` (ya desplegado).
+  Las versiones anteriores siguen sincronizando, sin puestos ni corte.
+- **Privacidad:** igual que antes. Nunca salen cookies, tokens ni cabeceras de Capcom; tampoco filas
+  del ranking ni nombres o CFN de otros jugadores.
+- **Sin verificar aún con una sesión real de Buckler:** antes de publicar, hacer el smoke test manual
+  de la §7 («Smoke test manual de Legend»).
+
 ## 12. Validación manual real — 2026-10-04
 
 Navegador Brave/Chromium normal, sesión de Buckler iniciada a mano, tracker local
