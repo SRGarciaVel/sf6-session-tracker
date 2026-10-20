@@ -818,7 +818,10 @@ leaderboardPosition })`). Ties share a position and skip the next ones (observed
   the SERVER timeline (`generatedAt` + time elapsed since the snapshot arrived, so the OBS
   machine's clock never matters) and is re-evaluated exactly at the edges of the cutoff's fresh
   window (`legendCutoffFreshWindow`): a source left open with no new snapshot drops a stale cutoff
-  the moment it expires (pre-merge fix: a minute-rounded tick lagged up to ~2 min). Stale /
+  the moment it expires (pre-merge fix: a minute-rounded tick lagged up to ~2 min). Elapsed time is
+  monotonic (`performance.now()`) and a timer that fires before its edge re-arms (5.4C QA fix: a
+  wall clock adjusted backwards by ≥ 1 ms during the wait — NTP / VM time sync — left a stale
+  cutoff on screen until the next snapshot). Stale /
   missing ⇒ the 5.4B Ultimate Master terminal ("Legend · Top 500 required"), never a numeric
   cutoff. Authoritative Legend never depends on the cutoff.
 - **Rank Progress states (MR):** below 1800 unchanged. ≥ 1800 and not Legend: `legend-chase` (bar

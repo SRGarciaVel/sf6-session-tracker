@@ -78,10 +78,12 @@ const MAX_TIMEOUT_MS = 2_147_483_647;
 /**
  * Clock for the Legend cutoff freshness decision (the decision itself is in the domain). It runs
  * on the SERVER timeline: the snapshot's `generatedAt` plus the time elapsed since this snapshot
- * reached the browser, so the OBS machine's own clock (possibly skewed) never matters. It is
- * re-evaluated EXACTLY at the edges of the cutoff's fresh window, so a source left open with no
- * new snapshot (Companion disconnected, overnight) drops a stale cutoff the moment it expires.
- * Server render and hydration use `generatedAt` itself (identical markup).
+ * reached the browser, so the OBS machine's own clock (possibly skewed) never matters. Elapsed
+ * time is MONOTONIC (`performance.now()`, the clock timers run on): a wall clock adjusted
+ * backwards meanwhile (NTP, VM time sync) can neither delay nor prevent the expiry. It is
+ * re-evaluated at the edges of the cutoff's fresh window, and a timer that fires before its edge
+ * re-arms, so a source left open with no new snapshot (Companion disconnected, overnight) drops a
+ * stale cutoff when it expires — never later. Server render and hydration use `generatedAt`.
  */
 function useFreshnessClock(
   generatedAt: string,
@@ -92,16 +94,26 @@ function useFreshnessClock(
   const from = window?.from ?? null;
   const until = window?.until ?? null;
   useEffect(() => {
-    const receivedAt = Date.now();
-    const serverNow = () => base + (Date.now() - receivedAt);
-    const timers = [from, until]
-      .filter((edge): edge is number => edge !== null)
-      .map((edge) => edge - serverNow() + 1)
-      .filter((wait) => wait > 0)
-      .map((wait) =>
-        setTimeout(() => setTick({ base, now: serverNow() }), Math.min(wait, MAX_TIMEOUT_MS)),
+    const receivedAt = performance.now();
+    const serverNow = () => base + (performance.now() - receivedAt);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const arm = () => {
+      // Next edge still ahead (fresh from `from`, stale after `until`, both on the server timeline).
+      const now = serverNow();
+      const next = [from, until]
+        .filter((edge): edge is number => edge !== null && edge >= now)
+        .sort((a, b) => a - b)[0];
+      if (next === undefined) return;
+      timer = setTimeout(
+        () => {
+          setTick({ base, now: serverNow() });
+          arm(); // re-arm: an early timer, or the next edge
+        },
+        Math.min(next - now + 1, MAX_TIMEOUT_MS),
       );
-    return () => timers.forEach(clearTimeout);
+    };
+    arm();
+    return () => clearTimeout(timer);
   }, [base, from, until]);
   // A newer snapshot restarts the clock from its own generatedAt.
   return tick.base === base ? tick.now : base;

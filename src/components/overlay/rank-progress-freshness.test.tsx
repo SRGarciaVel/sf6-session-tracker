@@ -39,7 +39,7 @@ let root: Root | null = null;
 let host: HTMLDivElement;
 beforeEach(() => {
   vi.useFakeTimers({
-    toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"],
+    toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date", "performance"],
   });
   vi.setSystemTime(T);
 });
@@ -138,6 +138,26 @@ describe("Legend cutoff expiry in a long-open overlay (no new snapshot)", () => 
     const next = Date.now();
     render({ ...live(next), generatedAt: new Date(next).toISOString() });
     expect(state()).toBe("legend-chase");
+  });
+
+  it("a wall clock that steps BACK while waiting (NTP / VM sync) never keeps a stale cutoff", () => {
+    // Timers run on the monotonic clock; Date.now() can be adjusted backwards meanwhile. The
+    // expiry must follow elapsed (monotonic) time, and a timer that fires "early" re-arms.
+    const state = mount(live(T - 29.5 * MIN)); // expires at T + 30 s (monotonic)
+    advance(15_000);
+    vi.setSystemTime(Date.now() - 2_000); // the OS clock is corrected 2 s back
+    advance(16_000); // 31 s of real (monotonic) time since the snapshot
+    expect(state()).toBe("ultimate-master");
+    advance(60 * MIN);
+    expect(state()).toBe("ultimate-master");
+  });
+
+  it("a wall clock stepping back by a single millisecond near the edge is enough to matter", () => {
+    const state = mount(live(T - 29.5 * MIN));
+    advance(29_999);
+    vi.setSystemTime(Date.now() - 1);
+    advance(5_000);
+    expect(state()).toBe("ultimate-master");
   });
 
   it("authoritative Legend does not depend on cutoff freshness", () => {
