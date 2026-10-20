@@ -54,6 +54,24 @@ export const OVERLAY_FIELDS = [
 ] as const;
 export type OverlayFieldId = (typeof OVERLAY_FIELDS)[number];
 
+/**
+ * Phase 5.5 — how the rating number changes when a new authoritative value arrives:
+ *   count    progressive count from the previous to the new value (new overlays);
+ *   fade     a discreet fade-in of the new value;
+ *   instant  direct update — exactly the pre-5.5 rendering (legacy overlays without the setting).
+ * Independent of rating continuity (rating-hold.ts), which applies in every mode. Reduced motion
+ * or "Animate changes" off always render the instant path.
+ */
+export const RATING_TRANSITIONS = ["count", "fade", "instant"] as const;
+export type RatingTransition = (typeof RATING_TRANSITIONS)[number];
+/** Count duration per speed (ms). */
+export const RATING_TRANSITION_SPEEDS = { fast: 300, normal: 550, slow: 800 } as const;
+export type RatingTransitionSpeed = keyof typeof RATING_TRANSITION_SPEEDS;
+const SPEED_IDS = Object.keys(RATING_TRANSITION_SPEEDS) as [
+  RatingTransitionSpeed,
+  ...RatingTransitionSpeed[],
+];
+
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Expected a #rrggbb color");
 
 const fieldsSchema = z.object({
@@ -113,6 +131,12 @@ export const sessionOverlayConfigSchema = z.object({
   spacing: z.enum(["tight", "normal", "relaxed"]),
   align: z.enum(["left", "center", "right"]),
   animations: z.boolean(),
+  /**
+   * Phase 5.5 rating transition. Optional on INPUT (configs / editors from before 5.5): missing ⇒
+   * "instant" = the established rendering; new overlays start with "count".
+   */
+  ratingTransition: z.enum(RATING_TRANSITIONS).default("instant"),
+  ratingTransitionSpeed: z.enum(SPEED_IDS).default("normal"),
   /**
    * Creator Beta customization (domain/overlay/creator.ts). Optional and default-safe: old
    * configs have none. Stored even when the owner is not entitled; renderers use
@@ -185,6 +209,8 @@ export const DEFAULT_SESSION_OVERLAY_CONFIG: SessionOverlayConfig = {
   spacing: "normal",
   align: "left",
   animations: true,
+  ratingTransition: "count",
+  ratingTransitionSpeed: "normal",
 };
 
 /** Historical name, kept to avoid churn: the default overlay IS the default Session overlay. */
@@ -334,6 +360,8 @@ function parseSessionOverlayConfig(obj: Record<string, unknown>): SessionOverlay
     ...(legacy && obj.title === "SESSION" ? { title: "" } : {}),
     kind: "session",
     version: 1,
+    // Saved before Phase 5.5 ⇒ keep the established (instant) rating rendering.
+    ratingTransition: obj.ratingTransition === undefined ? "instant" : obj.ratingTransition,
     fields: { ...DEFAULT_OVERLAY_CONFIG.fields, ...storedFields },
     creator: undefined,
     variants: undefined,

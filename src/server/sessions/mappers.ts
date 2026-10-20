@@ -58,6 +58,7 @@ export function matchRowToSessionMatch(row: MatchRow): SessionMatch {
       rankTier: row.ratingAfterRankTier,
       phase: row.ratingAfterPhase,
     }),
+    ingestedAt: row.ingestedAt,
   };
 }
 

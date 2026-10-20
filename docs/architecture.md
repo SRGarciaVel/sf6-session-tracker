@@ -859,6 +859,31 @@ leaderboardPosition })`). Ties share a position and skip the next ones (observed
   Companions keep syncing). Companions ≥ the Legend release must not talk to an older server
   (strict sync root rejects `legend`): roll the Companion back first, or keep the server.
 
+### Smooth rating transitions (Phase 5.5)
+
+- **Root cause of the "1859 MR +30 → -- MR - → 1861 MR" flicker:** battlelog replays never carry
+  the rating AFTER a match (`parse.ts`), and during a session the Companion reads the battlelog
+  every 30 s but `play.json` every 90 s. When a match is ingested before the next profile
+  snapshot, the engine has no observation newer than the match: `current` is null (honestly) while
+  `ratingSystem` stays known, and every Session theme rendered "— MR —" for up to ~90 s.
+- **Fix (no data invented):** the engine classifies that case as `currentSource: "pending"` and
+  keeps the last CONFIRMED observation aside (`held`: rating + its own session delta +
+  `pendingSince` = ingestion time); the live state exposes it as `heldRating`. `current` and
+  deltas are unchanged. The Session overlay (`domain/overlay/rating-hold.ts`) shows the held
+  observation — rating and delta together — for at most **3 min** (two active-session profile
+  intervals), then the honest unknown; it is re-evaluated exactly at expiry on the server timeline
+  (`useServerClock`, monotonic). Identity is preserved by construction (per character, system and
+  session). Rank Progress is unchanged.
+- **Transitions** (`ratingTransition`: count | fade | instant, `ratingTransitionSpeed`: fast
+  300 / normal 550 / slow 800 ms, in `overlay.config`, no migration). New overlays count at normal
+  speed; configs saved before 5.5 read as **instant** = exactly the previous rendering. Count runs
+  on `requestAnimationFrame` with a monotonic clock and ease-out, integers only, never overshoots,
+  retargets from the number on screen; fade fades the new value in (CSS only). Transitions only
+  span two authoritative values of the same session, player, character and rating system. The new
+  observation's delta (and rank label) appear when it arrives. Reduced motion or "Animate changes"
+  off always render instantly; intermediate integers are hidden from assistive tech.
+- **No backend cost:** no new query, polling, SSE channel, Buckler request or Companion change.
+
 ## 9. Security
 
 - Zod validation on every input: server actions, provider output, overlay config and env.

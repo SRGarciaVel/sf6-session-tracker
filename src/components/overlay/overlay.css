@@ -203,6 +203,40 @@
   }
 }
 
+/* ── Phase 5.5: rating transitions ─────────────────────────────────
+ * Count: the intermediate integers are text (no CSS); the final value stays readable for
+ * assistive tech through .ov-sr. Fade: one number at a time, faded in (never two overlapping). */
+.sf6-overlay .ov-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.ov-counting {
+  position: relative;
+}
+@keyframes ov-rt-fade {
+  from {
+    opacity: 0.15;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.ov-animate .ov-num.ov-rt-fade {
+  animation: ov-rt-fade 320ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ov-animate .ov-num.ov-rt-fade {
+    animation: none;
+  }
+}
+
 /* ── Recent form chips (letters, not only color) ─────────────────── */
 
 .ov-form {

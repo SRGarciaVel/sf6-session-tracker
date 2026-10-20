@@ -55,6 +55,12 @@ export interface LiveCharacterProgress {
    * match / a frozen ended session). Optional: absent in older payloads = unknown.
    */
   leaderboardPosition?: number | null;
+  /**
+   * Phase 5.5: `current` is null only because the post-match rating has not been observed yet
+   * (engine `currentSource: "pending"`); this is the last CONFIRMED observation and its session
+   * delta, for presentation continuity only (overlay/rating-hold.ts). Absent otherwise.
+   */
+  heldRating?: { current: LiveRating; delta: number | null; pendingSince: string } | null;
 }
 
 /**
@@ -166,6 +172,15 @@ function toLiveCharacter(
     delta: p.delta,
     baselineKnown: p.initial !== null,
     leaderboardPosition: position,
+    ...(p.held
+      ? {
+          heldRating: {
+            current: live(p.held.rating, null)!,
+            delta: p.held.delta,
+            pendingSince: p.held.pendingSince.toISOString(),
+          },
+        }
+      : {}),
   };
 }
 

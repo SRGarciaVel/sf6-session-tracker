@@ -15,6 +15,7 @@ import {
 import { NextIntlClientProvider, useTranslations } from "next-intl";
 import {
   OVERLAY_PRESETS,
+  RATING_TRANSITION_SPEEDS,
   hexToRgba,
   type OverlayConfig,
   type SessionOverlayConfig,
@@ -38,6 +39,8 @@ import {
   type PresentationView,
 } from "@/domain/overlay/rotation";
 import { useCharacterRotation } from "./rotation";
+import { heldRatingEdges, withHeldRatings } from "@/domain/overlay/rating-hold";
+import { useServerClock } from "./server-clock";
 import {
   BrandInterleaveLayer,
   BrandInterleaveProvider,
@@ -63,6 +66,8 @@ import {
   Animated,
   Cell,
   Delta,
+  RatingTransitionProvider,
+  RatingValue,
   Ratio,
   RecentForm,
   joinWith,
@@ -176,7 +181,7 @@ function MinimalTheme({ config, live, viewLabel }: ThemeProps) {
           <span className="ov-unit ov-upper ov-char">{r.character}</span>
           {f.rating && (
             <>
-              <Animated value={r.value} />
+              <RatingValue parts={r} />
               <span className="ov-unit">{r.label}</span>
             </>
           )}
@@ -289,7 +294,7 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
           <span className="ov-mid">
             {f.rating && (
               <>
-                <Animated value={r.value} />
+                <RatingValue parts={r} />
                 <span className="ov-unit">{r.label}</span>
               </>
             )}
@@ -406,7 +411,7 @@ function FighterTheme({ config, live }: ThemeProps) {
               <span className="ov-st-mid">
                 {f.rating && (
                   <>
-                    <Animated value={r.value} /> <span className="ov-muted">{r.label}</span>
+                    <RatingValue parts={r} /> <span className="ov-muted">{r.label}</span>
                   </>
                 )}
                 {f.ratingDelta && <Delta delta={r.delta} locale={locale} className="ov-st-badge" />}
@@ -711,11 +716,15 @@ function RankProgressOverlayView({
 /** The Session Stats overlay (every overlay before 5.4A): themes, scope, rotation, motion, flag. */
 function SessionOverlayView({
   config,
-  live,
+  live: snapshot,
   sizing,
   brandRevealSignal = 0,
 }: OverlayViewProps & { config: SessionOverlayConfig }) {
   const { rootRef, fit } = useFitToBox();
+  // Phase 5.5: a post-match rating not observed yet keeps the last confirmed observation (bounded
+  // hold, re-evaluated exactly when it expires). Everything below renders this projection.
+  const nowMs = useServerClock(snapshot.generatedAt, heldRatingEdges(snapshot));
+  const live = withHeldRatings(snapshot, nowMs);
   // Creator motion (Phase 5.0): only an entitled owner's EFFECTIVE config carries `motion`;
   // Free, animations off and reduced motion all resolve to no profile (nothing extra renders).
   const reducedMotion = usePrefersReducedMotion();
@@ -793,6 +802,12 @@ function SessionOverlayView({
           : {}),
       }
     : {};
+  // Phase 5.5: rating transitions only animate when animations are on and motion is welcome.
+  const ratingTransition = {
+    mode: config.animations && !reducedMotion ? config.ratingTransition : ("instant" as const),
+    durationMs: RATING_TRANSITION_SPEEDS[config.ratingTransitionSpeed],
+    scope: `${sessionIdentity(live.session) ?? "none"}|${live.player.displayName}`,
+  };
   const className = [
     "sf6-overlay",
     `ov-theme-${config.theme}`,
@@ -817,30 +832,32 @@ function SessionOverlayView({
         data-session-status={live.session.status}
         {...motionAttrs}
       >
-        <MotionProvider value={{ update, sweep: profile?.accent === "sweep" }}>
-          <BrandInterleaveProvider value={interleave}>
-            <BrandRow flag={sideFlag} shown={brand?.shown ?? false} animation={brandAnimation}>
-              {rotation ? (
-                // Rotation stage: static (fit-to-box measures the panel inside it); the inner frame is
-                // re-keyed per VIEW, so the transition runs once on the new content and no old DOM
-                // stays. A repeated view (e.g. priority restarted) keeps the same element.
-                <div className="ov-rot-stage">
-                  <div
-                    key={viewKey(rotation.view)}
-                    className="ov-rot-frame"
-                    data-rot-transition={rotation.seq > 0 ? (transition ?? "instant") : undefined}
-                    data-rot-direction={rotation.seq > 0 ? direction : undefined}
-                    data-view={rotation.view.kind}
-                  >
-                    <ThemeView config={display} live={shown} viewLabel={viewLabel} />
+        <RatingTransitionProvider value={ratingTransition}>
+          <MotionProvider value={{ update, sweep: profile?.accent === "sweep" }}>
+            <BrandInterleaveProvider value={interleave}>
+              <BrandRow flag={sideFlag} shown={brand?.shown ?? false} animation={brandAnimation}>
+                {rotation ? (
+                  // Rotation stage: static (fit-to-box measures the panel inside it); the inner frame is
+                  // re-keyed per VIEW, so the transition runs once on the new content and no old DOM
+                  // stays. A repeated view (e.g. priority restarted) keeps the same element.
+                  <div className="ov-rot-stage">
+                    <div
+                      key={viewKey(rotation.view)}
+                      className="ov-rot-frame"
+                      data-rot-transition={rotation.seq > 0 ? (transition ?? "instant") : undefined}
+                      data-rot-direction={rotation.seq > 0 ? direction : undefined}
+                      data-view={rotation.view.kind}
+                    >
+                      <ThemeView config={display} live={shown} viewLabel={viewLabel} />
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <ThemeView config={display} live={shown} />
-              )}
-            </BrandRow>
-          </BrandInterleaveProvider>
-        </MotionProvider>
+                ) : (
+                  <ThemeView config={display} live={shown} />
+                )}
+              </BrandRow>
+            </BrandInterleaveProvider>
+          </MotionProvider>
+        </RatingTransitionProvider>
       </div>
     </NextIntlClientProvider>
   );

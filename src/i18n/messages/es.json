@@ -972,6 +972,22 @@
         "legendBoundary": "Ejemplo · Ultimate Master #505 · 2.196 MR (en el corte)",
         "legend": "Ejemplo · Legend #327 · 2.241 MR"
       }
+    },
+    "ratingTransition": {
+      "label": "Transición del rating",
+      "modes": {
+        "count": "Contar",
+        "fade": "Fundido",
+        "instant": "Instantáneo"
+      },
+      "hint": "Cómo aparecen los cambios de MR / LP tras una partida. Se desactiva si el espectador prefiere menos movimiento.",
+      "hintOff": "«Animar cambios» está desactivado: el rating se actualiza al instante.",
+      "speed": "Velocidad del conteo",
+      "speeds": {
+        "fast": "Rápida",
+        "normal": "Normal",
+        "slow": "Lenta"
+      }
     }
   },
   "NotFound": {
