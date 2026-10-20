@@ -10,10 +10,14 @@ import { useState } from "react";
 import { Button, Input, cx } from "@/components/ui/primitives";
 import {
   OVERLAY_FONTS,
+  RATING_TRANSITIONS,
+  RATING_TRANSITION_SPEEDS,
   STATS_SCOPES,
   applyThemeDefaults,
   type SessionOverlayConfig,
   type StatsScope,
+  type RatingTransition,
+  type RatingTransitionSpeed,
   type OverlayFontId,
 } from "@/domain/overlay/config";
 import { isCreatorTheme, supportedCanvas } from "@/domain/overlay/themes";
@@ -350,6 +354,33 @@ export function StylePanel({
           checked={config.animations}
           onChange={(v) => update((c) => ({ ...c, animations: v }))}
         />
+        {/* Phase 5.5: how MR / LP changes are shown. */}
+        <div className="space-y-1.5 text-sm" data-testid="rating-transition">
+          <span className="block">{t("ratingTransition.label")}</span>
+          <Segmented<RatingTransition>
+            value={config.ratingTransition}
+            onChange={(v) => update((c) => ({ ...c, ratingTransition: v }))}
+            options={RATING_TRANSITIONS.map((m) => ({
+              value: m,
+              label: t(`ratingTransition.modes.${m}`),
+            }))}
+          />
+          <p className="text-xs text-faint">
+            {config.animations ? t("ratingTransition.hint") : t("ratingTransition.hintOff")}
+          </p>
+        </div>
+        {config.ratingTransition === "count" && (
+          <div className="space-y-1.5 text-sm" data-testid="rating-transition-speed">
+            <span className="block">{t("ratingTransition.speed")}</span>
+            <Segmented<RatingTransitionSpeed>
+              value={config.ratingTransitionSpeed}
+              onChange={(v) => update((c) => ({ ...c, ratingTransitionSpeed: v }))}
+              options={(Object.keys(RATING_TRANSITION_SPEEDS) as RatingTransitionSpeed[]).map(
+                (sp) => ({ value: sp, label: t(`ratingTransition.speeds.${sp}`) }),
+              )}
+            />
+          </div>
+        )}
       </Group>
 
       {/* Restores the theme's own look (existing resolver); local until saved. */}

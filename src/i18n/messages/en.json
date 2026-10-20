@@ -972,6 +972,22 @@
         "legendBoundary": "Sample · Ultimate Master #505 · 2,196 MR (at cutoff)",
         "legend": "Sample · Legend #327 · 2,241 MR"
       }
+    },
+    "ratingTransition": {
+      "label": "Rating transition",
+      "modes": {
+        "count": "Count",
+        "fade": "Fade",
+        "instant": "Instant"
+      },
+      "hint": "How MR / LP changes appear after a match. Off when the viewer prefers reduced motion.",
+      "hintOff": "“Animate changes” is off: ratings update instantly.",
+      "speed": "Count speed",
+      "speeds": {
+        "fast": "Fast",
+        "normal": "Normal",
+        "slow": "Slow"
+      }
     }
   },
   "NotFound": {
