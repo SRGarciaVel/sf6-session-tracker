@@ -38,6 +38,8 @@ import {
   type PresentationView,
 } from "@/domain/overlay/rotation";
 import { useCharacterRotation } from "./rotation";
+import { heldRatingEdges, withHeldRatings } from "@/domain/overlay/rating-hold";
+import { useServerClock } from "./server-clock";
 import {
   BrandInterleaveLayer,
   BrandInterleaveProvider,
@@ -711,11 +713,15 @@ function RankProgressOverlayView({
 /** The Session Stats overlay (every overlay before 5.4A): themes, scope, rotation, motion, flag. */
 function SessionOverlayView({
   config,
-  live,
+  live: snapshot,
   sizing,
   brandRevealSignal = 0,
 }: OverlayViewProps & { config: SessionOverlayConfig }) {
   const { rootRef, fit } = useFitToBox();
+  // Phase 5.5: a post-match rating not observed yet keeps the last confirmed observation (bounded
+  // hold, re-evaluated exactly when it expires). Everything below renders this projection.
+  const nowMs = useServerClock(snapshot.generatedAt, heldRatingEdges(snapshot));
+  const live = withHeldRatings(snapshot, nowMs);
   // Creator motion (Phase 5.0): only an entitled owner's EFFECTIVE config carries `motion`;
   // Free, animations off and reduced motion all resolve to no profile (nothing extra renders).
   const reducedMotion = usePrefersReducedMotion();

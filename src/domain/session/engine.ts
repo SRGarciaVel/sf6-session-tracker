@@ -51,6 +51,8 @@ export interface SessionMatch {
   opponentName: string | null;
   ratingBefore?: RatingPoint | null;
   ratingAfter?: RatingPoint | null;
+  /** When SST ingested the match (server time). Optional: older callers / tests omit it. */
+  ingestedAt?: Date | null;
 }
 
 /** Per-character rating captured for a session (at start, or from an earlier snapshot). */
@@ -71,7 +73,21 @@ export interface CharacterSnapshot {
 }
 
 export type InitialSource = "session_start" | "prior_snapshot" | "match_before" | "unknown";
-export type CurrentSource = "match_after" | "snapshot" | "baseline" | "unknown";
+export type CurrentSource = "match_after" | "snapshot" | "baseline" | "pending" | "unknown";
+
+/**
+ * The last CONFIRMED rating observation of a character whose post-match rating is not known yet
+ * (`currentSource: "pending"`): a newer match was ingested, battlelog replays never carry the
+ * rating after the match, and the latest profile snapshot predates that match. `current` stays
+ * null (never invented); this is what was last observed, for presentation continuity only.
+ */
+export interface HeldRating {
+  rating: RatingPoint;
+  /** Session delta of THAT observation (same rules as `delta`). */
+  delta: number | null;
+  /** Since when the post-match rating is pending: the newest match's ingestion (or play) time. */
+  pendingSince: Date;
+}
 
 /**
  * Per-character progress. The W/L/D, win rate, streaks and recent form are the SAME statistics
@@ -92,6 +108,8 @@ export interface CharacterProgress extends SessionStats {
   delta: number | null;
   initialSource: InitialSource;
   currentSource: CurrentSource;
+  /** Only when `currentSource` is "pending" (see HeldRating). */
+  held?: HeldRating | null;
 }
 
 export interface SessionStats {
@@ -349,6 +367,21 @@ export function computeCharacterProgress(input: {
       currentSource = "baseline";
     }
 
+    // Post-match rating not observed yet (a newer match than the latest observation, and no
+    // rating after it). Keep the last confirmed observation aside — never as `current`.
+    let held: HeldRating | null = null;
+    if (current === null && last) {
+      const lastObserved = snapshot?.rating ?? initial;
+      if (lastObserved) {
+        currentSource = "pending";
+        held = {
+          rating: lastObserved,
+          delta: ratingDelta(initial, lastObserved),
+          pendingSince: last.ingestedAt ?? last.playedAt,
+        };
+      }
+    }
+
     // Same engine, same rules, this character's matches only (already normalized above).
     const stats = computeSessionStats(ms);
 
@@ -365,6 +398,7 @@ export function computeCharacterProgress(input: {
       delta: ratingDelta(initial, current),
       initialSource,
       currentSource,
+      ...(held ? { held } : {}),
     });
   }
 
