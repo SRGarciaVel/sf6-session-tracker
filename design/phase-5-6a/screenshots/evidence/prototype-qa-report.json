@@ -1,0 +1,37 @@
+{
+  "ranAt": "2026-10-21T20:45:42.264Z",
+  "summary": {},
+  "issues": [],
+  "flows": {
+    "broadcast-control": [
+      "offline: start disabled = true",
+      "after reconnection: start disabled = false",
+      "start → live",
+      "match 1 ingested; rating pending visible = true",
+      "after profile: pending visible = false",
+      "3 matches: shows 66,7 % = true",
+      "end asked: focus on = cancel-end",
+      "Esc cancels: confirm visible = false",
+      "end → recap; recap shows 3 games = true",
+      "prepare another: focus on = start",
+      "overlays view reached = true",
+      "tab order: a → nav-dash → nav-ov → nav-an → start → to-overlays → copy-ov1 → cfg-ov1",
+      "reduced motion: animations longer than 5 ms after a match = 0"
+    ],
+    "fight-session": [
+      "offline: start disabled = true",
+      "after reconnection: start disabled = false",
+      "start → live",
+      "match 1 ingested; rating pending visible = true",
+      "after profile: pending visible = false",
+      "3 matches: shows 66,7 % = true",
+      "end asked: focus on = cancel-end",
+      "Esc cancels: confirm visible = false",
+      "end → recap; recap shows 3 games = true",
+      "prepare another: focus on = start",
+      "overlays view reached = true",
+      "tab order: a → nav-dash → nav-ov → nav-an → start → copy-ov1 → cfg-ov1 → copy-ov2",
+      "reduced motion: animations longer than 5 ms after a match = 0"
+    ]
+  }
+}

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SST 5.6A — Design lab</title>
+    <meta name="robots" content="noindex" />
+    <link rel="stylesheet" href="./shared/base.css" />
+    <style>
+      body {
+        background: #05070f;
+        color: #eef1fb;
+        font:
+          16px/1.5 "Barlow",
+          system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 48px 20px;
+      }
+      h1 {
+        font: 800 44px/1 "Barlow Condensed";
+        text-transform: uppercase;
+        margin: 0 0 8px;
+      }
+      p {
+        color: #97a1c6;
+        max-width: 680px;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+        margin: 28px 0;
+      }
+      .card {
+        display: block;
+        padding: 22px;
+        border: 1px solid #2d3863;
+        color: inherit;
+        text-decoration: none;
+        background: #0c1021;
+      }
+      .card:hover,
+      .card:focus-visible {
+        border-color: #2fe0ff;
+        outline: none;
+      }
+      .card b {
+        display: block;
+        font: 800 28px/1 "Barlow Condensed";
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      .k {
+        font: 500 12px "JetBrains Mono";
+        color: #2fe0ff;
+        letter-spacing: 0.08em;
+      }
+      ul {
+        color: #97a1c6;
+        padding-left: 18px;
+      }
+      a {
+        color: #2fe0ff;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/brand/sst-lockup.svg" alt="SST | Session Stats Tracker" width="300" height="49" />
+      <h1 style="margin-top: 28px">Phase 5.6A · Design lab</h1>
+      <p>
+        Two interactive directions for the session lifecycle (Prepare → Live → Recap). Fictional
+        local state only: nothing here calls SST, creates sessions or reads real data.
+      </p>
+      <div class="cards">
+        <a class="card" href="./broadcast-control/"
+          ><span class="k">DIRECTION A</span><b>Broadcast Control</b> “Everything is under control.
+          I'm ready to go live.”</a
+        >
+        <a class="card" href="./fight-session/"
+          ><span class="k">DIRECTION B</span><b>Fight Session</b> “This is my session. This is my
+          progress.”</a
+        >
+      </div>
+      <p>
+        Each prototype has a <b>Prototype controls</b> drawer (bottom right): moment, Companion
+        state, simulate a win/loss, language and named scenarios. Deep links:
+        <code>#scenario=live-pending&amp;lang=en</code>, <code>#view=overlays</code>,
+        <code>#lab=hide</code>.
+      </p>
+      <ul>
+        <li>
+          Scenarios: prepare-first, prepare, prepare-offline, live-empty, live, live-pending,
+          live-offline, recap, recap-norating, recap-empty.
+        </li>
+        <li>
+          Evidence and docs: <code>design/phase-5-6a/*.md</code>, screenshots in
+          <code>design/phase-5-6a/screenshots/evidence/</code>.
+        </li>
+      </ul>
+    </main>
+  </body>
+</html>

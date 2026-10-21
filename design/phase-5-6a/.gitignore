@@ -1,0 +1,5 @@
+# Full screenshot sets are regenerable (audit/capture-current.mts, prototypes/qa.mts);
+# screenshots/evidence/ is the committed, curated subset.
+/screenshots/current/
+/screenshots/prototypes/
+/screenshots/qa-report.json

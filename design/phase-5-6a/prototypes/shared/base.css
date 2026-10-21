@@ -1,0 +1,197 @@
+/* Shared prototype base: local OFL fonts (same files as the PDF report), reset, prototype drawer. */
+@font-face {
+  font-family: "Barlow Condensed";
+  font-weight: 600;
+  font-display: block;
+  src: url("/fonts/BarlowCondensed-SemiBold.ttf");
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  font-weight: 700;
+  font-display: block;
+  src: url("/fonts/BarlowCondensed-Bold.ttf");
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  font-weight: 800;
+  font-display: block;
+  src: url("/fonts/BarlowCondensed-ExtraBold.ttf");
+}
+@font-face {
+  font-family: "Barlow";
+  font-weight: 400;
+  font-display: block;
+  src: url("/fonts/Barlow-Regular.ttf");
+}
+@font-face {
+  font-family: "Barlow";
+  font-weight: 600;
+  font-display: block;
+  src: url("/fonts/Barlow-SemiBold.ttf");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-weight: 500;
+  font-display: block;
+  src: url("/fonts/JetBrainsMono-Medium.ttf");
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+button,
+select,
+input {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+img,
+svg {
+  display: block;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Prototype controls: deliberately neutral (not part of either direction). */
+.lab {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 50;
+  width: min(360px, calc(100vw - 32px));
+  background: #f4f5f8;
+  color: #11131a;
+  border: 1px solid #c9ccd6;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  font:
+    13px/1.4 "Barlow",
+    system-ui,
+    sans-serif;
+}
+.lab summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+.lab summary::-webkit-details-marker {
+  display: none;
+}
+.lab-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e0a100;
+}
+.lab-body {
+  padding: 4px 12px 12px;
+  display: grid;
+  gap: 8px;
+}
+.lab-note {
+  margin: 0;
+  color: #4a4f5e;
+  font-size: 12px;
+}
+.lab-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.lab-row > span {
+  width: 100%;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #4a4f5e;
+}
+.lab-btn {
+  border: 1px solid #b6bac6;
+  background: #fff;
+  padding: 5px 9px;
+  min-height: 32px;
+}
+.lab-btn.on {
+  background: #11131a;
+  color: #fff;
+  border-color: #11131a;
+}
+.lab-btn:disabled {
+  opacity: 0.45;
+}
+.lab select {
+  min-height: 32px;
+  border: 1px solid #b6bac6;
+  background: #fff;
+  padding: 2px 6px;
+}
+.lab :focus-visible {
+  outline: 2px solid #0a66ff;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* Hit areas ≥ 24 px (WCAG 2.2 target size) for the logo and inline text links. */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
+}
+.link,
+.b-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+}
+.concept {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  border: 1px dashed currentColor;
+  color: #ffb02e;
+  font:
+    600 10px/1.2 "JetBrains Mono",
+    monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+  cursor: help;
+}
