@@ -10,16 +10,20 @@ export function SessionStage({
   children,
   ghost,
   labelledBy,
+  id,
   className,
 }: {
   children: ReactNode;
   ghost?: string | null;
+  /** Anchor (e.g. `session`, the target of «Preparar nueva sesión» links). */
+  id?: string;
   /** id of the stage heading (the stage is a landmark-free region when omitted). */
   labelledBy?: string;
   className?: string;
 }) {
   return (
     <section
+      id={id}
       aria-labelledby={labelledBy}
       className={cx("fs-stage grid gap-6 p-5 sm:p-9", className)}
     >

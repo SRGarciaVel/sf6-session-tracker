@@ -1457,7 +1457,9 @@
         "fresh": "Logged in",
         "stale": "Waiting for a sync",
         "never": "Log in to Buckler"
-      }
+      },
+      "realtime": "Live dashboard",
+      "realtimeDown": "Reconnecting…"
     },
     "scoreboard": {
       "label": "Session scoreboard",
@@ -1537,6 +1539,23 @@
       },
       "hint": "Each overlay is an OBS browser source and updates by itself. You don't need them to start.",
       "empty": "You don't have any overlays yet."
+    },
+    "prepare": {
+      "eyebrow": "Prepare",
+      "tracked": "Once you start, SST tracks your Ranked matches and each character’s MR/LP change. Your overlays update by themselves: you don’t need to set them up first.",
+      "lastSession": "Your last session",
+      "viewRecap": "View recap",
+      "overlaysJump": "Go to your overlays",
+      "noCharacter": "No characters with Ranked data yet",
+      "firstSession": "You haven’t played a session with SST yet."
+    },
+    "live": {
+      "eyebrow": "Active session",
+      "statsTitle": "Session statistics"
+    },
+    "preview": {
+      "badge": "Preview · Fight Session",
+      "classic": "View classic dashboard"
     }
   }
 }

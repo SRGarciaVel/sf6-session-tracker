@@ -252,7 +252,12 @@ function ScoreSide({
   );
 }
 
-export function SessionPanel() {
+/**
+ * `actions={false}` (Fight Session preview, Phase 5.6B2): statistics only — session start/end
+ * live in the Fight Session controls there, so this panel must not offer a second (ambiguous)
+ * "start new session". The classic dashboard always uses the default.
+ */
+export function SessionPanel({ actions = true }: { actions?: boolean } = {}) {
   const t = useTranslations("Dashboard.session");
   const tc = useTranslations("Common");
   const tr = useTranslations("Recap");
@@ -312,7 +317,7 @@ export function SessionPanel() {
 
   return (
     <section
-      id="session"
+      id={actions ? "session" : "session-stats"}
       className="hud-panel animate-panel-in scroll-mt-4"
       style={
         active ? ({ "--frame": "var(--color-line-strong)" } as React.CSSProperties) : undefined
@@ -478,12 +483,12 @@ export function SessionPanel() {
               {t("details")}
             </Link>
           )}
-          {active && !confirmEnd && (
+          {actions && active && !confirmEnd && (
             <Button variant="danger" onClick={() => setConfirmEnd(true)} disabled={pending}>
               {t("endSession")}
             </Button>
           )}
-          {active && confirmEnd && (
+          {actions && active && confirmEnd && (
             <>
               <Button variant="ghost" onClick={() => setConfirmEnd(false)}>
                 {tc("cancel")}
@@ -493,7 +498,7 @@ export function SessionPanel() {
               </Button>
             </>
           )}
-          {(active || !showChecklist) && (
+          {actions && (active || !showChecklist) && (
             <Button
               variant="primary"
               onClick={start}
@@ -505,7 +510,7 @@ export function SessionPanel() {
           )}
         </div>
       </footer>
-      {showChecklist && readiness && (
+      {actions && showChecklist && readiness && (
         <StartChecklist
           readiness={readiness}
           onStart={start}

@@ -68,12 +68,21 @@ export function StatusStrip({
   companion,
   overlays,
   now,
+  realtime = null,
+  trailing,
   className,
 }: {
   status: SessionIndicatorStatus;
   duration?: string | null;
   companion: CompanionStatusData;
   overlays: OverlayStatusData | null;
+  /**
+   * The dashboard's own live link (its single SSE stream). Shown only while it is NOT open, so a
+   * stale screen is never mistaken for live data; null = not reported.
+   */
+  realtime?: "open" | "reconnecting" | null;
+  /** Extra action at the end of the strip (e.g. a jump to the overlays). */
+  trailing?: ReactNode;
   /** Client clock for relative times; null before mount (absolute time is not invented). */
   now: number | null;
   className?: string;
@@ -111,6 +120,11 @@ export function StatusStrip({
             <span className="font-normal text-text">{sync}</span>
           </Item>
         )}
+        {realtime === "reconnecting" && (
+          <Item label={t("realtime")} tone="warn">
+            {t("realtimeDown")}
+          </Item>
+        )}
         {overlays && (
           <Item label={t("overlays")} tone={null}>
             <span className="font-normal text-text">
@@ -125,6 +139,7 @@ export function StatusStrip({
           </Item>
         )}
       </dl>
+      {trailing && <div className="ml-auto flex items-center">{trailing}</div>}
     </section>
   );
 }
