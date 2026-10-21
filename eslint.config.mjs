@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "scripts/research/.venv/**",
     "debug_output/**",
     "apps/*/dist/**",
+    // Generated, git-ignored builds of local design tooling (e.g. the 5.6B1 showcase bundle).
+    "design/**/out/**",
   ]),
 ]);
 

@@ -1426,5 +1426,117 @@
         "noSignals": "No hay prioridades de revisión para exportar con estos filtros."
       }
     }
+  },
+  "FightSession": {
+    "status": {
+      "label": "Estado",
+      "ready": "Listo para jugar",
+      "blocked": "No listo",
+      "live": "Sesión en juego",
+      "degraded": "Sin datos recientes",
+      "ended": "Sesión finalizada",
+      "duration": "Duración {duration}"
+    },
+    "strip": {
+      "label": "Estado del seguimiento",
+      "session": "Sesión",
+      "companion": "Companion",
+      "buckler": "Buckler",
+      "sync": "Última sincronización",
+      "syncAgo": "{ago}",
+      "syncNever": "Sin sincronizar",
+      "overlays": "Overlays",
+      "overlaysCount": "{count, plural, =0 {Sin overlays} one {# overlay} other {# overlays}}",
+      "inObs": "{count, plural, =0 {ninguno en OBS} one {# fuente en OBS} other {# fuentes en OBS}}",
+      "companionState": {
+        "connected": "Conectado",
+        "quiet": "Sin señal reciente",
+        "notPaired": "Companion desconectado"
+      },
+      "bucklerState": {
+        "fresh": "Sesión iniciada",
+        "stale": "Esperando sincronización",
+        "never": "Inicia sesión en Buckler"
+      }
+    },
+    "scoreboard": {
+      "label": "Marcador de la sesión",
+      "summary": "{wins} victorias, {losses} derrotas, {winRate} de victorias en {games, plural, one {# partida} other {# partidas}}",
+      "wins": "Victorias",
+      "losses": "Derrotas",
+      "draws": "{count, plural, one {# empate} other {# empates}}",
+      "winRate": "% de victorias",
+      "games": "{count, plural, one {# partida} other {# partidas}}",
+      "gamesLabel": "Partidas",
+      "noDecided": "Sin partidas decididas"
+    },
+    "rating": {
+      "label": "{unit} de {character}",
+      "from": "desde",
+      "sessionDelta": "Cambio en la sesión",
+      "pending": "{unit} pendiente",
+      "pendingHint": "Esperando tu perfil para confirmar el {unit} de la última partida.",
+      "noBaseline": "Sin {unit} inicial: no se puede calcular el cambio de la sesión.",
+      "unavailable": "{unit} final no disponible",
+      "unavailableHint": "No recibimos tu perfil después de la última partida, así que no mostramos el cambio de {unit}. Las victorias y derrotas sí están completas.",
+      "unit": {
+        "mr": "MR",
+        "lp": "LP"
+      }
+    },
+    "activity": {
+      "label": "Partidas de la sesión",
+      "matches": "Partidas",
+      "lastMatch": "Última partida",
+      "new": "Nueva",
+      "newAnnounce": "Partida registrada: {result} contra {opponent}",
+      "vs": "vs",
+      "unknownOpponent": "Rival desconocido",
+      "matchNumber": "Partida {n}",
+      "empty": "No se ha registrado ninguna partida",
+      "waiting": "Esperando tu primera partida Ranked…",
+      "waitingHint": "Las partidas aparecen solas unos 30 s después de terminar.",
+      "result": {
+        "win": "Victoria",
+        "loss": "Derrota",
+        "draw": "Empate"
+      },
+      "letter": {
+        "win": "V",
+        "loss": "D",
+        "draw": "E"
+      }
+    },
+    "controls": {
+      "start": "Iniciar sesión de juego",
+      "starting": "Iniciando…",
+      "end": "Finalizar sesión",
+      "ending": "Finalizando…",
+      "confirmEnd": "Sí, finalizar sesión",
+      "cancelEnd": "Seguir jugando",
+      "endHint": "Se guardará con las partidas registradas hasta ahora.",
+      "slow": "El servidor está tardando más de lo normal…",
+      "startHelp": "Puedes empezar sin configurar overlays."
+    },
+    "overlays": {
+      "title": "Tus overlays",
+      "manage": "Gestionar overlays",
+      "configure": "Configurar",
+      "configureNamed": "Configurar {name}",
+      "copy": "Copiar URL para OBS",
+      "copyNamed": "Copiar URL para OBS de {name}",
+      "copied": "URL copiada",
+      "preview": "Abrir vista previa",
+      "previewNamed": "Abrir vista previa de {name} en una pestaña nueva",
+      "canvas": "{width} × {height}",
+      "inObs": "En OBS",
+      "notInObs": "Sin conectar",
+      "kind": {
+        "session": "Sesión",
+        "rankProgress": "Progreso de rango"
+      },
+      "hint": "Cada overlay es una fuente de navegador en OBS y se actualiza solo. No hace falta configurarlos para empezar.",
+      "empty": "Aún no tienes overlays."
+    }
   }
 }

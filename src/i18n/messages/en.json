@@ -1426,5 +1426,117 @@
         "noSignals": "There are no review priorities to export with these filters."
       }
     }
+  },
+  "FightSession": {
+    "status": {
+      "label": "Status",
+      "ready": "Ready to play",
+      "blocked": "Not ready",
+      "live": "Session live",
+      "degraded": "No recent data",
+      "ended": "Session ended",
+      "duration": "Duration {duration}"
+    },
+    "strip": {
+      "label": "Tracking status",
+      "session": "Session",
+      "companion": "Companion",
+      "buckler": "Buckler",
+      "sync": "Last sync",
+      "syncAgo": "{ago}",
+      "syncNever": "Not synced yet",
+      "overlays": "Overlays",
+      "overlaysCount": "{count, plural, =0 {No overlays} one {# overlay} other {# overlays}}",
+      "inObs": "{count, plural, =0 {none in OBS} one {# source in OBS} other {# sources in OBS}}",
+      "companionState": {
+        "connected": "Connected",
+        "quiet": "No recent signal",
+        "notPaired": "Companion disconnected"
+      },
+      "bucklerState": {
+        "fresh": "Logged in",
+        "stale": "Waiting for a sync",
+        "never": "Log in to Buckler"
+      }
+    },
+    "scoreboard": {
+      "label": "Session scoreboard",
+      "summary": "{wins} wins, {losses} losses, {winRate} win rate over {games, plural, one {# game} other {# games}}",
+      "wins": "Wins",
+      "losses": "Losses",
+      "draws": "{count, plural, one {# draw} other {# draws}}",
+      "winRate": "Win rate",
+      "games": "{count, plural, one {# game} other {# games}}",
+      "gamesLabel": "Games",
+      "noDecided": "No decided games"
+    },
+    "rating": {
+      "label": "{character} {unit}",
+      "from": "from",
+      "sessionDelta": "Session change",
+      "pending": "{unit} pending",
+      "pendingHint": "Waiting for your profile to confirm the last match's {unit}.",
+      "noBaseline": "No starting {unit}: the session change can't be calculated.",
+      "unavailable": "Final {unit} unavailable",
+      "unavailableHint": "We didn't receive your profile after the last match, so the {unit} change isn't shown. Wins and losses are complete.",
+      "unit": {
+        "mr": "MR",
+        "lp": "LP"
+      }
+    },
+    "activity": {
+      "label": "Session matches",
+      "matches": "Matches",
+      "lastMatch": "Last match",
+      "new": "New",
+      "newAnnounce": "Match recorded: {result} against {opponent}",
+      "vs": "vs",
+      "unknownOpponent": "Unknown opponent",
+      "matchNumber": "Match {n}",
+      "empty": "No matches recorded",
+      "waiting": "Waiting for your first Ranked match…",
+      "waitingHint": "Matches show up by themselves about 30 s after they end.",
+      "result": {
+        "win": "Win",
+        "loss": "Loss",
+        "draw": "Draw"
+      },
+      "letter": {
+        "win": "W",
+        "loss": "L",
+        "draw": "D"
+      }
+    },
+    "controls": {
+      "start": "Start game session",
+      "starting": "Starting…",
+      "end": "End session",
+      "ending": "Ending…",
+      "confirmEnd": "Yes, end session",
+      "cancelEnd": "Keep playing",
+      "endHint": "It will be saved with the matches recorded so far.",
+      "slow": "The server is taking longer than usual…",
+      "startHelp": "You can start without setting up overlays."
+    },
+    "overlays": {
+      "title": "Your overlays",
+      "manage": "Manage overlays",
+      "configure": "Configure",
+      "configureNamed": "Configure {name}",
+      "copy": "Copy URL for OBS",
+      "copyNamed": "Copy OBS URL for {name}",
+      "copied": "URL copied",
+      "preview": "Open preview",
+      "previewNamed": "Open {name} preview in a new tab",
+      "canvas": "{width} × {height}",
+      "inObs": "In OBS",
+      "notInObs": "Not connected",
+      "kind": {
+        "session": "Session",
+        "rankProgress": "Rank progress"
+      },
+      "hint": "Each overlay is an OBS browser source and updates by itself. You don't need them to start.",
+      "empty": "You don't have any overlays yet."
+    }
   }
 }
