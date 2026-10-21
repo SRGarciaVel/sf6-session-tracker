@@ -157,7 +157,7 @@ export function SessionActionBar({
   return (
     <div
       className={cx(
-        "max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-40 max-sm:border-t max-sm:border-line-strong max-sm:bg-bg/95 max-sm:px-3 max-sm:py-2.5",
+        "max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-40 max-sm:border-t max-sm:border-line-strong max-sm:bg-bg/95 max-sm:px-3 max-sm:pt-2.5 max-sm:pb-[calc(0.625rem+env(safe-area-inset-bottom))]",
         "flex flex-wrap items-center gap-3 max-sm:[&>.fs-cta]:w-full",
         className,
       )}

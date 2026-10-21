@@ -74,6 +74,16 @@ const envSchema = z.object({
   SESSION_OFFLINE_CLOSE_MINUTES: int(15, 1),
   SESSION_ABSOLUTE_CEILING_HOURS: int(12, 1),
 
+  /**
+   * Phase 5.6B2 rollout: auth_user ids (comma/space separated) allowed to see the experimental
+   * Fight Session dashboard. Empty/unset = nobody (the default). Server-only: no request input
+   * can add a user. Rollback = clear it and restart. See docs/fight-session-rollout.md.
+   */
+  FIGHT_SESSION_UI_USERS: z
+    .string()
+    .default("")
+    .transform((v) => v.split(/[\s,]+/).filter(Boolean)),
+
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 
   /**

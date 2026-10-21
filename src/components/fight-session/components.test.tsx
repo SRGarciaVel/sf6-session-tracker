@@ -124,6 +124,27 @@ describe("status strip", () => {
     expect(t).not.toContain("Companion");
     expect(t).not.toContain("Buckler");
   });
+  it("live link: a warning only while the dashboard stream is down", () => {
+    const companion = { link: "connected" as const, buckler: "fresh" as const, lastSyncAt: null };
+    const down = text(
+      render(
+        <StatusStrip
+          status="live"
+          companion={companion}
+          overlays={null}
+          now={0}
+          realtime="reconnecting"
+        />,
+      ),
+    );
+    expect(down).toContain("Reconectando…");
+    const open = text(
+      render(
+        <StatusStrip status="live" companion={companion} overlays={null} now={0} realtime="open" />,
+      ),
+    );
+    expect(open).not.toContain("Reconectando");
+  });
   it("English vocabulary", () => {
     const t = text(
       render(
@@ -457,11 +478,16 @@ describe("overlay access", () => {
   });
 });
 
-describe("B1 scope: the live app does not use the foundation yet", () => {
-  it("no route or dashboard component imports it or uses fs-* classes", () => {
+describe("rollout scope: only the gated Fight Session dashboard uses the foundation", () => {
+  // Phase 5.6B2: the experimental dashboard (behind server/features/fight-session.ts) is the only
+  // consumer; the classic dashboard, recap and every other route stay untouched.
+  const PAGE = join("src/app", "(app)/dashboard/page.tsx");
+  const FIGHT_DIR = join("src/app", "(app)/dashboard/_components/fight") + "/";
+  it("no other route or component imports it or uses fs-* classes", () => {
     const files = (readdirSync("src/app", { recursive: true }) as string[])
       .filter((f) => /\.tsx?$/.test(f) && !f.endsWith(".test.tsx"))
-      .map((f) => join("src/app", f));
+      .map((f) => join("src/app", f))
+      .filter((f) => f !== PAGE && !f.startsWith(FIGHT_DIR));
     const offenders = files.filter((f) => {
       const src = readFileSync(f, "utf8");
       return src.includes("fight-session") || /["'\s]fs-[a-z]/.test(src);

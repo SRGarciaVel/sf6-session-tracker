@@ -20,14 +20,19 @@ import { LiveDashboardProvider } from "./_components/LiveDashboard";
 import { ObsGuide, OverlaysPanel } from "./_components/OverlaysPanel";
 import { PlayerHeader, SessionPanel, StatusBar } from "./_components/SessionPanel";
 import { SessionHistory } from "./_components/SessionHistory";
+import { FightSessionArea, FightStatusStrip } from "./_components/fight/FightSessionDashboard";
+import { cx } from "@/components/ui/primitives";
+import { dashboardUiFor } from "@/server/features/fight-session";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations("Meta"))("dashboard") };
 }
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
   const { user, player } = await requirePlayer();
+  // Phase 5.6B2: server-side allowlist only (FIGHT_SESSION_UI_USERS); `?ui=classic` can only opt out.
+  const ui = dashboardUiFor(user.id, (await searchParams).ui);
   const db = getDb();
   const [live, overlays, history, devices, planSummary, entitlements] = await Promise.all([
     buildDashboardLiveState(db, player.id),
@@ -69,46 +74,90 @@ export default async function DashboardPage() {
       ? null
       : demoDataReason(getEnv().SF6_PROVIDER, player.cfnUserId);
 
+  /* Control room: one continuous console, modules separated by rules — not a card stack. */
+  const consolePanel = (props: { id?: string; className?: string } = {}) => (
+    <aside
+      id={props.id}
+      className={cx("hud-panel animate-panel-in [--notch:18px]", props.className)}
+    >
+      <div className="flex items-center gap-3 border-b border-line-strong bg-surface-0/80 px-5 py-2.5">
+        <span className="hud-tag bg-blue/20 text-heading">{tConsole("title")}</span>
+        <span
+          aria-hidden
+          className="h-px flex-1 bg-gradient-to-r from-line-strong to-transparent"
+        />
+      </div>
+      {companionFirst && <div className="border-b border-line">{companionPanel}</div>}
+      <div className="divide-y divide-line md:grid md:grid-cols-2 md:divide-y-0 hud:block hud:divide-y">
+        <div className="md:border-r md:border-line hud:border-r-0">
+          <OverlaysPanel overlays={overlaySummaries} />
+        </div>
+        <div className="divide-y divide-line">
+          <ObsGuide width={firstPreset.width} height={firstPreset.height} />
+          {!companionFirst && companionPanel}
+          <CreatorBetaPanel plan={planSummary.plan} activeUntil={planSummary.activeUntil} />
+          {devToolsEnabled() && <DevTools />}
+        </div>
+      </div>
+    </aside>
+  );
+  const demoBanner = demoReason && (
+    <div
+      role="status"
+      className="flex flex-wrap items-center gap-3 border-l-2 border-warn bg-surface-2/60 px-4 py-2 text-sm"
+    >
+      <span className="hud-tag bg-warn/20 text-warn">{tDemo("badge")}</span>
+      <span className="text-muted">{tDemo(demoReason)}</span>
+    </div>
+  );
+
+  if (ui === "fight-session") {
+    const tPreview = await getTranslations("FightSession.preview");
+    // Same provider (one SSE stream), same actions, same console; only the session area and the
+    // status presentation differ. Mobile order: stage → overlays console → history.
+    return (
+      <LiveDashboardProvider initial={live}>
+        <div
+          className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 max-sm:pb-28 hud:grid-cols-[minmax(0,1fr)_400px]"
+          data-dashboard-ui="fight-session"
+        >
+          <div className="min-w-0 space-y-5 hud:col-start-1">
+            <p className="m-0 flex flex-wrap items-center gap-3 text-sm">
+              <span className="hud-tag bg-cyan/15 text-cyan">{tPreview("badge")}</span>
+              <a
+                href="/dashboard?ui=classic"
+                className="inline-flex min-h-8 items-center text-muted underline-offset-2 hover:text-text hover:underline"
+              >
+                {tPreview("classic")}
+              </a>
+            </p>
+            {demoBanner}
+            <FightStatusStrip overlayCount={overlays.length} />
+            <FightSessionArea />
+          </div>
+          {consolePanel({
+            id: "overlays",
+            className: "hud:col-start-2 hud:row-span-2 hud:row-start-1",
+          })}
+          <div className="min-w-0 hud:col-start-1">
+            <SessionHistory items={history} />
+          </div>
+        </div>
+      </LiveDashboardProvider>
+    );
+  }
+
   return (
     <LiveDashboardProvider initial={live}>
       <div className="grid items-start gap-5 hud:grid-cols-[minmax(0,1fr)_400px]">
         <div className="min-w-0 space-y-5">
-          {demoReason && (
-            <div
-              role="status"
-              className="flex flex-wrap items-center gap-3 border-l-2 border-warn bg-surface-2/60 px-4 py-2 text-sm"
-            >
-              <span className="hud-tag bg-warn/20 text-warn">{tDemo("badge")}</span>
-              <span className="text-muted">{tDemo(demoReason)}</span>
-            </div>
-          )}
+          {demoBanner}
           <PlayerHeader />
           <SessionPanel />
           <SessionHistory items={history} />
         </div>
 
-        {/* Control room: one continuous console, modules separated by rules — not a card stack. */}
-        <aside className="hud-panel animate-panel-in [--notch:18px]">
-          <div className="flex items-center gap-3 border-b border-line-strong bg-surface-0/80 px-5 py-2.5">
-            <span className="hud-tag bg-blue/20 text-heading">{tConsole("title")}</span>
-            <span
-              aria-hidden
-              className="h-px flex-1 bg-gradient-to-r from-line-strong to-transparent"
-            />
-          </div>
-          {companionFirst && <div className="border-b border-line">{companionPanel}</div>}
-          <div className="divide-y divide-line md:grid md:grid-cols-2 md:divide-y-0 hud:block hud:divide-y">
-            <div className="md:border-r md:border-line hud:border-r-0">
-              <OverlaysPanel overlays={overlaySummaries} />
-            </div>
-            <div className="divide-y divide-line">
-              <ObsGuide width={firstPreset.width} height={firstPreset.height} />
-              {!companionFirst && companionPanel}
-              <CreatorBetaPanel plan={planSummary.plan} activeUntil={planSummary.activeUntil} />
-              {devToolsEnabled() && <DevTools />}
-            </div>
-          </div>
-        </aside>
+        {consolePanel()}
       </div>
       <StatusBar />
     </LiveDashboardProvider>

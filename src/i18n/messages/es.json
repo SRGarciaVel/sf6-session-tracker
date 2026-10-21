@@ -1457,7 +1457,9 @@
         "fresh": "Sesión iniciada",
         "stale": "Esperando sincronización",
         "never": "Inicia sesión en Buckler"
-      }
+      },
+      "realtime": "Panel en vivo",
+      "realtimeDown": "Reconectando…"
     },
     "scoreboard": {
       "label": "Marcador de la sesión",
@@ -1537,6 +1539,23 @@
       },
       "hint": "Cada overlay es una fuente de navegador en OBS y se actualiza solo. No hace falta configurarlos para empezar.",
       "empty": "Aún no tienes overlays."
+    },
+    "prepare": {
+      "eyebrow": "Preparación",
+      "tracked": "Al iniciar, SST registra tus partidas Ranked y el cambio de MR/LP de cada personaje. Tus overlays se actualizan solos: no hace falta configurarlos antes.",
+      "lastSession": "Tu última sesión",
+      "viewRecap": "Ver resumen",
+      "overlaysJump": "Ir a tus overlays",
+      "noCharacter": "Aún no vemos personajes con datos Ranked",
+      "firstSession": "Aún no has jugado ninguna sesión con SST."
+    },
+    "live": {
+      "eyebrow": "Sesión activa",
+      "statsTitle": "Estadísticas de la sesión"
+    },
+    "preview": {
+      "badge": "Vista previa · Fight Session",
+      "classic": "Ver panel clásico"
     }
   }
 }
