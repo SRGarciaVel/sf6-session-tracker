@@ -1,0 +1,17 @@
+{
+  "ranAt": "2026-10-21T21:26:24.891Z",
+  "summary": {},
+  "issues": [],
+  "flow": [
+    "es mobile: lifecycle start inside the viewport without scrolling = true",
+    "en mobile: lifecycle start inside the viewport without scrolling = true",
+    "focus on clipped CTA draws an inset ring = true",
+    "Enter on start → live (local state)",
+    "3 simulated matches → scoreboard shows 66,7 % = true",
+    "End → focus on = cancel-end",
+    "Esc → focus back on = end",
+    "Tab from «Seguir jugando» → confirm-end",
+    "confirm → recap; win rate still 66,7 % = true",
+    "reduced motion: animations longer than 5 ms after a match = 0"
+  ]
+}

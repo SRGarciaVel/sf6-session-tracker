@@ -1,0 +1,48 @@
+/* Showcase stylesheet: the app's real globals.css (tokens, .btn, fs-*) + local font files standing
+   in for next/font (same OFL families the app loads). */
+@import "../../../src/app/(app)/globals.css";
+@source "../../../src/components/fight-session";
+@source "./";
+
+@font-face {
+  font-family: "Barlow Condensed";
+  font-weight: 600;
+  font-display: block;
+  src: url("./fonts/BarlowCondensed-SemiBold.ttf");
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  font-weight: 700;
+  font-display: block;
+  src: url("./fonts/BarlowCondensed-Bold.ttf");
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  font-weight: 800;
+  font-display: block;
+  src: url("./fonts/BarlowCondensed-ExtraBold.ttf");
+}
+@font-face {
+  font-family: "Barlow";
+  font-weight: 400;
+  font-display: block;
+  src: url("./fonts/Barlow-Regular.ttf");
+}
+@font-face {
+  font-family: "Barlow";
+  font-weight: 600;
+  font-display: block;
+  src: url("./fonts/Barlow-SemiBold.ttf");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-weight: 500;
+  font-display: block;
+  src: url("./fonts/JetBrainsMono-Medium.ttf");
+}
+
+:root {
+  --ovf-barlow: "Barlow";
+  --ovf-barlow-condensed: "Barlow Condensed";
+  --ovf-jetbrains-mono: "JetBrains Mono";
+}
