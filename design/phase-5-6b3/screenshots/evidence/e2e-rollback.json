@@ -1,0 +1,9 @@
+{
+  "ranAt": "2026-10-22T01:29:20.184Z",
+  "results": [
+    {
+      "check": "rollback: variable cleared ⇒ the tester is back on the classic dashboard",
+      "pass": true
+    }
+  ]
+}
