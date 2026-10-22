@@ -12,7 +12,15 @@ import type { DashboardLiveState } from "@/server/dashboard/state";
 import { LiveDashboardProvider } from "../LiveDashboard";
 import { SessionPanel } from "../SessionPanel";
 import { FightSessionArea, FightStatusStrip } from "./FightSessionDashboard";
-import { SESSION, SIGNALS, dashState } from "./test-fixtures";
+import { SESSION, SIGNALS, dashState, recentOf } from "./test-fixtures";
+import { engineSession } from "@/components/fight-session/test-support";
+import type { MatchResult } from "@/domain/sf6/types";
+import { pickRatingCharacter, toLiveSessionState } from "@/domain/overlay/state";
+import {
+  DEFAULT_SESSION_FILTER,
+  summarizeSession,
+  type SessionMatch,
+} from "@/domain/session/engine";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("../../actions", () => ({ startSessionAction: vi.fn(), endSessionAction: vi.fn() }));
@@ -84,23 +92,175 @@ describe("PREPARE", () => {
   });
 });
 
-describe("ACTIVE (intermediate B2 view)", () => {
-  it("session active: status, End control, classic statistics without a second start action", () => {
-    const html = area(dashState(SESSION.active()));
+describe("LIVE", () => {
+  const live = (state: DashboardLiveState) => text(area(state));
+
+  it("zero matches: 0 · — · 0, waiting state, End control, no second start action", () => {
+    const html = area(dashState(engineSession({ results: [] }), { recent: true }));
     const t = text(html);
     expect(t).toContain("Sesión activa");
-    expect(t).toContain("Sesión en juego");
+    expect(html).toMatch(/data-testid="fs-winrate">—</);
+    expect(t).toContain("Esperando tu primera partida Ranked…");
     expect(html).toContain('data-k="end"');
     expect(t).not.toContain("Iniciar nueva sesión");
     expect(t).not.toContain("Iniciar sesión de juego");
-    expect(t).toContain("Porcentaje de victorias"); // the classic stats panel
     expect(html.match(/id="session"/g)).toHaveLength(1);
   });
+  it("one win: scoreboard, last match, strip", () => {
+    const t = live(
+      dashState(engineSession({ results: ["win"], snapshot: { value: 1583, after: 0 } }), {
+        recent: true,
+      }),
+    );
+    expect(t).toContain("1 victorias, 0 derrotas, 100 % de victorias en 1 partida");
+    expect(t).toContain("Victoria vs Ken");
+    expect(t).toMatch(/Partidas\s+1\s+V/);
+  });
+  it("one loss", () => {
+    const t = live(
+      dashState(engineSession({ results: ["loss"], snapshot: { value: 1560, after: 0 } }), {
+        recent: true,
+      }),
+    );
+    expect(t).toContain("0 victorias, 1 derrotas, 0 % de victorias en 1 partida");
+    expect(t).toContain("Derrota vs Ken");
+  });
+  it("mixed results: engine totals and win rate; strip numbered by session position", () => {
+    const results: MatchResult[] = Array.from({ length: 12 }, (_, i) =>
+      i % 3 === 0 ? "loss" : "win",
+    );
+    const session = engineSession({ results, snapshot: { value: 1600, after: 11 } });
+    const html = area(dashState(session, { recent: true }));
+    const t = text(html);
+    expect(t).toContain(`8 victorias, 4 derrotas, 66,7 % de victorias en 12 partidas`);
+    expect(html).toContain('aria-label="Partida 3: Victoria"');
+    expect(html).toContain('aria-label="Partida 12: Victoria"');
+    expect(html).toContain('aria-label="Partida 10: Derrota"');
+    expect(html).not.toContain('aria-label="Partida 2:');
+  });
+  it("MR: start → now with the engine's session delta", () => {
+    const t = live(
+      dashState(engineSession({ results: ["win", "win"], snapshot: { value: 1594, after: 1 } }), {
+        recent: true,
+      }),
+    );
+    expect(t).toMatch(/Ryu\s+desde\s+1571\s+1594\s+MR\s+Cambio en la sesión\s*:\s+▲\s+\+23/);
+  });
+  it("LP keeps its unit and grouping", () => {
+    const s = engineSession({
+      results: ["win"],
+      system: "lp",
+      baseline: 21850,
+      snapshot: { value: 21950, after: 0 },
+    });
+    expect(live(dashState(s, { recent: true }))).toMatch(/21\.850\s+21\.950\s+LP/);
+  });
+  it("Jamie case: pending post-match LP is the LAST CONFIRMED value, labelled, never a bare 'current'", () => {
+    // Session start 23 000 LP; profile observed after match 1 (23 152); match 2 ingested from the
+    // battlelog, no profile since ⇒ the engine's current is unknown, the held value is 23 152.
+    const s = engineSession({
+      results: ["win", "win"],
+      system: "lp",
+      baseline: 23000,
+      snapshot: { value: 23152, after: 0 },
+    });
+    expect(pickRatingCharacter(s)?.current).toBeNull();
+    const t = live(dashState(s, { recent: true }));
+    expect(t).toContain("23.152");
+    expect(t).toContain("LP pendiente · último confirmado");
+    expect(t.match(/23\.152/g)).toHaveLength(1); // one rating presentation, the labelled one
+  });
+  it("unknown rating (no observation, no baseline): no number is invented", () => {
+    const s = engineSession({ results: ["win"], baseline: null, snapshot: null });
+    const t = live(dashState(s, { recent: true }));
+    expect(t).not.toMatch(/\d{4}\s+MR/);
+  });
+  it("character switch: each character's own rating, systems never mixed, latest first", () => {
+    const START = new Date("2026-10-21T19:30:00Z");
+    const at = (m: number) => new Date(START.getTime() + m * 60_000);
+    const mk = (id: string, min: number, key: string, name: string): SessionMatch => ({
+      externalMatchId: id,
+      playedAt: at(min),
+      mode: "ranked",
+      result: "win",
+      characterKey: key,
+      characterName: name,
+      opponentCharacter: "Ken",
+      opponentName: null,
+    });
+    const summary = summarizeSession({
+      status: "active",
+      ratingModel: "per_character",
+      baseline: {
+        startedAt: START,
+        endedAt: null,
+        baselineMatchId: null,
+        baselinePlayedAt: null,
+        filter: DEFAULT_SESSION_FILTER,
+      },
+      matches: [mk("a", 6, "ryu", "Ryu"), mk("b", 12, "jamie", "Jamie")],
+      characterBaselines: [
+        {
+          characterKey: "ryu",
+          characterName: "Ryu",
+          source: "session_start",
+          rating: { system: "mr", value: 1571, rank: null },
+          capturedAt: START,
+        },
+        {
+          characterKey: "jamie",
+          characterName: "Jamie",
+          source: "session_start",
+          rating: { system: "lp", value: 23000, rank: null },
+          capturedAt: START,
+        },
+      ],
+      current: [
+        {
+          characterKey: "ryu",
+          characterName: "Ryu",
+          rating: { system: "mr", value: 1583, rank: null },
+          observedAt: at(13),
+        },
+        {
+          characterKey: "jamie",
+          characterName: "Jamie",
+          rating: { system: "lp", value: 23100, rank: null },
+          observedAt: at(13),
+        },
+      ],
+      favoriteCharacterKey: "ryu",
+    });
+    const s = toLiveSessionState("s2", summary, { characters: [], activeCharacterKey: null });
+    const t = live(dashState(s));
+    const jamie = t.indexOf("Jamie desde");
+    const ryu = t.indexOf("Ryu desde");
+    expect(jamie).toBeGreaterThan(-1);
+    expect(ryu).toBeGreaterThan(jamie); // active (latest match) first
+    expect(t).toMatch(/Jamie desde\s+23\.000\s+23\.100\s+LP\s+Cambio en la sesión\s*:\s+▲\s+\+100/);
+    expect(t).toMatch(/Ryu desde\s+1571\s+1583\s+MR\s+Cambio en la sesión\s*:\s+▲\s+\+12/);
+  });
+  it("missing opponent is said; no per-match rating anywhere in the activity", () => {
+    const s = engineSession({ results: ["win"], snapshot: { value: 1583, after: 0 } });
+    const [m] = recentOf(s);
+    const t = live(
+      dashState(s, { recent: [{ ...m!, opponentCharacter: null, opponentName: null }] }),
+    );
+    expect(t).toContain("Victoria vs Rival desconocido");
+    const activity = t.slice(t.indexOf("Última partida"));
+    expect(activity).not.toMatch(/\d{4}\s*(MR|LP)/);
+  });
+  it("older payload without the projection: strip from the engine's recent form, no fake last match", () => {
+    const s = engineSession({ results: ["win", "loss"], snapshot: { value: 1570, after: 1 } });
+    const html = area(dashState(s));
+    expect(text(html)).toContain("La última partida aún no está disponible.");
+    expect(html).toContain('aria-label="Partida 2: Derrota"');
+  });
   it("tracking unavailable (tracker degraded / Companion quiet) is said, the session stays active", () => {
-    expect(text(area(dashState(SESSION.active(), { tracker: "degraded" })))).toContain(
+    expect(live(dashState(SESSION.active(), { tracker: "degraded", recent: true }))).toContain(
       "Sin datos recientes",
     );
-    expect(text(area(dashState(SESSION.active(), { signals: SIGNALS.quiet })))).toContain(
+    expect(live(dashState(SESSION.active(), { signals: SIGNALS.quiet, recent: true }))).toContain(
       "Sin datos recientes",
     );
   });

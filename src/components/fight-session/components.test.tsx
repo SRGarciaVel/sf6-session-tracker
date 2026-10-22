@@ -483,11 +483,13 @@ describe("rollout scope: only the gated Fight Session dashboard uses the foundat
   // consumer; the classic dashboard, recap and every other route stay untouched.
   const PAGE = join("src/app", "(app)/dashboard/page.tsx");
   const FIGHT_DIR = join("src/app", "(app)/dashboard/_components/fight") + "/";
+  // Phase 5.6B3: the dashboard stream asks the gate whether to build the recent-match projection.
+  const STREAM = join("src/app", "api/me/stream/route.ts");
   it("no other route or component imports it or uses fs-* classes", () => {
     const files = (readdirSync("src/app", { recursive: true }) as string[])
       .filter((f) => /\.tsx?$/.test(f) && !f.endsWith(".test.tsx"))
       .map((f) => join("src/app", f))
-      .filter((f) => f !== PAGE && !f.startsWith(FIGHT_DIR));
+      .filter((f) => f !== PAGE && f !== STREAM && !f.startsWith(FIGHT_DIR));
     const offenders = files.filter((f) => {
       const src = readFileSync(f, "utf8");
       return src.includes("fight-session") || /["'\s]fs-[a-z]/.test(src);
