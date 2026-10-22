@@ -98,9 +98,9 @@ export function PlayerHeader() {
       </span>
       <span aria-hidden className="absolute inset-y-0 left-0 w-1.5 bg-magenta" />
 
-      <div className="relative grid gap-5 py-5 pr-6 pl-6 sm:pl-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+      <div className="relative grid grid-cols-[minmax(0,1fr)] gap-5 py-5 pr-6 pl-6 sm:pl-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <div className="min-w-0">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="hud-tag bg-magenta text-white">{t("playerTag")}</span>
             <span className="hud-label">{t("eyebrow")}</span>
           </div>
@@ -121,7 +121,7 @@ export function PlayerHeader() {
           </dl>
         </div>
 
-        <dl className="flex items-stretch">
+        <dl className="flex flex-wrap items-stretch gap-y-3">
           <div className="pr-6">
             <dt className="hud-label">{t("rank")}</dt>
             <dd className="mt-1 font-display text-3xl font-bold tracking-wide text-cyan uppercase">
@@ -333,7 +333,7 @@ export function SessionPanel({ actions = true }: { actions?: boolean } = {}) {
         )}
       />
       <header className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 pt-4 sm:px-6">
-        <h2 className="hud-heading min-w-40 flex-1">{t("title")}</h2>
+        <h2 className="hud-heading min-w-[min(10rem,100%)] flex-1">{t("title")}</h2>
         {duration && <span className="font-display text-base text-muted tabular">{duration}</span>}
         {active ? (
           <LiveIndicator label={t("live").replace("●", "").trim()} />
@@ -347,7 +347,8 @@ export function SessionPanel({ actions = true }: { actions?: boolean } = {}) {
       {active && <TrackingBanner />}
 
       {/* Scoreline: P1-vs-P2 style — wins left, losses right, win rate in the middle. */}
-      <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3 px-5 pt-5 sm:gap-6 sm:px-8">
+      {/* Stacks only when the text is enlarged on a narrow screen (≤ 20em: 390 px at ≥ 122 %). */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3 px-5 pt-5 sm:gap-6 sm:px-8 [@media(max-width:20em)]:grid-cols-[minmax(0,1fr)]">
         <ScoreSide
           label={t("wins")}
           value={formatInteger(s.wins, locale)}
@@ -389,10 +390,10 @@ export function SessionPanel({ actions = true }: { actions?: boolean } = {}) {
       </div>
 
       {/* Telemetry band: rating track + streaks */}
-      <div className="mt-6 grid border-t border-line md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] border-t border-line md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="px-5 py-4 sm:px-6">
-          <div className="flex items-center justify-between gap-3">
-            <span className="flex items-baseline gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="flex flex-wrap items-baseline gap-2">
               <span className="hud-label">{t("activeCharacter")}</span>
               <span
                 className="font-display text-xl leading-none font-bold uppercase"
@@ -428,7 +429,7 @@ export function SessionPanel({ actions = true }: { actions?: boolean } = {}) {
             <DeltaChip delta={featured?.delta ?? null} locale={locale} />
           </div>
         </div>
-        <dl className="grid grid-cols-2 border-t border-line md:border-t-0 md:border-l">
+        <dl className="grid grid-cols-[repeat(2,minmax(0,1fr))] border-t border-line md:border-t-0 md:border-l">
           <div className="px-5 py-4">
             <dt className="hud-label">{t("currentStreak")}</dt>
             <dd
@@ -454,7 +455,7 @@ export function SessionPanel({ actions = true }: { actions?: boolean } = {}) {
       )}
 
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-surface-0/70 px-5 py-3 sm:px-6">
-        <div className="flex min-h-7 items-center gap-1" aria-label={t("recentResults")}>
+        <div className="flex min-h-7 flex-wrap items-center gap-1" aria-label={t("recentResults")}>
           {s.recentResults.length === 0 ? (
             <span className="text-sm text-muted">
               {active

@@ -6,7 +6,7 @@ import { deltaTone, formatDelta, formatWinRate } from "@/domain/format";
 import type { SessionSummary } from "@/domain/session/engine";
 
 const COLS =
-  "grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-5 sm:grid-cols-[minmax(0,1.3fr)_7rem_minmax(0,0.9fr)_10rem_1rem]";
+  "grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-5 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,7rem)_minmax(0,0.9fr)_minmax(0,10rem)_1rem]";
 
 /** Compact replay-list style rows: dense, line-separated, cyan edge on hover/focus. */
 export async function SessionHistory({
@@ -87,7 +87,7 @@ export async function SessionHistory({
                     </span>
                     <span
                       className={cx(
-                        "text-right font-display text-lg font-bold whitespace-nowrap tabular",
+                        "text-right font-display text-lg font-bold tabular [overflow-wrap:anywhere]",
                         tone === "positive"
                           ? "text-win"
                           : tone === "negative"

@@ -30,7 +30,12 @@ const TONE_CLASS: Record<Tone, string> = { ok: "text-win", warn: "text-warn", of
 /** Status line: glyph + text, so state never depends on color alone. */
 export function StatusValue({ tone, children }: { tone: Tone; children: ReactNode }) {
   return (
-    <span className={cx("inline-flex items-center gap-1.5 font-semibold", TONE_CLASS[tone])}>
+    <span
+      className={cx(
+        "inline-flex items-center gap-1.5 font-semibold [overflow-wrap:anywhere]",
+        TONE_CLASS[tone],
+      )}
+    >
       <span aria-hidden>{GLYPH[tone]}</span>
       {children}
     </span>

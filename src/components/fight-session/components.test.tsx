@@ -419,13 +419,13 @@ describe("controls (presentational)", () => {
     );
     expect(html.match(/<button type="button"/g)).toHaveLength(3);
   });
-  it("mobile: the action bar is fixed to the bottom below `sm` only", () => {
+  it("mobile: the action bar is fixed to the bottom below `sm` (and ≥ 36em tall) only", () => {
     const html = render(
       <SessionActionBar>
         <StartSessionButton onStart={noop} />
       </SessionActionBar>,
     );
-    expect(html).toContain("max-sm:fixed");
+    expect(html).toContain("max-sm:[@media(min-height:36em)]:fixed");
     expect(html).toContain("max-sm:bottom-0");
     expect(html).not.toMatch(/(^|\s)fixed(\s|")/);
   });
