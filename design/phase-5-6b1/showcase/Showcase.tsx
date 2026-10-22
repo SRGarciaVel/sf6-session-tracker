@@ -371,6 +371,10 @@ export function Showcase() {
         <OverlayDock count={0} manageHref="#overlays" />
       </Section>
 
+      <Section id="results-matrix" title="Results bar · stress matrix (hotfix: summary overlap)">
+        <ResultsMatrix />
+      </Section>
+
       <Section id="lifecycle" title="Interactive · local state">
         <Lifecycle />
       </Section>
@@ -394,6 +398,144 @@ function MiniPreview({ kind }: { kind: "session" | "rankProgress" }) {
       ) : (
         <span className="text-sm">MASTER · 1602</span>
       )}
+    </div>
+  );
+}
+
+/**
+ * Hotfix QA: SessionResults with demanding values inside containers of fixed widths (the
+ * dashboard places it in columns of very different sizes). Each case is measured by
+ * design/hotfix-summary-layout/matrix.mts (text boxes must stay in their cells, never intersect).
+ */
+const MATRIX_WIDTHS = [260, 320, 360, 480, 560, 640, 760, 900, 1040, 1200];
+const MATRIX_CASES: Array<{
+  id: string;
+  data: Parameters<typeof SessionResults>[0]["data"];
+  rating: Parameters<typeof SessionResults>[0]["rating"];
+}> = [
+  {
+    id: "reported-33-3--24lp",
+    data: { wins: 1, losses: 2, draws: 0, games: 3, winRate: 33.3 },
+    rating: {
+      characterName: "Jamie",
+      system: "lp",
+      initial: 23006,
+      current: 22982,
+      delta: -24,
+      pending: false,
+    },
+  },
+  {
+    id: "standard-70--42mr",
+    data: { wins: 7, losses: 3, draws: 0, games: 10, winRate: 70 },
+    rating: {
+      characterName: "Ryu",
+      system: "mr",
+      initial: 1571,
+      current: 1613,
+      delta: 42,
+      pending: false,
+    },
+  },
+  {
+    id: "100pct",
+    data: { wins: 12, losses: 0, draws: 0, games: 12, winRate: 100 },
+    rating: {
+      characterName: "Ken",
+      system: "mr",
+      initial: 1500,
+      current: 1640,
+      delta: 140,
+      pending: false,
+    },
+  },
+  {
+    id: "0pct",
+    data: { wins: 0, losses: 9, draws: 0, games: 9, winRate: 0 },
+    rating: {
+      characterName: "Juri",
+      system: "lp",
+      initial: 9000,
+      current: 8550,
+      delta: -450,
+      pending: false,
+    },
+  },
+  {
+    id: "zero-games",
+    data: { wins: 0, losses: 0, draws: 0, games: 0, winRate: null },
+    rating: null,
+  },
+  {
+    id: "five-digit-lp-large-positive",
+    data: { wins: 18, losses: 7, draws: 1, games: 26, winRate: 72 },
+    rating: {
+      characterName: "A.K.I.",
+      system: "lp",
+      initial: 21850,
+      current: 25120,
+      delta: 3270,
+      pending: false,
+    },
+  },
+  {
+    id: "large-negative-lp",
+    data: { wins: 3, losses: 14, draws: 0, games: 17, winRate: 17.6 },
+    rating: {
+      characterName: "Cammy",
+      system: "lp",
+      initial: 34000,
+      current: 31920,
+      delta: -2080,
+      pending: false,
+    },
+  },
+  {
+    id: "long-name-mr",
+    data: { wins: 44, losses: 39, draws: 2, games: 85, winRate: 53 },
+    rating: {
+      characterName: "Chun-Li (personaje con un nombre muy largo)",
+      system: "mr",
+      initial: 1984,
+      current: 2116,
+      delta: 132,
+      pending: false,
+    },
+  },
+  {
+    id: "missing-rating",
+    data: { wins: 5, losses: 5, draws: 0, games: 10, winRate: 50 },
+    rating: {
+      characterName: "Jamie",
+      system: "lp",
+      initial: 23006,
+      current: null,
+      delta: null,
+      pending: false,
+    },
+  },
+];
+
+function ResultsMatrix() {
+  return (
+    <div className="grid gap-8">
+      {MATRIX_CASES.map((c) => (
+        <div key={c.id} className="grid gap-3">
+          <p className="m-0 font-mono text-xs text-faint">{c.id}</p>
+          <div className="flex flex-wrap items-start gap-4">
+            {MATRIX_WIDTHS.map((w) => (
+              <div
+                key={w}
+                className="fs-stage p-0"
+                style={{ width: w }}
+                data-matrix={`${c.id}@${w}`}
+              >
+                <SessionResults data={c.data} rating={c.rating} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

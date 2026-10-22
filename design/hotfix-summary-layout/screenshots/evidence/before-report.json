@@ -1,0 +1,117 @@
+{
+  "ranAt": "2026-10-22T01:50:39.650Z",
+  "findings": [
+    {
+      "where": "es 1920×1080 (main column 972px)",
+      "issue": "«% de victorias» text escapes its cell (820–1023 vs 800–966)"
+    },
+    {
+      "where": "es 1920×1080 (main column 972px)",
+      "issue": "«% de victorias» overlaps «Cambio en la sesión · Jamie»"
+    },
+    {
+      "where": "es 1440×900 (main column 972px)",
+      "issue": "«% de victorias» text escapes its cell (580–776 vs 560–726)"
+    },
+    {
+      "where": "es 1440×900 (main column 972px)",
+      "issue": "«% de victorias» overlaps «Cambio en la sesión · Jamie»"
+    },
+    {
+      "where": "es 1280×720 (main column 812px)",
+      "issue": "«% de victorias» text escapes its cell (491–661 vs 471–608)"
+    },
+    {
+      "where": "es 1280×720 (main column 812px)",
+      "issue": "«% de victorias» overlaps «Cambio en la sesión · Jamie»"
+    },
+    {
+      "where": "es 768×1024 (main column 720px)",
+      "issue": "«% de victorias» text escapes its cell (440–580 vs 420–540)"
+    },
+    {
+      "where": "es 768×1024 (main column 720px)",
+      "issue": "«% de victorias» overlaps «Cambio en la sesión · Jamie»"
+    },
+    {
+      "where": "es 1440×900 text 200%",
+      "issue": "page horizontal overflow 1603>1440"
+    },
+    {
+      "where": "es 1440×900 text 200%",
+      "issue": "«Partidas» text escapes its cell (161–288 vs 121–261)"
+    },
+    {
+      "where": "es 1440×900 text 200%",
+      "issue": "«Victorias» text escapes its cell (301–442 vs 261–402)"
+    },
+    {
+      "where": "es 1440×900 text 200%",
+      "issue": "«Derrotas» text escapes its cell (442–575 vs 402–542)"
+    },
+    {
+      "where": "es 1440×900 text 200%",
+      "issue": "«% de victorias» text escapes its cell (582–859 vs 542–682)"
+    },
+    {
+      "where": "es 1440×900 text 200%",
+      "issue": "«% de victorias» text escapes its cell (582–723 vs 542–682)"
+    },
+    {
+      "where": "es 1440×900 text 200%",
+      "issue": "«% de victorias» overlaps «Cambio en la sesión · Jamie»"
+    },
+    {
+      "where": "en 1920×1080 (main column 972px)",
+      "issue": "«Win rate» text escapes its cell (820–1009 vs 800–966)"
+    },
+    {
+      "where": "en 1920×1080 (main column 972px)",
+      "issue": "«Win rate» overlaps «Session change · Jamie»"
+    },
+    {
+      "where": "en 1920×1080 (main column 972px)",
+      "issue": "«Win rate» overlaps «Session change · Jamie»"
+    },
+    {
+      "where": "en 1440×900 (main column 972px)",
+      "issue": "«Win rate» text escapes its cell (580–762 vs 560–726)"
+    },
+    {
+      "where": "en 1440×900 (main column 972px)",
+      "issue": "«Win rate» overlaps «Session change · Jamie»"
+    },
+    {
+      "where": "en 1440×900 (main column 972px)",
+      "issue": "«Win rate» overlaps «Session change · Jamie»"
+    },
+    {
+      "where": "en 1280×720 (main column 812px)",
+      "issue": "«Win rate» text escapes its cell (491–650 vs 471–608)"
+    },
+    {
+      "where": "en 1280×720 (main column 812px)",
+      "issue": "«Win rate» overlaps «Session change · Jamie»"
+    },
+    {
+      "where": "en 768×1024 (main column 720px)",
+      "issue": "«Win rate» text escapes its cell (440–570 vs 420–540)"
+    },
+    {
+      "where": "en 768×1024 (main column 720px)",
+      "issue": "«Win rate» overlaps «Session change · Jamie»"
+    },
+    {
+      "where": "en 1440×900 text 200%",
+      "issue": "page horizontal overflow 1574>1440"
+    },
+    {
+      "where": "en 1440×900 text 200%",
+      "issue": "«Win rate» text escapes its cell (582–840 vs 542–682)"
+    },
+    {
+      "where": "en 1440×900 text 200%",
+      "issue": "«Win rate» overlaps «Session change · Jamie»"
+    }
+  ]
+}

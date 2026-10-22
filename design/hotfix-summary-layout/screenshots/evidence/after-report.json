@@ -1,0 +1,13 @@
+{
+  "ranAt": "2026-10-22T01:56:25.282Z",
+  "findings": [
+    {
+      "where": "es 1440×900 text 200%",
+      "issue": "page horizontal overflow 1603>1440"
+    },
+    {
+      "where": "en 1440×900 text 200%",
+      "issue": "page horizontal overflow 1574>1440"
+    }
+  ]
+}

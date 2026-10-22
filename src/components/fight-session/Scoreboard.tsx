@@ -195,59 +195,60 @@ export function SessionResults({
   const t = useTranslations("FightSession.scoreboard");
   const tr = useTranslations("FightSession.rating");
   const locale = useLocale();
-  const cell = "min-w-0 border-line px-5 py-4 max-sm:px-3.5";
-  const num = "fs-num m-0 mt-2 text-[clamp(3.25rem,5vw,4.75rem)] max-sm:text-5xl";
+  // Layout and numeral size come from the bar's own width (.fs-results*, globals.css).
+  const num = "fs-num fs-results-num m-0 mt-2";
   const unit = rating ? tr(`unit.${rating.system}`) : "";
   const tone = deltaTone(rating?.delta ?? null);
   return (
-    <dl
-      className={cx(
-        "m-0 grid grid-cols-2 border-y border-line sm:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.4fr)] sm:divide-x sm:divide-line",
-        className,
-      )}
-    >
-      <div className={cell}>
-        <dt className="fs-eyebrow">{t("gamesLabel")}</dt>
-        <dd className={num}>{formatInteger(data.games, locale)}</dd>
-      </div>
-      <div className={cell}>
-        <dt className="fs-eyebrow">{t("wins")}</dt>
-        <dd className={cx(num, "text-win")}>{formatInteger(data.wins, locale)}</dd>
-      </div>
-      <div className={cell}>
-        <dt className="fs-eyebrow">{t("losses")}</dt>
-        <dd className={cx(num, "text-loss")}>{formatInteger(data.losses, locale)}</dd>
-      </div>
-      <div className={cell}>
-        <dt className="fs-eyebrow">{t("winRate")}</dt>
-        <dd className={num}>{data.winRate === null ? "—" : formatWinRate(data.winRate, locale)}</dd>
-      </div>
-      {rating && (
-        <div className={cx(cell, "max-sm:col-span-2 max-sm:border-t")}>
-          <dt className="fs-eyebrow">
-            {tr("sessionDelta")} · {rating.characterName}
-          </dt>
-          {rating.current === null || rating.delta === null ? (
-            <>
-              <dd className={cx(num, "text-faint")}>—</dd>
-              <dd className="m-0 mt-1 text-sm font-semibold text-warn">
-                {rating.current === null ? tr("unavailable", { unit }) : tr("noBaseline", { unit })}
-              </dd>
-            </>
-          ) : (
-            <>
-              <dd className={cx(num, TONE[tone])}>
-                {ARROW[tone] && <span aria-hidden>{ARROW[tone]} </span>}
-                {formatDelta(rating.delta, locale)}
-              </dd>
-              <dd className="m-0 mt-1 text-sm text-muted tabular">
-                {rating.initial !== null && `${formatInteger(rating.initial, locale)} → `}
-                {formatInteger(rating.current, locale)} {unit}
-              </dd>
-            </>
-          )}
+    <div className={cx("fs-results-wrap", className)}>
+      <dl className="fs-results" data-testid="fs-session-results">
+        <div>
+          <dt className="fs-eyebrow">{t("gamesLabel")}</dt>
+          <dd className={num}>{formatInteger(data.games, locale)}</dd>
         </div>
-      )}
-    </dl>
+        <div>
+          <dt className="fs-eyebrow">{t("wins")}</dt>
+          <dd className={cx(num, "text-win")}>{formatInteger(data.wins, locale)}</dd>
+        </div>
+        <div>
+          <dt className="fs-eyebrow">{t("losses")}</dt>
+          <dd className={cx(num, "text-loss")}>{formatInteger(data.losses, locale)}</dd>
+        </div>
+        <div>
+          <dt className="fs-eyebrow">{t("winRate")}</dt>
+          <dd className={num}>
+            {data.winRate === null ? "—" : formatWinRate(data.winRate, locale)}
+          </dd>
+        </div>
+        {rating && (
+          <div>
+            <dt className="fs-eyebrow">
+              {tr("sessionDelta")} · {rating.characterName}
+            </dt>
+            {rating.current === null || rating.delta === null ? (
+              <>
+                <dd className={cx(num, "text-faint")}>—</dd>
+                <dd className="m-0 mt-1 text-sm font-semibold text-warn">
+                  {rating.current === null
+                    ? tr("unavailable", { unit })
+                    : tr("noBaseline", { unit })}
+                </dd>
+              </>
+            ) : (
+              <>
+                <dd className={cx(num, TONE[tone])}>
+                  {ARROW[tone] && <span aria-hidden>{ARROW[tone]} </span>}
+                  {formatDelta(rating.delta, locale)}
+                </dd>
+                <dd className="m-0 mt-1 text-sm text-muted tabular">
+                  {rating.initial !== null && `${formatInteger(rating.initial, locale)} → `}
+                  {formatInteger(rating.current, locale)} {unit}
+                </dd>
+              </>
+            )}
+          </div>
+        )}
+      </dl>
+    </div>
   );
 }
