@@ -1,0 +1,85 @@
+{
+  "console1440": {
+    "consoleHeight": 1277,
+    "firstOverlayHeight": 190,
+    "overlayItems": 4,
+    "firstCopyOffset": 194,
+    "actions": 14
+  },
+  "liveCls": 0.009148345269097222,
+  "cssStressHeader": {
+    "text200@1440": {
+      "overflowPx": 0,
+      "clipped": [],
+      "escapers": []
+    },
+    "text200@1024": {
+      "overflowPx": 0,
+      "clipped": [],
+      "escapers": []
+    },
+    "text200@768": {
+      "overflowPx": 0,
+      "clipped": [],
+      "escapers": []
+    },
+    "text200@430": {
+      "overflowPx": 0,
+      "clipped": [],
+      "escapers": []
+    },
+    "text200@390": {
+      "overflowPx": 0,
+      "clipped": [],
+      "escapers": []
+    },
+    "text200@360": {
+      "overflowPx": 0,
+      "clipped": [],
+      "escapers": []
+    },
+    "zoom200@1440": {
+      "overflowPx": 0
+    }
+  },
+  "perf": {
+    "recap0": {
+      "ssrMedianMs": 39,
+      "domNodes": 151,
+      "stripMarkers": 0,
+      "visibleRows": 0
+    },
+    "recap30": {
+      "ssrMedianMs": 51,
+      "domNodes": 524,
+      "stripMarkers": 30,
+      "visibleRows": 20
+    },
+    "recap100": {
+      "ssrMedianMs": 68,
+      "domNodes": 1085,
+      "stripMarkers": 30,
+      "visibleRows": 20
+    },
+    "recap500": {
+      "ssrMedianMs": 272,
+      "domNodes": 4285,
+      "stripMarkers": 30,
+      "visibleRows": 20
+    },
+    "dashboardFight": {
+      "ssrMedianMs": 82
+    },
+    "dashboardClassic": {
+      "ssrMedianMs": 77
+    },
+    "idleMutations30s": 15,
+    "timers": [
+      {
+        "ttfb": 35,
+        "domInteractive": 132,
+        "load": 136
+      }
+    ]
+  }
+}

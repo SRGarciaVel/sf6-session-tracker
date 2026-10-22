@@ -52,10 +52,25 @@ Rollback needs:
 
 ## What the preview changes (and what it does not)
 
-| Changes                                                                                                                                                           | Unchanged                                                          |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| PREPARE: Fight Session stage, readiness, single primary CTA, last-session summary                                                                                 | Session start/end server actions, validations, rate limits, errors |
-| LIVE (5.6B3): versus scoreboard, per-character rating with labelled pending value, latest match, round strip, inline two-step End (no "start new session" button) | Session engine, ingestion, tracker, Companion, SSE                 |
-| Status strip at the top replaces the classic fixed bottom status bar                                                                                              | Overlay console, previews, Copy URL, builder, entitlements         |
-| RECAP (5.6C): `/dashboard/sessions/[id]` uses the Fight Session recap for the same allowlisted accounts (`?ui=classic` = classic recap)                           | Ownership check, session data, the classic recap for everyone else |
-| Mobile: sticky start action; overlays console before the history; «Ir a tus overlays» jump                                                                        | History, analytics                                                 |
+| Changes                                                                                                                                                                          | Unchanged                                                                                       |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| PREPARE: Fight Session stage, readiness, single primary CTA, last-session summary                                                                                                | Session start/end server actions, validations, rate limits, errors                              |
+| LIVE (5.6B3): versus scoreboard, per-character rating with labelled pending value, latest match, round strip, inline two-step End (no "start new session" button)                | Session engine, ingestion, tracker, Companion, SSE                                              |
+| Status strip at the top replaces the classic fixed bottom status bar                                                                                                             | Overlay console, previews, Copy URL, builder, entitlements                                      |
+| RECAP (5.6C): `/dashboard/sessions/[id]` uses the Fight Session recap for the same allowlisted accounts (`?ui=classic` = classic recap)                                          | Ownership check, session data, the classic recap for everyone else                              |
+| Mobile: sticky start action; overlays console before the history; «Ir a tus overlays» jump                                                                                       | History, analytics                                                                              |
+| CONSOLE (5.6D): compact overlay rows (name, kind, preview, Copy OBS URL, Configure; details folded); OBS guide and Creator beta folded; Companion module first                   | Overlay URLs/tokens, previews, builder routes, entitlements; the classic console stays detailed |
+| STATUS (5.6D): one «Seguimiento» state (ready / tracking / waiting / attention / Companion silent) from the existing readiness; «Reconectando…» whenever the live stream is down | Readiness rules, Companion protocol, diagnostics (all still in the Companion module)            |
+
+## Expanding the beta later (not done in 5.6D)
+
+5.6D only prepares the beta; it does not widen it. When the owner decides to expand:
+
+1. Run the streamer checklist (`design/phase-5-6d/beta-validation.md`) with the current
+   testers first and fix anything marked «blocked».
+2. Add a small, named group of consenting streamers by id (step «Enable it for a tester»),
+   a few at a time, and restart.
+3. Keep `?ui=classic` and the rollback above available during the whole beta; watch the
+   session-start/end error logs and the Companion sync rejections after each expansion.
+4. A global default would need a code change (not just the variable) plus its own review;
+   it is out of scope for the 5.6 project.

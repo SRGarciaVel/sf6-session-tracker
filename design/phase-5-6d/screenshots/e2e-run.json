@@ -1,0 +1,449 @@
+{
+  "ranAt": "2026-10-22T07:04:04.762Z",
+  "results": [
+    {
+      "check": "gate: allowlisted A gets Fight Session",
+      "pass": true
+    },
+    {
+      "check": "gate: B cannot force Fight Session (query + cookie + header + localStorage)",
+      "pass": true,
+      "detail": "classic console keeps the detailed rows (one URL field per overlay)"
+    },
+    {
+      "check": "privacy: B cannot open A's overlay configuration (no token, no name)",
+      "pass": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "check": "network: one SSE stream on /dashboard",
+      "pass": true,
+      "detail": "1 stream request(s)"
+    },
+    {
+      "check": "network: one SSE stream on /dashboard?ui=classic",
+      "pass": true,
+      "detail": "1 stream request(s)"
+    },
+    {
+      "check": "classic: ?ui=classic keeps the classic dashboard (detailed console, classic panels)",
+      "pass": true
+    },
+    {
+      "check": "console: one compact row per overlay, details folded, no URL field visible",
+      "pass": true
+    },
+    {
+      "check": "console: shorter than before (2203 px on main at 1440)",
+      "pass": true,
+      "detail": "1277 px"
+    },
+    {
+      "check": "copy: «Copiar URL para OBS» copies the exact public URL (token unchanged)",
+      "pass": true
+    },
+    {
+      "check": "copy: visible + announced feedback",
+      "pass": true
+    },
+    {
+      "check": "keyboard: «Detalles» opens with Enter and has a visible focus outline",
+      "pass": true,
+      "detail": "solid 2px"
+    },
+    {
+      "check": "details: canvas/language/style + full URL + the same public preview",
+      "pass": true
+    },
+    {
+      "check": "keyboard: Space closes it again",
+      "pass": true
+    },
+    {
+      "check": "preview: the public overlay still renders (HTTP 200)",
+      "pass": true
+    },
+    {
+      "check": "configure: same builder route",
+      "pass": true
+    },
+    {
+      "check": "Creator beta: a #creator-beta link (from the builder) opens the folded module",
+      "pass": true
+    },
+    {
+      "check": "tracking: «Seguimiento ● Listo para registrar» when data is fresh",
+      "pass": true
+    },
+    {
+      "check": "Companion silent: «Companion sin señal», diagnostics link, start blocked with the reason",
+      "pass": true
+    },
+    {
+      "check": "diagnostics: the Companion module (status, Buckler, version, devices) is in view",
+      "pass": true
+    },
+    {
+      "check": "start: focus moves to the LIVE heading (not lost to <body>)",
+      "pass": true
+    },
+    {
+      "check": "tracking: «Registrando partidas» during the session",
+      "pass": true
+    },
+    {
+      "check": "LIVE: match arrives through SSE with the «Nueva» marker and a polite announcement",
+      "pass": true
+    },
+    {
+      "check": "LIVE: 1402 → 1414 MR +12 (per character, from the engine)",
+      "pass": true
+    },
+    {
+      "check": "LIVE: new match / rating update cause no layout shift beyond 0.1 (CLS)",
+      "pass": true,
+      "detail": "0.009148345269097222"
+    },
+    {
+      "check": "LIVE: rating update 1414 → 1405 shown as the session change +3",
+      "pass": true
+    },
+    {
+      "check": "LIVE 360×800: no horizontal overflow (long opponent name)",
+      "pass": true
+    },
+    {
+      "check": "LIVE 390×844: no horizontal overflow (long opponent name)",
+      "pass": true
+    },
+    {
+      "check": "LIVE 430×932: no horizontal overflow (long opponent name)",
+      "pass": true
+    },
+    {
+      "check": "LIVE 768×1024: no horizontal overflow (long opponent name)",
+      "pass": true
+    },
+    {
+      "check": "SSE: server restart is said («Reconectando…») and the stream recovers by itself",
+      "pass": true,
+      "detail": "seen=true recovered=true"
+    },
+    {
+      "check": "end: cancel keeps the session; focus returns to «Finalizar sesión»",
+      "pass": true
+    },
+    {
+      "check": "RECAP: saved confirmation, 2 · 1 · 1 · 50 %, Ryu 1402 → 1405 MR",
+      "pass": true
+    },
+    {
+      "check": "RECAP → PREPARE: «Tu última sesión» shows the saved session",
+      "pass": true
+    },
+    {
+      "check": "PREPARE es 360×800: no overflow, fixed CTA never hides the page end, targets ≥ 24 px",
+      "pass": true,
+      "detail": "overflow 0; hidesEnd=false; tiny="
+    },
+    {
+      "check": "RECAP es 360×800: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "PREPARE es 390×844: no overflow, fixed CTA never hides the page end, targets ≥ 24 px",
+      "pass": true,
+      "detail": "overflow 0; hidesEnd=false; tiny="
+    },
+    {
+      "check": "RECAP es 390×844: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "PREPARE es 430×932: no overflow, fixed CTA never hides the page end, targets ≥ 24 px",
+      "pass": true,
+      "detail": "overflow 0; hidesEnd=false; tiny="
+    },
+    {
+      "check": "RECAP es 430×932: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "PREPARE es 768×1024: no overflow, fixed CTA never hides the page end, targets ≥ 24 px",
+      "pass": true,
+      "detail": "overflow 0; hidesEnd=false; tiny="
+    },
+    {
+      "check": "RECAP es 768×1024: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "PREPARE es 1280×720: no overflow, fixed CTA never hides the page end, targets ≥ 24 px",
+      "pass": true,
+      "detail": "overflow 0; hidesEnd=false; tiny="
+    },
+    {
+      "check": "RECAP es 1280×720: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "PREPARE es 1440×900: no overflow, fixed CTA never hides the page end, targets ≥ 24 px",
+      "pass": true,
+      "detail": "overflow 0; hidesEnd=false; tiny="
+    },
+    {
+      "check": "RECAP es 1440×900: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "PREPARE es 1920×1080: no overflow, fixed CTA never hides the page end, targets ≥ 24 px",
+      "pass": true,
+      "detail": "overflow 0; hidesEnd=false; tiny="
+    },
+    {
+      "check": "RECAP es 1920×1080: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "PREPARE en 390×844: no overflow, fixed CTA never hides the page end, targets ≥ 24 px",
+      "pass": true,
+      "detail": "overflow 0; hidesEnd=false; tiny="
+    },
+    {
+      "check": "RECAP en 390×844: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "PREPARE en 1440×900: no overflow, fixed CTA never hides the page end, targets ≥ 24 px",
+      "pass": true,
+      "detail": "overflow 0; hidesEnd=false; tiny="
+    },
+    {
+      "check": "RECAP en 1440×900: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "mobile: «Ir a tus overlays» brings the first Copy OBS URL into view",
+      "pass": true
+    },
+    {
+      "check": "mobile: copy works by touch",
+      "pass": true
+    },
+    {
+      "check": "text 200 % /dashboard 360px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard 390px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard 430px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard 768px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard 1280px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard 1440px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard 1920px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard?ui=classic 360px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard?ui=classic 390px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard?ui=classic 430px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard?ui=classic 768px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard?ui=classic 1280px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard?ui=classic 1440px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard?ui=classic 1920px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard/sessions/799f6f3b-7165-432a-aced-c1fb7bc7dae6 360px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard/sessions/799f6f3b-7165-432a-aced-c1fb7bc7dae6 390px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard/sessions/799f6f3b-7165-432a-aced-c1fb7bc7dae6 430px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard/sessions/799f6f3b-7165-432a-aced-c1fb7bc7dae6 768px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard/sessions/799f6f3b-7165-432a-aced-c1fb7bc7dae6 1280px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard/sessions/799f6f3b-7165-432a-aced-c1fb7bc7dae6 1440px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "text 200 % /dashboard/sessions/799f6f3b-7165-432a-aced-c1fb7bc7dae6 1920px: no horizontal overflow; sign-out + language reachable; no clipped labels",
+      "pass": true,
+      "detail": "overflow 0; clipped="
+    },
+    {
+      "check": "css-stress: text 200 % at 1440px — no horizontal overflow, sign-out reachable, no clipped labels",
+      "pass": true,
+      "detail": "overflow 0px; clipped="
+    },
+    {
+      "check": "css-stress: text 200 % at 1024px — no horizontal overflow, sign-out reachable, no clipped labels",
+      "pass": true,
+      "detail": "overflow 0px; clipped="
+    },
+    {
+      "check": "css-stress: text 200 % at 768px — no horizontal overflow, sign-out reachable, no clipped labels",
+      "pass": true,
+      "detail": "overflow 0px; clipped="
+    },
+    {
+      "check": "css-stress: text 200 % at 430px — no horizontal overflow, sign-out reachable, no clipped labels",
+      "pass": true,
+      "detail": "overflow 0px; clipped="
+    },
+    {
+      "check": "css-stress: text 200 % at 390px — no horizontal overflow, sign-out reachable, no clipped labels",
+      "pass": true,
+      "detail": "overflow 0px; clipped="
+    },
+    {
+      "check": "css-stress: text 200 % at 360px — no horizontal overflow, sign-out reachable, no clipped labels",
+      "pass": true,
+      "detail": "overflow 0px; clipped="
+    },
+    {
+      "check": "css-stress: browser zoom 200 % (720 CSS px) — no horizontal overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "check": "keyboard: header → status → START → console overlays (copy/configure/details) → modules; no trap",
+      "pass": true,
+      "detail": "59 stops; start@8; first copy@10"
+    },
+    {
+      "check": "keyboard: every focus stop has a visible indicator",
+      "pass": true,
+      "detail": "0 without"
+    },
+    {
+      "check": "reduced motion: start + new match feedback without running animations",
+      "pass": true
+    },
+    {
+      "check": "0-match session: all 0 matches stored in the session",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "check": "30-match session: all 30 matches stored in the session",
+      "pass": true,
+      "detail": "30"
+    },
+    {
+      "check": "100-match session: all 100 matches stored in the session",
+      "pass": true,
+      "detail": "100"
+    },
+    {
+      "check": "500-match session: all 500 matches stored in the session",
+      "pass": true,
+      "detail": "500"
+    },
+    {
+      "check": "RECAP 0: bounded strip (≤ 30) and list (≤ 20 visible), no overflow at 390",
+      "pass": true,
+      "detail": "{\"ssrMedianMs\":39,\"domNodes\":151,\"stripMarkers\":0,\"visibleRows\":0}"
+    },
+    {
+      "check": "RECAP 30: bounded strip (≤ 30) and list (≤ 20 visible), no overflow at 390",
+      "pass": true,
+      "detail": "{\"ssrMedianMs\":51,\"domNodes\":524,\"stripMarkers\":30,\"visibleRows\":20}"
+    },
+    {
+      "check": "RECAP 30 390: no overflow",
+      "pass": true
+    },
+    {
+      "check": "RECAP 100: bounded strip (≤ 30) and list (≤ 20 visible), no overflow at 390",
+      "pass": true,
+      "detail": "{\"ssrMedianMs\":68,\"domNodes\":1085,\"stripMarkers\":30,\"visibleRows\":20}"
+    },
+    {
+      "check": "RECAP 100 390: no overflow",
+      "pass": true
+    },
+    {
+      "check": "RECAP 500: bounded strip (≤ 30) and list (≤ 20 visible), no overflow at 390",
+      "pass": true,
+      "detail": "{\"ssrMedianMs\":272,\"domNodes\":4285,\"stripMarkers\":30,\"visibleRows\":20}"
+    },
+    {
+      "check": "RECAP 500 390: no overflow",
+      "pass": true
+    },
+    {
+      "check": "overlays: OBS tokens unchanged",
+      "pass": true
+    },
+    {
+      "check": "no page errors / hydration warnings",
+      "pass": true,
+      "detail": ""
+    }
+  ]
+}
