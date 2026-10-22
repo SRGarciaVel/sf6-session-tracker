@@ -1,0 +1,6 @@
+{
+  "starts": ["fulfilled", "fulfilled", "fulfilled"],
+  "sessions": 3,
+  "active": 1,
+  "endedEmpty": 2
+}

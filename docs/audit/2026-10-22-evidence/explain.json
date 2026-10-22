@@ -1,0 +1,124 @@
+{
+  "ranAt": "2026-10-22T22:58:05.540Z",
+  "matchRows": 220844,
+  "results": [
+    {
+      "label": "dashboard history: full rows of the 10 latest sessions' matches",
+      "executionMs": 0.389,
+      "planningMs": 0.779,
+      "sharedHit": 89,
+      "sharedRead": 3,
+      "rows": 500,
+      "plan": [
+        "Bitmap Heap Scan on match rows=500 loops=1",
+        "  Bitmap Index Scan (match_session_idx) rows=500 loops=1"
+      ]
+    },
+    {
+      "label": "dashboard: 10 latest sessions",
+      "executionMs": 0.061,
+      "planningMs": 0.657,
+      "sharedHit": 2,
+      "sharedRead": 1,
+      "rows": 10,
+      "plan": [
+        "Limit rows=10 loops=1",
+        "  Index Scan (game_session_player_started_idx) on game_session rows=10 loops=1"
+      ]
+    },
+    {
+      "label": "recap / LIVE recent: one session's matches",
+      "executionMs": 0.193,
+      "planningMs": 0.105,
+      "sharedHit": 54,
+      "sharedRead": 0,
+      "rows": 50,
+      "plan": [
+        "Bitmap Heap Scan on match rows=50 loops=1",
+        "  Bitmap Index Scan (match_session_idx) rows=50 loops=1"
+      ]
+    },
+    {
+      "label": "companion state: known replay ids",
+      "executionMs": 0.255,
+      "planningMs": 0.08,
+      "sharedHit": 103,
+      "sharedRead": 2,
+      "rows": 100,
+      "plan": [
+        "Limit rows=100 loops=1",
+        "  Index Scan (match_player_played_idx) on match rows=100 loops=1"
+      ]
+    },
+    {
+      "label": "analytics 90 d ranked",
+      "executionMs": 4.623,
+      "planningMs": 0.155,
+      "sharedHit": 176,
+      "sharedRead": 31,
+      "rows": 4320,
+      "plan": [
+        "Sort rows=4320 loops=1",
+        "  Bitmap Heap Scan on match rows=4320 loops=1",
+        "    Bitmap Index Scan (match_player_played_idx) rows=5400 loops=1"
+      ]
+    },
+    {
+      "label": "analytics all-time (every match of the player)",
+      "executionMs": 53.362,
+      "planningMs": 0.082,
+      "sharedHit": 5226,
+      "sharedRead": 9859,
+      "rows": 20000,
+      "plan": ["Sort rows=20000 loops=1", "  Seq Scan on match rows=20000 loops=1"]
+    },
+    {
+      "label": "analytics: latest character name per key (full scan of the player's matches)",
+      "executionMs": 73.491,
+      "planningMs": 0.17,
+      "sharedHit": 5258,
+      "sharedRead": 9827,
+      "rows": 2,
+      "plan": [
+        "Aggregate rows=2 loops=1",
+        "  Sort rows=20000 loops=1",
+        "    Seq Scan on match rows=20000 loops=1"
+      ]
+    },
+    {
+      "label": "overlay presence count",
+      "executionMs": 0.045,
+      "planningMs": 1.36,
+      "sharedHit": 0,
+      "sharedRead": 0,
+      "rows": 1,
+      "plan": [
+        "Aggregate rows=1 loops=1",
+        "  Nested Loop rows=0 loops=1",
+        "    Seq Scan on overlay_connection rows=0 loops=1",
+        "    Seq Scan on overlay rows=0 loops=0"
+      ]
+    },
+    {
+      "label": "worker claim (due players with an active session)",
+      "executionMs": 0.095,
+      "planningMs": 0.474,
+      "sharedHit": 6,
+      "sharedRead": 1,
+      "rows": 1,
+      "plan": [
+        "Limit rows=1 loops=1",
+        "  Sort rows=1 loops=1",
+        "    Nested Loop rows=1 loops=1",
+        "      Seq Scan on sf6_player rows=1 loops=1",
+        "      Index Only Scan (game_session_one_active_uq) on game_session rows=1 loops=1"
+      ]
+    },
+    {
+      "label": "ingest: one multi-row insert of 100 (50 duplicates), ON CONFLICT DO NOTHING",
+      "executionMs": 6.734,
+      "planningMs": 0.577,
+      "rows": 0
+    }
+  ]
+}

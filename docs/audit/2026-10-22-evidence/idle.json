@@ -1,0 +1,24 @@
+{
+  "no active session, no clients": {
+    "seconds": 60,
+    "roundTrips": 61,
+    "perMinute": 61,
+    "top": [
+      "59× update sf6_player p set lease_owner = $1, lease_expires_at = now() + $2::interval where p.id in ( select c.id from sf6_p",
+      "1× delete from \"overlay_connection\" where \"overlay_connection\".\"last_seen_at\" < now() - $1::interval returning \"id\"",
+      "1× select s.id as session_id, s.player_id, s.started_at, s.filter, lm.last_match_at, greatest(s.started_at, coalesce(lm.las"
+    ]
+  },
+  "1 dashboard + 1 overlay open, no session": {
+    "roundTrips": 88,
+    "perMinute": 88,
+    "top": [
+      "60× update sf6_player p set lease_owner = $1, lease_expires_at = now() + $2::interval where p.id in ( select c.id from sf6_p",
+      "4× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"",
+      "4× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\",",
+      "2× update \"overlay_connection\" set \"last_seen_at\" = now() where \"overlay_connection\".\"id\" = $1",
+      "2× select count(*) from \"overlay_connection\" inner join \"overlay\" on \"overlay\".\"id\" = \"overlay_connection\".\"overlay_id\" whe",
+      "2× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\","
+    ]
+  }
+}
