@@ -768,6 +768,88 @@ body::after {
     }
   }
 
+  /*
+   * Results bar (recap / «Tu última sesión»). Laid out by its OWN width (container queries), not
+   * the viewport: on the dashboard it sits in the main column next to the overlay console, which
+   * can be ~650–970 px wide at any viewport. Numerals are sized from the real width of one column
+   * (100cqi / --fs-cols) so the widest value ("33,3 %" ≈ 2.7em, "▼ −1250" ≈ 3.7em at 1.4fr) always
+   * fits its cell; 2 → 3 → 5 columns as room allows.
+   */
+  .fs-results-wrap {
+    container-type: inline-size;
+  }
+  .fs-results {
+    --fs-cols: 2;
+    --fs-pad-x: 0.875rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+    border-block: 1px solid var(--color-line);
+  }
+  .fs-results > div {
+    min-width: 0;
+    padding: 1rem var(--fs-pad-x);
+  }
+  .fs-results dt {
+    overflow-wrap: anywhere;
+  }
+  .fs-results > div:nth-child(2n) {
+    border-left: 1px solid var(--color-line);
+  }
+  .fs-results > div:nth-child(n + 3) {
+    border-top: 1px solid var(--color-line);
+  }
+  .fs-results > div:nth-child(5) {
+    grid-column: 1 / -1;
+    border-left: 0;
+  }
+  .fs-results-num {
+    font-size: clamp(
+      1.75rem,
+      calc((100cqi / var(--fs-cols) - 2 * var(--fs-pad-x)) * 0.26),
+      4.75rem
+    );
+    white-space: nowrap;
+  }
+  @container (min-width: 30rem) {
+    .fs-results {
+      --fs-cols: 3;
+      --fs-pad-x: 1.25rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .fs-results > div,
+    .fs-results > div:nth-child(2n),
+    .fs-results > div:nth-child(n + 3) {
+      border-left: 0;
+      border-top: 0;
+    }
+    .fs-results > div:not(:nth-child(3n + 1)) {
+      border-left: 1px solid var(--color-line);
+    }
+    .fs-results > div:nth-child(n + 4) {
+      border-top: 1px solid var(--color-line);
+    }
+    .fs-results > div:nth-child(5) {
+      grid-column: span 2;
+    }
+  }
+  @container (min-width: 72rem) {
+    .fs-results {
+      --fs-cols: 5.4;
+      grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.4fr);
+    }
+    .fs-results > div,
+    .fs-results > div:nth-child(n + 4) {
+      border-top: 0;
+    }
+    .fs-results > div + div {
+      border-left: 1px solid var(--color-line);
+    }
+    .fs-results > div:nth-child(5) {
+      grid-column: auto;
+    }
+  }
+
   /* Result markers (round strip, stamp). */
   .fs-round {
     --fs-cut: 7px;
