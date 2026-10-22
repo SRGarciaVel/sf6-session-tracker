@@ -1,0 +1,409 @@
+{
+  "page: landing (anonymous)": {
+    "status": 200,
+    "medianMs": 62,
+    "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "db": {
+      "roundTrips": 0,
+      "statements": 0,
+      "distinct": 0,
+      "top": []
+    }
+  },
+  "page: landing (signed in)": {
+    "status": 200,
+    "medianMs": 45,
+    "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "db": {
+      "roundTrips": 2,
+      "statements": 2,
+      "distinct": 2,
+      "top": [
+        "1× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+        "1× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1"
+      ]
+    }
+  },
+  "page: login (anonymous)": {
+    "status": 200,
+    "medianMs": 21,
+    "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "db": {
+      "roundTrips": 0,
+      "statements": 0,
+      "distinct": 0,
+      "top": []
+    }
+  },
+  "page: help/companion (signed in)": {
+    "status": 200,
+    "medianMs": 31,
+    "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "db": {
+      "roundTrips": 2,
+      "statements": 2,
+      "distinct": 2,
+      "top": [
+        "1× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+        "1× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1"
+      ]
+    }
+  },
+  "page: onboarding (signed in, has player)": {
+    "status": 200,
+    "medianMs": 35,
+    "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "db": {
+      "roundTrips": 4,
+      "statements": 4,
+      "distinct": 4,
+      "top": [
+        "1× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+        "1× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+        "1× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+        "1× select \"id\", \"user_id\", \"name\", \"token_hash\", \"created_at\", \"last_seen_at\", \"revoked_at\", \"client_version\" from \"companion_device\" where (\"c"
+      ]
+    }
+  },
+  "page: dashboard Fight Session": {
+    "status": 200,
+    "medianMs": 140,
+    "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "db": {
+      "roundTrips": 25,
+      "statements": 25,
+      "distinct": 19,
+      "top": [
+        "2× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+        "2× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+        "2× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+        "2× select \"plan\" from \"account_plan\" where \"account_plan\".\"user_id\" = $1 limit $2",
+        "2× select \"plan\", \"starts_at\", \"expires_at\", \"revoked_at\" from \"entitlement_grant\" where (\"entitlement_grant\".\"user_id\" = $1 and \"entitlement_g",
+        "2× select \"id\", \"player_id\", \"character_key\", \"character_name\", \"rank\", \"rank_tier\", \"rating_system\", \"league_points\", \"master_rate\", \"phase\", "
+      ]
+    }
+  },
+  "page: dashboard classic": {
+    "status": 200,
+    "medianMs": 106,
+    "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "db": {
+      "roundTrips": 24,
+      "statements": 24,
+      "distinct": 16,
+      "top": [
+        "2× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+        "2× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+        "2× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+        "2× select \"plan\" from \"account_plan\" where \"account_plan\".\"user_id\" = $1 limit $2",
+        "2× select \"plan\", \"starts_at\", \"expires_at\", \"revoked_at\" from \"entitlement_grant\" where (\"entitlement_grant\".\"user_id\" = $1 and \"entitlement_g",
+        "2× select \"id\", \"player_id\", \"character_key\", \"character_name\", \"rank\", \"rank_tier\", \"rating_system\", \"league_points\", \"master_rate\", \"phase\", "
+      ]
+    }
+  },
+  "page: analytics (500+ matches)": {
+    "status": 200,
+    "medianMs": 128,
+    "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "db": {
+      "roundTrips": 6,
+      "statements": 6,
+      "distinct": 5,
+      "top": [
+        "2× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+        "1× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+        "1× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+        "1× select \"character_key\", (array_agg(\"player_character\" order by \"played_at\" desc))[1] from \"match\" where \"match\".\"player_id\" = $1 group by \"m",
+        "1× select \"external_match_id\", \"played_at\", \"result\", \"mode\", \"character_key\", \"player_character\", \"session_id\", \"opponent_character_key\", \"opp"
+      ]
+    }
+  },
+  "page: analytics all-time": {
+    "status": 200,
+    "medianMs": 108,
+    "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "db": {
+      "roundTrips": 6,
+      "statements": 6,
+      "distinct": 5,
+      "top": [
+        "2× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+        "1× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+        "1× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+        "1× select \"character_key\", (array_agg(\"player_character\" order by \"played_at\" desc))[1] from \"match\" where \"match\".\"player_id\" = $1 group by \"m",
+        "1× select \"external_match_id\", \"played_at\", \"result\", \"mode\", \"character_key\", \"player_character\", \"session_id\", \"opponent_character_key\", \"opp"
+      ]
+    }
+  },
+  "page: recap 0 matches": {
+    "status": 200,
+    "medianMs": 39,
+    "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "db": {
+      "roundTrips": 7,
+      "statements": 7,
+      "distinct": 7,
+      "top": [
+        "1× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+        "1× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+        "1× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+        "1× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+        "1× select \"id\", \"player_id\", \"character_key\", \"character_name\", \"rank\", \"rank_tier\", \"rating_system\", \"league_points\", \"master_rate\", \"phase\", ",
+        "1× select \"id\", \"player_id\", \"session_id\", \"external_match_id\", \"played_at\", \"mode\", \"result\", \"character_key\", \"player_character\", \"player_con"
+      ]
+    }
+  },
+  "page: recap 30 matches": {
+    "status": 200,
+    "medianMs": 55,
+    "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "db": {
+      "roundTrips": 8,
+      "statements": 8,
+      "distinct": 8,
+      "top": [
+        "1× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+        "1× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+        "1× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+        "1× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+        "1× select \"id\", \"player_id\", \"character_key\", \"character_name\", \"rank\", \"rank_tier\", \"rating_system\", \"league_points\", \"master_rate\", \"phase\", ",
+        "1× select \"id\", \"player_id\", \"session_id\", \"external_match_id\", \"played_at\", \"mode\", \"result\", \"character_key\", \"player_character\", \"player_con"
+      ]
+    }
+  },
+  "page: recap 100 matches": {
+    "status": 200,
+    "medianMs": 153,
+    "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "db": {
+      "roundTrips": 8,
+      "statements": 8,
+      "distinct": 8,
+      "top": [
+        "1× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+        "1× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+        "1× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+        "1× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+        "1× select \"id\", \"player_id\", \"character_key\", \"character_name\", \"rank\", \"rank_tier\", \"rating_system\", \"league_points\", \"master_rate\", \"phase\", ",
+        "1× select \"id\", \"player_id\", \"session_id\", \"external_match_id\", \"played_at\", \"mode\", \"result\", \"character_key\", \"player_character\", \"player_con"
+      ]
+    }
+  },
+  "page: recap 500 matches": {
+    "status": 200,
+    "medianMs": 252,
+    "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "db": {
+      "roundTrips": 8,
+      "statements": 8,
+      "distinct": 8,
+      "top": [
+        "1× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+        "1× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+        "1× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+        "1× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+        "1× select \"id\", \"player_id\", \"character_key\", \"character_name\", \"rank\", \"rank_tier\", \"rating_system\", \"league_points\", \"master_rate\", \"phase\", ",
+        "1× select \"id\", \"player_id\", \"session_id\", \"external_match_id\", \"played_at\", \"mode\", \"result\", \"character_key\", \"player_character\", \"player_con"
+      ]
+    }
+  },
+  "page: recap 500 classic (?ui=classic)": {
+    "status": 200,
+    "medianMs": 130,
+    "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "db": {
+      "roundTrips": 8,
+      "statements": 8,
+      "distinct": 8,
+      "top": [
+        "1× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+        "1× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+        "1× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+        "1× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+        "1× select \"id\", \"player_id\", \"character_key\", \"character_name\", \"rank\", \"rank_tier\", \"rating_system\", \"league_points\", \"master_rate\", \"phase\", ",
+        "1× select \"id\", \"player_id\", \"session_id\", \"external_match_id\", \"played_at\", \"mode\", \"result\", \"character_key\", \"player_character\", \"player_con"
+      ]
+    }
+  },
+  "page: overlay builder": {
+    "status": 200,
+    "medianMs": 100,
+    "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "db": {
+      "roundTrips": 18,
+      "statements": 18,
+      "distinct": 16,
+      "top": [
+        "2× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+        "2× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+        "1× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+        "1× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+        "1× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+        "1× select \"overlay\".\"id\", \"overlay\".\"player_id\", \"overlay\".\"public_token\", \"overlay\".\"name\", \"overlay\".\"config\", \"overlay\".\"created_at\", \"overl"
+      ]
+    }
+  },
+  "page: overlay page (public)": {
+    "status": 200,
+    "medianMs": 77,
+    "cacheControl": "no-store, max-age=0",
+    "db": {
+      "roundTrips": 10,
+      "statements": 10,
+      "distinct": 10,
+      "top": [
+        "1× select \"id\", \"player_id\", \"public_token\", \"name\", \"config\", \"created_at\", \"updated_at\" from \"overlay\" where \"overlay\".\"public_token\" = $1 li",
+        "1× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+        "1× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+        "1× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+        "1× select \"id\", \"player_id\", \"character_key\", \"character_name\", \"rank\", \"rank_tier\", \"rating_system\", \"league_points\", \"master_rate\", \"phase\", ",
+        "1× select \"id\", \"player_id\", \"session_id\", \"external_match_id\", \"played_at\", \"mode\", \"result\", \"character_key\", \"player_character\", \"player_con"
+      ]
+    }
+  },
+  "page: overlay state API (public)": {
+    "status": 200,
+    "medianMs": 108,
+    "cacheControl": "no-store, max-age=0",
+    "db": {
+      "roundTrips": 11,
+      "statements": 11,
+      "distinct": 11,
+      "top": [
+        "1× insert into rate_limit_bucket (key, count, reset_at) values ($1, 1, now() + $2::interval) on conflict (key) do update set count = case when ",
+        "1× select \"id\", \"player_id\", \"public_token\", \"name\", \"config\", \"created_at\", \"updated_at\" from \"overlay\" where \"overlay\".\"public_token\" = $1 li",
+        "1× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+        "1× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+        "1× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+        "1× select \"id\", \"player_id\", \"character_key\", \"character_name\", \"rank\", \"rank_tier\", \"rating_system\", \"league_points\", \"master_rate\", \"phase\", "
+      ]
+    }
+  },
+  "page: review PDF": {
+    "status": 200,
+    "medianMs": 639,
+    "cacheControl": "private, no-store",
+    "db": {
+      "roundTrips": 5,
+      "statements": 5,
+      "distinct": 5,
+      "top": [
+        "1× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+        "1× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+        "1× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+        "1× select \"character_key\", (array_agg(\"player_character\" order by \"played_at\" desc))[1] from \"match\" where \"match\".\"player_id\" = $1 group by \"m",
+        "1× select \"external_match_id\", \"played_at\", \"result\", \"mode\", \"character_key\", \"player_character\", \"session_id\", \"opponent_character_key\", \"opp"
+      ]
+    }
+  },
+  "companion state (every ~30 s per open browser)": {
+    "roundTrips": 6,
+    "statements": 6,
+    "distinct": 6,
+    "top": [
+      "1× select \"id\", \"user_id\", \"name\", \"token_hash\", \"created_at\", \"last_seen_at\", \"revoked_at\", \"client_version\" from \"companion_device\" where (\"c",
+      "1× update \"companion_device\" set \"last_seen_at\" = $1 where \"companion_device\".\"id\" = $2",
+      "1× insert into rate_limit_bucket (key, count, reset_at) values ($1, 1, now() + $2::interval) on conflict (key) do update set count = case when ",
+      "1× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+      "1× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+      "1× select \"external_match_id\" from \"match\" where \"match\".\"player_id\" = $1 order by \"match\".\"played_at\" desc limit $2"
+    ]
+  },
+  "companion sync: profile only, no session, no listeners": {
+    "roundTrips": 17,
+    "statements": 17,
+    "distinct": 13,
+    "top": [
+      "2× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+      "2× [simple] begin",
+      "2× commit",
+      "2× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+      "1× select \"id\", \"user_id\", \"name\", \"token_hash\", \"created_at\", \"last_seen_at\", \"revoked_at\", \"client_version\" from \"companion_device\" where (\"c",
+      "1× insert into rate_limit_bucket (key, count, reset_at) values ($1, 1, now() + $2::interval) on conflict (key) do update set count = case when "
+    ]
+  },
+  "heartbeat (no active session)": {
+    "roundTrips": 4,
+    "statements": 4,
+    "distinct": 4,
+    "top": [
+      "1× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+      "1× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+      "1× insert into rate_limit_bucket (key, count, reset_at) values ($1, 1, now() + $2::interval) on conflict (key) do update set count = case when ",
+      "1× select \"game_session\".\"id\" from \"game_session\" inner join \"sf6_player\" on \"sf6_player\".\"id\" = \"game_session\".\"player_id\" where (\"sf6_player\""
+    ]
+  },
+  "action: start session (classic UI click → active)": {
+    "roundTrips": 95,
+    "statements": 94,
+    "distinct": 32,
+    "top": [
+      "11× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+      "11× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+      "7× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+      "7× select \"id\", \"player_id\", \"character_key\", \"character_name\", \"rank\", \"rank_tier\", \"rating_system\", \"league_points\", \"master_rate\", \"phase\", ",
+      "7× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+      "4× select \"plan\" from \"account_plan\" where \"account_plan\".\"user_id\" = $1 limit $2"
+    ]
+  },
+  "companion sync: 1 match + profile, active session, 1 dashboard + 2 overlay streams": {
+    "roundTrips": 72,
+    "statements": 70,
+    "distinct": 31,
+    "top": [
+      "7× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+      "7× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+      "6× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+      "4× select \"id\", \"player_id\", \"character_key\", \"character_name\", \"rank\", \"rank_tier\", \"rating_system\", \"league_points\", \"master_rate\", \"phase\", ",
+      "4× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+      "4× select \"plan\" from \"account_plan\" where \"account_plan\".\"user_id\" = $1 limit $2"
+    ]
+  },
+  "companion sync: duplicate replay (same match again)": {
+    "roundTrips": 66,
+    "statements": 65,
+    "distinct": 28,
+    "top": [
+      "7× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+      "7× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+      "6× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+      "4× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+      "4× select \"plan\" from \"account_plan\" where \"account_plan\".\"user_id\" = $1 limit $2",
+      "4× select \"plan\", \"starts_at\", \"expires_at\", \"revoked_at\" from \"entitlement_grant\" where (\"entitlement_grant\".\"user_id\" = $1 and \"entitlement_g"
+    ]
+  },
+  "companion sync: 100 new matches in one batch": {
+    "roundTrips": 67,
+    "statements": 65,
+    "distinct": 28,
+    "top": [
+      "7× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+      "7× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+      "6× select \"id\", \"player_id\", \"status\", \"started_at\", \"ended_at\", \"baseline_match_id\", \"baseline_played_at\", \"initial_rank\", \"initial_league_poi",
+      "4× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+      "4× select \"plan\" from \"account_plan\" where \"account_plan\".\"user_id\" = $1 limit $2",
+      "4× select \"plan\", \"starts_at\", \"expires_at\", \"revoked_at\" from \"entitlement_grant\" where (\"entitlement_grant\".\"user_id\" = $1 and \"entitlement_g"
+    ]
+  },
+  "action: end session (confirm → recap)": {
+    "roundTrips": 93,
+    "statements": 92,
+    "distinct": 33,
+    "top": [
+      "19× update \"session_character_baseline\" set \"final_rank\" = $1, \"final_rank_tier\" = $2, \"final_rating_system\" = $3, \"final_league_points\" = $4, \"",
+      "7× select \"id\", \"expires_at\", \"token\", \"created_at\", \"updated_at\", \"ip_address\", \"user_agent\", \"user_id\" from \"auth_session\" where \"auth_sessio",
+      "7× select \"id\", \"name\", \"email\", \"email_verified\", \"image\", \"locale\", \"created_at\", \"updated_at\" from \"auth_user\" where \"auth_user\".\"id\" = $1",
+      "6× select \"id\", \"player_id\", \"character_key\", \"character_name\", \"rank\", \"rank_tier\", \"rating_system\", \"league_points\", \"master_rate\", \"phase\", ",
+      "5× select \"id\", \"user_id\", \"cfn_user_id\", \"display_name\", \"favorite_character_key\", \"profile_updated_at\", \"next_poll_at\", \"profile_refresh_unti",
+      "4× select \"id\", \"player_id\", \"session_id\", \"external_match_id\", \"played_at\", \"mode\", \"result\", \"character_key\", \"player_character\", \"player_con"
+    ]
+  },
+  "concurrency: 3 accounts syncing for 45 s, 10 overlay streams open": {
+    "syncs": 27,
+    "syncMedianMs": 69,
+    "syncP95Ms": 185,
+    "dbRoundTrips": 800,
+    "dbRoundTripsPerSync": 30
+  },
+  "sync latency (active session, listeners)": [110, 102]
+}

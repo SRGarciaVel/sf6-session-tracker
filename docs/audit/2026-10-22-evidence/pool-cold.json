@@ -1,0 +1,8 @@
+{
+  "method": "classic dashboard SSR via curl, production build, pg-wire-probe with 40 ms RTT, no TLS (local)",
+  "warmSeconds": [0.816, 0.811, 0.814],
+  "afterIdle36sSeconds": 1.186,
+  "pgTypeFetchesOnColdRequest": 5,
+  "warmAgainSeconds": 0.79,
+  "cause": "postgres.js pool max 5, idle_timeout 30 s: idle connections close; the next request reopens up to 5 (handshake + array-type discovery each)"
+}

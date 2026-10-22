@@ -1,0 +1,33 @@
+{
+  "delay": 40,
+  "pages": {
+    "dashboard Fight Session": {
+      "medianMs": 891,
+      "roundTrips": 25
+    },
+    "dashboard classic": {
+      "medianMs": 807,
+      "roundTrips": 24
+    },
+    "analytics": {
+      "medianMs": 580,
+      "roundTrips": 6
+    },
+    "recap 30": {
+      "medianMs": 526,
+      "roundTrips": 8
+    },
+    "overlay builder": {
+      "medianMs": 835,
+      "roundTrips": 18
+    },
+    "overlay page (public)": {
+      "medianMs": 656,
+      "roundTrips": 10
+    },
+    "onboarding": {
+      "medianMs": 349,
+      "roundTrips": 4
+    }
+  }
+}

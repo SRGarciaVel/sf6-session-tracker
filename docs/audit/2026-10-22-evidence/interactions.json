@@ -1,0 +1,97 @@
+{
+  "dashboard: overlay «Detalles» toggle": {
+    "interactions": 18,
+    "maxMs": 48,
+    "medianMs": 24,
+    "worst": [
+      {
+        "event": "pointerdown",
+        "durationMs": 48,
+        "processingMs": 1,
+        "inputDelayMs": 3
+      },
+      {
+        "event": "pointerup",
+        "durationMs": 48,
+        "processingMs": 0,
+        "inputDelayMs": 5
+      }
+    ]
+  },
+  "dashboard: OBS guide disclosure": {
+    "interactions": 18,
+    "maxMs": 24,
+    "medianMs": 24,
+    "worst": [
+      {
+        "event": "pointerdown",
+        "durationMs": 24,
+        "processingMs": 1,
+        "inputDelayMs": 3
+      },
+      {
+        "event": "pointerup",
+        "durationMs": 24,
+        "processingMs": 0,
+        "inputDelayMs": 5
+      }
+    ]
+  },
+  "recap 500: «Ver N partidas anteriores»": {
+    "interactions": 18,
+    "maxMs": 168,
+    "medianMs": 96,
+    "worst": [
+      {
+        "event": "pointerdown",
+        "durationMs": 168,
+        "processingMs": 1,
+        "inputDelayMs": 2
+      },
+      {
+        "event": "pointerup",
+        "durationMs": 168,
+        "processingMs": 0,
+        "inputDelayMs": 4
+      }
+    ]
+  },
+  "builder: editor tab": {
+    "interactions": 15,
+    "maxMs": 80,
+    "medianMs": 64,
+    "worst": [
+      {
+        "event": "pointerdown",
+        "durationMs": 80,
+        "processingMs": 1,
+        "inputDelayMs": 2
+      },
+      {
+        "event": "pointerup",
+        "durationMs": 80,
+        "processingMs": 0,
+        "inputDelayMs": 3
+      }
+    ]
+  },
+  "analytics: methodology disclosure": {
+    "interactions": 18,
+    "maxMs": 72,
+    "medianMs": 32,
+    "worst": [
+      {
+        "event": "pointerdown",
+        "durationMs": 72,
+        "processingMs": 1,
+        "inputDelayMs": 2
+      },
+      {
+        "event": "pointerup",
+        "durationMs": 72,
+        "processingMs": 0,
+        "inputDelayMs": 4
+      }
+    ]
+  }
+}
