@@ -13,7 +13,7 @@ import { engineSession } from "@/components/fight-session/test-support";
 import es from "@/i18n/messages/es.json";
 import type { DashboardLiveState } from "@/server/dashboard/state";
 import { LiveDashboardProvider } from "../LiveDashboard";
-import { FightSessionArea } from "./FightSessionDashboard";
+import { FightSessionArea, FightStatusStrip } from "./FightSessionDashboard";
 import { NOW, dashState } from "./test-fixtures";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -65,6 +65,7 @@ function mount(state: DashboardLiveState) {
     root!.render(
       <NextIntlClientProvider locale="es" messages={es} timeZone="UTC">
         <LiveDashboardProvider initial={state}>
+          <FightStatusStrip overlayCount={1} />
           <FightSessionArea />
         </LiveDashboardProvider>
       </NextIntlClientProvider>,
@@ -175,5 +176,25 @@ describe("LIVE realtime (existing provider + stream)", () => {
     mount(dashState(engineSession({ results: ["win"] }), { recent: true, generatedAt: t0 }));
     expect(host!.textContent).not.toContain("Nueva");
     expect(host!.querySelector("[aria-live='polite']")?.textContent ?? "").toBe("");
+  });
+
+  it("a dropped stream is said on the strip until it reopens (never on the first connect)", () => {
+    mount(dashState(engineSession({ results: ["win"] }), { recent: true, generatedAt: t0 }));
+    expect(host!.textContent).not.toContain("Reconectando…"); // connecting for the first time
+    act(() => stream().onopen?.());
+    expect(host!.textContent).not.toContain("Reconectando…");
+    vi.useFakeTimers({
+      toFake: ["Date", "setTimeout", "clearTimeout", "setInterval", "clearInterval"],
+    });
+    vi.setSystemTime(t0 + 10_000);
+    act(() => {
+      stream().readyState = FakeEventSource.CLOSED;
+      stream().onerror?.();
+    });
+    expect(host!.textContent).toContain("Reconectando…");
+    act(() => vi.advanceTimersByTime(5_000));
+    act(() => stream().onopen?.());
+    expect(host!.textContent).not.toContain("Reconectando…");
+    expect(FakeEventSource.instances).toHaveLength(2); // one stream at a time
   });
 });

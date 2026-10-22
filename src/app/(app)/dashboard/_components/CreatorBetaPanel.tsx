@@ -6,7 +6,7 @@ import { useState, useTransition, type FormEvent } from "react";
 import { LocalTime } from "@/components/ui/LocalTime";
 import { Button, ErrorText, Input } from "@/components/ui/primitives";
 import { redeemCreatorKeyAction } from "../actions";
-import { ConsoleHeading } from "./OverlaysPanel";
+import { ConsoleDisclosure, ConsoleHeading } from "./OverlaysPanel";
 
 /**
  * Plan status + Creator Key redemption. Display only: the server resolves the plan
@@ -15,9 +15,12 @@ import { ConsoleHeading } from "./OverlaysPanel";
 export function CreatorBetaPanel({
   plan,
   activeUntil,
+  collapsible = false,
 }: {
   plan: "free" | "creator_beta";
   activeUntil: string | null;
+  /** Fight Session console: folded, with the current plan visible in its heading. */
+  collapsible?: boolean;
 }) {
   const t = useTranslations("Dashboard.creatorBeta");
   const router = useRouter();
@@ -40,9 +43,8 @@ export function CreatorBetaPanel({
     });
   };
 
-  return (
-    <div className="px-5 py-4" id="creator-beta">
-      <ConsoleHeading>{t("title")}</ConsoleHeading>
+  const content = (
+    <>
       <p className="mt-2 text-sm">
         <span className="hud-label mr-2">{t("planLabel")}</span>
         <span className="font-semibold" data-testid="plan-name">
@@ -85,6 +87,27 @@ export function CreatorBetaPanel({
       <div className="mt-2">
         <ErrorText>{error}</ErrorText>
       </div>
+    </>
+  );
+  if (collapsible)
+    return (
+      <ConsoleDisclosure
+        id="creator-beta"
+        title={t("title")}
+        aside={
+          <span className="text-xs text-muted">
+            {{ free: t("free"), creator_beta: t("creatorBeta") }[plan]}
+          </span>
+        }
+        testId="creator-beta"
+      >
+        {content}
+      </ConsoleDisclosure>
+    );
+  return (
+    <div className="px-5 py-4" id="creator-beta">
+      <ConsoleHeading>{t("title")}</ConsoleHeading>
+      {content}
     </div>
   );
 }

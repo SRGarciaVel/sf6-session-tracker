@@ -75,7 +75,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       : demoDataReason(getEnv().SF6_PROVIDER, player.cfnUserId);
 
   /* Control room: one continuous console, modules separated by rules — not a card stack. */
-  const consolePanel = (props: { id?: string; className?: string } = {}) => (
+  // Phase 5.6D: the Fight Session console is compact (progressive disclosure); classic keeps the
+  // detailed modules, so the previous presentation stays one `?ui=classic` away.
+  const consolePanel = (props: { id?: string; className?: string; compact?: boolean } = {}) => (
     <aside
       id={props.id}
       className={cx("hud-panel animate-panel-in [--notch:18px]", props.className)}
@@ -90,12 +92,21 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       {companionFirst && <div className="border-b border-line">{companionPanel}</div>}
       <div className="divide-y divide-line md:grid md:grid-cols-2 md:divide-y-0 hud:block hud:divide-y">
         <div className="md:border-r md:border-line hud:border-r-0">
-          <OverlaysPanel overlays={overlaySummaries} />
+          <OverlaysPanel overlays={overlaySummaries} compact={props.compact} />
         </div>
         <div className="divide-y divide-line">
-          <ObsGuide width={firstPreset.width} height={firstPreset.height} />
-          {!companionFirst && companionPanel}
-          <CreatorBetaPanel plan={planSummary.plan} activeUntil={planSummary.activeUntil} />
+          {props.compact && !companionFirst && companionPanel}
+          <ObsGuide
+            width={firstPreset.width}
+            height={firstPreset.height}
+            collapsible={props.compact}
+          />
+          {!props.compact && !companionFirst && companionPanel}
+          <CreatorBetaPanel
+            plan={planSummary.plan}
+            activeUntil={planSummary.activeUntil}
+            collapsible={props.compact}
+          />
           {devToolsEnabled() && <DevTools />}
         </div>
       </div>
@@ -118,7 +129,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     return (
       <LiveDashboardProvider initial={live}>
         <div
-          className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 max-sm:pb-28 hud:grid-cols-[minmax(0,1fr)_400px]"
+          className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 max-sm:pb-28 hud:grid-cols-[minmax(0,1fr)_400px] hud:grid-rows-[auto_1fr]"
           data-dashboard-ui="fight-session"
         >
           <div className="min-w-0 space-y-5 hud:col-start-1">
@@ -137,6 +148,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           </div>
           {consolePanel({
             id: "overlays",
+            compact: true,
             className: "hud:col-start-2 hud:row-span-2 hud:row-start-1",
           })}
           <div className="min-w-0 hud:col-start-1">
@@ -149,7 +161,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
   return (
     <LiveDashboardProvider initial={live}>
-      <div className="grid items-start gap-5 hud:grid-cols-[minmax(0,1fr)_400px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 hud:grid-cols-[minmax(0,1fr)_400px]">
         <div className="min-w-0 space-y-5">
           {demoBanner}
           <PlayerHeader />

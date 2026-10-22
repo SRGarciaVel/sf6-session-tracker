@@ -2,7 +2,7 @@
  * Phase 5.6B1 — presentational contracts of the Fight Session components. Plain data in,
  * markup out: no fetching, no stores, no domain math (adapters.ts maps SST state to these).
  */
-import type { CompanionLink, DataFreshness } from "@/domain/companion/readiness";
+import type { CompanionLink, DataFreshness, ReadinessStep } from "@/domain/companion/readiness";
 import type { MatchResult, RatingSystem } from "@/domain/sf6/types";
 
 /**
@@ -54,6 +54,20 @@ export interface CompanionStatusData {
   buckler: DataFreshness | null;
   /** Latest data received from the Companion (ISO); null = never. */
   lastSyncAt: string | null;
+}
+
+/**
+ * Phase 5.6D — the one answer to «can SST track my session right now?», derived from the
+ * existing readiness assessment (no new connectivity model). A paired Companion is never
+ * "tracking" on its own: Buckler data must be fresh too.
+ */
+export type TrackingState =
+  "ready" | "tracking" | "waiting" | "attention" | "disconnected" | "unknown";
+
+export interface TrackingStatusData {
+  state: TrackingState;
+  /** What to do next (the existing readiness step), null when nothing is needed. */
+  step: ReadinessStep;
 }
 
 export interface OverlayStatusData {

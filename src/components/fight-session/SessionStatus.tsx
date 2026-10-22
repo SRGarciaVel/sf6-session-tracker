@@ -2,7 +2,22 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { cx } from "@/components/ui/primitives";
 import { formatTimeAgo } from "@/domain/format";
-import type { CompanionStatusData, OverlayStatusData, SessionIndicatorStatus } from "./types";
+import type {
+  CompanionStatusData,
+  OverlayStatusData,
+  SessionIndicatorStatus,
+  TrackingState,
+  TrackingStatusData,
+} from "./types";
+
+const TRACKING_TONE: Record<TrackingState, "ok" | "warn" | "off"> = {
+  ready: "ok",
+  tracking: "ok",
+  waiting: "warn",
+  attention: "warn",
+  disconnected: "warn",
+  unknown: "off",
+};
 
 const GLYPH: Record<"ok" | "warn" | "off", string> = { ok: "●", warn: "⚠", off: "○" };
 
@@ -50,9 +65,9 @@ function Item({
   return (
     <div className="fs-strip-item">
       <dt className="fs-eyebrow">{label}</dt>
-      <dd className={cx("m-0 inline-flex min-w-0 items-center gap-1.5 font-semibold", color)}>
+      <dd className={cx("m-0 inline-flex min-w-0 items-baseline gap-1.5 font-semibold", color)}>
         {tone && <span aria-hidden>{GLYPH[tone]}</span>}
-        <span className="min-w-0">{children}</span>
+        <span className="min-w-0 [overflow-wrap:anywhere]">{children}</span>
       </dd>
     </div>
   );
@@ -69,6 +84,8 @@ export function StatusStrip({
   overlays,
   now,
   realtime = null,
+  tracking,
+  diagnosticsHref,
   trailing,
   className,
 }: {
@@ -81,6 +98,13 @@ export function StatusStrip({
    * stale screen is never mistaken for live data; null = not reported.
    */
   realtime?: "open" | "reconnecting" | null;
+  /**
+   * Phase 5.6D: one «Tracking» answer instead of separate Companion/Buckler items (the detailed
+   * diagnostics live in the Companion module, see `diagnosticsHref`). Absent = legacy layout.
+   */
+  tracking?: TrackingStatusData | null;
+  /** Where the detailed Companion diagnostics are (shown when tracking needs attention). */
+  diagnosticsHref?: string;
   /** Extra action at the end of the strip (e.g. a jump to the overlays). */
   trailing?: ReactNode;
   /** Client clock for relative times; null before mount (absolute time is not invented). */
@@ -105,17 +129,46 @@ export function StatusStrip({
         <SessionStatusIndicator status={status} duration={duration} />
       </div>
       <dl className="m-0 flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2">
-        {companion.link && (
+        {tracking !== undefined && tracking !== null && (
+          <Item label={t("tracking")} tone={TRACKING_TONE[tracking.state]}>
+            <span data-tracking={tracking.state}>{t(`trackingState.${tracking.state}`)}</span>
+            {/* «Needs attention» always says what is wrong (the readiness step, briefly). */}
+            {tracking.state === "attention" && tracking.step === "pairCompanion" && (
+              <span className="text-text">: {t("companionState.notPaired")}</span>
+            )}
+            {tracking.state === "attention" && tracking.step === "loginBuckler" && (
+              <span className="text-text">: {t("bucklerState.never")}</span>
+            )}
+            {companion.link && companion.link !== "notPaired" && sync !== null && (
+              <span className="font-normal text-muted">
+                {" · "}
+                {companion.lastSyncAt === null ? sync : t("syncShort", { ago: sync })}
+              </span>
+            )}
+            {TRACKING_TONE[tracking.state] === "warn" && diagnosticsHref && (
+              <>
+                {" "}
+                <a
+                  href={diagnosticsHref}
+                  className="inline-flex min-h-6 items-center font-semibold text-cyan underline-offset-2 hover:underline"
+                >
+                  {t("diagnostics")}
+                </a>
+              </>
+            )}
+          </Item>
+        )}
+        {tracking === undefined && companion.link && (
           <Item label={t("companion")} tone={linkTone}>
             {t(`companionState.${companion.link}`)}
           </Item>
         )}
-        {companion.buckler && (
+        {tracking === undefined && companion.buckler && (
           <Item label={t("buckler")} tone={bucklerTone}>
             {t(`bucklerState.${companion.buckler}`)}
           </Item>
         )}
-        {companion.link && sync !== null && (
+        {tracking === undefined && companion.link && sync !== null && (
           <Item label={t("sync")} tone={null}>
             <span className="font-normal text-text">{sync}</span>
           </Item>
@@ -139,7 +192,7 @@ export function StatusStrip({
           </Item>
         )}
       </dl>
-      {trailing && <div className="ml-auto flex items-center">{trailing}</div>}
+      {trailing && <div className="ml-auto flex max-w-full items-center">{trailing}</div>}
     </section>
   );
 }

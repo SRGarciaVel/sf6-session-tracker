@@ -8,6 +8,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import en from "@/i18n/messages/en.json";
 import es from "@/i18n/messages/es.json";
+import type { CompanionSignals } from "@/domain/companion/readiness";
 import type { DashboardLiveState } from "@/server/dashboard/state";
 import { LiveDashboardProvider } from "../LiveDashboard";
 import { SessionPanel } from "../SessionPanel";
@@ -270,8 +271,9 @@ describe("status strip", () => {
   it("authoritative fields only; overlays count + OBS sources; jump to overlays", () => {
     const html = render(dashState(SESSION.none()), <FightStatusStrip overlayCount={2} />);
     const t = text(html);
-    expect(t).toContain("Companion");
-    expect(t).toContain("Conectado");
+    // Phase 5.6D: one tracking answer; Companion/Buckler details live in the Companion module.
+    expect(t).toMatch(/Seguimiento\s+● Listo para registrar/);
+    expect(t).not.toContain("Ver diagnóstico");
     expect(t).toContain("2 overlays");
     expect(t).toContain("1 fuente en OBS");
     expect(html).toContain('href="#overlays"');
@@ -287,9 +289,22 @@ describe("status strip", () => {
         "en",
       ),
     );
-    expect(t).toContain("Companion disconnected");
-    expect(t).toContain("Not synced yet");
-    expect(t).not.toMatch(/\bConnected\b/);
+    expect(t).toMatch(/Needs attention\s*: Companion disconnected/);
+    expect(t).toContain("View diagnostics");
+    expect(t).not.toMatch(/\bConnected\b|Ready to track/);
+  });
+  it("tracking states: paired ≠ tracking; Buckler, stale data, silence and LIVE are each named", () => {
+    const strip = (state: Parameters<typeof dashState>[0], signals: CompanionSignals) =>
+      text(render(dashState(state, { signals }), <FightStatusStrip overlayCount={1} />));
+    expect(strip(SESSION.none(), SIGNALS.bucklerNever)).toMatch(
+      /Requiere atención\s*: Inicia sesión en Buckler/,
+    );
+    expect(strip(SESSION.none(), SIGNALS.stale)).toContain("Esperando sincronización");
+    expect(strip(SESSION.none(), SIGNALS.quiet)).toContain("Companion sin señal");
+    expect(strip(SESSION.active(), SIGNALS.ready)).toContain("Registrando partidas");
+    expect(strip(SESSION.active(), SIGNALS.quiet)).not.toContain("Registrando partidas");
+    for (const s of [SIGNALS.bucklerNever, SIGNALS.stale, SIGNALS.quiet])
+      expect(strip(SESSION.none(), s)).toContain("Ver diagnóstico");
   });
 });
 

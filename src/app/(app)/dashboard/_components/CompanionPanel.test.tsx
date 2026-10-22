@@ -57,7 +57,7 @@ describe("pairing code box", () => {
     const markup = box(9 * 60_000 + 30_000);
     expect(markup).toContain("ABCD-EFGH");
     expect(markup).toMatch(
-      /<button[^>]*aria-label="Copiar código de vinculación"[^>]*>Copiar código<\/button>/,
+      /<button[^>]*aria-label="Copiar código de vinculación"[^>]*>(<[^>]+>)*Copiar código(<\/span>)*<\/button>/,
     );
     expect(markup).toContain("Caduca en 10 minutos");
   });

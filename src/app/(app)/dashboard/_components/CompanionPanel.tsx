@@ -295,7 +295,7 @@ export function CompanionPanel({
 
       <Link
         href="/help/companion"
-        className="mt-3 inline-block text-sm font-semibold text-cyan underline-offset-4 hover:underline"
+        className="mt-3 inline-flex min-h-8 items-center text-sm font-semibold text-cyan underline-offset-4 hover:underline"
       >
         {t("installLink")} →
       </Link>

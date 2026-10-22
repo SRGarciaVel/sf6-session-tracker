@@ -105,6 +105,33 @@ describe("start (existing startSessionAction)", () => {
   });
 });
 
+describe("PREPARE → LIVE focus (Phase 5.6D)", () => {
+  const render = (state: DashboardLiveState) =>
+    act(() =>
+      root!.render(
+        <NextIntlClientProvider locale="es" messages={es} timeZone="UTC">
+          <LiveDashboardProvider initial={state}>
+            <FightSessionArea />
+          </LiveDashboardProvider>
+        </NextIntlClientProvider>,
+      ),
+    );
+  it("when the server state turns active, focus moves to the LIVE heading (not <body>)", () => {
+    mount(dashState(SESSION.none()));
+    byK("start")!.focus();
+    render(dashState(SESSION.active(), { generatedAt: NOW + 1_000 }));
+    const title = host!.querySelector("#fs-active-title");
+    expect(document.activeElement).toBe(title);
+    expect(title?.className).toContain("fs-enter");
+  });
+  it("a page load straight into LIVE does not steal focus or animate", () => {
+    mount(dashState(SESSION.active()));
+    const title = host!.querySelector("#fs-active-title");
+    expect(document.activeElement).not.toBe(title);
+    expect(title?.className).not.toContain("fs-enter");
+  });
+});
+
 describe("end (existing endSessionAction)", () => {
   it("ask → Esc cancels (focus back on End) → nothing sent", async () => {
     mount(dashState(SESSION.active()));

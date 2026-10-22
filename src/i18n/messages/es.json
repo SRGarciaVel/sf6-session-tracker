@@ -37,7 +37,8 @@
     "dashboard": "Panel",
     "analytics": "Analíticas",
     "player": "Jugador",
-    "switchLanguage": "Cambiar idioma"
+    "switchLanguage": "Cambiar idioma",
+    "main": "Navegación principal"
   },
   "Landing": {
     "eyebrow": "SST | Session Stats Tracker",
@@ -332,7 +333,12 @@
           "name": "Progreso de rango",
           "description": "Muestra tu rango actual y cuánto falta para tu próximo objetivo."
         }
-      }
+      },
+      "copyUrlNamed": "Copiar URL para OBS de {name}",
+      "configureNamed": "Configurar {name}",
+      "openPreviewNamed": "Abrir vista previa de {name} en una pestaña nueva",
+      "details": "Detalles",
+      "detailsOf": "de {name}: lienzo, idioma, estilo y URL completa"
     },
     "obs": {
       "title": "Añadir a OBS",
@@ -343,7 +349,8 @@
       "step5": "Aceptar y listo. Se actualiza solo.",
       "recommendedTitle": "Opciones recomendadas de la fuente de navegador",
       "recommendedBody": "«Apagar la fuente cuando no esté visible»: <b>desactivado</b> · «Actualizar el navegador cuando la escena se active»: <b>desactivado</b>",
-      "optionalNote": "Opcional: tus estadísticas viven en el servidor, así que recargar o cambiar de escena nunca las reinicia."
+      "optionalNote": "Opcional: tus estadísticas viven en el servidor, así que recargar o cambiar de escena nunca las reinicia.",
+      "stepsCount": "{count} pasos"
     },
     "history": {
       "title": "Historial de sesiones",
@@ -1459,7 +1466,18 @@
         "never": "Inicia sesión en Buckler"
       },
       "realtime": "Panel en vivo",
-      "realtimeDown": "Reconectando…"
+      "realtimeDown": "Reconectando…",
+      "tracking": "Seguimiento",
+      "trackingState": {
+        "ready": "Listo para registrar",
+        "tracking": "Registrando partidas",
+        "waiting": "Esperando sincronización",
+        "attention": "Requiere atención",
+        "disconnected": "Companion sin señal",
+        "unknown": "Desconocido"
+      },
+      "syncShort": "sincronizado {ago}",
+      "diagnostics": "Ver diagnóstico"
     },
     "scoreboard": {
       "label": "Marcador de la sesión",
