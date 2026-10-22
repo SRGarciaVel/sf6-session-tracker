@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useCopyToClipboard } from "@/lib/clipboard";
-import { Button } from "./primitives";
+import { Button, cx } from "./primitives";
 
 /**
  * Copy a value with visible + announced feedback ("✓ Copied" / "Couldn't copy"). The button
@@ -46,7 +46,17 @@ export function CopyButton({
         aria-label={ariaLabel}
         data-copy-status={status}
       >
-        {text}
+        {/* Feedback swaps the text in place: the idle label keeps reserving its width (invisible,
+            so not announced), so neighbouring buttons never jump when «✓ Copied» appears. */}
+        <span className="grid">
+          <span
+            aria-hidden={status !== "idle"}
+            className={cx("col-start-1 row-start-1", status !== "idle" && "invisible")}
+          >
+            {label ?? t("copy")}
+          </span>
+          {status !== "idle" && <span className="col-start-1 row-start-1">{text}</span>}
+        </span>
       </Button>
       <span className="sr-only" aria-live="polite">
         {status === "copied" ? t("copiedAnnounce") : status === "failed" ? t("copyFailedHint") : ""}

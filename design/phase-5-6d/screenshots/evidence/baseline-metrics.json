@@ -1,0 +1,95 @@
+{
+  "prepareConsole1440": {
+    "consoleHeight": 2203,
+    "firstOverlayHeight": 334,
+    "overlayItems": 4,
+    "firstCopyOffset": 394,
+    "actions": 14
+  },
+  "prepareConsole390": {
+    "consoleHeight": 2343,
+    "firstOverlayHeight": 374,
+    "overlayItems": 4,
+    "firstCopyOffset": 394,
+    "actions": 14
+  },
+  "prepareDoc390": 3457,
+  "prepareConsole1280": {
+    "consoleHeight": 2203,
+    "firstOverlayHeight": 334,
+    "overlayItems": 4,
+    "firstCopyOffset": 394,
+    "actions": 14
+  },
+  "prepareDoc1280": 2350,
+  "headerFight": {
+    "text200@1440": {
+      "overflowPx": 142,
+      "clipped": [],
+      "escapers": ["div.flex", "button.btn"]
+    },
+    "text200@1024": {
+      "overflowPx": 558,
+      "clipped": [],
+      "escapers": ["div.flex", "div.inline-flex", "button.relative", "span.hidden"]
+    },
+    "text200@768": {
+      "overflowPx": 533,
+      "clipped": [],
+      "escapers": ["div.flex", "div.hidden", "nav.flex", "a.hud-tab"]
+    },
+    "text200@430": {
+      "overflowPx": 249,
+      "clipped": [],
+      "escapers": ["div.flex", "button.btn", "nav.flex", "a.hud-tab"]
+    },
+    "text200@390": {
+      "overflowPx": 289,
+      "clipped": [],
+      "escapers": ["div.flex", "div.inline-flex", "button.relative", "button.btn"]
+    },
+    "text200@360": {
+      "overflowPx": 319,
+      "clipped": [],
+      "escapers": ["div.flex", "div.inline-flex", "button.relative", "button.btn"]
+    },
+    "zoom200@1440": {
+      "overflowPx": 0
+    }
+  },
+  "headerClassic": {
+    "text200@1440": {
+      "overflowPx": 142,
+      "clipped": [],
+      "escapers": ["div.flex", "button.btn"]
+    },
+    "text200@1024": {
+      "overflowPx": 558,
+      "clipped": [],
+      "escapers": ["div.flex", "div.inline-flex", "button.relative", "span.hidden"]
+    },
+    "text200@768": {
+      "overflowPx": 533,
+      "clipped": [],
+      "escapers": ["div.flex", "div.hidden", "nav.flex", "a.hud-tab"]
+    },
+    "text200@430": {
+      "overflowPx": 249,
+      "clipped": [],
+      "escapers": ["div.flex", "button.btn", "nav.flex", "a.hud-tab"]
+    },
+    "text200@390": {
+      "overflowPx": 289,
+      "clipped": [],
+      "escapers": ["div.flex", "div.inline-flex", "button.relative", "button.btn"]
+    },
+    "text200@360": {
+      "overflowPx": 319,
+      "clipped": [],
+      "escapers": ["div.flex", "div.inline-flex", "button.relative", "button.btn"]
+    },
+    "zoom200@1440": {
+      "overflowPx": 0
+    }
+  }
+}

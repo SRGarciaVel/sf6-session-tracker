@@ -12,6 +12,7 @@ import {
   ratingFromCharacter,
   scoreboardFromSession,
   sessionIndicatorStatus,
+  trackingStatus,
 } from "./adapters";
 import { engineSession } from "./test-support";
 
@@ -196,5 +197,44 @@ describe("companion status and activity", () => {
         playedAt: "2026-10-21T19:36:00.000Z",
       },
     ]);
+  });
+});
+
+describe("tracking status (Phase 5.6D: one answer from the existing readiness)", () => {
+  const ok: { state: "ok" | "degraded" } = { state: "ok" };
+  const at = (r: typeof ready, sessionStatus: "none" | "active" | "ended" = "none", t = ok) =>
+    trackingStatus({ readiness: r, sessionStatus, tracker: t });
+  it("fresh data: ready before a session, tracking during one", () => {
+    expect(at(ready)).toEqual({ state: "ready", step: null });
+    expect(at(ready, "ended")).toEqual({ state: "ready", step: null });
+    expect(at(ready, "active")).toEqual({ state: "tracking", step: null });
+  });
+  it("paired is not tracking: no Buckler data ⇒ attention (log in to Buckler)", () => {
+    const never = assessCompanion(
+      { ...signals, profileObservedAt: null, matchesObservedAt: null, hasProfile: false },
+      NOW,
+    );
+    expect(never.companion).toBe("connected");
+    expect(at(never)).toEqual({ state: "attention", step: "loginBuckler" });
+    expect(at(never, "active")?.state).toBe("attention");
+  });
+  it("stale data ⇒ waiting for a sync; silent Companion ⇒ disconnected; unpaired ⇒ attention", () => {
+    const stale = assessCompanion(
+      { ...signals, profileObservedAt: ago(10 * 60_000), matchesObservedAt: ago(10 * 60_000) },
+      NOW,
+    );
+    expect(at(stale)).toEqual({ state: "waiting", step: "syncNow" });
+    expect(at(quiet, "active")).toEqual({ state: "disconnected", step: "openCompanionBrowser" });
+    expect(at(unpaired)).toEqual({ state: "attention", step: "pairCompanion" });
+  });
+  it("degraded tracker during a session needs attention even with fresh Companion data", () => {
+    expect(at(ready, "active", { state: "degraded" })).toEqual({ state: "attention", step: null });
+  });
+  it("no readiness ⇒ unknown (never «ready»); no Companion in this deployment ⇒ nothing", () => {
+    expect(trackingStatus({ readiness: null, sessionStatus: "none", tracker: null })).toEqual({
+      state: "unknown",
+      step: null,
+    });
+    expect(at({ ...ready, required: false })).toBeNull();
   });
 });

@@ -144,8 +144,9 @@ export function SessionFeedback({ error, slow = false }: { error: string | null;
 
 /**
  * Keeps the session's primary action within thumb reach on small screens (≤ 640 px): fixed to the
- * bottom of the viewport there, inline from `sm` up. Reserve space below the page content
- * (`pb-28 sm:pb-0`) where it is used.
+ * bottom of the viewport there, inline from `sm` up. Only fixed while the window is at least 36em
+ * tall, so enlarged text (em follows the browser font size) never leaves it covering the page.
+ * Reserve space below the page content (`pb-28 sm:pb-0`) where it is used.
  */
 export function SessionActionBar({
   children,
@@ -157,7 +158,7 @@ export function SessionActionBar({
   return (
     <div
       className={cx(
-        "max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-40 max-sm:border-t max-sm:border-line-strong max-sm:bg-bg/95 max-sm:px-3 max-sm:pt-2.5 max-sm:pb-[calc(0.625rem+env(safe-area-inset-bottom))]",
+        "max-sm:[@media(min-height:36em)]:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-40 max-sm:border-t max-sm:border-line-strong max-sm:bg-bg/95 max-sm:px-3 max-sm:pt-2.5 max-sm:pb-[calc(0.625rem+env(safe-area-inset-bottom))]",
         "flex flex-wrap items-center gap-3 max-sm:[&>.fs-cta]:w-full",
         className,
       )}

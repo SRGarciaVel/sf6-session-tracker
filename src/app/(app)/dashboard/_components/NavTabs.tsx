@@ -20,7 +20,7 @@ export function NavTabs() {
   const t = useTranslations("Nav");
   const pathname = usePathname();
   return (
-    <nav className="flex h-full items-stretch" aria-label="Main">
+    <nav className="flex min-h-full flex-wrap items-stretch" aria-label={t("main")}>
       {TABS.map((tab) => (
         <Link
           key={tab.key}

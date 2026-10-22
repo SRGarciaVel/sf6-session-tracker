@@ -12,6 +12,7 @@ import type {
   RatingData,
   ScoreboardData,
   SessionIndicatorStatus,
+  TrackingStatusData,
 } from "./types";
 
 export function scoreboardFromSession(
@@ -71,6 +72,32 @@ export function companionStatus(
 ): CompanionStatusData {
   if (!readiness?.required) return { link: null, buckler: null, lastSyncAt };
   return { link: readiness.companion, buckler: readiness.buckler, lastSyncAt };
+}
+
+/**
+ * Phase 5.6D — collapses Companion link + Buckler/profile freshness (+ the tracker during an
+ * active session) into one tracking state. Same inputs and thresholds as `assessCompanion` and
+ * the server's start rule; null when this deployment does not use the Companion.
+ */
+export function trackingStatus(input: {
+  readiness: CompanionReadiness | null;
+  sessionStatus: LiveSessionState["status"];
+  tracker: { state: TrackerState } | null;
+}): TrackingStatusData | null {
+  const { readiness, sessionStatus, tracker } = input;
+  if (!readiness) return { state: "unknown", step: null };
+  if (!readiness.required) return null;
+  const step = readiness.nextStep;
+  if (readiness.companion === "notPaired") return { state: "attention", step };
+  if (readiness.companion === "quiet") return { state: "disconnected", step };
+  if (readiness.buckler === "never" || readiness.profile === "never")
+    return { state: "attention", step };
+  if (!readiness.canStart) return { state: "waiting", step };
+  if (sessionStatus === "active")
+    return tracker?.state === "degraded"
+      ? { state: "attention", step: null }
+      : { state: "tracking", step: null };
+  return { state: "ready", step: null };
 }
 
 /** Structural subset of a stored `match` row (recap/details pages already select these). */

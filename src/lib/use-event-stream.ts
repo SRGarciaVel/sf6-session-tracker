@@ -81,6 +81,8 @@ export function useEventStream({
       es?.close();
       es = null;
       if (disposed || reconnectTimer) return;
+      // Closed: no longer "open" during the backoff (consumers must not present stale data as live).
+      setStatus((s) => (s === "fallback" ? s : "connecting"));
       failures++;
       if (failures >= 3) startPolling();
       const delay = Math.min(30_000, 1_000 * 2 ** Math.min(failures, 5)) + Math.random() * 1_000;

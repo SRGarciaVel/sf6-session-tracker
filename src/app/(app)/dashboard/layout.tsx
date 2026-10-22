@@ -8,22 +8,25 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const user = await requireUser();
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-line-strong bg-bg/92 backdrop-blur-sm">
+      {/* Sticky only when the window is tall enough for the text size in use (em follows the
+          browser's font setting): at 200 % text on a phone it would cover half the screen. */}
+      <header className="top-0 z-30 border-b border-line-strong bg-bg/92 backdrop-blur-sm [@media(min-height:36em)]:sticky">
         {/* thin magenta→cyan energy line on top of the bar */}
         <div
           aria-hidden
           className="h-0.5 bg-gradient-to-r from-magenta via-violet to-cyan opacity-80"
         />
-        <div className="mx-auto flex h-14 max-w-[1440px] items-stretch justify-between gap-4 px-4 sm:px-6">
-          <div className="flex items-stretch gap-4 sm:gap-8">
-            <div className="flex items-center">
+        {/* Rows wrap instead of overflowing when the text is enlarged (WCAG 1.4.4 / 1.4.10). */}
+        <div className="mx-auto flex min-h-14 max-w-[1440px] flex-wrap items-stretch justify-between gap-x-4 px-4 sm:px-6">
+          <div className="flex min-w-0 flex-wrap items-stretch gap-x-4 sm:gap-x-8">
+            <div className="flex min-h-14 items-center">
               <Logo variant="compact" />
             </div>
-            <div className="hidden sm:flex">
+            <div className="hidden min-h-14 sm:flex">
               <NavTabs />
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="ml-auto flex min-h-14 flex-wrap items-center justify-end gap-x-4">
             <LocaleSwitcher />
             <span className="hidden max-w-48 truncate text-xs text-faint lg:inline">
               {user.email}
@@ -31,7 +34,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <SignOutButton />
           </div>
         </div>
-        <div className="flex h-11 border-t border-line sm:hidden">
+        <div className="flex min-h-11 border-t border-line sm:hidden">
           <NavTabs />
         </div>
       </header>

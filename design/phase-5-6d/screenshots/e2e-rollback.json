@@ -1,0 +1,13 @@
+{
+  "ranAt": "2026-10-22T07:04:11.693Z",
+  "results": [
+    {
+      "check": "rollback: allowlist cleared ⇒ classic dashboard with the detailed console",
+      "pass": true
+    },
+    {
+      "check": "rollback: classic recap",
+      "pass": true
+    }
+  ]
+}

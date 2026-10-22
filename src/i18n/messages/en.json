@@ -37,7 +37,8 @@
     "dashboard": "Dashboard",
     "analytics": "Analytics",
     "player": "Player",
-    "switchLanguage": "Change language"
+    "switchLanguage": "Change language",
+    "main": "Main navigation"
   },
   "Landing": {
     "eyebrow": "SST | Session Stats Tracker",
@@ -332,7 +333,12 @@
           "name": "Rank progress",
           "description": "Show your current rank and progress toward the next goal."
         }
-      }
+      },
+      "copyUrlNamed": "Copy OBS URL for {name}",
+      "configureNamed": "Configure {name}",
+      "openPreviewNamed": "Open preview of {name} in a new tab",
+      "details": "Details",
+      "detailsOf": "for {name}: canvas, language, style and full URL"
     },
     "obs": {
       "title": "Add to OBS",
@@ -343,7 +349,8 @@
       "step5": "OK — that's it. It updates by itself.",
       "recommendedTitle": "Recommended Browser Source options",
       "recommendedBody": "“Shutdown source when not visible”: <b>off</b> · “Refresh browser when scene becomes active”: <b>off</b>",
-      "optionalNote": "Optional — your stats live on the server, so a refresh or scene switch never resets them."
+      "optionalNote": "Optional — your stats live on the server, so a refresh or scene switch never resets them.",
+      "stepsCount": "{count} steps"
     },
     "history": {
       "title": "Session history",
@@ -1459,7 +1466,18 @@
         "never": "Log in to Buckler"
       },
       "realtime": "Live dashboard",
-      "realtimeDown": "Reconnecting…"
+      "realtimeDown": "Reconnecting…",
+      "tracking": "Tracking",
+      "trackingState": {
+        "ready": "Ready to track",
+        "tracking": "Tracking matches",
+        "waiting": "Waiting for sync",
+        "attention": "Needs attention",
+        "disconnected": "Companion silent",
+        "unknown": "Unknown"
+      },
+      "syncShort": "synced {ago}",
+      "diagnostics": "View diagnostics"
     },
     "scoreboard": {
       "label": "Session scoreboard",

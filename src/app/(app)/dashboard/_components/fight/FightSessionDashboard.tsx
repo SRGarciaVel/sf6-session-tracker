@@ -29,8 +29,10 @@ import {
   ratingFromCharacter,
   scoreboardFromSession,
   sessionIndicatorStatus,
+  trackingStatus,
   type SessionIndicatorStatus,
 } from "@/components/fight-session";
+import { cx } from "@/components/ui/primitives";
 import { formatDuration } from "@/domain/format";
 import { pickRatingCharacter } from "@/domain/overlay/state";
 import { useSlowFlag } from "@/lib/use-slow-flag";
@@ -54,6 +56,10 @@ export function FightStatusStrip({ overlayCount }: { overlayCount: number }) {
   const readiness = useCompanionReadiness();
   const status = useDashboardStatus();
   const now = useNow(15_000);
+  // The dashboard stream has no polling fallback: after an error it goes back to "connecting".
+  // Once it has been open, any other state means this screen may be stale — say so.
+  const [everOpen, setEverOpen] = useState(false);
+  if (stream === "open" && !everOpen) setEverOpen(true);
   const s = state.live.session;
   const duration =
     s.status === "active" && s.startedAt && now !== null
@@ -64,11 +70,18 @@ export function FightStatusStrip({ overlayCount }: { overlayCount: number }) {
       status={status}
       duration={duration}
       companion={companionStatus(readiness, state.companion.matchesObservedAt)}
+      tracking={trackingStatus({ readiness, sessionStatus: s.status, tracker: state.tracker })}
+      diagnosticsHref="#companion"
       overlays={{ total: overlayCount, inObs: state.overlayConnections }}
       now={now}
-      realtime={stream === "open" ? "open" : stream === "fallback" ? "reconnecting" : null}
+      realtime={
+        stream === "open" ? "open" : everOpen || stream === "fallback" ? "reconnecting" : null
+      }
       trailing={
-        <a href="#overlays" className="fs-btn fs-btn-sm fs-cut hud:hidden">
+        <a
+          href="#overlays"
+          className="fs-btn fs-btn-sm fs-cut max-w-full whitespace-normal hud:hidden"
+        >
           {t("overlaysJump")} <span aria-hidden>↓</span>
         </a>
       }
@@ -196,8 +209,14 @@ function useFreshMatchId(latestId: string | null): string | null {
   return fresh;
 }
 
-function ActiveStage() {
+function ActiveStage({ justStarted = false }: { justStarted?: boolean }) {
   const t = useTranslations("FightSession");
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  // Started from this page: the Start button is gone, so focus moves to the LIVE heading
+  // (instead of falling back to <body>) and the heading enters once.
+  useEffect(() => {
+    if (justStarted) titleRef.current?.focus();
+  }, [justStarted]);
   const { state } = useLiveDashboard();
   const status = useDashboardStatus();
   const router = useRouter();
@@ -248,7 +267,15 @@ function ActiveStage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="grid gap-2">
           <p className="fs-eyebrow m-0 text-magenta">{t("live.eyebrow")}</p>
-          <h1 id="fs-active-title" className="fs-display m-0 text-4xl sm:text-5xl">
+          <h1
+            id="fs-active-title"
+            ref={titleRef}
+            tabIndex={-1}
+            className={cx(
+              "fs-display m-0 text-4xl outline-none sm:text-5xl",
+              justStarted && "fs-enter",
+            )}
+          >
             {t(`status.${status}`)}
           </h1>
         </div>
@@ -309,5 +336,13 @@ function ActiveStage() {
 /** PREPARE when no session is active, otherwise the LIVE view. */
 export function FightSessionArea() {
   const { state } = useLiveDashboard();
-  return state.live.session.status === "active" ? <ActiveStage /> : <PrepareStage />;
+  const active = state.live.session.status === "active";
+  // PREPARE → LIVE observed on this page (a page load straight into LIVE is not a transition).
+  const [wasActive, setWasActive] = useState(active);
+  const [justStarted, setJustStarted] = useState(false);
+  if (active !== wasActive) {
+    setWasActive(active);
+    setJustStarted(active);
+  }
+  return active ? <ActiveStage justStarted={justStarted} /> : <PrepareStage />;
 }
