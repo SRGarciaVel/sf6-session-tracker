@@ -498,6 +498,46 @@ describe("rollout scope: only the gated Fight Session dashboard uses the foundat
   });
 });
 
+describe("results bar layout is container-aware (hotfix: summary overlap)", () => {
+  const css = readFileSync("src/app/(app)/globals.css", "utf8");
+  const reported = {
+    data: { wins: 1, losses: 2, draws: 0, games: 3, winRate: 33.3 },
+    rating: {
+      characterName: "Jamie",
+      system: "lp" as const,
+      initial: 23006,
+      current: 22982,
+      delta: -24,
+      pending: false,
+    },
+  };
+  it("markup: a query container around the grid, no viewport-based columns or numeral sizes", () => {
+    const html = render(<SessionResults {...reported} />);
+    expect(html).toMatch(/<div class="fs-results-wrap"><dl class="fs-results"/);
+    expect(html).not.toMatch(/sm:grid-cols|vw\)|max-sm:/);
+    expect(html.match(/fs-results-num/g)).toHaveLength(5);
+  });
+  it("reported values are all present (ES and EN), nothing truncated", () => {
+    const es1 = text(render(<SessionResults {...reported} />));
+    expect(es1).toMatch(/Partidas\s+3\s+Victorias\s+1\s+Derrotas\s+2\s+% de victorias\s+33,3\s%/);
+    expect(es1).toMatch(/Cambio en la sesión · Jamie\s+▼\s+-24\s+23\.006 → 22\.982 LP/);
+    const en1 = text(render(<SessionResults {...reported} />, "en"));
+    expect(en1).toMatch(/Win rate\s+33\.3%/);
+    expect(en1).toContain("Session change · Jamie");
+    expect(render(<SessionResults {...reported} />)).not.toContain("truncate");
+  });
+  it("CSS: columns follow the container (2 → 3 → 5), numerals sized from one column's width", () => {
+    expect(css).toMatch(/\.fs-results-wrap \{\s*container-type: inline-size;/);
+    expect(css).toMatch(/@container \(min-width: 30rem\) \{\s*\.fs-results \{\s*--fs-cols: 3;/);
+    expect(css).toMatch(/@container \(min-width: 72rem\) \{\s*\.fs-results \{\s*--fs-cols: 5\.4;/);
+    expect(css).toMatch(/calc\(\(100cqi \/ var\(--fs-cols\) - 2 \* var\(--fs-pad-x\)\) \* 0\.26\)/);
+    // Labels may wrap; values never get clipped by overflow rules.
+    expect(css).toMatch(/\.fs-results dt \{\s*overflow-wrap: anywhere;/);
+    const block = css.slice(css.indexOf(".fs-results-wrap"), css.indexOf("/* Result markers"));
+    expect(block).not.toMatch(/overflow:\s*hidden|text-overflow|position:\s*absolute/);
+  });
+});
+
 describe("style contracts", () => {
   const css = readFileSync("src/app/(app)/globals.css", "utf8");
   it("clipped controls draw focus inside the shape", () => {
