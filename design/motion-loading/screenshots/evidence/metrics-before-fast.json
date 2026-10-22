@@ -1,0 +1,257 @@
+{
+  "fight.dashboard.load": {
+    "ttfb": 144,
+    "fcp": 600,
+    "loadingShownAt": 482,
+    "contentAt": 566,
+    "loadingFrames": 8,
+    "cls": 0.0041,
+    "longTasks": 4,
+    "longTaskMs": 650,
+    "domNodes": 419,
+    "requests": 54,
+    "streams": 1
+  },
+  "fight.dashboard.navFast": {
+    "loadingShownAfter": 77,
+    "contentAfter": 506,
+    "loadingFrames": 16,
+    "cls": 0.0012,
+    "rscHeld": 0
+  },
+  "fight.dashboard.navSlow": {
+    "loadingShownAfter": 77,
+    "contentAfter": 1978,
+    "loadingFrames": 100,
+    "cls": 0.0012,
+    "rscHeld": 5
+  },
+  "fight.dashboard.navSlow390": {
+    "loadingShownAfter": 63,
+    "contentAfter": 1889,
+    "loadingFrames": 100,
+    "cls": 0.096,
+    "rscHeld": 1
+  },
+  "fight.analytics.load": {
+    "ttfb": 30,
+    "fcp": 384,
+    "loadingShownAt": 184,
+    "contentAt": 184,
+    "loadingFrames": 1,
+    "cls": 0.0016,
+    "longTasks": 2,
+    "longTaskMs": 165,
+    "domNodes": 462,
+    "requests": 41,
+    "streams": 0
+  },
+  "fight.analytics.navFast": {
+    "loadingShownAfter": 91,
+    "contentAfter": 408,
+    "loadingFrames": 18,
+    "cls": 0,
+    "rscHeld": 0
+  },
+  "fight.analytics.navSlow": {
+    "loadingShownAfter": 71,
+    "contentAfter": 1624,
+    "loadingFrames": 92,
+    "cls": 0,
+    "rscHeld": 1
+  },
+  "fight.analytics.navSlow390": {
+    "loadingShownAfter": 111,
+    "contentAfter": 1650,
+    "loadingFrames": 92,
+    "cls": 0,
+    "rscHeld": 1
+  },
+  "fight.recap.load": {
+    "ttfb": 27,
+    "fcp": 324,
+    "loadingShownAt": 178,
+    "contentAt": 178,
+    "loadingFrames": 1,
+    "cls": 0.0016,
+    "longTasks": 2,
+    "longTaskMs": 141,
+    "domNodes": 185,
+    "requests": 42,
+    "streams": 0
+  },
+  "fight.recap.navFast": {
+    "loadingShownAfter": null,
+    "contentAfter": null,
+    "loadingFrames": 1,
+    "cls": 0,
+    "rscHeld": 0
+  },
+  "fight.recap.navSlow": {
+    "loadingShownAfter": null,
+    "contentAfter": null,
+    "loadingFrames": 1,
+    "cls": 0.0008,
+    "rscHeld": 12
+  },
+  "fight.recap.navSlow390": {
+    "loadingShownAfter": null,
+    "contentAfter": null,
+    "loadingFrames": 1,
+    "cls": 0,
+    "rscHeld": 14
+  },
+  "fight.builder.load": {
+    "ttfb": 23,
+    "fcp": 508,
+    "loadingShownAt": 203,
+    "contentAt": 203,
+    "loadingFrames": 1,
+    "cls": 0.0544,
+    "longTasks": 3,
+    "longTaskMs": 443,
+    "domNodes": 766,
+    "requests": 46,
+    "streams": 1
+  },
+  "fight.builder.navFast": {
+    "loadingShownAfter": 81,
+    "contentAfter": 496,
+    "loadingFrames": 19,
+    "cls": 0,
+    "rscHeld": 0
+  },
+  "fight.builder.navSlow": {
+    "loadingShownAfter": 70,
+    "contentAfter": 1752,
+    "loadingFrames": 95,
+    "cls": 0.0529,
+    "rscHeld": 1
+  },
+  "fight.builder.navSlow390": {
+    "loadingShownAfter": 1581,
+    "contentAfter": 1993,
+    "loadingFrames": 19,
+    "cls": 0.0934,
+    "rscHeld": 3
+  },
+  "classic.dashboard.load": {
+    "ttfb": 21,
+    "fcp": 404,
+    "loadingShownAt": 172,
+    "contentAt": 172,
+    "loadingFrames": 1,
+    "cls": 0.0016,
+    "longTasks": 3,
+    "longTaskMs": 345,
+    "domNodes": 463,
+    "requests": 52,
+    "streams": 1
+  },
+  "classic.dashboard.navFast": {
+    "loadingShownAfter": 64,
+    "contentAfter": 478,
+    "loadingFrames": 16,
+    "cls": 0.0001,
+    "rscHeld": 0
+  },
+  "classic.dashboard.navSlow": {
+    "loadingShownAfter": 79,
+    "contentAfter": 1898,
+    "loadingFrames": 100,
+    "cls": 0.0001,
+    "rscHeld": 4
+  },
+  "classic.analytics.load": {
+    "ttfb": 24,
+    "fcp": 284,
+    "loadingShownAt": 177,
+    "contentAt": 177,
+    "loadingFrames": 1,
+    "cls": 0.0007,
+    "longTasks": 1,
+    "longTaskMs": 64,
+    "domNodes": 482,
+    "requests": 44,
+    "streams": 0
+  },
+  "classic.analytics.navFast": {
+    "loadingShownAfter": 90,
+    "contentAfter": 409,
+    "loadingFrames": 18,
+    "cls": 0,
+    "rscHeld": 0
+  },
+  "classic.analytics.navSlow": {
+    "loadingShownAfter": 84,
+    "contentAfter": 1616,
+    "loadingFrames": 91,
+    "cls": 0,
+    "rscHeld": 1
+  },
+  "classic.recap.load": {
+    "ttfb": 29,
+    "fcp": 296,
+    "loadingShownAt": 197,
+    "contentAt": 297,
+    "loadingFrames": 1,
+    "cls": 0.0007,
+    "longTasks": 1,
+    "longTaskMs": 62,
+    "domNodes": 170,
+    "requests": 42,
+    "streams": 0
+  },
+  "classic.recap.navFast": {
+    "loadingShownAfter": 115,
+    "contentAfter": 137,
+    "loadingFrames": 1,
+    "cls": 0,
+    "rscHeld": 0
+  },
+  "classic.recap.navSlow": {
+    "loadingShownAfter": 102,
+    "contentAfter": 1589,
+    "loadingFrames": 89,
+    "cls": 0,
+    "rscHeld": 1
+  },
+  "classic.builder.load": {
+    "ttfb": 21,
+    "fcp": 444,
+    "loadingShownAt": 160,
+    "contentAt": 160,
+    "loadingFrames": 1,
+    "cls": 0.0544,
+    "longTasks": 3,
+    "longTaskMs": 442,
+    "domNodes": 766,
+    "requests": 46,
+    "streams": 1
+  },
+  "classic.builder.navFast": {
+    "loadingShownAfter": 117,
+    "contentAfter": 535,
+    "loadingFrames": 19,
+    "cls": 0,
+    "rscHeld": 0
+  },
+  "classic.builder.navSlow": {
+    "loadingShownAfter": 91,
+    "contentAfter": 1735,
+    "loadingFrames": 93,
+    "cls": 0.0529,
+    "rscHeld": 1
+  },
+  "obs.overlay": {
+    "status": 200,
+    "loadingFrames": 0,
+    "skeletonNodes": 0,
+    "bodyBackground": "rgba(0, 0, 0, 0)",
+    "appCss": false
+  },
+  "cpu": {
+    "skeletonPulse3sTaskMs": 5,
+    "idleAfterLoad3sTaskMs": 0
+  }
+}
