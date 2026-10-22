@@ -93,7 +93,7 @@ export default async function SessionRecapPage({
   );
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6" data-recap-ui="classic">
       <Link href="/dashboard" className="text-sm text-muted hover:text-text">
         {tc("backToDashboard")}
       </Link>
