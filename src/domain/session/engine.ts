@@ -229,6 +229,23 @@ export function normalizeMatchList(matches: readonly SessionMatch[]): SessionMat
   return unique.sort(compareMatches);
 }
 
+/**
+ * The latest `limit` counted matches of a session, oldest → newest, with their 1-based position
+ * in the session. Same dedupe and order as the stats (normalizeMatchList), so the list always
+ * agrees with W/L. `counted` caps the list to a summary's `totalGames` when the rows were read
+ * after that summary (a match ingested in between is not shown before it is counted).
+ */
+export function recentSessionMatches(
+  matches: readonly SessionMatch[],
+  limit: number,
+  counted?: number,
+): Array<{ match: SessionMatch; n: number }> {
+  const sorted = normalizeMatchList(matches);
+  const capped = counted === undefined ? sorted : sorted.slice(0, Math.max(0, counted));
+  const start = Math.max(0, capped.length - Math.max(0, limit));
+  return capped.slice(start).map((match, i) => ({ match, n: start + i + 1 }));
+}
+
 export function buildSessionState(matches: readonly SessionMatch[]): SessionState {
   const normalized = normalizeMatchList(matches);
   return { matches: normalized, stats: computeSessionStats(normalized) };
