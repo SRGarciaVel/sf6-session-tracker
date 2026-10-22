@@ -18,8 +18,7 @@
     "copyFailed": "Couldn't copy",
     "copiedAnnounce": "Copied to clipboard",
     "copyFailedHint": "Couldn't copy. Select the text and copy it manually.",
-    "slowServer": "Starting SST… This can take a few seconds on the free beta.",
-    "loadingDashboard": "Loading your dashboard…"
+    "slowServer": "Starting SST… This can take a few seconds on the free beta."
   },
   "Meta": {
     "description": "Session tracking, real-time stats and OBS overlays for fighting games. Currently supporting Street Fighter 6.",
@@ -1596,5 +1595,12 @@
       "legacy": "Session recorded before per-character ratings: rating changes are not available.",
       "noRatingCharacter": "No rating data for this session."
     }
+  },
+  "Loading": {
+    "dashboard": "Loading the dashboard…",
+    "analytics": "Loading analytics…",
+    "recap": "Loading the session recap…",
+    "builder": "Loading the overlay editor…",
+    "slow": "This is taking longer than usual. On the free beta the server can take a few seconds to start."
   }
 }

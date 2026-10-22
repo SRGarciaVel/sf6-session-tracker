@@ -1,0 +1,305 @@
+{
+  "ranAt": "2026-10-22T21:41:12.010Z",
+  "results": [
+    {
+      "check": "fight es dashboard: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Cargando el panel…\"]"
+    },
+    {
+      "check": "fight es dashboard: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "fight es dashboard: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=1 errors="
+    },
+    {
+      "check": "fight es analytics: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Cargando las analíticas…\"]"
+    },
+    {
+      "check": "fight es analytics: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "fight es analytics: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=0 errors="
+    },
+    {
+      "check": "fight es recap: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Cargando el resumen de la sesión…\"]"
+    },
+    {
+      "check": "fight es recap: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "fight es recap: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=0 errors="
+    },
+    {
+      "check": "fight es builder: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Cargando el editor del overlay…\"]"
+    },
+    {
+      "check": "fight es builder: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "fight es builder: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=1 errors="
+    },
+    {
+      "check": "fight en dashboard: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Loading the dashboard…\"]"
+    },
+    {
+      "check": "fight en dashboard: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "fight en dashboard: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=1 errors="
+    },
+    {
+      "check": "fight en analytics: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Loading analytics…\"]"
+    },
+    {
+      "check": "fight en analytics: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "fight en analytics: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=0 errors="
+    },
+    {
+      "check": "fight en recap: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Loading the session recap…\"]"
+    },
+    {
+      "check": "fight en recap: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "fight en recap: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=0 errors="
+    },
+    {
+      "check": "fight en builder: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Loading the overlay editor…\"]"
+    },
+    {
+      "check": "fight en builder: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "fight en builder: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=1 errors="
+    },
+    {
+      "check": "classic es dashboard: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Cargando el panel…\"]"
+    },
+    {
+      "check": "classic es dashboard: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "classic es dashboard: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=1 errors="
+    },
+    {
+      "check": "classic es analytics: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Cargando las analíticas…\"]"
+    },
+    {
+      "check": "classic es analytics: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "classic es analytics: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=0 errors="
+    },
+    {
+      "check": "classic es recap: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Cargando el resumen de la sesión…\"]"
+    },
+    {
+      "check": "classic es recap: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "classic es recap: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=0 errors="
+    },
+    {
+      "check": "classic es builder: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Cargando el editor del overlay…\"]"
+    },
+    {
+      "check": "classic es builder: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "classic es builder: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=1 errors="
+    },
+    {
+      "check": "classic en dashboard: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Loading the dashboard…\"]"
+    },
+    {
+      "check": "classic en dashboard: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "classic en dashboard: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=1 errors="
+    },
+    {
+      "check": "classic en analytics: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Loading analytics…\"]"
+    },
+    {
+      "check": "classic en analytics: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "classic en analytics: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=0 errors="
+    },
+    {
+      "check": "classic en recap: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Loading the session recap…\"]"
+    },
+    {
+      "check": "classic en recap: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "classic en recap: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=0 errors="
+    },
+    {
+      "check": "classic en builder: skeleton shown while the route renders, labelled once, no data, nothing focusable",
+      "pass": true,
+      "detail": "status=[\"Loading the overlay editor…\"]"
+    },
+    {
+      "check": "classic en builder: no horizontal overflow at 1920/1440/1280/768/390/360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "classic en builder: content replaces the skeleton (none left), ≤ 1 SSE stream, no page errors",
+      "pass": true,
+      "detail": "streams=1 errors="
+    },
+    {
+      "check": "text 200 % dashboard 1440: skeleton without horizontal overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "check": "text 200 % dashboard 390: skeleton without horizontal overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "check": "text 200 % analytics 1440: skeleton without horizontal overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "check": "text 200 % analytics 390: skeleton without horizontal overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "check": "text 200 % recap 1440: skeleton without horizontal overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "check": "text 200 % recap 390: skeleton without horizontal overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "check": "text 200 % builder 1440: skeleton without horizontal overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "check": "text 200 % builder 390: skeleton without horizontal overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "check": "reduced motion dashboard: no running animation, shapes fully visible (static)",
+      "pass": true,
+      "detail": "running=0 opacity=1"
+    },
+    {
+      "check": "reduced motion analytics: no running animation, shapes fully visible (static)",
+      "pass": true,
+      "detail": "running=0 opacity=1"
+    },
+    {
+      "check": "reduced motion recap: no running animation, shapes fully visible (static)",
+      "pass": true,
+      "detail": "running=0 opacity=1"
+    },
+    {
+      "check": "reduced motion builder: no running animation, shapes fully visible (static)",
+      "pass": true,
+      "detail": "running=0 opacity=1"
+    }
+  ]
+}

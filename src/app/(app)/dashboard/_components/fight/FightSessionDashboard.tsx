@@ -9,6 +9,7 @@
  * existing server actions unchanged: no client-side session logic, no extra polling.
  */
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import {
@@ -174,12 +175,13 @@ function PrepareStage() {
               data={scoreboardFromSession(s)}
               rating={ratingFromCharacter(character, s.status)}
             />
-            <a
+            {/* Client navigation: the dashboard shell stays; only the recap segment loads. */}
+            <Link
               href={`/dashboard/sessions/${s.sessionId}`}
               className="fs-btn fs-btn-sm fs-cut justify-self-start"
             >
               {t("prepare.viewRecap")} <span aria-hidden>→</span>
-            </a>
+            </Link>
           </>
         ) : (
           <p className="m-0 text-sm text-muted">{t("prepare.firstSession")}</p>
