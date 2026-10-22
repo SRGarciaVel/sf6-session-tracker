@@ -10,10 +10,15 @@
  */
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import {
+  ActivityList,
   CharacterLine,
   EndSessionControl,
+  FightScoreboard,
+  LastMatch,
+  RatingSummary,
+  RoundStrip,
   SessionActionBar,
   SessionFeedback,
   SessionResults,
@@ -32,7 +37,6 @@ import { useSlowFlag } from "@/lib/use-slow-flag";
 import { endSessionAction, startSessionAction } from "../../actions";
 import { useLiveDashboard, useNow } from "../LiveDashboard";
 import { useCompanionReadiness } from "../Readiness";
-import { SessionPanel } from "../SessionPanel";
 
 /** Dashboard status: an ended session is "prepare another" here (the recap has its own page). */
 function useDashboardStatus(): SessionIndicatorStatus {
@@ -172,6 +176,26 @@ function PrepareStage() {
   );
 }
 
+/**
+ * Briefly marks the newest match as "new" when it arrives through the live state (never on the
+ * first render: a page load is not an event). Feedback only: the data itself is already shown.
+ */
+function useFreshMatchId(latestId: string | null): string | null {
+  // Adjusted during render (React's "storing information from previous renders" pattern).
+  const [previous, setPrevious] = useState(latestId);
+  const [fresh, setFresh] = useState<string | null>(null);
+  if (latestId !== previous) {
+    setPrevious(latestId);
+    setFresh(latestId);
+  }
+  useEffect(() => {
+    if (!fresh) return;
+    const id = setTimeout(() => setFresh(null), 4_000);
+    return () => clearTimeout(id);
+  }, [fresh]);
+  return fresh;
+}
+
 function ActiveStage() {
   const t = useTranslations("FightSession");
   const { state } = useLiveDashboard();
@@ -182,7 +206,22 @@ function ActiveStage() {
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
   const slow = useSlowFlag(pending);
-  const character = pickRatingCharacter(state.live.session);
+
+  const s = state.live.session;
+  const active = pickRatingCharacter(s);
+  // Ratings belong to characters: the active one first, then the other characters played.
+  const played = s.characters.filter((c) => c.games > 0 && c.characterKey !== active?.characterKey);
+  const ratings = [active, ...played.slice(0, 2)]
+    .map((c) => ratingFromCharacter(c, s.status))
+    .filter((r): r is NonNullable<typeof r> => r !== null);
+
+  // Recent matches: the server projection (same counted rows as the scoreboard) when present;
+  // older payloads only carry the result letters.
+  const recent = state.recentMatches;
+  const latest = recent?.at(-1) ?? null;
+  const freshId = useFreshMatchId(latest?.id ?? null);
+  const results = recent ? recent.map((m) => m.result) : s.recentResults;
+  const firstNumber = recent?.[0]?.n ?? s.totalGames - s.recentResults.length + 1;
 
   const end = () => {
     if (inFlight.current) return;
@@ -205,39 +244,69 @@ function ActiveStage() {
   };
 
   return (
-    <>
-      <SessionStage id="session" ghost={character?.characterName} labelledBy="fs-active-title">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="grid gap-3">
-            <p className="fs-eyebrow m-0 text-magenta">{t("live.eyebrow")}</p>
-            <h1 id="fs-active-title" className="fs-display m-0 text-4xl sm:text-6xl">
-              {t(`status.${status}`)}
-            </h1>
-            {character && (
-              <CharacterLine
-                characterName={character.characterName}
-                rank={character.current?.rank ?? character.heldRating?.current.rank ?? null}
-                rating={character.current ?? character.heldRating?.current ?? null}
-              />
-            )}
-          </div>
-          <EndSessionControl
-            confirming={confirming}
-            pending={pending}
-            onAsk={() => setConfirming(true)}
-            onCancel={() => setConfirming(false)}
-            onConfirm={end}
+    <SessionStage id="session" ghost={active?.characterName} labelledBy="fs-active-title">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="grid gap-2">
+          <p className="fs-eyebrow m-0 text-magenta">{t("live.eyebrow")}</p>
+          <h1 id="fs-active-title" className="fs-display m-0 text-4xl sm:text-5xl">
+            {t(`status.${status}`)}
+          </h1>
+        </div>
+        <EndSessionControl
+          confirming={confirming}
+          pending={pending}
+          onAsk={() => setConfirming(true)}
+          onCancel={() => setConfirming(false)}
+          onConfirm={end}
+        />
+      </div>
+      <SessionFeedback error={error} slow={slow} />
+
+      <FightScoreboard
+        data={scoreboardFromSession(s)}
+        highlight={
+          freshId && latest
+            ? latest.result === "win"
+              ? "win"
+              : latest.result === "loss"
+                ? "loss"
+                : null
+            : null
+        }
+      />
+
+      {ratings.length > 0 ? (
+        <div className="grid gap-3">
+          {ratings.map((r) => (
+            <RatingSummary key={`${r.characterName}-${r.system}`} rating={r} />
+          ))}
+        </div>
+      ) : (
+        active && <CharacterLine characterName={active.characterName} rank={null} rating={null} />
+      )}
+
+      {s.totalGames === 0 ? (
+        <ActivityList items={[]} waiting />
+      ) : (
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          {latest ? (
+            <LastMatch item={latest} isNew={freshId === latest.id} />
+          ) : (
+            <p className="m-0 text-sm text-muted">{t("live.lastMatchUnavailable")}</p>
+          )}
+          <RoundStrip
+            results={results}
+            firstNumber={firstNumber}
+            newestIsNew={freshId !== null}
+            titled
           />
         </div>
-        <SessionFeedback error={error} slow={slow} />
-      </SessionStage>
-      <h2 className="sr-only">{t("live.statsTitle")}</h2>
-      <SessionPanel actions={false} />
-    </>
+      )}
+    </SessionStage>
   );
 }
 
-/** PREPARE when no session is active, otherwise the intermediate ACTIVE view. */
+/** PREPARE when no session is active, otherwise the LIVE view. */
 export function FightSessionArea() {
   const { state } = useLiveDashboard();
   return state.live.session.status === "active" ? <ActiveStage /> : <PrepareStage />;

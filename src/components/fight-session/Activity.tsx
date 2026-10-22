@@ -20,9 +20,12 @@ export function RoundStrip({
   results,
   newestIsNew = false,
   titled = false,
+  firstNumber = 1,
   className,
 }: {
   results: readonly MatchResult[];
+  /** Session position of the first marker (when only the latest matches are shown). */
+  firstNumber?: number;
   /** Marks the newest marker (outline + pop); the announcement belongs to `LastMatch`. */
   newestIsNew?: boolean;
   /** Show the visible «Partidas» label above the markers. */
@@ -42,10 +45,10 @@ export function RoundStrip({
           <li
             key={i}
             className={cx("fs-round fs-cut", ROUND[r], isNew && "fs-round-new fs-pop")}
-            aria-label={`${t("matchNumber", { n: i + 1 })}: ${t(`result.${r}`)}`}
+            aria-label={`${t("matchNumber", { n: firstNumber + i })}: ${t(`result.${r}`)}`}
           >
             <span className="fs-round-n" aria-hidden>
-              {i + 1}
+              {firstNumber + i}
             </span>
             <span className="fs-round-r" aria-hidden>
               {t(`letter.${r}`)}
