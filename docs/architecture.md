@@ -71,6 +71,13 @@ auth_user ─1:1─ sf6_player ─1:N─ player_character_rating   (current snap
 - **player_character_rating**: the latest profile value per `(player_id, character_key)` (unique),
   covering rank, rank tier, `rating_system` (`lp` | `mr`), LP, MR and phase.
   - `observed_at` guards the upsert: an older snapshot never overwrites a newer one.
+  - `observed_at` is the time the profile was **observed at the source**, never the time a
+    writer consumes it: the Companion snapshot's `profile_observed_at`, or the request start for
+    Capcom/mock. Every writer (Companion sync, session start/end final fetch, tracker,
+    onboarding) gets it through `readProfileObservation`; the provider's 5 s profile cache keeps
+    the original time, and an accepted Companion sync drops that account's cached profile.
+    So a cached or slower read can never replace a newer rating, and session baselines/finals
+    are taken from the newest observation committed when their transaction runs.
 - **game_session**: status, start and end times, the match baseline (`baseline_match_id`,
   `baseline_played_at`), `filter`, and `rating_model`.
   - `rating_model` is `per_character`, or `legacy` for sessions created before migration 0002.

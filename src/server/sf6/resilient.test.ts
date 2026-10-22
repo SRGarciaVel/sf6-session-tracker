@@ -113,4 +113,46 @@ describe("ResilientProvider", () => {
     );
     await expect(p.getPlayerProfile("1")).rejects.toMatchObject({ code: "invalid_response" });
   });
+
+  describe("profile observations (session rating consistency)", () => {
+    const opts = (userId: string) => ({ scope: { userId } });
+    it("a cached hit keeps its ORIGINAL observation time, never the time it is read", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      try {
+        vi.setSystemTime(new Date("2026-10-22T20:00:00.000Z"));
+        const r = new ResilientProvider(fakeProvider(), { timeoutMs: 1_000, cacheTtlMs: 5_000 });
+        const first = await r.getPlayerProfileObservation("1234567890", opts("u1"));
+        vi.setSystemTime(new Date("2026-10-22T20:00:04.000Z"));
+        const cached = await r.getPlayerProfileObservation("1234567890", opts("u1"));
+        expect(cached.observedAt.toISOString()).toBe("2026-10-22T20:00:00.000Z");
+        expect(cached.observedAt).toEqual(first.observedAt);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+    it("uses the source's own observation time when the inner provider reports one", async () => {
+      const at = new Date("2026-10-22T19:59:30.000Z");
+      const inner = fakeProvider({
+        getPlayerProfileObservation: vi.fn(async () => ({ profile, observedAt: at })),
+      });
+      const r = new ResilientProvider(inner, { timeoutMs: 1_000, cacheTtlMs: 5_000 });
+      expect((await r.getPlayerProfileObservation("1234567890", opts("u1"))).observedAt).toBe(at);
+      expect(await r.getPlayerProfile("1234567890", opts("u1"))).toEqual(profile); // same entry
+      expect(inner.getPlayerProfileObservation).toHaveBeenCalledTimes(1);
+      expect(inner.getPlayerProfile).not.toHaveBeenCalled();
+    });
+    it("invalidateProfile drops only that account's entry for that CFN", async () => {
+      const inner = fakeProvider();
+      const r = new ResilientProvider(inner, { timeoutMs: 1_000, cacheTtlMs: 60_000 });
+      await r.getPlayerProfile("1234567890", opts("u1"));
+      await r.getPlayerProfile("1234567890", opts("u2"));
+      await r.getPlayerProfile("1111111111", opts("u1"));
+      expect(inner.getPlayerProfile).toHaveBeenCalledTimes(3);
+      r.invalidateProfile("1234567890", { userId: "u1" });
+      await r.getPlayerProfile("1234567890", opts("u1")); // refetched
+      await r.getPlayerProfile("1234567890", opts("u2")); // still cached
+      await r.getPlayerProfile("1111111111", opts("u1")); // still cached
+      expect(inner.getPlayerProfile).toHaveBeenCalledTimes(4);
+    });
+  });
 });

@@ -14,7 +14,12 @@ import { toWireProfile } from "@sf6/capcom-core";
 import type { NormalizedPlayerProfile, NormalizedSF6Match } from "@/domain/sf6/types";
 import type { DbExecutor } from "@/server/db/client";
 import { companionSnapshot } from "@/server/db/schema";
-import { SF6ProviderError, type ProviderCallOptions, type SF6DataProvider } from "../provider";
+import {
+  SF6ProviderError,
+  type ProfileObservation,
+  type ProviderCallOptions,
+  type SF6DataProvider,
+} from "../provider";
 
 export class CompanionSF6DataProvider implements SF6DataProvider {
   readonly name = "companion";
@@ -57,11 +62,21 @@ export class CompanionSF6DataProvider implements SF6DataProvider {
     cfnUserId: string,
     options?: ProviderCallOptions,
   ): Promise<NormalizedPlayerProfile> {
+    return (await this.getPlayerProfileObservation(cfnUserId, options)).profile;
+  }
+
+  /** The snapshot's profile, observed when the server accepted it (`profile_observed_at`). */
+  async getPlayerProfileObservation(
+    cfnUserId: string,
+    options?: ProviderCallOptions,
+  ): Promise<ProfileObservation> {
     const row = await this.snapshot(cfnUserId, options);
     this.assertFresh(row.profileObservedAt, "profile");
-    if (!row.profile) throw new SF6ProviderError("unavailable", "Companion has not sent a profile");
+    if (!row.profile || !row.profileObservedAt) {
+      throw new SF6ProviderError("unavailable", "Companion has not sent a profile");
+    }
     // Whitelisted copy: the stored JSON also carries the presence track, which is not profile.
-    return toWireProfile(row.profile);
+    return { profile: toWireProfile(row.profile), observedAt: row.profileObservedAt };
   }
 
   async getRecentMatches(

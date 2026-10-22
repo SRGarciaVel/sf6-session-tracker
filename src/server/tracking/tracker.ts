@@ -20,7 +20,11 @@ import { updatePlayerProfile } from "@/server/players/service";
 import { publishEvent } from "@/server/realtime/events";
 import { lifecyclePolicyFromEnv } from "@/server/sessions/lifecycle";
 import { getActiveSession } from "@/server/sessions/service";
-import { SF6ProviderError, type SF6DataProvider } from "@/server/sf6/provider";
+import {
+  SF6ProviderError,
+  readProfileObservation,
+  type SF6DataProvider,
+} from "@/server/sf6/provider";
 
 /** After a new match, keep refreshing the profile for a while: CFN may lag updating MR/LP. */
 const PROFILE_FOLLOW_UP_MS = 90_000;
@@ -187,11 +191,15 @@ export async function pollPlayer(
 
     let profileRefreshed = false;
     if (ingest.inserted > 0 || inFollowUp || profileStale) {
-      // Stamp the snapshot with the fetch START so a slower overlapping poll can never
-      // overwrite a newer per-character rating (guarded upsert in updatePlayerProfile).
-      const fetchedAt = new Date();
-      const profile = await provider.getPlayerProfile(player.cfnUserId, scope);
-      const changed = await updatePlayerProfile(db, player.id, profile, fetchedAt);
+      // Stamped with the observation time (fetch start, or the companion snapshot's own time,
+      // also for a cached read) so a slower or cached read can never overwrite a newer
+      // per-character rating (guarded upsert in updatePlayerProfile).
+      const { profile, observedAt } = await readProfileObservation(
+        provider,
+        player.cfnUserId,
+        scope,
+      );
+      const changed = await updatePlayerProfile(db, player.id, profile, observedAt);
       profileRefreshed = true;
       if (changed) {
         await publishEvent(db, { kind: "player", playerId: player.id });

@@ -88,14 +88,18 @@ export async function confirmPlayerAction(rawId: string): Promise<ActionResult> 
     const locale = await getRequestLocale();
     // First explicit-or-default language becomes the account preference if none is stored yet.
     if (!user.locale) await setUserLocale(db, user.id, locale);
-    const profile = await getSF6DataProvider().getPlayerProfile(parsed.data, {
-      scope: { userId: user.id },
-    });
+    const { profile, observedAt } = await getSF6DataProvider().getPlayerProfileObservation(
+      parsed.data,
+      { scope: { userId: user.id } },
+    );
     const tOnboarding = await getTranslations("Onboarding");
-    await upsertPlayerForUser(db, user.id, profile, {
-      name: tOnboarding("defaultOverlayName"),
-      locale,
-    });
+    await upsertPlayerForUser(
+      db,
+      user.id,
+      profile,
+      { name: tOnboarding("defaultOverlayName"), locale },
+      observedAt,
+    );
     logger.info("onboarding.player_registered", { userId: user.id });
   } catch (err) {
     logger.warn("onboarding.confirm_failed", { userId: user.id, error: err });
