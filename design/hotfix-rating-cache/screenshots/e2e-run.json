@@ -1,0 +1,83 @@
+{
+  "ranAt": "2026-10-22T20:25:00.181Z",
+  "results": [
+    {
+      "check": "fight: expected dashboard UI",
+      "pass": true
+    },
+    {
+      "check": "Fight Session: LIVE shows Ryu +12 MR",
+      "pass": true
+    },
+    {
+      "check": "Fight Session: END 1.0 s after START (inside the 5 s cache window)",
+      "pass": true
+    },
+    {
+      "check": "Fight Session: DB frozen finals Ryu 1402 → 1414 MR, Jamie 23006 → 22982 LP (systems not mixed)",
+      "pass": true,
+      "detail": "{\"ryu\":{\"character_key\":\"ryu\",\"initial_master_rate\":1402,\"final_master_rate\":1414,\"initial_league_points\":32762,\"final_league_points\":null,\"final_rating_system\":\"mr\"},\"jamie\":{\"character_key\":\"jamie\",\"initial_master_rate\":null,\"final_master_rate\":null,\"initial_league_points\":23006,\"final_league_points\":22982,\"final_rating_system\":\"lp\"}}"
+    },
+    {
+      "check": "Fight Session: RECAP shows +12 MR and −24 LP",
+      "pass": true
+    },
+    {
+      "check": "Fight Session: RECAP after reload still +12 / −24",
+      "pass": true
+    },
+    {
+      "check": "Fight Session: immediate next START takes the newest baseline (Ryu 1390 MR, Jamie 22982 LP)",
+      "pass": true,
+      "detail": "{\"ryu\":1390,\"jamie\":22982}"
+    },
+    {
+      "check": "Fight Session: the previous session's finals are untouched by the next start",
+      "pass": true
+    },
+    {
+      "check": "fight: no page errors",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "classic: expected dashboard UI",
+      "pass": true
+    },
+    {
+      "check": "classic: LIVE shows Ryu +12 MR",
+      "pass": true
+    },
+    {
+      "check": "classic: END 1.5 s after START (inside the 5 s cache window)",
+      "pass": true
+    },
+    {
+      "check": "classic: DB frozen finals Ryu 1402 → 1414 MR, Jamie 23006 → 22982 LP (systems not mixed)",
+      "pass": true,
+      "detail": "{\"ryu\":{\"character_key\":\"ryu\",\"initial_master_rate\":1402,\"final_master_rate\":1414,\"initial_league_points\":32762,\"final_league_points\":null,\"final_rating_system\":\"mr\"},\"jamie\":{\"character_key\":\"jamie\",\"initial_master_rate\":null,\"final_master_rate\":null,\"initial_league_points\":23006,\"final_league_points\":22982,\"final_rating_system\":\"lp\"}}"
+    },
+    {
+      "check": "classic: RECAP shows +12 MR and −24 LP",
+      "pass": true
+    },
+    {
+      "check": "classic: RECAP after reload still +12 / −24",
+      "pass": true
+    },
+    {
+      "check": "classic: immediate next START takes the newest baseline (Ryu 1390 MR, Jamie 22982 LP)",
+      "pass": true,
+      "detail": "{\"ryu\":1390,\"jamie\":22982}"
+    },
+    {
+      "check": "classic: the previous session's finals are untouched by the next start",
+      "pass": true
+    },
+    {
+      "check": "classic: no page errors",
+      "pass": true,
+      "detail": ""
+    }
+  ]
+}
