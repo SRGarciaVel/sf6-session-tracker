@@ -1,0 +1,204 @@
+{
+  "ranAt": "2026-10-22T01:29:07.483Z",
+  "results": [
+    {
+      "check": "gate: ineligible account forcing ?ui=, cookies and a header still gets classic",
+      "pass": true
+    },
+    {
+      "check": "classic: status bar + classic start button present",
+      "pass": true
+    },
+    {
+      "check": "gate: localStorage cannot enable it either",
+      "pass": true
+    },
+    {
+      "check": "gate: eligible account gets the Fight Session dashboard",
+      "pass": true
+    },
+    {
+      "check": "realtime: exactly one SSE connection (Fight Session)",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "check": "opt-out: ?ui=classic shows the classic dashboard to the tester",
+      "pass": true
+    },
+    {
+      "check": "realtime: exactly one SSE connection (classic)",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "check": "overlays: same OBS URLs in both modes and equal to the stored tokens",
+      "pass": true,
+      "detail": "2 urls"
+    },
+    {
+      "check": "overlays: configure + copy + preview + create are available",
+      "pass": true,
+      "detail": "{\"configure\":2,\"copy\":2,\"preview\":2,\"create\":1}"
+    },
+    {
+      "check": "prepare: one primary CTA, enabled with a fresh Companion",
+      "pass": true
+    },
+    {
+      "check": "prepare: CTA in the first viewport (1440×900)",
+      "pass": true
+    },
+    {
+      "check": "prepare @laptop: CTA visible without scrolling",
+      "pass": true,
+      "detail": "y=453"
+    },
+    {
+      "check": "prepare @laptop: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "prepare @mobile: CTA visible without scrolling",
+      "pass": true,
+      "detail": "y=772"
+    },
+    {
+      "check": "prepare @mobile: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "mobile: «Ir a tus overlays» brings the overlay console into view",
+      "pass": true
+    },
+    {
+      "check": "mobile: last content ends above the fixed action bar",
+      "pass": true,
+      "detail": "content 649 (time.) / bar 761"
+    },
+    {
+      "check": "keyboard: start reached by Tab",
+      "pass": true,
+      "detail": "9 Tab presses"
+    },
+    {
+      "check": "keyboard: focus visible on the clipped CTA (inset ring)",
+      "pass": true
+    },
+    {
+      "check": "disconnected: CTA disabled and the next step is explained",
+      "pass": true
+    },
+    {
+      "check": "disconnected: status reads «No listo», never «Conectado» for the Companion",
+      "pass": true
+    },
+    {
+      "check": "start failure: server error shown, no session created",
+      "pass": true,
+      "detail": "No hemos recibido datos recientes del Companion. Ábrelo en tu navegador, comprueba que Buckler tiene la sesión iniciada y pulsa «Sincronizar ahora»."
+    },
+    {
+      "check": "start: real action → active view; exactly one active session in the DB",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "check": "active: no ambiguous «Iniciar nueva sesión»",
+      "pass": true
+    },
+    {
+      "check": "LIVE · 0 matches: scoreboard «—», waiting state",
+      "pass": true
+    },
+    {
+      "check": "LIVE: the classic statistics panel is gone from the Fight Session view",
+      "pass": true
+    },
+    {
+      "check": "match 1 (no reload): scoreboard, last match and strip agree",
+      "pass": true,
+      "detail": "1 victorias, 0 derrotas, 100 % de victorias en 1 partida"
+    },
+    {
+      "check": "match 1: «Nueva» badge on the latest match",
+      "pass": true
+    },
+    {
+      "check": "match 1: post-match MR not observed yet ⇒ last confirmed value, labelled",
+      "pass": true
+    },
+    {
+      "check": "match 2: strip updated in order; win rate consistent with the counts",
+      "pass": true
+    },
+    {
+      "check": "match 2: last match is the loss",
+      "pass": true
+    },
+    {
+      "check": "profile observation: rating confirmed, engine session delta (1571 → 1570, −1)",
+      "pass": true,
+      "detail": "RYU desde 1571 1570 MR Cambio en la sesión: ▼ -1"
+    },
+    {
+      "check": "DB: the session counts exactly the 2 matches shown",
+      "pass": true
+    },
+    {
+      "check": "refresh while active: same LIVE state, no «Nueva» replay on load",
+      "pass": true
+    },
+    {
+      "check": "LIVE @laptop: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "LIVE @mobile: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "mid-session Companion quiet: «Sin datos recientes», session still active",
+      "pass": true
+    },
+    {
+      "check": "end: Esc cancels, focus back on «Finalizar sesión»",
+      "pass": true
+    },
+    {
+      "check": "end: real action → existing recap; session ended with its 2 matches",
+      "pass": true,
+      "detail": "{\"status\":\"ended\",\"n\":2}"
+    },
+    {
+      "check": "after end: back to PREPARE with the last session",
+      "pass": true
+    },
+    {
+      "check": "refresh after end: PREPARE",
+      "pass": true
+    },
+    {
+      "check": "session records: history and recap still reachable",
+      "pass": true
+    },
+    {
+      "check": "EN: labels",
+      "pass": true
+    },
+    {
+      "check": "EN @mobile: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "reduced motion: no running animation on the Fight Session dashboard",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "check": "no page errors / hydration warnings",
+      "pass": true,
+      "detail": ""
+    }
+  ]
+}

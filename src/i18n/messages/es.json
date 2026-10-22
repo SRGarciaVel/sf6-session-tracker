@@ -1476,7 +1476,7 @@
       "label": "{unit} de {character}",
       "from": "desde",
       "sessionDelta": "Cambio en la sesión",
-      "pending": "{unit} pendiente",
+      "pending": "{unit} pendiente · último confirmado",
       "pendingHint": "Esperando tu perfil para confirmar el {unit} de la última partida.",
       "noBaseline": "Sin {unit} inicial: no se puede calcular el cambio de la sesión.",
       "unavailable": "{unit} final no disponible",
@@ -1551,7 +1551,8 @@
     },
     "live": {
       "eyebrow": "Sesión activa",
-      "statsTitle": "Estadísticas de la sesión"
+      "statsTitle": "Estadísticas de la sesión",
+      "lastMatchUnavailable": "La última partida aún no está disponible."
     },
     "preview": {
       "badge": "Vista previa · Fight Session",

@@ -35,7 +35,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const ui = dashboardUiFor(user.id, (await searchParams).ui);
   const db = getDb();
   const [live, overlays, history, devices, planSummary, entitlements] = await Promise.all([
-    buildDashboardLiveState(db, player.id),
+    buildDashboardLiveState(db, player.id, undefined, { recentMatches: ui === "fight-session" }),
     listOverlays(db, player.id),
     listSessionHistory(db, player, 10),
     listDevices(db, user.id),

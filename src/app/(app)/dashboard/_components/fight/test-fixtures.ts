@@ -1,7 +1,8 @@
 /** Test-only: dashboard live states built from the real engine + real readiness inputs. */
 import type { CompanionSignals } from "@/domain/companion/readiness";
 import type { LiveSessionState } from "@/domain/overlay/state";
-import type { DashboardLiveState } from "@/server/dashboard/state";
+import type { DashboardLiveState, DashboardRecentMatch } from "@/server/dashboard/state";
+import { START } from "@/components/fight-session/test-support";
 import { engineSession } from "@/components/fight-session/test-support";
 
 export const NOW = Date.parse("2026-10-21T20:40:00Z");
@@ -91,12 +92,43 @@ export const SESSION = {
     }),
 };
 
+/**
+ * The projection the server would build for `engineSession` matches (same ids/times/opponents:
+ * m<n>, START + 6 min each, Ken / "Rival <n>").
+ */
+export function recentOf(session: LiveSessionState): DashboardRecentMatch[] {
+  const results = session.recentResults;
+  const first = session.totalGames - results.length + 1;
+  return results.map((result, i) => {
+    const n = first + i;
+    return {
+      id: `m${n}`,
+      n,
+      result,
+      characterName: "Ryu",
+      opponentCharacter: "Ken",
+      opponentName: `Rival ${n}`,
+      playedAt: new Date(START.getTime() + n * 6 * 60_000).toISOString(),
+    };
+  });
+}
+
 export function dashState(
   session: LiveSessionState,
-  over: { signals?: CompanionSignals; tracker?: DashboardLiveState["tracker"]["state"] } = {},
+  over: {
+    signals?: CompanionSignals;
+    tracker?: DashboardLiveState["tracker"]["state"];
+    /** true = the projection for `session`; an array = exactly that; absent = older payload. */
+    recent?: true | DashboardRecentMatch[];
+    generatedAt?: number;
+  } = {},
 ): DashboardLiveState {
   return {
-    live: { player: { displayName: "Yasmine" }, session, generatedAt: new Date(NOW).toISOString() },
+    live: {
+      player: { displayName: "Yasmine" },
+      session,
+      generatedAt: new Date(over.generatedAt ?? NOW).toISOString(),
+    },
     player: { cfnUserId: "9990000200" },
     tracker: {
       state: over.tracker ?? (session.status === "active" ? "ok" : "idle"),
@@ -108,5 +140,8 @@ export function dashState(
     },
     overlayConnections: 1,
     companion: over.signals ?? SIGNALS.ready,
+    ...(over.recent
+      ? { recentMatches: over.recent === true ? recentOf(session) : over.recent }
+      : {}),
   };
 }

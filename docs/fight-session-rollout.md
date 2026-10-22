@@ -13,6 +13,9 @@ server explicitly lists it.
   local storage or header can add an account.
 - **Opt-out:** the one honoured request input is a downgrade. `/dashboard?ui=classic` shows the
   classic dashboard to an allowlisted tester, for comparison or fallback.
+- **Extra data for testers only:** for allowlisted accounts the dashboard state also carries
+  `recentMatches`, a bounded, read-only list of the session's counted matches (5.6B3). The
+  classic payload is unchanged.
 - **What stays shared:** both dashboards use:
   - the same data;
   - the same live provider (one SSE stream);
@@ -49,9 +52,9 @@ Rollback needs:
 
 ## What the preview changes (and what it does not)
 
-| Changes                                                                                                               | Unchanged                                                          |
-| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| PREPARE: Fight Session stage, readiness, single primary CTA, last-session summary                                     | Session start/end server actions, validations, rate limits, errors |
-| ACTIVE: Fight Session status + inline two-step End above the classic statistics panel (no "start new session" button) | Session engine, ingestion, tracker, Companion, SSE                 |
-| Status strip at the top replaces the classic fixed bottom status bar                                                  | Overlay console, previews, Copy URL, builder, entitlements         |
-| Mobile: sticky start action; overlays console before the history; «Ir a tus overlays» jump                            | Recap page `/dashboard/sessions/[id]`, history, analytics          |
+| Changes                                                                                                                                                           | Unchanged                                                          |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| PREPARE: Fight Session stage, readiness, single primary CTA, last-session summary                                                                                 | Session start/end server actions, validations, rate limits, errors |
+| LIVE (5.6B3): versus scoreboard, per-character rating with labelled pending value, latest match, round strip, inline two-step End (no "start new session" button) | Session engine, ingestion, tracker, Companion, SSE                 |
+| Status strip at the top replaces the classic fixed bottom status bar                                                                                              | Overlay console, previews, Copy URL, builder, entitlements         |
+| Mobile: sticky start action; overlays console before the history; «Ir a tus overlays» jump                                                                        | Recap page `/dashboard/sessions/[id]`, history, analytics          |

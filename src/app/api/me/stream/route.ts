@@ -1,6 +1,7 @@
 import { getAuth } from "@/server/auth/auth";
 import { buildDashboardLiveState } from "@/server/dashboard/state";
 import { getDb } from "@/server/db/client";
+import { dashboardUiFor } from "@/server/features/fight-session";
 import { findPlayerByUserId } from "@/server/players/service";
 import { getHub } from "@/server/realtime/hub";
 import { SSE_LIMITS, acquireSseSlots } from "@/server/realtime/connection-limits";
@@ -39,9 +40,15 @@ export async function GET(request: Request) {
     throw err;
   }
 
+  // Phase 5.6B3: the recent-match projection is only built for Fight Session viewers (server
+  // allowlist); classic dashboards get exactly the previous payload and no extra query.
+  const recentMatches = dashboardUiFor(session.user.id) === "fight-session";
+
   return sseResponse(request.signal, async (sse) => {
     const push = async (live?: Parameters<typeof buildDashboardLiveState>[2]) => {
-      const state = await buildDashboardLiveState(db, player.id, live).catch(() => null);
+      const state = await buildDashboardLiveState(db, player.id, live, { recentMatches }).catch(
+        () => null,
+      );
       if (state) sse.send("dashboard", state);
     };
     await push();
