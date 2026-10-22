@@ -16,8 +16,27 @@ export interface ProviderCallOptions {
   scope?: { userId: string };
 }
 
+/**
+ * A profile together with WHEN it was observed at the source. Writers stamp ratings with this
+ * time (never the time they consume it), so the guarded per-character upsert can tell a newer
+ * observation from an older or cached one.
+ */
+export interface ProfileObservation {
+  profile: NormalizedPlayerProfile;
+  observedAt: Date;
+}
+
 export interface SF6DataProvider {
   readonly name: string;
+
+  /**
+   * Optional: the profile with its own observation time, for sources that know it (the
+   * companion snapshot). Read through `readProfileObservation`.
+   */
+  getPlayerProfileObservation?(
+    cfnUserId: string,
+    options?: ProviderCallOptions,
+  ): Promise<ProfileObservation>;
 
   /**
    * Current profile (name, rank, LP, MR) for a CFN User ID.
@@ -33,6 +52,22 @@ export interface SF6DataProvider {
    * Return whatever the source's "latest page" holds (typically 10–20 matches).
    */
   getRecentMatches(cfnUserId: string, options?: ProviderCallOptions): Promise<NormalizedSF6Match[]>;
+}
+
+/**
+ * The profile and its observation time. Sources that do not report one (Capcom, mock) are
+ * observed when the request starts: a later write can never pass for a newer observation.
+ */
+export async function readProfileObservation(
+  provider: SF6DataProvider,
+  cfnUserId: string,
+  options?: ProviderCallOptions,
+): Promise<ProfileObservation> {
+  if (provider.getPlayerProfileObservation) {
+    return provider.getPlayerProfileObservation(cfnUserId, options);
+  }
+  const observedAt = new Date();
+  return { profile: await provider.getPlayerProfile(cfnUserId, options), observedAt };
 }
 
 /** Result of an incremental battlelog read (optional provider capability). */

@@ -42,7 +42,11 @@ import {
   updatePlayerProfile,
 } from "@/server/players/service";
 import { publishEvent } from "@/server/realtime/events";
-import type { SF6DataProvider } from "@/server/sf6/provider";
+import {
+  readProfileObservation,
+  type ProfileObservation,
+  type SF6DataProvider,
+} from "@/server/sf6/provider";
 import {
   baselineRowToCharacterBaseline,
   baselineRowToFinalSnapshot,
@@ -240,8 +244,8 @@ export async function startSession(
   provider: SF6DataProvider,
   player: Sf6PlayerRow,
 ): Promise<GameSessionRow> {
-  const [profile, recent] = await Promise.all([
-    provider.getPlayerProfile(player.cfnUserId, { scope: { userId: player.userId } }),
+  const [{ profile, observedAt: profileObservedAt }, recent] = await Promise.all([
+    readProfileObservation(provider, player.cfnUserId, { scope: { userId: player.userId } }),
     provider.getRecentMatches(player.cfnUserId, { scope: { userId: player.userId } }),
   ]);
   const startGraceMs = getEnv().SESSION_START_GRACE_SECONDS * 1000;
@@ -260,7 +264,9 @@ export async function startSession(
       sessionId: previous?.id ?? null,
       startGraceMs,
     });
-    await updatePlayerProfile(tx, player.id, profile, observedAt);
+    // Stamped with ITS observation time: a profile observed (or cached) before a newer Companion
+    // sync loses the guarded upsert, so the baselines below read the newest confirmed rating.
+    await updatePlayerProfile(tx, player.id, profile, profileObservedAt);
     const freshPlayer = (await findPlayerById(tx, player.id)) ?? player;
     if (previous) await endSessionInTx(tx, previous, freshPlayer);
 
@@ -407,13 +413,13 @@ export async function endSessionInternal(
   trigger: EndSessionTrigger,
 ): Promise<EndSessionOutcome> {
   let finalMatches: NormalizedSF6Match[] | null = null;
-  let finalProfile: NormalizedPlayerProfile | null = null;
+  let finalProfile: ProfileObservation | null = null;
   if (provider) {
     const player = await findPlayerById(db, playerId);
     if (player) {
       const [matches, profile] = await Promise.allSettled([
         provider.getRecentMatches(player.cfnUserId, { scope: { userId: player.userId } }),
-        provider.getPlayerProfile(player.cfnUserId, { scope: { userId: player.userId } }),
+        readProfileObservation(provider, player.cfnUserId, { scope: { userId: player.userId } }),
       ]);
       if (matches.status === "fulfilled") finalMatches = matches.value;
       if (profile.status === "fulfilled") finalProfile = profile.value;
@@ -437,7 +443,12 @@ export async function endSessionInternal(
     if (finalMatches) {
       await ingestMatchesInTx(tx, finalMatches, { playerId, sessionId: active.id, startGraceMs });
     }
-    if (finalProfile) await updatePlayerProfile(tx, playerId, finalProfile);
+    // Same rule as the start: the final fetch never outranks a newer observation already stored
+    // (e.g. a Companion sync accepted while this fetch was cached or in flight). Finals are then
+    // frozen from the newest observation committed when this transaction runs.
+    if (finalProfile) {
+      await updatePlayerProfile(tx, playerId, finalProfile.profile, finalProfile.observedAt);
+    }
     const player = await findPlayerById(tx, playerId);
     if (!player) return { status: "no_active_session" };
     let decision: LifecycleDecision | null = null;

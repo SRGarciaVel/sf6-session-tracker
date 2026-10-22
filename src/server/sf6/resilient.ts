@@ -9,12 +9,16 @@ import {
   SF6ProviderError,
   normalizedMatchSchema,
   normalizedProfileSchema,
+  readProfileObservation,
+  type ProfileObservation,
   type ProviderCallOptions,
   type SF6DataProvider,
 } from "./provider";
 
 /** Scope part of cache / single-flight keys: data of one account is never served to another. */
 const scopeKey = (options: Pick<ProviderCallOptions, "scope">) => options.scope?.userId ?? "-";
+const profileKey = (options: Pick<ProviderCallOptions, "scope">, cfnUserId: string) =>
+  `profile:${scopeKey(options)}:${cfnUserId}`;
 
 export interface ResilientOptions {
   timeoutMs: number;
@@ -39,19 +43,33 @@ export class ResilientProvider implements SF6DataProvider {
     this.name = inner.name;
   }
 
-  getPlayerProfile(
+  async getPlayerProfile(
     cfnUserId: string,
     options: Pick<ProviderCallOptions, "scope"> = {},
   ): Promise<NormalizedPlayerProfile> {
-    return this.run(`profile:${scopeKey(options)}:${cfnUserId}`, true, async (signal) => {
-      const raw = await this.inner.getPlayerProfile(cfnUserId, { signal, scope: options.scope });
+    return (await this.getPlayerProfileObservation(cfnUserId, options)).profile;
+  }
+
+  /**
+   * Cached WITH its observation time: a cached hit is reported as observed when it was really
+   * observed, never as "now", so it cannot overwrite a newer rating (guarded upsert).
+   */
+  getPlayerProfileObservation(
+    cfnUserId: string,
+    options: Pick<ProviderCallOptions, "scope"> = {},
+  ): Promise<ProfileObservation> {
+    return this.run(profileKey(options, cfnUserId), true, async (signal) => {
+      const { profile: raw, observedAt } = await readProfileObservation(this.inner, cfnUserId, {
+        signal,
+        scope: options.scope,
+      });
       const parsed = normalizedProfileSchema.safeParse(raw);
       if (!parsed.success) {
         throw new SF6ProviderError("invalid_response", "Provider returned an invalid profile", {
           cause: parsed.error,
         });
       }
-      return parsed.data;
+      return { profile: parsed.data, observedAt };
     });
   }
 
@@ -78,6 +96,11 @@ export class ResilientProvider implements SF6DataProvider {
   /** Drop the cached profiles of a CFN (every scope). */
   invalidate(cfnUserId: string): void {
     for (const key of this.cache.keys()) if (key.endsWith(`:${cfnUserId}`)) this.cache.delete(key);
+  }
+
+  /** Drop ONE account's cached profile of a CFN (e.g. that account's Companion just synced). */
+  invalidateProfile(cfnUserId: string, scope: { userId: string }): void {
+    this.cache.delete(profileKey({ scope }, cfnUserId));
   }
 
   private async run<T>(

@@ -65,6 +65,14 @@ export function getSF6DataProvider(): ResilientProvider {
   return g.__sf6Provider;
 }
 
+/**
+ * Drop one account's cached profile of a CFN, if the provider exists in this process (it is
+ * never created just for this).
+ */
+export function invalidateCachedProfile(cfnUserId: string, scope: { userId: string }): void {
+  g.__sf6Provider?.invalidateProfile(cfnUserId, scope);
+}
+
 /** The provider WITHOUT the resilience/validation wrapper — for `provider:check` only. */
 export function getRawSF6DataProvider(): SF6DataProvider {
   return createInnerProvider();

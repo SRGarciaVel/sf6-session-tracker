@@ -44,11 +44,13 @@ export async function upsertPlayerForUser(
     name: "Gameplay Overlay",
     locale: DEFAULT_OVERLAY_CONFIG.locale,
   },
+  /** When `profile` was observed at the source (see readProfileObservation). */
+  observedAt: Date = new Date(),
 ): Promise<Sf6PlayerRow> {
   return db.transaction(async (tx) => {
     const existing = await findPlayerByUserId(tx, userId);
     if (existing && existing.cfnUserId === profile.cfnUserId) {
-      await updatePlayerProfile(tx, existing.id, profile);
+      await updatePlayerProfile(tx, existing.id, profile, observedAt);
       return (await findPlayerById(tx, existing.id)) ?? existing;
     }
     if (existing) {
@@ -70,7 +72,7 @@ export async function upsertPlayerForUser(
         .where(eq(sf6Player.id, existing.id))
         .returning();
       if (!updated) throw new Error("Failed to update player");
-      await upsertCharacterRatings(tx, updated.id, profile, new Date());
+      await upsertCharacterRatings(tx, updated.id, profile, observedAt);
       await publishEvent(tx, { kind: "player", playerId: updated.id });
       return updated;
     }
@@ -85,7 +87,7 @@ export async function upsertPlayerForUser(
       })
       .returning();
     if (!created) throw new Error("Failed to create player");
-    await upsertCharacterRatings(tx, created.id, profile, new Date());
+    await upsertCharacterRatings(tx, created.id, profile, observedAt);
     await createOverlay(tx, created.id, overlayDefaults.name, {
       ...DEFAULT_OVERLAY_CONFIG,
       locale: overlayDefaults.locale,

@@ -10,6 +10,7 @@ import {
 } from "@/server/companion/http";
 import { getDb } from "@/server/db/client";
 import { logger } from "@/server/logger";
+import { invalidateCachedProfile } from "@/server/sf6";
 
 export const dynamic = "force-dynamic";
 export const OPTIONS = preflight;
@@ -41,5 +42,10 @@ export async function POST(request: Request) {
   }
   const result = await applyCompanionSync(getDb(), auth.device, parsed.data);
   if (!result.ok) return json({ error: result.reason }, STATUS[result.reason]);
+  // This account's snapshot changed: its cached profile (this process) is stale. Other
+  // accounts are untouched; other processes rely on observation times (guarded upsert).
+  if (parsed.data.profile) {
+    invalidateCachedProfile(parsed.data.cfnUserId, { userId: auth.device.userId });
+  }
   return json({ inserted: result.inserted, duplicates: result.duplicates, state: result.state });
 }
