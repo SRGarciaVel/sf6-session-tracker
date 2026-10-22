@@ -1,18 +1,17 @@
 import { getTranslations } from "next-intl/server";
+import { LoadingRegion } from "@/components/loading/Skeleton";
+import { DashboardSkeleton } from "@/components/loading/route-skeletons";
 
 /**
- * Streamed immediately while the dashboard renders. On the free beta the server may be waking
- * up, so say so in plain words instead of showing an unexplained blank page.
+ * Streamed while the dashboard renders on the server (and shown on client navigation until the
+ * new page arrives). Same footprint as the loaded dashboard; appears only after 150 ms, and the
+ * free-tier "waking up" hint only after a real wait (M1, design/motion-loading/m1-audit.md).
  */
 export default async function DashboardLoading() {
-  const t = await getTranslations("Common");
+  const t = await getTranslations("Loading");
   return (
-    <div role="status" className="hud-panel mx-auto mt-10 max-w-lg px-6 py-8 text-center">
-      <p className="font-display text-xl font-bold tracking-wide uppercase">
-        <span className="live-dot mr-2 inline-block align-middle" aria-hidden />
-        {t("loadingDashboard")}
-      </p>
-      <p className="mt-2 text-sm text-muted">{t("slowServer")}</p>
-    </div>
+    <LoadingRegion label={t("dashboard")} slowHint={t("slow")}>
+      <DashboardSkeleton />
+    </LoadingRegion>
   );
 }

@@ -18,8 +18,7 @@
     "copyFailed": "No se pudo copiar",
     "copiedAnnounce": "Copiado al portapapeles",
     "copyFailedHint": "No se pudo copiar. Selecciona el texto y cópialo a mano.",
-    "slowServer": "Iniciando SST… Esto puede tardar unos segundos en la beta gratuita.",
-    "loadingDashboard": "Cargando tu panel…"
+    "slowServer": "Iniciando SST… Esto puede tardar unos segundos en la beta gratuita."
   },
   "Meta": {
     "description": "Tracking de sesiones, estadísticas en tiempo real y overlays para OBS para juegos de pelea. Compatible actualmente con Street Fighter 6.",
@@ -1596,5 +1595,12 @@
       "legacy": "Sesión registrada antes del rating por personaje: los cambios de rating no están disponibles.",
       "noRatingCharacter": "Sin datos de rating para esta sesión."
     }
+  },
+  "Loading": {
+    "dashboard": "Cargando el panel…",
+    "analytics": "Cargando las analíticas…",
+    "recap": "Cargando el resumen de la sesión…",
+    "builder": "Cargando el editor del overlay…",
+    "slow": "Está tardando más de lo normal. En la beta gratuita el servidor puede tardar unos segundos en arrancar."
   }
 }
