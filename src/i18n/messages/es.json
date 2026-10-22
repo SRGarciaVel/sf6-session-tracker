@@ -1557,6 +1557,26 @@
     "preview": {
       "badge": "Vista previa · Fight Session",
       "classic": "Ver panel clásico"
+    },
+    "recap": {
+      "eyebrow": "Resumen de la sesión",
+      "title": "Sesión terminada",
+      "inProgressTitle": "Sesión en curso",
+      "inProgressBody": "Esta sesión sigue activa. El resumen completo aparecerá cuando la finalices.",
+      "saved": "Sesión finalizada y guardada",
+      "period": "Inicio y final",
+      "duration": "Duración",
+      "characters": "Personajes de la sesión",
+      "matchesTitle": "Partidas de la sesión",
+      "stripTruncated": "Se muestran las últimas {shown} de {total} partidas.",
+      "showAll": "Ver {count, plural, one {# partida anterior} other {# partidas anteriores}}",
+      "draws": "{count, plural, one {# empate} other {# empates}} (no cuentan en el % de victorias)",
+      "backToDashboard": "Volver al panel",
+      "prepareAnother": "Preparar otra sesión",
+      "overlays": "Gestionar overlays",
+      "classic": "Ver resumen clásico",
+      "legacy": "Sesión registrada antes del rating por personaje: los cambios de rating no están disponibles.",
+      "noRatingCharacter": "Sin datos de rating para esta sesión."
     }
   }
 }
