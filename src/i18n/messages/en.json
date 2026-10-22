@@ -1557,6 +1557,26 @@
     "preview": {
       "badge": "Preview · Fight Session",
       "classic": "View classic dashboard"
+    },
+    "recap": {
+      "eyebrow": "Session recap",
+      "title": "Session complete",
+      "inProgressTitle": "Session in progress",
+      "inProgressBody": "This session is still active. The full recap appears once you end it.",
+      "saved": "Session ended and saved",
+      "period": "Start and end",
+      "duration": "Duration",
+      "characters": "Characters in this session",
+      "matchesTitle": "Session matches",
+      "stripTruncated": "Showing the latest {shown} of {total} matches.",
+      "showAll": "Show {count, plural, one {# earlier match} other {# earlier matches}}",
+      "draws": "{count, plural, one {# draw} other {# draws}} (not counted in the win rate)",
+      "backToDashboard": "Back to dashboard",
+      "prepareAnother": "Prepare another session",
+      "overlays": "Manage overlays",
+      "classic": "View classic recap",
+      "legacy": "Session recorded before per-character ratings: rating changes are not available.",
+      "noRatingCharacter": "No rating data for this session."
     }
   }
 }

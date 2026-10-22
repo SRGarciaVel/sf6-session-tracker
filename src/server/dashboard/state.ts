@@ -68,6 +68,8 @@ export async function loadRecentMatches(
   db: DbExecutor,
   playerId: string,
   session: Pick<PlayerLiveState["session"], "sessionId" | "totalGames">,
+  /** Latest N (dashboard: the recent form); the recap passes the whole session. */
+  limit: number = RECENT_FORM_LENGTH,
 ): Promise<DashboardRecentMatch[]> {
   if (!session.sessionId || session.totalGames === 0) return [];
   const rows = await db
@@ -95,17 +97,15 @@ export async function loadRecentMatches(
     opponentCharacter: r.opponentCharacter,
     opponentName: r.opponentName,
   }));
-  return recentSessionMatches(asSession, RECENT_FORM_LENGTH, session.totalGames).map(
-    ({ match: m, n }) => ({
-      id: idByExternal.get(m.externalMatchId) ?? m.externalMatchId,
-      n,
-      result: m.result,
-      characterName: m.characterName,
-      opponentCharacter: m.opponentCharacter,
-      opponentName: m.opponentName,
-      playedAt: m.playedAt.toISOString(),
-    }),
-  );
+  return recentSessionMatches(asSession, limit, session.totalGames).map(({ match: m, n }) => ({
+    id: idByExternal.get(m.externalMatchId) ?? m.externalMatchId,
+    n,
+    result: m.result,
+    characterName: m.characterName,
+    opponentCharacter: m.opponentCharacter,
+    opponentName: m.opponentName,
+    playedAt: m.playedAt.toISOString(),
+  }));
 }
 
 export async function buildDashboardLiveState(

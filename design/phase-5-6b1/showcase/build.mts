@@ -76,4 +76,12 @@ for (const locale of ["es", "en"] as ShowcaseLocale[]) {
 `,
   );
 }
+// 5. Phase 5.6C: static recap gallery (server-rendered only; no script needed).
+const { RECAPS, RecapPage } = await import("./RecapGallery");
+for (const locale of ["es", "en"] as ShowcaseLocale[])
+  for (const which of Object.keys(RECAPS) as Array<keyof typeof RECAPS>)
+    writeFileSync(
+      join(OUT, `recap-${which}-${locale}.html`),
+      `<!doctype html><html lang="${locale}"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Recap ${which}</title><link rel="stylesheet" href="./app.css" /></head><body>${renderToString(createElement(RecapPage, { locale, which }))}</body></html>\n`,
+    );
 console.log(`showcase built → ${OUT}`);

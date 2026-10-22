@@ -13,6 +13,9 @@ import { CharacterBreakdown } from "../../_components/SessionPanel";
 import { getDb } from "@/server/db/client";
 import { match } from "@/server/db/schema";
 import { getOwnedSession, summarizeSessionRow } from "@/server/sessions/service";
+import { loadRecentMatches } from "@/server/dashboard/state";
+import { dashboardUiFor } from "@/server/features/fight-session";
+import { FightSessionRecap } from "./FightSessionRecap";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations("Meta"))("sessionRecap") };
@@ -30,13 +33,42 @@ export default async function SessionRecapPage({
   searchParams,
 }: PageProps<"/dashboard/sessions/[id]">) {
   const { id } = await params;
+  const query = await searchParams;
   // Set by the dashboard right after "End session": confirm it was saved.
-  const justEnded = (await searchParams).ended === "1";
+  const justEnded = query.ended === "1";
   if (!z.string().uuid().safeParse(id).success) notFound();
-  const { player } = await requirePlayer();
+  const { user, player } = await requirePlayer();
   const db = getDb();
   const session = await getOwnedSession(db, player.id, id); // IDOR-safe
   if (!session) notFound();
+
+  // Phase 5.6C: Fight Session recap for allowlisted testers only (same server gate as the
+  // dashboard; `?ui=classic` can only opt out). Same summary, same counted matches.
+  if (dashboardUiFor(user.id, query.ui) === "fight-session") {
+    const summary = await summarizeSessionRow(db, session, player);
+    const live = toLiveSessionState(session.id, summary, {
+      characters: [],
+      activeCharacterKey: null,
+    });
+    const matches = await loadRecentMatches(
+      db,
+      player.id,
+      { sessionId: session.id, totalGames: summary.totalGames },
+      Number.MAX_SAFE_INTEGER,
+    );
+    return (
+      <div className="mx-auto max-w-5xl" data-recap-ui="fight-session">
+        <FightSessionRecap
+          session={live}
+          ratingModel={summary.ratingModel}
+          startedAt={summary.startedAt.toISOString()}
+          endedAt={summary.endedAt?.toISOString() ?? null}
+          matches={matches}
+          justEnded={justEnded}
+        />
+      </div>
+    );
+  }
 
   const [summary, matches] = await Promise.all([
     summarizeSessionRow(db, session, player),

@@ -1,0 +1,138 @@
+{
+  "ranAt": "2026-10-22T02:36:14.026Z",
+  "results": [
+    {
+      "check": "zero matches: Fight Session recap, ended",
+      "pass": true
+    },
+    {
+      "check": "zero matches: «—» win rate and the honest empty list",
+      "pass": true
+    },
+    {
+      "check": "LIVE: 3 matches arrived through SSE",
+      "pass": true
+    },
+    {
+      "check": "recap: saved confirmation + «Sesión terminada»",
+      "pass": true
+    },
+    {
+      "check": "recap: 3 · 1 · 2 · 33,3 %",
+      "pass": true,
+      "detail": "PARTIDAS 3 VICTORIAS 1 DERROTAS 2 % DE VICTORIAS 33,3 % CAMBIO EN LA SESIÓN · JAMIE ▼ -24 23.006 → 22.982 LP"
+    },
+    {
+      "check": "recap: the latest character's own change (Jamie −24 LP), never a combined total",
+      "pass": true
+    },
+    {
+      "check": "recap: Ryu keeps its own MR change (+12 MR)",
+      "pass": true
+    },
+    {
+      "check": "recap: strip in session order",
+      "pass": true,
+      "detail": "[\"Partida 1: Victoria\",\"Partida 2: Derrota\",\"Partida 3: Derrota\"]"
+    },
+    {
+      "check": "recap: list newest first with opponents",
+      "pass": true
+    },
+    {
+      "check": "recap: no per-match rating in the list",
+      "pass": true
+    },
+    {
+      "check": "recap: results bar has no collisions (1440)",
+      "pass": true
+    },
+    {
+      "check": "recap: no SSE stream or polling on the recap page",
+      "pass": true
+    },
+    {
+      "check": "es 1920×1080: no collisions, no horizontal overflow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "es 1440×900: no collisions, no horizontal overflow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "es 1280×720: no collisions, no horizontal overflow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "es 1024×768: no collisions, no horizontal overflow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "es 390×844: no collisions, no horizontal overflow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "es 360×800: no collisions, no horizontal overflow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "en 1440×900: no collisions, no horizontal overflow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "en 390×844: no collisions, no horizontal overflow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "text 200 %: results bar still has no collisions",
+      "pass": true
+    },
+    {
+      "check": "keyboard: «Preparar otra sesión» reachable by Tab with a visible inset focus",
+      "pass": true,
+      "detail": "8 Tab"
+    },
+    {
+      "check": "old completed session by URL: its own recap (0 matches)",
+      "pass": true
+    },
+    {
+      "check": "«Preparar otra sesión» → dashboard PREPARE with the last session",
+      "pass": true
+    },
+    {
+      "check": "?ui=classic: classic recap",
+      "pass": true
+    },
+    {
+      "check": "non-owner: another player's session is not found and leaks nothing",
+      "pass": true,
+      "detail": "HTTP 200 (streamed not-found page); not-found shown=true; leaked="
+    },
+    {
+      "check": "gate: ineligible owner gets the classic recap even forcing ?ui=, cookie and header",
+      "pass": true
+    },
+    {
+      "check": "overlays: OBS tokens unchanged",
+      "pass": true
+    },
+    {
+      "check": "reduced motion: no running animation on the recap",
+      "pass": true
+    },
+    {
+      "check": "no page errors / hydration warnings",
+      "pass": true,
+      "detail": ""
+    }
+  ]
+}

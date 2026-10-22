@@ -133,12 +133,15 @@ export function ActivityList({
   items,
   waiting = false,
   limit,
+  firstNumber = 1,
   className,
 }: {
   items: readonly ActivityItem[];
   /** Active session with no match yet: say what happens next instead of "empty". */
   waiting?: boolean;
   limit?: number;
+  /** Session position of `items[0]` (when the list is a slice of a longer session). */
+  firstNumber?: number;
   className?: string;
 }) {
   const t = useTranslations("FightSession.activity");
@@ -156,7 +159,7 @@ export function ActivityList({
   return (
     <ol aria-label={t("label")} className={cx("m-0 list-none divide-y divide-line p-0", className)}>
       {shown.map((m) => {
-        const n = items.indexOf(m) + 1;
+        const n = items.indexOf(m) + firstNumber;
         return (
           <li
             key={m.id}
