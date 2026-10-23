@@ -5,7 +5,7 @@
     "cancel": "Cancelar",
     "oneMoment": "Un momento…",
     "working": "Procesando…",
-    "backToDashboard": "← Panel",
+    "backToDashboard": "Volver al panel",
     "language": "Idioma",
     "languageNames": {
       "es": "Español",
@@ -18,7 +18,8 @@
     "copyFailed": "No se pudo copiar",
     "copiedAnnounce": "Copiado al portapapeles",
     "copyFailedHint": "No se pudo copiar. Selecciona el texto y cópialo a mano.",
-    "slowServer": "Iniciando SST… Esto puede tardar unos segundos en la beta gratuita."
+    "slowServer": "Iniciando SST… Esto puede tardar unos segundos en la beta gratuita.",
+    "opensInNewTab": "se abre en una pestaña nueva"
   },
   "Meta": {
     "description": "Tracking de sesiones, estadísticas en tiempo real y overlays para OBS para juegos de pelea. Compatible actualmente con Street Fighter 6.",
@@ -210,7 +211,7 @@
     "unranked": "Sin rango",
     "confirm": "Soy yo — crear mi overlay",
     "settingUp": "Configurando…",
-    "backToDashboard": "← Volver al panel",
+    "backToDashboard": "Volver al panel",
     "defaultOverlayName": "Overlay de juego",
     "charactersFound": "{count, plural, =0 {Sin personajes con datos de Ranked} one {# personaje con datos de Ranked} other {# personajes con datos de Ranked}}",
     "companionStepsTitle": "Cómo empezar",
@@ -310,7 +311,7 @@
       "configure": "Configurar",
       "urlAria": "URL de la fuente de navegador de OBS",
       "copyUrl": "Copiar URL para OBS",
-      "openPreview": "Abrir vista previa ↗",
+      "openPreview": "Abrir vista previa",
       "newOverlay": "+ Nuevo overlay",
       "newOverlayName": "Overlay {number}",
       "status": "Estado",
@@ -442,7 +443,7 @@
         "unknown": "Versión instalada no disponible todavía.",
         "upToDate": "✓ Companion actualizado",
         "available": "⚡ Nueva versión disponible: v{version}",
-        "download": "↓ Descargar actualización",
+        "download": "Descargar actualización",
         "howTo": "Ver cómo actualizar"
       }
     },
@@ -467,7 +468,7 @@
         "loginBuckler": "Inicia sesión en Buckler en ese navegador y pulsa «Probar conexión con Buckler» en el Companion.",
         "syncNow": "Esperando una sincronización reciente: abre el Companion y pulsa «Sincronizar ahora»."
       },
-      "goToCompanion": "Ir al Companion ↓"
+      "goToCompanion": "Ir al Companion"
     },
     "creatorBeta": {
       "title": "Creator Beta",
@@ -741,7 +742,7 @@
     "zoom": "Zoom",
     "zoomIn": "Acercar",
     "zoomOut": "Alejar",
-    "openOverlay": "Abrir overlay ↗",
+    "openOverlay": "Abrir overlay",
     "obsHint": "En OBS: Fuente de navegador → pega la URL → {width} × {height}.",
     "dangerZone": "Más acciones",
     "saveNetworkError": "No hay conexión con el servidor.",
@@ -1006,7 +1007,7 @@
     "title": "Instalar SST Companion para Street Fighter 6",
     "intro": "El SST Companion para Street Fighter 6 es una extensión para Chrome, Brave o Edge (en PC). Lee tus partidas de Buckler's Boot Camp en tu propio navegador y las envía a SST. Tarda unos 5 minutos.",
     "betaNote": "Durante la beta la extensión se instala a mano, en «modo desarrollador». Es temporal: más adelante habrá una instalación más simple.",
-    "download": "↓ Descargar Companion",
+    "download": "Descargar Companion",
     "downloadMissing": "Pide el archivo ZIP del Companion al organizador de la beta.",
     "step1": "Descarga el ZIP del Companion.",
     "step2": "Descomprímelo en una carpeta que no vayas a borrar (por ejemplo, Documentos). Dentro debe verse el archivo manifest.json.",
@@ -1017,7 +1018,7 @@
     "step7": "En ese mismo navegador, inicia sesión en Buckler's Boot Camp.",
     "step8": "Vuelve aquí y pulsa «Conectar Companion» para vincularlo con tu cuenta.",
     "copyAddressAria": "Copiar {address}",
-    "openBuckler": "Abrir Buckler ↗",
+    "openBuckler": "Abrir Buckler",
     "goDashboard": "Ir al panel",
     "goSignup": "Crear cuenta",
     "warningTitle": "¿El navegador muestra un aviso?",
@@ -1025,7 +1026,7 @@
     "updateTitle": "Actualizar una versión existente",
     "privacyTitle": "Tu privacidad",
     "privacyBody": "El Companion nunca envía tus cookies ni tu contraseña de Capcom, y no usa el permiso de cookies del navegador. Solo envía tu CFN, tus personajes con su rango/LP/MR y tus partidas.",
-    "downloadUpdate": "↓ Descargar la última versión",
+    "downloadUpdate": "Descargar la última versión",
     "availableVersion": "Versión disponible: v{version}",
     "checksum": "SHA-256",
     "checksumAria": "Descargar la suma de verificación SHA-256 del ZIP",

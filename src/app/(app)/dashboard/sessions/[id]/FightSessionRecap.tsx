@@ -6,6 +6,8 @@
  */
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { ActionLink } from "@/components/ui/ActionLink";
+import { Icon } from "@/components/ui/Icon";
 import {
   ActivityList,
   RatingSummary,
@@ -105,11 +107,10 @@ export function FightSessionRecap({
           <nav aria-label={t("eyebrow")} className="flex flex-wrap items-center gap-3">
             <Link href="/dashboard#session" className="fs-cta fs-cut">
               <span>{t("prepareAnother")}</span>
-              <span className="fs-cta-arrow" aria-hidden>
-                →
-              </span>
+              <Icon name="arrow-right" size="1.15em" className="fs-cta-arrow" />
             </Link>
             <Link href="/dashboard" className="fs-btn fs-cut">
+              <Icon name="arrow-left" />
               {t("backToDashboard")}
             </Link>
           </nav>
@@ -177,16 +178,9 @@ export function FightSessionRecap({
       )}
 
       <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-        <Link
-          href="/dashboard#overlays"
-          className="inline-flex min-h-8 items-center text-cyan hover:underline"
-        >
-          {t("overlays")} →
-        </Link>
-        <a
-          href="?ui=classic"
-          className="inline-flex min-h-8 items-center text-muted hover:text-text hover:underline"
-        >
+        <ActionLink href="/dashboard#overlays">{t("overlays")}</ActionLink>
+        {/* A plain anchor on purpose: the UI choice is made by the server on a full request. */}
+        <a href="?ui=classic" className="sst-link sst-link--quiet">
           {t("classic")}
         </a>
       </nav>

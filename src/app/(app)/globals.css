@@ -1170,6 +1170,94 @@ body::after {
   }
 }
 
+/*
+ * M2 — motion tokens (one vocabulary for every control and transition; see
+ * design/phase-m2/README.md). Durations by intent, not per component:
+ *   instant   press / toggle feedback                 ~100 ms
+ *   quick     hover, colour, icon nudge               ~160 ms
+ *   standard  disclosure, small reveal                ~220 ms
+ *   panel     panels / sections entering              ~280 ms
+ *   stage     session-state transition (maximum)      ~400 ms
+ * Only transform and opacity are animated. Reduced motion zeroes the nudge distance (the global
+ * rule below collapses durations), so nothing jumps either.
+ */
+:root {
+  --motion-instant: 100ms;
+  --motion-quick: 160ms;
+  --motion-standard: 220ms;
+  --motion-panel: 280ms;
+  --motion-stage: 400ms;
+  --motion-ease-out: var(--ease-snap);
+  --motion-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --motion-ease-emphasis: cubic-bezier(0.2, 0.9, 0.2, 1.15);
+  --motion-nudge: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-nudge: 0px;
+  }
+}
+
+@layer components {
+  /* SVG control icons (components/ui/Icon.tsx): sized by the text, never shrink. */
+  .sst-icon {
+    flex: none;
+    transition: transform var(--motion-quick) var(--motion-ease-out);
+  }
+
+  /* Angular secondary buttons carry an icon too: same spacing as `.btn`. */
+  .fs-btn {
+    gap: 0.55em;
+  }
+
+  /* ActionLink: navigation with a directional icon; text underline + icon nudge on hover/focus. */
+  .sst-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    min-height: 2rem;
+    font-weight: 600;
+    color: var(--color-cyan);
+    text-decoration: none;
+    transition: color var(--motion-quick) var(--motion-ease-out);
+  }
+  .sst-link:hover > span,
+  .sst-link:focus-visible > span {
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+    text-decoration-thickness: 1px;
+  }
+  .sst-link--quiet {
+    color: var(--color-muted);
+  }
+  .sst-link--quiet:hover,
+  .sst-link--quiet:focus-visible {
+    color: var(--color-text);
+  }
+
+  /* Directional nudge, the same for links and for icons inside the angular buttons. */
+  :is(.sst-link, .fs-btn, .btn):is(:hover, :focus-visible) .sst-icon[data-icon="arrow-right"] {
+    transform: translateX(var(--motion-nudge));
+  }
+  :is(.sst-link, .fs-btn, .btn):is(:hover, :focus-visible) .sst-icon[data-icon="arrow-left"] {
+    transform: translateX(calc(-1 * var(--motion-nudge)));
+  }
+  :is(.sst-link, .fs-btn, .btn):is(:hover, :focus-visible)
+    .sst-icon:is([data-icon="arrow-down"], [data-icon="download"]) {
+    transform: translateY(var(--motion-nudge));
+  }
+  :is(.sst-link, .fs-btn, .btn):is(:hover, :focus-visible) .sst-icon[data-icon="external"] {
+    transform: translate(var(--motion-nudge), calc(-1 * var(--motion-nudge)));
+  }
+  /* Disclosure chevron: rotates when its <details> opens. */
+  details[open] > summary .sst-icon[data-icon="chevron"] {
+    transform: rotate(90deg);
+  }
+  .sst-icon[data-icon="chevron"] {
+    transition-duration: var(--motion-standard);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

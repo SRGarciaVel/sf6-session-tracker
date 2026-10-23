@@ -13,6 +13,7 @@
  * comparison with the last saved snapshot. Preview-only state lives in PreviewPane.
  */
 import Link from "next/link";
+import { Icon } from "@/components/ui/Icon";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -225,9 +226,10 @@ function SessionOverlayBuilder({
                 e.preventDefault();
                 setLeaving(true);
               }}
-              className="text-sm text-muted hover:text-text"
+              className="sst-link sst-link--quiet text-sm"
             >
-              {tc("backToDashboard")}
+              <Icon name="arrow-left" className="sst-link-icon" />
+              <span>{tc("backToDashboard")}</span>
             </Link>
             <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
               <h1 className="font-display text-xl font-bold sm:text-2xl">{t("title")}</h1>

@@ -102,7 +102,7 @@ describe("companion version / update notice", () => {
     const html = status("0.1.9", "0.1.10");
     expect(html).toContain("⚡ Nueva versión disponible: v0.1.10");
     expect(html).toContain(`href="${DL}"`);
-    expect(html).toContain("↓ Descargar actualización");
+    expect(html).toMatch(/data-icon="download"[^>]*>.*<\/svg>Descargar actualización<\/a>/);
     expect(html).toContain('href="/help/companion#actualizar"');
   });
 

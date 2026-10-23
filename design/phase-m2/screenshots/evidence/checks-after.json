@@ -1,0 +1,106 @@
+{
+  "ranAt": "2026-10-23T01:55:31.029Z",
+  "results": [
+    {
+      "check": "PREPARE CTA: SVG arrow (no text glyph), still a <button>",
+      "pass": true
+    },
+    {
+      "check": "«Ver resumen» → the same recap route (client navigation)",
+      "pass": true
+    },
+    {
+      "check": "RECAP: primary «Preparar otra sesión» (angular CTA + arrow), secondary «Volver al panel» (back arrow)",
+      "pass": true
+    },
+    {
+      "check": "RECAP «Gestionar overlays» → /dashboard#overlays",
+      "pass": true
+    },
+    {
+      "check": "RECAP «Preparar otra sesión» → /dashboard#session (PREPARE)",
+      "pass": true
+    },
+    {
+      "check": "Copy OBS URL: exact URL copied; copy icon → check icon",
+      "pass": true
+    },
+    {
+      "check": "Details chevron (SVG) rotates when open",
+      "pass": true,
+      "detail": "none → matrix(0, 1, -1, 0, 0, 0)"
+    },
+    {
+      "check": "«Configurar» → same builder route",
+      "pass": true
+    },
+    {
+      "check": "Builder back link: arrow-left SVG, link semantics",
+      "pass": true
+    },
+    {
+      "check": "keyboard: ActionLink focus ring visible; focus also nudges the arrow",
+      "pass": true,
+      "detail": "solid 2px · matrix(1, 0, 0, 1, 0, 0)"
+    },
+    {
+      "check": "touch targets: every action control ≥ 24×24 px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "reduced motion: hovered ActionLink icon does not move",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "check": "no horizontal overflow /dashboard (A) at 1920…360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "no horizontal overflow /dashboard/sessions/0d6a030a-73b6-4182-b731-5108bc62e3fd (A) at 1920…360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "no horizontal overflow /dashboard/sessions/ba13bcdf-0f85-42ea-beac-7e2ae5c3741f (B) at 1920…360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "no horizontal overflow /dashboard (B) at 1920…360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "no horizontal overflow /help/companion (A) at 1920…360",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "text 200 % /dashboard at 1440: no horizontal overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "check": "text 200 % /dashboard at 390: no horizontal overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "check": "text 200 % /dashboard/sessions/0d6a030a-73b6-4182-b731-5108bc62e3fd at 1440: no horizontal overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "check": "text 200 % /dashboard/sessions/0d6a030a-73b6-4182-b731-5108bc62e3fd at 390: no horizontal overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "check": "OBS overlay: no SST control icons, no app CSS (motion tokens absent)",
+      "pass": true
+    }
+  ]
+}

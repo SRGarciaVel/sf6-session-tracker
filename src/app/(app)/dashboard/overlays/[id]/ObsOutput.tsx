@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
+import { Icon } from "@/components/ui/Icon";
 import { Button, buttonClass } from "@/components/ui/primitives";
 import { deleteOverlayAction, rotateOverlayTokenAction } from "../../actions";
 
@@ -72,6 +73,8 @@ export function ObsOutput({
           className={buttonClass("secondary", "sm")}
         >
           {t("openOverlay")}
+          <Icon name="external" />
+          <span className="sr-only"> ({tc("opensInNewTab")})</span>
         </a>
       </div>
       <p className="text-xs text-faint">

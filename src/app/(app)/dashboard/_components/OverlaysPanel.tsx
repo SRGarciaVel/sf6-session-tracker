@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { OverlayView } from "@/components/overlay/OverlayView";
 import { CopyButton } from "@/components/ui/CopyButton";
+import { Icon } from "@/components/ui/Icon";
 import { Button, Dot, ErrorText, buttonClass, cx } from "@/components/ui/primitives";
 import { overlayReadout, type OverlayConfig } from "@/domain/overlay/config";
 import { CREATABLE_OVERLAY_KINDS, type CreatableOverlayKind } from "@/domain/overlay/kind";
@@ -131,6 +132,7 @@ function OverlayUrlField({ url }: { url: string }) {
 
 function OverlayPreviewLink({ url, name }: { url: string; name?: string }) {
   const t = useTranslations("Dashboard.overlays");
+  const tc = useTranslations("Common");
   return (
     <a
       href={url}
@@ -140,6 +142,8 @@ function OverlayPreviewLink({ url, name }: { url: string; name?: string }) {
       className={cx(buttonClass("secondary", "sm"), "max-w-full whitespace-normal")}
     >
       {t("openPreview")}
+      <Icon name="external" />
+      {!name && <span className="sr-only"> ({tc("opensInNewTab")})</span>}
     </a>
   );
 }
@@ -189,9 +193,7 @@ function CompactOverlayItem({ overlay }: { overlay: OverlaySummary }) {
       </div>
       <details className="group" data-testid="overlay-details">
         <summary className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 text-sm font-semibold text-cyan hover:underline [&::-webkit-details-marker]:hidden">
-          <span aria-hidden className="inline-block transition-transform group-open:rotate-90">
-            ›
-          </span>
+          <Icon name="chevron" />
           {t("details")}
           <span className="sr-only">{t("detailsOf", { name: overlay.name })}</span>
         </summary>
@@ -370,12 +372,7 @@ export function ConsoleDisclosure({
       <summary className="flex min-h-10 cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
         <h2 className="hud-heading flex-1">{title}</h2>
         {aside}
-        <span
-          aria-hidden
-          className="font-display text-lg text-cyan transition-transform group-open:rotate-90"
-        >
-          ›
-        </span>
+        <Icon name="chevron" size="1.125rem" className="text-cyan" />
       </summary>
       <div className="pb-1">{children}</div>
     </details>

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import Link from "next/link";
+import { ActionLink } from "@/components/ui/ActionLink";
+import { Icon } from "@/components/ui/Icon";
 import { notFound } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -94,9 +96,9 @@ export default async function SessionRecapPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6" data-recap-ui="classic">
-      <Link href="/dashboard" className="text-sm text-muted hover:text-text">
+      <ActionLink href="/dashboard" kind="back" tone="quiet" className="text-sm">
         {tc("backToDashboard")}
-      </Link>
+      </ActionLink>
 
       {justEnded && ended && (
         <div
@@ -107,10 +109,12 @@ export default async function SessionRecapPage({
             {t("endedConfirm")}
           </p>
           <Link href="/dashboard" className={buttonClass("secondary", "sm")}>
+            <Icon name="arrow-left" />
             {t("backToDashboard")}
           </Link>
           <Link href="/dashboard#session" className={buttonClass("primary", "sm")}>
             {t("newSession")}
+            <Icon name="arrow-right" />
           </Link>
         </div>
       )}
@@ -195,6 +199,7 @@ export default async function SessionRecapPage({
 
       <div className="flex justify-end">
         <Link href="/dashboard" className={buttonClass("secondary")}>
+          <Icon name="arrow-left" />
           {t("backToDashboard")}
         </Link>
       </div>

@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Button, cx } from "@/components/ui/primitives";
+import { ActionLink } from "@/components/ui/ActionLink";
 import {
   assessCompanion,
   type CompanionReadiness,
@@ -139,9 +140,9 @@ export function StartChecklist({
           {readiness.nextStep === "pairCompanion" && (
             <>
               {" "}
-              <a href="#companion" className="font-semibold text-cyan underline underline-offset-4">
+              <ActionLink href="#companion" kind="down" className="min-h-6 align-middle">
                 {t("goToCompanion")}
-              </a>
+              </ActionLink>
             </>
           )}
         </p>

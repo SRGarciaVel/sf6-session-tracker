@@ -20,14 +20,14 @@ describe("help: companion download", () => {
       latestVersion: "0.1.1",
     });
     expect(html).toContain(`href="${URL_}"`);
-    expect(html).toContain("↓ Descargar Companion");
+    expect(html).toMatch(/data-icon="download"[^>]*>.*<\/svg>Descargar Companion<\/a>/);
     expect(html).toContain("Versión disponible: v0.1.1");
     expect(html).toContain("sf6-session-companion-beta.sha256");
   });
 
   it("no version configured ⇒ button only, no invented version", () => {
     const html = render({ downloadUrl: URL_, checksumUrl: null, latestVersion: null });
-    expect(html).toContain("↓ Descargar Companion");
+    expect(html).toMatch(/data-icon="download"[^>]*>.*<\/svg>Descargar Companion<\/a>/);
     expect(html).not.toContain("Versión disponible");
   });
 
