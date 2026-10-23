@@ -4,6 +4,7 @@
  */
 export * from "./types";
 export * from "./adapters";
+export * from "./motion";
 export { SessionStatusIndicator, StatusStrip } from "./SessionStatus";
 export { CharacterLine, FightScoreboard, RatingSummary, SessionResults } from "./Scoreboard";
 export { ActivityList, LastMatch, RoundStrip } from "./Activity";
@@ -15,3 +16,4 @@ export {
 } from "./SessionControls";
 export { OverlayAccessCard, OverlayDock } from "./OverlayAccess";
 export { SessionStage } from "./SessionStage";
+export { FocusTarget } from "./FocusTarget";

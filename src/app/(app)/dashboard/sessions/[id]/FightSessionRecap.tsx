@@ -10,6 +10,7 @@ import { ActionLink } from "@/components/ui/ActionLink";
 import { Icon } from "@/components/ui/Icon";
 import {
   ActivityList,
+  FocusTarget,
   RatingSummary,
   RoundStrip,
   SessionResults,
@@ -20,6 +21,7 @@ import {
   type ActivityItem,
 } from "@/components/fight-session";
 import { LocalTime } from "@/components/ui/LocalTime";
+import { cx } from "@/components/ui/primitives";
 import { formatDuration } from "@/domain/format";
 import { pickRatingCharacter, type LiveSessionState } from "@/domain/overlay/state";
 import type { RatingModel } from "@/domain/session/engine";
@@ -69,18 +71,29 @@ export function FightSessionRecap({
 
   return (
     <div className="grid gap-6">
-      <SessionStage ghost={active?.characterName} labelledBy="fs-recap-title">
+      {/* Just ended from LIVE: the stage settles in once and focus lands on the summary heading
+          (the «End session» control is gone). Content is never delayed or hidden. */}
+      {justEnded && ended && <FocusTarget id="fs-recap-title" />}
+      <SessionStage
+        ghost={active?.characterName}
+        labelledBy="fs-recap-title"
+        className={cx(justEnded && ended && "fs-recap-in")}
+      >
         <div className="flex flex-wrap items-end justify-between gap-5">
           <div className="grid gap-2">
             {justEnded && ended ? (
-              <p role="status" className="fs-eyebrow m-0 text-win">
+              <p role="status" className="fs-eyebrow fs-recap-saved m-0 text-win">
                 <span aria-hidden>✓ </span>
                 {t("saved")}
               </p>
             ) : (
               <p className="fs-eyebrow m-0 text-cyan">{t("eyebrow")}</p>
             )}
-            <h1 id="fs-recap-title" className="fs-display m-0 text-5xl sm:text-7xl">
+            <h1
+              id="fs-recap-title"
+              tabIndex={-1}
+              className="fs-display m-0 text-5xl outline-none sm:text-7xl"
+            >
               {ended ? t("title") : t("inProgressTitle")}
             </h1>
             <dl className="m-0 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted">
