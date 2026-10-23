@@ -1,0 +1,63 @@
+{
+  "fight-prepare": {
+    "jsKB": 236.7,
+    "cssKB": 23.3,
+    "longTaskMs": 303,
+    "cls": 0.0022,
+    "domNodes": 400
+  },
+  "classic-dashboard": {
+    "jsKB": 236.7,
+    "cssKB": 23.3,
+    "longTaskMs": 356,
+    "cls": 0.0001,
+    "domNodes": 443
+  },
+  "fight-recap": {
+    "jsKB": 175,
+    "cssKB": 18.2,
+    "longTaskMs": 158,
+    "cls": 0,
+    "domNodes": 213
+  },
+  "classic-recap": {
+    "jsKB": 175,
+    "cssKB": 18.2,
+    "longTaskMs": 127,
+    "cls": 0,
+    "domNodes": 177
+  },
+  "analytics": {
+    "jsKB": 164.8,
+    "cssKB": 18.2,
+    "longTaskMs": 67,
+    "cls": 0,
+    "domNodes": 484
+  },
+  "builder": {
+    "jsKB": 232,
+    "cssKB": 23.3,
+    "longTaskMs": 452,
+    "cls": 0.053,
+    "domNodes": 796
+  },
+  "onboarding": {
+    "jsKB": 255.4,
+    "cssKB": 23.3,
+    "longTaskMs": 121,
+    "cls": 0,
+    "domNodes": 155
+  },
+  "help-companion": {
+    "jsKB": 242.4,
+    "cssKB": 18.2,
+    "longTaskMs": 126,
+    "cls": 0,
+    "domNodes": 210
+  },
+  "cpu": {
+    "idleTaskMsPer30s": 34,
+    "hoverSweepTaskMs4xThrottle": 560,
+    "hoveredControls": 12
+  }
+}
