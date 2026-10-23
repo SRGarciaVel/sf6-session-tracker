@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { LocalTime } from "@/components/ui/LocalTime";
+import { Icon } from "@/components/ui/Icon";
 import { Panel, cx } from "@/components/ui/primitives";
 import { deltaTone, formatDelta, formatWinRate } from "@/domain/format";
 import type { SessionSummary } from "@/domain/session/engine";
@@ -106,9 +107,7 @@ export async function SessionHistory({
                       {formatDelta(featured?.delta ?? null, locale)}
                       <span className="ml-1 text-xs font-semibold text-muted">{unit}</span>
                     </span>
-                    <span aria-hidden className="hidden text-faint sm:block">
-                      ›
-                    </span>
+                    <Icon name="chevron" className="hidden text-faint sm:block" />
                   </Link>
                 </li>
               );

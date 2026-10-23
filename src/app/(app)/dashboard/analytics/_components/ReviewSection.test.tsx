@@ -133,7 +133,9 @@ describe("signal cards", () => {
     expect(card!.text).toContain(
       "Tu rendimiento registrado en este enfrentamiento está 13,9 pp por debajo de tu rendimiento registrado con este personaje.",
     );
-    expect(card!.html).toMatch(/href="#matchups"[^>]*>Ver enfrentamientos/);
+    expect(card!.html).toMatch(
+      /href="#matchups"[^>]*><span>Ver enfrentamientos<\/span><svg[^>]*data-icon="arrow-down"/,
+    );
   });
 
   it("arrow + text, never colour alone (the arrow is decorative)", () => {

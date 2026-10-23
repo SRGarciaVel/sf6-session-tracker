@@ -1,4 +1,5 @@
 import { useTranslations } from "next-intl";
+import { Icon } from "@/components/ui/Icon";
 import { buttonClass } from "@/components/ui/primitives";
 
 /**
@@ -19,6 +20,7 @@ export function CompanionDownload({
   return (
     <div className="space-y-1.5">
       <a href={downloadUrl} className={buttonClass("primary", "md")} data-testid="download">
+        <Icon name="download" />
         {t("download")}
       </a>
       <p className="flex flex-wrap items-center gap-x-3 text-xs text-muted">

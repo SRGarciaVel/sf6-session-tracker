@@ -110,11 +110,12 @@ describe("compact overlay console", () => {
     await act(async () => copy.click());
     expect(writeText).toHaveBeenCalledWith("https://sst.example/overlay/tok_RANK_456");
     expect(copy.getAttribute("data-copy-status")).toBe("copied");
-    // «✓ Copiado» replaces the label in place; the idle label only reserves the width (no jump).
+    // «Copiado» (+ check icon) replaces the label in place; the idle label only reserves the width.
     const [idle, feedback] = [...copy.querySelectorAll("span > span")];
     expect(idle?.className).toContain("invisible");
     expect(idle?.getAttribute("aria-hidden")).toBe("true");
-    expect(feedback?.textContent).toBe("✓ Copiado");
+    expect(feedback?.textContent).toBe("Copiado");
+    expect(copy.querySelector('svg[data-icon="check"]')).not.toBeNull();
     vi.unstubAllGlobals();
   });
 

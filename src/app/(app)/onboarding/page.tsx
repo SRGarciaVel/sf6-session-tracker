@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import Link from "next/link";
+import { ActionLink } from "@/components/ui/ActionLink";
 import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 import { Logo } from "@/components/ui/Logo";
 import { getDb } from "@/server/db/client";
@@ -65,12 +65,11 @@ export default async function OnboardingPage() {
         )}
         <OnboardingFlow devHint={devToolsEnabled()} />
         {existing && (
-          <Link
-            href="/dashboard"
-            className="mt-6 block text-center text-sm text-muted hover:text-text"
-          >
-            {t("backToDashboard")}
-          </Link>
+          <div className="mt-6 flex justify-center">
+            <ActionLink href="/dashboard" kind="back" tone="quiet" className="text-sm">
+              {t("backToDashboard")}
+            </ActionLink>
+          </div>
         )}
       </div>
     </main>

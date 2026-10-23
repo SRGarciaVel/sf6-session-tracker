@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
+import { Icon } from "@/components/ui/Icon";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 import { Logo } from "@/components/ui/Logo";
@@ -75,6 +76,8 @@ export default async function CompanionHelpPage() {
         className={buttonClass("secondary", "sm")}
       >
         {t("openBuckler")}
+        <Icon name="external" />
+        <span className="sr-only"> ({tc("opensInNewTab")})</span>
       </a>
     ),
     step8: (
@@ -144,6 +147,7 @@ export default async function CompanionHelpPage() {
         </ol>
         {downloadUrl && (
           <a href={downloadUrl} className={`${buttonClass("secondary", "sm")} mt-4`}>
+            <Icon name="download" />
             {t("downloadUpdate")}
           </a>
         )}

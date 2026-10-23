@@ -17,6 +17,7 @@ import type {
 } from "@/domain/analytics/review-replays";
 import type { MatchResult } from "@/domain/sf6/types";
 import { ReviewReplayCopyButton } from "./ReviewReplayCopyButton";
+import { Icon } from "@/components/ui/Icon";
 
 const RESULT_STYLE: Record<MatchResult, string> = {
   win: "border-win/60 text-win",
@@ -120,9 +121,7 @@ function TransitionPair({ group }: { group: ReviewReplayGroup }) {
         {next && (
           <li className="border-t border-dashed border-line">
             <p className="pt-1.5 text-[0.7rem] font-semibold tracking-wide text-muted uppercase">
-              <span aria-hidden className="mr-1 text-cyan">
-                ↓
-              </span>
+              <Icon name="arrow-down" className="mr-1 inline-block align-[-0.125em] text-cyan" />
               {t("nextLabel")}
             </p>
             <ReplayRow candidate={next} />

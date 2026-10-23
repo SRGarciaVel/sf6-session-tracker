@@ -10,6 +10,8 @@
  */
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { ActionLink } from "@/components/ui/ActionLink";
+import { Icon } from "@/components/ui/Icon";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import {
@@ -83,7 +85,7 @@ export function FightStatusStrip({ overlayCount }: { overlayCount: number }) {
           href="#overlays"
           className="fs-btn fs-btn-sm fs-cut max-w-full whitespace-normal hud:hidden"
         >
-          {t("overlaysJump")} <span aria-hidden>↓</span>
+          {t("overlaysJump")} <Icon name="arrow-down" />
         </a>
       }
     />
@@ -145,12 +147,9 @@ function PrepareStage() {
             className="m-0 max-w-2xl border-l-4 border-warn bg-warn/8 px-3 py-2 text-sm"
           >
             {tr(`steps.${readiness.nextStep}`)}{" "}
-            <a
-              href="#companion"
-              className="font-semibold text-cyan underline-offset-2 hover:underline"
-            >
+            <ActionLink href="#companion" kind="down" className="min-h-6 align-middle">
               {tr("goToCompanion")}
-            </a>
+            </ActionLink>
           </p>
         )}
         <SessionActionBar>
@@ -180,7 +179,7 @@ function PrepareStage() {
               href={`/dashboard/sessions/${s.sessionId}`}
               className="fs-btn fs-btn-sm fs-cut justify-self-start"
             >
-              {t("prepare.viewRecap")} <span aria-hidden>→</span>
+              {t("prepare.viewRecap")} <Icon name="arrow-right" />
             </Link>
           </>
         ) : (

@@ -5,7 +5,7 @@
     "cancel": "Cancel",
     "oneMoment": "One moment…",
     "working": "Working…",
-    "backToDashboard": "← Dashboard",
+    "backToDashboard": "Back to dashboard",
     "language": "Language",
     "languageNames": {
       "es": "Español",
@@ -18,7 +18,8 @@
     "copyFailed": "Couldn't copy",
     "copiedAnnounce": "Copied to clipboard",
     "copyFailedHint": "Couldn't copy. Select the text and copy it manually.",
-    "slowServer": "Starting SST… This can take a few seconds on the free beta."
+    "slowServer": "Starting SST… This can take a few seconds on the free beta.",
+    "opensInNewTab": "opens in a new tab"
   },
   "Meta": {
     "description": "Session tracking, real-time stats and OBS overlays for fighting games. Currently supporting Street Fighter 6.",
@@ -210,7 +211,7 @@
     "unranked": "Unranked",
     "confirm": "This is me — create my overlay",
     "settingUp": "Setting up…",
-    "backToDashboard": "← Back to dashboard",
+    "backToDashboard": "Back to dashboard",
     "defaultOverlayName": "Gameplay Overlay",
     "charactersFound": "{count, plural, =0 {No ranked characters yet} one {# character with ranked data} other {# characters with ranked data}}",
     "companionStepsTitle": "How to start",
@@ -310,7 +311,7 @@
       "configure": "Configure",
       "urlAria": "OBS Browser Source URL",
       "copyUrl": "Copy OBS URL",
-      "openPreview": "Open preview ↗",
+      "openPreview": "Open preview",
       "newOverlay": "+ New overlay",
       "newOverlayName": "Overlay {number}",
       "status": "Status",
@@ -442,7 +443,7 @@
         "unknown": "Installed version not available yet.",
         "upToDate": "✓ Companion up to date",
         "available": "⚡ New version available: v{version}",
-        "download": "↓ Download update",
+        "download": "Download update",
         "howTo": "See how to update"
       }
     },
@@ -467,7 +468,7 @@
         "loginBuckler": "Log in to Buckler in that browser and press “Test Buckler connection” in the Companion.",
         "syncNow": "Waiting for a recent sync: open the Companion and press “Sync now”."
       },
-      "goToCompanion": "Go to the Companion ↓"
+      "goToCompanion": "Go to the Companion"
     },
     "creatorBeta": {
       "title": "Creator Beta",
@@ -741,7 +742,7 @@
     "zoom": "Zoom",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
-    "openOverlay": "Open overlay ↗",
+    "openOverlay": "Open overlay",
     "obsHint": "In OBS: Browser Source → paste the URL → {width} × {height}.",
     "dangerZone": "More actions",
     "saveNetworkError": "The server couldn't be reached.",
@@ -1006,7 +1007,7 @@
     "title": "Install the SST Companion for Street Fighter 6",
     "intro": "The SST Companion for Street Fighter 6 is an extension for Chrome, Brave or Edge (on PC). It reads your matches from Buckler's Boot Camp in your own browser and sends them to SST. It takes about 5 minutes.",
     "betaNote": "During the beta the extension is installed by hand, in “developer mode”. It's temporary: a simpler installation will come later.",
-    "download": "↓ Download Companion",
+    "download": "Download Companion",
     "downloadMissing": "Ask the beta organizer for the Companion ZIP file.",
     "step1": "Download the Companion ZIP.",
     "step2": "Unzip it into a folder you won't delete (for example, Documents). You should see the manifest.json file inside.",
@@ -1017,7 +1018,7 @@
     "step7": "In that same browser, log in to Buckler's Boot Camp.",
     "step8": "Come back here and press “Connect Companion” to pair it with your account.",
     "copyAddressAria": "Copy {address}",
-    "openBuckler": "Open Buckler ↗",
+    "openBuckler": "Open Buckler",
     "goDashboard": "Go to dashboard",
     "goSignup": "Create account",
     "warningTitle": "Does the browser show a warning?",
@@ -1025,7 +1026,7 @@
     "updateTitle": "Update an existing installation",
     "privacyTitle": "Your privacy",
     "privacyBody": "The Companion never sends your Capcom cookies or password, and it doesn't use the browser's cookies permission. It only sends your CFN, your characters with their rank/LP/MR, and your matches.",
-    "downloadUpdate": "↓ Download the latest version",
+    "downloadUpdate": "Download the latest version",
     "availableVersion": "Available version: v{version}",
     "checksum": "SHA-256",
     "checksumAria": "Download the ZIP's SHA-256 checksum",

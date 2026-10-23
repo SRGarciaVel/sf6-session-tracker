@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 import { useId, type ComponentType, type ReactNode } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
+import { Icon } from "@/components/ui/Icon";
 import { cx } from "@/components/ui/primitives";
 import type { OverlayKindLabel } from "./types";
 
@@ -91,7 +92,7 @@ export function OverlayAccessCard({
           className="fs-btn fs-btn-sm fs-cut"
           aria-label={t("previewNamed", { name })}
         >
-          {t("preview")} <span aria-hidden>↗</span>
+          {t("preview")} <Icon name="external" />
         </a>
       </div>
     </article>
@@ -121,7 +122,7 @@ export function OverlayDock({
           {t("title")}
         </h2>
         <LinkComponent href={manageHref} className="fs-btn fs-btn-sm fs-cut">
-          {t("manage")} <span aria-hidden>→</span>
+          {t("manage")} <Icon name="arrow-right" />
         </LinkComponent>
       </div>
       {count === 0 ? (

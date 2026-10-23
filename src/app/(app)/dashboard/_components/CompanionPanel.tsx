@@ -5,6 +5,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
+import { ActionLink } from "@/components/ui/ActionLink";
+import { Icon } from "@/components/ui/Icon";
 import { Button, Dot, ErrorText, buttonClass } from "@/components/ui/primitives";
 import { pairingCodeStatus } from "@/domain/companion/pairing";
 import { companionUpdateStatus } from "@/domain/companion/update";
@@ -59,6 +61,7 @@ export function CompanionVersionStatus({
           <div className="flex flex-wrap gap-2">
             {release?.downloadUrl && (
               <a href={release.downloadUrl} className={buttonClass("primary", "sm")}>
+                <Icon name="download" />
                 {t("download")}
               </a>
             )}
@@ -293,12 +296,9 @@ export function CompanionPanel({
         </ul>
       </div>
 
-      <Link
-        href="/help/companion"
-        className="mt-3 inline-flex min-h-8 items-center text-sm font-semibold text-cyan underline-offset-4 hover:underline"
-      >
-        {t("installLink")} →
-      </Link>
+      <ActionLink href="/help/companion" className="mt-3 text-sm">
+        {t("installLink")}
+      </ActionLink>
       <p className="mt-3 text-xs text-faint">{t("privacy")}</p>
       <ErrorText>{error}</ErrorText>
     </div>

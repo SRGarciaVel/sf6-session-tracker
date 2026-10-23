@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, type ReactNode } from "react";
 import { cx, ErrorText } from "@/components/ui/primitives";
+import { Icon } from "@/components/ui/Icon";
 
 /**
  * Phase 5.6B1 — presentational session controls. They render state and report intent through
@@ -36,9 +37,7 @@ export function StartSessionButton({
       data-k="start"
     >
       <span>{pending ? t("starting") : t("start")}</span>
-      <span className="fs-cta-arrow" aria-hidden>
-        →
-      </span>
+      <Icon name="arrow-right" size="1.15em" className="fs-cta-arrow" />
     </button>
   );
 }

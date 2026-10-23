@@ -12,6 +12,7 @@ import type { ReviewReplaySelection } from "@/domain/analytics/review-replays";
 import { buildReviewReport } from "@/domain/analytics/review-report";
 import type { PlayerAnalytics } from "@/server/analytics/service";
 import { AnalyticsSection, reviewPdfHref } from "./parts";
+import { ActionLink } from "@/components/ui/ActionLink";
 import { ReviewExportActions } from "./ReviewExportActions";
 import { ReplayIdHelp, ReviewReplayDisclosure } from "./ReviewReplays";
 
@@ -139,15 +140,13 @@ function SignalCard({
 
       <ReviewReplayDisclosure selection={replays} />
 
-      <a
+      <ActionLink
         href={signal.destination}
-        className="mt-4 inline-flex min-h-9 items-center font-display text-sm font-bold tracking-wide text-cyan uppercase hover:text-text"
+        kind="down"
+        className="mt-4 font-display text-sm font-bold tracking-wide uppercase"
       >
         {t(`go.${REVIEW_DESTINATION_KEYS[signal.destination]}`)}
-        <span aria-hidden className="ml-1">
-          →
-        </span>
-      </a>
+      </ActionLink>
     </article>
   );
 }
