@@ -42,6 +42,7 @@ import { useSlowFlag } from "@/lib/use-slow-flag";
 import { endSessionAction, startSessionAction } from "../../actions";
 import { useLiveDashboard, useNow } from "../LiveDashboard";
 import { useCompanionReadiness } from "../Readiness";
+import { ratingKey, useConfirmedRatingPulses, useMatchArrival } from "./use-session-motion";
 
 /** Dashboard status: an ended session is "prepare another" here (the recap has its own page). */
 function useDashboardStatus(): SessionIndicatorStatus {
@@ -190,26 +191,6 @@ function PrepareStage() {
   );
 }
 
-/**
- * Briefly marks the newest match as "new" when it arrives through the live state (never on the
- * first render: a page load is not an event). Feedback only: the data itself is already shown.
- */
-function useFreshMatchId(latestId: string | null): string | null {
-  // Adjusted during render (React's "storing information from previous renders" pattern).
-  const [previous, setPrevious] = useState(latestId);
-  const [fresh, setFresh] = useState<string | null>(null);
-  if (latestId !== previous) {
-    setPrevious(latestId);
-    setFresh(latestId);
-  }
-  useEffect(() => {
-    if (!fresh) return;
-    const id = setTimeout(() => setFresh(null), 4_000);
-    return () => clearTimeout(id);
-  }, [fresh]);
-  return fresh;
-}
-
 function ActiveStage({ justStarted = false }: { justStarted?: boolean }) {
   const t = useTranslations("FightSession");
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -239,9 +220,19 @@ function ActiveStage({ justStarted = false }: { justStarted?: boolean }) {
   // older payloads only carry the result letters.
   const recent = state.recentMatches;
   const latest = recent?.at(-1) ?? null;
-  const freshId = useFreshMatchId(latest?.id ?? null);
   const results = recent ? recent.map((m) => m.result) : s.recentResults;
   const firstNumber = recent?.[0]?.n ?? s.totalGames - s.recentResults.length + 1;
+  // Motion only for genuine arrivals (stable ids + a growing engine count), never re-renders.
+  const arrival = useMatchArrival({
+    sessionId: s.sessionId,
+    totalGames: s.totalGames,
+    wins: s.wins,
+    losses: s.losses,
+    ids: recent?.map((m) => m.id) ?? [],
+  });
+  const newIds = new Set(arrival?.ids);
+  const latestIsNew = latest !== null && newIds.has(latest.id);
+  const ratingPulses = useConfirmedRatingPulses(ratings);
 
   const end = () => {
     if (inFlight.current) return;
@@ -264,7 +255,12 @@ function ActiveStage({ justStarted = false }: { justStarted?: boolean }) {
   };
 
   return (
-    <SessionStage id="session" ghost={active?.characterName} labelledBy="fs-active-title">
+    <SessionStage
+      id="session"
+      ghost={active?.characterName}
+      labelledBy="fs-active-title"
+      className={cx(justStarted && "fs-stage-reveal")}
+    >
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="grid gap-2">
           <p className="fs-eyebrow m-0 text-magenta">{t("live.eyebrow")}</p>
@@ -293,20 +289,25 @@ function ActiveStage({ justStarted = false }: { justStarted?: boolean }) {
       <FightScoreboard
         data={scoreboardFromSession(s)}
         highlight={
-          freshId && latest
-            ? latest.result === "win"
+          arrival?.win && arrival.loss
+            ? "both"
+            : arrival?.win
               ? "win"
-              : latest.result === "loss"
+              : arrival?.loss
                 ? "loss"
                 : null
-            : null
         }
+        pulse={arrival?.seq ?? 0}
       />
 
       {ratings.length > 0 ? (
         <div className="grid gap-3">
           {ratings.map((r) => (
-            <RatingSummary key={`${r.characterName}-${r.system}`} rating={r} />
+            <RatingSummary
+              key={ratingKey(r)}
+              rating={r}
+              confirmedPulse={ratingPulses[ratingKey(r)] ?? 0}
+            />
           ))}
         </div>
       ) : (
@@ -318,14 +319,16 @@ function ActiveStage({ justStarted = false }: { justStarted?: boolean }) {
       ) : (
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           {latest ? (
-            <LastMatch item={latest} isNew={freshId === latest.id} />
+            <LastMatch item={latest} isNew={latestIsNew} newCount={latestIsNew ? newIds.size : 1} />
           ) : (
             <p className="m-0 text-sm text-muted">{t("live.lastMatchUnavailable")}</p>
           )}
           <RoundStrip
             results={results}
+            ids={recent?.map((m) => m.id)}
+            newIds={newIds}
+            newestIsNew={arrival !== null && !recent}
             firstNumber={firstNumber}
-            newestIsNew={freshId !== null}
             titled
           />
         </div>

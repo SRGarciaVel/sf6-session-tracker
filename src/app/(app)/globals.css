@@ -1057,41 +1057,110 @@ body::after {
     background: repeating-conic-gradient(#0e1226 0 25%, #0b0e1d 0 50%) 0 0 / 16px 16px;
   }
 
-  /* Motion (state feedback only; global reduced-motion rule below flattens it). */
+  /*
+   * Motion (state feedback only; global reduced-motion rule below flattens it). M2B: event cues
+   * on the M2 tokens, ease-out without overshoot, transform/opacity only. See
+   * design/phase-m2/m2b.md for each trigger.
+   */
+  /* Match arrival: the side whose count grew takes the hit. */
   .fs-hit {
-    animation: fs-hit 360ms cubic-bezier(0.2, 0.9, 0.2, 1.15);
+    animation: fs-hit var(--motion-stage) var(--motion-ease-out);
   }
+  .fs-side {
+    position: relative;
+  }
+  .fs-side-flash {
+    position: absolute;
+    inset: 0;
+    z-index: -1; /* behind the side's text (the clip-path makes the side a stacking context) */
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    animation: fs-flash var(--motion-stage) var(--motion-ease-out);
+  }
+  .fs-side-win .fs-side-flash {
+    color: var(--color-win);
+  }
+  .fs-side-loss .fs-side-flash {
+    color: var(--color-loss);
+  }
+  /* Match arrival: the new round marker drops in; the result stamp lands. */
   .fs-pop {
-    animation: fs-pop 300ms cubic-bezier(0.2, 0.9, 0.2, 1.15);
+    animation: fs-pop var(--motion-panel) var(--motion-ease-out) both;
   }
   .fs-stamp-in {
-    animation: fs-stamp 300ms cubic-bezier(0.2, 0.9, 0.2, 1.15);
+    animation: fs-stamp var(--motion-panel) var(--motion-ease-out);
   }
-  /* Phase 5.6D: one-off entrance of the LIVE heading right after «Start» (never on page load). */
+  /* Confirmed rating change: one underline sweep under the value, then gone (no counter). */
+  .fs-rating-confirmed {
+    position: relative;
+  }
+  .fs-rating-confirmed::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.2em;
+    height: 3px;
+    background: var(--color-cyan);
+    opacity: 0;
+    transform-origin: left;
+    animation: fs-underline 900ms var(--motion-ease-out);
+  }
+  /* PREPARE → LIVE (only right after «Start» on this page): one stage choreography — the slash
+     sweeps in, the heading enters, then the versus sides cut in from their own edges. */
   .fs-enter {
-    animation: fs-enter 260ms cubic-bezier(0.2, 0.9, 0.2, 1);
+    animation: fs-enter var(--motion-panel) var(--motion-ease-out);
   }
+  .fs-stage-reveal .fs-slash {
+    animation: fs-slash-in var(--motion-stage) var(--motion-ease-out);
+  }
+  .fs-stage-reveal .fs-side-win {
+    animation: fs-cut-left var(--motion-panel) var(--motion-ease-out) 60ms both;
+  }
+  .fs-stage-reveal .fs-side-loss {
+    animation: fs-cut-right var(--motion-panel) var(--motion-ease-out) 60ms both;
+  }
+  .fs-stage-reveal .fs-mid {
+    animation: fs-fade var(--motion-panel) var(--motion-ease-out) 120ms both;
+  }
+  /* LIVE → RECAP (only right after ending the session): the stage settles upward. */
+  .fs-recap-in {
+    animation: fs-settle var(--motion-panel) var(--motion-ease-out);
+  }
+  .fs-recap-in .fs-recap-saved {
+    animation: fs-enter var(--motion-panel) var(--motion-ease-out) 80ms both;
+  }
+  /* `translate` (not `transform`) so it composes with the headline's −6° lean (.fs-display). */
   @keyframes fs-enter {
     0% {
-      transform: translateX(-10px);
+      translate: -10px 0;
       opacity: 0;
     }
     100% {
-      transform: none;
+      translate: none;
       opacity: 1;
     }
   }
   @keyframes fs-hit {
     0% {
-      transform: scale(1.22);
+      transform: scale(1.18);
     }
     100% {
       transform: none;
     }
   }
+  @keyframes fs-flash {
+    0% {
+      opacity: 0.22;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
   @keyframes fs-pop {
     0% {
-      transform: translateY(-12px) scale(0.6);
+      transform: translateY(-10px) scale(0.7);
       opacity: 0;
     }
     100% {
@@ -1101,12 +1170,81 @@ body::after {
   }
   @keyframes fs-stamp {
     0% {
-      transform: scale(1.5) rotate(-8deg);
+      transform: scale(1.4) rotate(-8deg);
       opacity: 0;
     }
     100% {
       transform: none;
       opacity: 1;
+    }
+  }
+  @keyframes fs-underline {
+    0% {
+      transform: scaleX(0);
+      opacity: 1;
+    }
+    25%,
+    70% {
+      transform: none;
+      opacity: 1;
+    }
+    100% {
+      transform: none;
+      opacity: 0;
+    }
+  }
+  @keyframes fs-slash-in {
+    0% {
+      transform: rotate(-66deg) scaleX(0);
+    }
+    100% {
+      transform: rotate(-66deg);
+    }
+  }
+  @keyframes fs-cut-left {
+    0% {
+      transform: translateX(-24px);
+      opacity: 0;
+    }
+    100% {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  @keyframes fs-cut-right {
+    0% {
+      transform: translateX(24px);
+      opacity: 0;
+    }
+    100% {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  @keyframes fs-fade {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  @keyframes fs-settle {
+    0% {
+      transform: translateY(10px);
+      opacity: 0.4;
+    }
+    100% {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  /* Reduced motion: no staggered waits either (cues collapse to their static end state). */
+  @media (prefers-reduced-motion: reduce) {
+    .fs-stage-reveal *,
+    .fs-recap-in *,
+    .fs-round-new {
+      animation-delay: 0ms !important;
     }
   }
 }

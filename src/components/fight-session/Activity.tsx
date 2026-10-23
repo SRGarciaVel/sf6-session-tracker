@@ -18,12 +18,18 @@ const STAMP: Record<MatchResult, string> = {
 /** Numbered round markers, oldest → newest (results always carry a letter, not colour alone). */
 export function RoundStrip({
   results,
+  ids,
+  newIds,
   newestIsNew = false,
   titled = false,
   firstNumber = 1,
   className,
 }: {
   results: readonly MatchResult[];
+  /** Stable match ids, parallel to `results`: a marker keeps its element as the window slides. */
+  ids?: readonly string[];
+  /** Matches that just arrived (outline + pop, newest first, at most 3 staggered). */
+  newIds?: ReadonlySet<string>;
   /** Session position of the first marker (when only the latest matches are shown). */
   firstNumber?: number;
   /** Marks the newest marker (outline + pop); the announcement belongs to `LastMatch`. */
@@ -40,11 +46,18 @@ export function RoundStrip({
       className={cx("m-0 flex list-none flex-wrap gap-1.5 p-0", !titled && className)}
     >
       {results.map((r, i) => {
-        const isNew = newestIsNew && i === results.length - 1;
+        const id = ids?.[i];
+        const isNew =
+          id !== undefined && newIds ? newIds.has(id) : newestIsNew && i === results.length - 1;
+        // Batches cascade from the newest marker backwards, capped so a burst stays brief.
+        const order = results.length - 1 - i;
         return (
           <li
-            key={i}
+            key={id ?? i}
             className={cx("fs-round fs-cut", ROUND[r], isNew && "fs-round-new fs-pop")}
+            style={
+              isNew && order > 0 ? { animationDelay: `${Math.min(order, 2) * 60}ms` } : undefined
+            }
             aria-label={`${t("matchNumber", { n: firstNumber + i })}: ${t(`result.${r}`)}`}
           >
             <span className="fs-round-n" aria-hidden>
@@ -80,10 +93,13 @@ function opponentOf(item: ActivityItem, unknown: string) {
 export function LastMatch({
   item,
   isNew = false,
+  newCount = 1,
   className,
 }: {
   item: ActivityItem;
   isNew?: boolean;
+  /** Matches that arrived together with this one (one announcement for the whole batch). */
+  newCount?: number;
   className?: string;
 }) {
   const t = useTranslations("FightSession.activity");
@@ -92,6 +108,7 @@ export function LastMatch({
   return (
     <div className={cx("flex min-w-0 items-center gap-4", className)}>
       <span
+        key={item.id}
         className={cx("fs-stamp fs-cut", STAMP[item.result], isNew && "fs-stamp-in")}
         aria-hidden
       >
@@ -119,7 +136,11 @@ export function LastMatch({
         </p>
       </div>
       <span className="sr-only" aria-live="polite">
-        {isNew ? t("newAnnounce", { result, opponent }) : ""}
+        {!isNew
+          ? ""
+          : newCount > 1
+            ? t("newAnnounceMany", { count: newCount, result, opponent })
+            : t("newAnnounce", { result, opponent })}
       </span>
     </div>
   );

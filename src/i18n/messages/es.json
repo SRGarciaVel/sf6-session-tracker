@@ -1513,6 +1513,7 @@
       "lastMatch": "Última partida",
       "new": "Nueva",
       "newAnnounce": "Partida registrada: {result} contra {opponent}",
+      "newAnnounceMany": "{count} partidas registradas. La última: {result} contra {opponent}",
       "vs": "vs",
       "unknownOpponent": "Rival desconocido",
       "matchNumber": "Partida {n}",

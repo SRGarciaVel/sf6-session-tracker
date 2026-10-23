@@ -5,20 +5,25 @@ import type { RatingData, ScoreboardData } from "./types";
 
 /**
  * The Fight Session "versus": wins cut in from the left, losses from the right, win rate and
- * game count in between. `highlight` replays a short hit on the side that just changed (state
- * feedback only: the number itself is the information).
+ * game count in between. `highlight` plays a short hit on the side(s) that just changed (state
+ * feedback only: the number itself is the information); a new `pulse` replays it.
  */
 export function FightScoreboard({
   data,
   size = "large",
   highlight = null,
+  pulse = 0,
   className,
 }: {
   data: ScoreboardData;
   size?: "large" | "compact";
-  highlight?: "win" | "loss" | null;
+  highlight?: "win" | "loss" | "both" | null;
+  /** Arrival counter: a new value remounts the accents so back-to-back events replay. */
+  pulse?: number;
   className?: string;
 }) {
+  const hitWin = highlight === "win" || highlight === "both";
+  const hitLoss = highlight === "loss" || highlight === "both";
   const t = useTranslations("FightSession.scoreboard");
   const locale = useLocale();
   const rate = data.winRate === null ? "—" : formatWinRate(data.winRate, locale);
@@ -35,9 +40,11 @@ export function FightScoreboard({
     >
       <p className="sr-only">{summary}</p>
       <div className="fs-side fs-side-win" aria-hidden>
+        {hitWin && <span key={`f${pulse}`} className="fs-side-flash" data-motion="side-flash" />}
         <span className="fs-eyebrow">{t("wins")}</span>
         <span
-          className={cx("fs-num text-win", highlight === "win" && "fs-hit")}
+          key={hitWin ? `w${pulse}` : "w"}
+          className={cx("fs-num text-win", hitWin && "fs-hit")}
           data-testid="fs-wins"
         >
           {formatInteger(data.wins, locale)}
@@ -64,9 +71,11 @@ export function FightScoreboard({
         </span>
       </div>
       <div className="fs-side fs-side-loss" aria-hidden>
+        {hitLoss && <span key={`f${pulse}`} className="fs-side-flash" data-motion="side-flash" />}
         <span className="fs-eyebrow">{t("losses")}</span>
         <span
-          className={cx("fs-num text-loss", highlight === "loss" && "fs-hit")}
+          key={hitLoss ? `l${pulse}` : "l"}
+          className={cx("fs-num text-loss", hitLoss && "fs-hit")}
           data-testid="fs-losses"
         >
           {formatInteger(data.losses, locale)}
@@ -83,7 +92,19 @@ const ARROW = { positive: "▲", negative: "▼", neutral: "" } as const;
  * One character's rating for the session: start → now, the engine's session delta and honest
  * states (pending confirmation, unknown baseline, final value unavailable). Never per match.
  */
-export function RatingSummary({ rating, className }: { rating: RatingData; className?: string }) {
+export function RatingSummary({
+  rating,
+  confirmedPulse = 0,
+  className,
+}: {
+  rating: RatingData;
+  /**
+   * Grows when a newly CONFIRMED value replaced a different confirmed one: one short accent
+   * under the value (no counter, never while pending or unknown).
+   */
+  confirmedPulse?: number;
+  className?: string;
+}) {
   const t = useTranslations("FightSession.rating");
   const locale = useLocale();
   const unit = t(`unit.${rating.system}`);
@@ -109,9 +130,11 @@ export function RatingSummary({ rating, className }: { rating: RatingData; class
         </>
       )}
       <span
+        key={`v${confirmedPulse}`}
         className={cx(
           "fs-num text-5xl max-sm:text-4xl",
           (rating.pending || unavailable) && "text-muted",
+          confirmedPulse > 0 && !rating.pending && !unavailable && "fs-rating-confirmed",
         )}
       >
         {unavailable ? "—" : formatInteger(rating.current, locale)}

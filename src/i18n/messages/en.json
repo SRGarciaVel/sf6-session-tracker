@@ -1513,6 +1513,7 @@
       "lastMatch": "Last match",
       "new": "New",
       "newAnnounce": "Match recorded: {result} against {opponent}",
+      "newAnnounceMany": "{count} matches recorded. Latest: {result} against {opponent}",
       "vs": "vs",
       "unknownOpponent": "Unknown opponent",
       "matchNumber": "Match {n}",
