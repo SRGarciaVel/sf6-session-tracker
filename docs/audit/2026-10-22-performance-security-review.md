@@ -3,6 +3,15 @@
 **Base auditada:** `main` `d63501e` (merge del PR #73, M1 de skeletons; incluye el PR #72 de
 consistencia de ratings).
 
+> **Seguimiento (2026-10-23):**
+>
+> - **S-01:** corregido (PR #75, Next 16.4.2).
+> - **S-02:** corregido (PR #78, admisión acotada; los detalles siguen fuera del repositorio).
+> - **S-03:** verificación en `docs/audit/2026-10-23-s03-infrastructure-verification.md`. P-10
+>   queda resuelto: el edge de producción negocia HTTP/2.
+>
+> El resto de hallazgos sigue abierto según el §15.
+
 **Naturaleza:** auditoría **de solo lectura sobre el código de producción**. Este PR no cambia
 ningún comportamiento de la app. Solo añade:
 
