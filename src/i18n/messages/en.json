@@ -1429,7 +1429,10 @@
         "download": "Download PDF"
       },
       "errors": {
-        "noSignals": "There are no review priorities to export with these filters."
+        "noSignals": "There are no review priorities to export with these filters.",
+        "inProgress": "Your report is already being generated. Wait for the download to finish.",
+        "busy": "Other reports are being generated right now. Try again in a few seconds.",
+        "tooMany": "You have generated several reports in a row. Try again in a few minutes."
       }
     }
   },

@@ -1429,7 +1429,10 @@
         "download": "Descargar PDF"
       },
       "errors": {
-        "noSignals": "No hay prioridades de revisión para exportar con estos filtros."
+        "noSignals": "No hay prioridades de revisión para exportar con estos filtros.",
+        "inProgress": "Tu informe ya se está generando. Espera a que termine la descarga.",
+        "busy": "Ahora mismo se están generando otros informes. Vuelve a intentarlo en unos segundos.",
+        "tooMany": "Has generado varios informes seguidos. Vuelve a intentarlo en unos minutos."
       }
     }
   },
