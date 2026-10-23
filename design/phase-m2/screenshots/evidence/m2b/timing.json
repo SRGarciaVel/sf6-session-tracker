@@ -1,0 +1,406 @@
+{
+  "startToLiveMs": 248,
+  "reveal": [
+    {
+      "name": "fs-slash-in",
+      "target": "fs-slash",
+      "duration": 400,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "fs-enter",
+      "target": "fs-display m-0 text-4xl outline-none sm:text-5xl fs-enter",
+      "duration": 280,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "fs-cut-left",
+      "target": "fs-side fs-side-win",
+      "duration": 280,
+      "delay": 60,
+      "iterations": 1
+    },
+    {
+      "name": "fs-fade",
+      "target": "fs-mid",
+      "duration": 280,
+      "delay": 120,
+      "iterations": 1
+    },
+    {
+      "name": "fs-cut-right",
+      "target": "fs-side fs-side-loss",
+      "duration": 280,
+      "delay": 60,
+      "iterations": 1
+    },
+    {
+      "name": "panel-in",
+      "target": "hud-panel animate-panel-in [--notch:18px] hud:col-start-2 hu",
+      "duration": 200,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-tick",
+      "target": "ov-num ov-changed",
+      "duration": 220,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-glow",
+      "target": "ov-num ov-changed",
+      "duration": 700,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "live-ring",
+      "target": "live-dot",
+      "duration": 2400,
+      "delay": 0,
+      "iterations": null
+    }
+  ],
+  "firstMatch": [
+    {
+      "name": "fs-flash",
+      "target": "fs-side-flash",
+      "duration": 400,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "fs-hit",
+      "target": "fs-wins",
+      "duration": 400,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "fs-stamp",
+      "target": "fs-stamp fs-cut bg-win fs-stamp-in",
+      "duration": 280,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "fs-pop",
+      "target": "fs-round fs-cut fs-round-win fs-round-new fs-pop",
+      "duration": 280,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "panel-in",
+      "target": "hud-panel animate-panel-in [--notch:18px] hud:col-start-2 hu",
+      "duration": 200,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-tick",
+      "target": "ov-num ov-changed ov-flash-win ov-win",
+      "duration": 220,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-flash-win",
+      "target": "ov-num ov-changed ov-flash-win ov-win",
+      "duration": 700,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-tick",
+      "target": "ov-num ov-changed",
+      "duration": 220,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-glow",
+      "target": "ov-num ov-changed",
+      "duration": 700,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-tick",
+      "target": "ov-num ov-changed",
+      "duration": 220,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-glow",
+      "target": "ov-num ov-changed",
+      "duration": 700,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "live-ring",
+      "target": "live-dot",
+      "duration": 2400,
+      "delay": 0,
+      "iterations": null
+    }
+  ],
+  "batch": [
+    {
+      "name": "fs-flash",
+      "target": "fs-side-flash",
+      "duration": 400,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "fs-hit",
+      "target": "fs-wins",
+      "duration": 400,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "fs-flash",
+      "target": "fs-side-flash",
+      "duration": 400,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "fs-hit",
+      "target": "fs-losses",
+      "duration": 400,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "fs-stamp",
+      "target": "fs-stamp fs-cut bg-loss fs-stamp-in",
+      "duration": 280,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "fs-pop",
+      "target": "fs-round fs-cut fs-round-win fs-round-new fs-pop",
+      "duration": 280,
+      "delay": 120,
+      "iterations": 1
+    },
+    {
+      "name": "fs-pop",
+      "target": "fs-round fs-cut fs-round-win fs-round-new fs-pop",
+      "duration": 280,
+      "delay": 60,
+      "iterations": 1
+    },
+    {
+      "name": "fs-pop",
+      "target": "fs-round fs-cut fs-round-loss fs-round-new fs-pop",
+      "duration": 280,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "panel-in",
+      "target": "hud-panel animate-panel-in [--notch:18px] hud:col-start-2 hu",
+      "duration": 200,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-tick",
+      "target": "ov-num ov-changed ov-flash-win ov-win",
+      "duration": 220,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-flash-win",
+      "target": "ov-num ov-changed ov-flash-win ov-win",
+      "duration": 700,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-tick",
+      "target": "ov-num ov-changed ov-flash-loss ov-loss",
+      "duration": 220,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-flash-loss",
+      "target": "ov-num ov-changed ov-flash-loss ov-loss",
+      "duration": 700,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-tick",
+      "target": "ov-num ov-changed",
+      "duration": 220,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-glow",
+      "target": "ov-num ov-changed",
+      "duration": 700,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-tick",
+      "target": "ov-num ov-changed",
+      "duration": 220,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-glow",
+      "target": "ov-num ov-changed",
+      "duration": 700,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "live-ring",
+      "target": "live-dot",
+      "duration": 2400,
+      "delay": 0,
+      "iterations": null
+    }
+  ],
+  "rating": [
+    {
+      "name": "fs-underline",
+      "target": "fs-num text-5xl max-sm:text-4xl fs-rating-confirmed",
+      "duration": 900,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "panel-in",
+      "target": "hud-panel animate-panel-in [--notch:18px] hud:col-start-2 hu",
+      "duration": 200,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-tick",
+      "target": "ov-num ov-changed ov-flash-win ov-win",
+      "duration": 220,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-flash-win",
+      "target": "ov-num ov-changed ov-flash-win ov-win",
+      "duration": 700,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-tick",
+      "target": "ov-num ov-changed ov-flash-loss ov-loss",
+      "duration": 220,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-flash-loss",
+      "target": "ov-num ov-changed ov-flash-loss ov-loss",
+      "duration": 700,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-tick",
+      "target": "ov-num ov-changed",
+      "duration": 220,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-glow",
+      "target": "ov-num ov-changed",
+      "duration": 700,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-tick",
+      "target": "ov-num ov-changed ov-flash-win",
+      "duration": 220,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-flash-win",
+      "target": "ov-num ov-changed ov-flash-win",
+      "duration": 700,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-tick",
+      "target": "ov-num ov-changed",
+      "duration": 220,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "ov-glow",
+      "target": "ov-num ov-changed",
+      "duration": 700,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "live-ring",
+      "target": "live-dot",
+      "duration": 2400,
+      "delay": 0,
+      "iterations": null
+    }
+  ],
+  "endToRecapMs": 1010,
+  "recap": [
+    {
+      "name": "?",
+      "target": "fs-cta fs-cut",
+      "duration": 140,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "?",
+      "target": "[object SVGAnimatedString]",
+      "duration": 160,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "fs-settle",
+      "target": "fs-stage grid gap-6 p-5 sm:p-9 fs-recap-in",
+      "duration": 280,
+      "delay": 0,
+      "iterations": 1
+    },
+    {
+      "name": "fs-enter",
+      "target": "fs-eyebrow fs-recap-saved m-0 text-win",
+      "duration": 280,
+      "delay": 80,
+      "iterations": 1
+    }
+  ]
+}

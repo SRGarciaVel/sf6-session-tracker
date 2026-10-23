@@ -1,0 +1,25 @@
+{
+  "prepare": {
+    "longTaskMs": 118,
+    "cls": 0.0023
+  },
+  "idleLiveCpuMsPer30s": 141,
+  "continuousAnimations": [
+    {
+      "name": "live-ring",
+      "target": "live-dot",
+      "duration": 2400,
+      "delay": 0,
+      "iterations": null
+    }
+  ],
+  "throttled4x": {
+    "arrivalCpuMs": 884,
+    "frames": 86,
+    "p95FrameMs": 50,
+    "over50ms": 4,
+    "longTaskMs": 254
+  },
+  "liveCls": 0.0052,
+  "sseRequestsMainPage": 10
+}

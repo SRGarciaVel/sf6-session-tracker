@@ -1,0 +1,108 @@
+{
+  "ranAt": "2026-10-23T02:43:45.066Z",
+  "results": [
+    {
+      "check": "1 PREPARE initial render has no motion cue",
+      "pass": true
+    },
+    {
+      "check": "3 failed start shows the error and no LIVE stage",
+      "pass": true
+    },
+    {
+      "check": "2 start: one stage reveal, focus on the LIVE heading",
+      "pass": true
+    },
+    {
+      "check": "4/10 refresh into LIVE: no reveal, no cue",
+      "pass": true
+    },
+    {
+      "check": "5 first match: win side hit, one new marker, announcement",
+      "pass": true
+    },
+    {
+      "check": "6 then a loss: loss side hit only, the new marker is match 2",
+      "pass": true
+    },
+    {
+      "check": "7 batch of 3: three new markers, both sides, one summarized announcement",
+      "pass": true
+    },
+    {
+      "check": "11 pending rating: held value, no confirmed accent",
+      "pass": true
+    },
+    {
+      "check": "8 SSE reconnect: resync without any cue",
+      "pass": true,
+      "detail": "stream requests during outage+reconnect: 2"
+    },
+    {
+      "check": "11 confirmed rating: one accent, value shown, no match cue",
+      "pass": true
+    },
+    {
+      "check": "9 back/forward: no replayed cue",
+      "pass": true
+    },
+    {
+      "check": "13 failed end: error shown, still LIVE, no recap transition",
+      "pass": true
+    },
+    {
+      "check": "12/14 end → RECAP: one restrained entrance, focus on the summary heading",
+      "pass": true
+    },
+    {
+      "check": "15 RECAP → PREPARE: no artificial motion or wait",
+      "pass": true
+    },
+    {
+      "check": "15 start another: the reveal plays again",
+      "pass": true
+    },
+    {
+      "check": "16 reduced motion: no animation longer than 1 ms, no delays, content opaque",
+      "pass": true,
+      "detail": "11 animations"
+    },
+    {
+      "check": "16 reduced motion: the static «new» marks and announcement remain",
+      "pass": true
+    },
+    {
+      "check": "17 mobile 360: LIVE without horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "9 200 % text at 360: LIVE without horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "17 mobile 390: LIVE without horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "9 200 % text at 390: LIVE without horizontal overflow",
+      "pass": true
+    },
+    {
+      "check": "9 EN: batch announcement in English",
+      "pass": true,
+      "detail": "2 matches recorded. Latest: Loss against Ken"
+    },
+    {
+      "check": "18 classic fallback: start + match work, no Fight Session stage or cue",
+      "pass": true
+    },
+    {
+      "check": "18 classic recap: no Fight Session entrance",
+      "pass": true
+    },
+    {
+      "check": "19 OBS overlay: no Fight Session motion rules or elements",
+      "pass": true
+    }
+  ]
+}

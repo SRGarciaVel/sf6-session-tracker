@@ -152,7 +152,10 @@ Verified by clicking in Chromium (§9) and by the existing SSR tests.
 
 ## 7. Deferred, as separate PRs (not started)
 
-- **M2B: Fight Session motion.**
+- **M2B: Fight Session motion.** Implemented in [`m2b.md`](m2b.md) (PR «feat(ui): add
+  event-driven Fight Session motion»). Two departures from this plan: domain cues use
+  `--motion-ease-out` (no overshoot), and RECAP → PREPARE gets no extra animation. The original
+  plan follows.
   - PREPARE → LIVE: entrance of the LIVE heading and scoreboard after the server confirms the
     session. The existing `fs-enter` and focus move to tokens.
   - New match: one accent per unique match id, no replay on reconnect or remount, bursts
