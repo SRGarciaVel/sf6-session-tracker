@@ -5,7 +5,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 try {
   process.loadEnvFile(".env");
@@ -21,7 +21,8 @@ const { getDb, closeDb } = await import("@/server/db/client");
 const { authUser, match, sf6Player } = await import("@/server/db/schema");
 const { getAuth } = await import("@/server/auth/auth");
 const { getEnv } = await import("@/server/env");
-const { reviewPdfResponse } = await import("@/server/analytics/report/review-pdf-response");
+const { reviewPdfResponse, resetReviewPdfGate } =
+  await import("@/server/analytics/report/review-pdf-response");
 const { REPORT_SCENARIOS } = await import("@/server/analytics/report/report-fixtures");
 const route = await import("@/app/(app)/dashboard/analytics/review.pdf/route");
 
@@ -32,6 +33,9 @@ describe.skipIf(!TEST_DB)("review report PDF route (integration)", () => {
   const origin = TEST_DB ? new URL(getEnv().APP_URL).origin : "";
   let seq = 0;
 
+  // Each test exercises the route on its own: start from an empty admission gate (the process
+  // budget is covered by review-pdf-admission.test.ts).
+  beforeEach(() => resetReviewPdfGate());
   afterAll(async () => {
     await closeDb();
   });

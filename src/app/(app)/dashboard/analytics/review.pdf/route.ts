@@ -5,7 +5,7 @@
  */
 import { getAuth } from "@/server/auth/auth";
 import { LOCALE_COOKIE, resolveLocale } from "@/i18n/locale";
-import { reviewPdfResponse } from "@/server/analytics/report/review-pdf-response";
+import { guardedReviewPdfResponse } from "@/server/analytics/report/review-pdf-response";
 import { getDb } from "@/server/db/client";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     userLocale: session.user.locale ?? null,
     cookieLocale: cookieValue(request.headers.get("cookie"), LOCALE_COOKIE),
   });
-  return reviewPdfResponse(getDb(), {
+  return guardedReviewPdfResponse(getDb(), {
     userId: session.user.id,
     locale,
     searchParams: new URL(request.url).searchParams,
