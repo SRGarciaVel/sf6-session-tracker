@@ -1,0 +1,4 @@
+# Regenerable media: never committed (captures from a local demo instance, renders, stills).
+/assets/
+/out/
+*.mp4

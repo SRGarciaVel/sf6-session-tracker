@@ -1,0 +1,961 @@
+<!doctype html>
+<!--
+  SST — Hybrid Product Demo composition.
+  A deterministic page: window.render(frame) draws frame N (30 fps) and nothing moves on its own
+  (no CSS transitions/animations, no timers), so render.mts can capture frame by frame.
+  ?layout=h → 1920×1080 · ?layout=v → 1080×1920 (recomposed, not a crop).
+  ?t=SECONDS renders that instant once (preview in a normal browser).
+  UI imagery = real SST captures from capture.mts (local instance, fictitious data).
+-->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>SST demo composition</title>
+    <style>
+      @font-face {
+        font-family: "BC";
+        font-weight: 800;
+        src: url("../../../src/server/analytics/report/fonts/BarlowCondensed-ExtraBold.ttf");
+      }
+      @font-face {
+        font-family: "BC";
+        font-weight: 700;
+        src: url("../../../src/server/analytics/report/fonts/BarlowCondensed-Bold.ttf");
+      }
+      @font-face {
+        font-family: "BC";
+        font-weight: 600;
+        src: url("../../../src/server/analytics/report/fonts/BarlowCondensed-SemiBold.ttf");
+      }
+      @font-face {
+        font-family: "B";
+        font-weight: 400;
+        src: url("../../../src/server/analytics/report/fonts/Barlow-Regular.ttf");
+      }
+      @font-face {
+        font-family: "B";
+        font-weight: 600;
+        src: url("../../../src/server/analytics/report/fonts/Barlow-SemiBold.ttf");
+      }
+      @font-face {
+        font-family: "M";
+        font-weight: 500;
+        src: url("../../../src/server/analytics/report/fonts/JetBrainsMono-Medium.ttf");
+      }
+
+      /* SST tokens (src/app/(app)/globals.css). */
+      :root {
+        --bg: #05070f;
+        --surface: #0c1021;
+        --surface-2: #111733;
+        --line: #1b2448;
+        --line-2: #2d3863;
+        --cyan: #2fe0ff;
+        --magenta: #ff2e93;
+        --violet: #7c5cff;
+        --win: #29f0a8;
+        --loss: #ff3b72;
+        --text: #eef1fb;
+        --muted: #97a1c6;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        overflow: hidden;
+      }
+      #stage {
+        position: relative;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "B", sans-serif;
+      }
+      .abs {
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+      }
+      .label {
+        white-space: nowrap;
+        font-family: "M", monospace;
+        color: var(--cyan);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+      .heading {
+        font-family: "BC", sans-serif;
+        font-weight: 800;
+        text-transform: uppercase;
+        line-height: 0.92;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+      }
+      .sub {
+        font-family: "B", sans-serif;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .tag {
+        font-family: "BC", sans-serif;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--bg);
+        background: var(--cyan);
+        padding: 0.18em 0.7em 0.12em;
+        clip-path: polygon(0.5em 0, 100% 0, calc(100% - 0.5em) 100%, 0 100%);
+        white-space: nowrap;
+      }
+      .tag.ghost {
+        background: var(--surface-2);
+        color: var(--muted);
+      }
+      .tag.magenta {
+        background: var(--magenta);
+        color: var(--text);
+      }
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+      }
+      .frame {
+        overflow: hidden;
+        background: var(--bg);
+        border: 2px solid var(--line-2);
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+      }
+      .frame::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        box-shadow: inset 0 0 0 1px rgba(47, 224, 255, 0.08);
+      }
+      .corner {
+        position: absolute;
+        width: 34px;
+        height: 34px;
+        border-color: var(--cyan);
+        border-style: solid;
+        border-width: 0;
+      }
+      .ring {
+        position: absolute;
+        border: 3px solid var(--cyan);
+        box-shadow: 0 0 18px rgba(47, 224, 255, 0.45);
+      }
+      .chip {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        gap: 0.6em;
+        font-family: "BC", sans-serif;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        background: rgba(12, 16, 33, 0.92);
+        border-left: 4px solid var(--cyan);
+        padding: 0.45em 0.9em;
+        white-space: nowrap;
+      }
+      .chip b {
+        color: var(--cyan);
+        font-weight: 800;
+      }
+      .chip.m {
+        border-left-color: var(--magenta);
+      }
+      .chip.m b {
+        color: var(--magenta);
+      }
+      .chip.w b {
+        color: var(--win);
+      }
+      img {
+        display: block;
+      }
+      .px {
+        image-rendering: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <script>
+      "use strict";
+      const FPS = 30;
+      const TOTAL = 1650; // 55 s
+      const P = new URLSearchParams(location.search);
+      const V = P.get("layout") === "v";
+      const W = V ? 1080 : 1920;
+      const H = V ? 1920 : 1080;
+      const CAP = "../assets/captures/";
+
+      /* ───────── math ───────── */
+      const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+      const lerp = (a, b, k) => a + (b - a) * k;
+      const easeOut = (k) => 1 - Math.pow(1 - k, 3);
+      const easeIn = (k) => k * k * k;
+      const easeInOut = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+      /** 0→1 between a and b (eased). */
+      const ramp = (t, a, b, e = easeOut) => e(clamp((t - a) / (b - a)));
+      /** Fade in over [a, a+d], out over [b-d2, b]. */
+      const life = (t, a, b, d = 0.45, d2 = d) =>
+        Math.min(ramp(t, a, a + d), 1 - ramp(t, b - d2, b, easeIn));
+      /** Piecewise keyframes [[time, [values…]], …], eased per segment. */
+      function keys(t, ks, e = easeInOut) {
+        if (t <= ks[0][0]) return ks[0][1];
+        for (let i = 1; i < ks.length; i++) {
+          const [t1, v1] = ks[i];
+          const [t0, v0] = ks[i - 1];
+          if (t <= t1) {
+            const k = e(clamp((t - t0) / (t1 - t0)));
+            return v0.map((v, j) => lerp(v, v1[j], k));
+          }
+        }
+        return ks[ks.length - 1][1];
+      }
+
+      /* ───────── DOM helpers ───────── */
+      const stage = document.getElementById("stage");
+      stage.style.width = W + "px";
+      stage.style.height = H + "px";
+      function el(tag, cls, parent, html) {
+        const e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (html !== undefined) e.innerHTML = html;
+        (parent || stage).appendChild(e);
+        return e;
+      }
+      function box(e, x, y, w, h) {
+        e.style.left = x + "px";
+        e.style.top = y + "px";
+        if (w !== undefined && w !== null) e.style.width = w + "px";
+        if (h !== undefined && h !== null) e.style.height = h + "px";
+        return e;
+      }
+      function img(src, parent, cls) {
+        const i = el("img", "abs " + (cls || ""), parent);
+        i.src = src;
+        return i;
+      }
+      function show(e, o, transform) {
+        e.style.opacity = String(clamp(o));
+        e.style.visibility = o <= 0.001 ? "hidden" : "visible";
+        if (transform !== undefined) e.style.transform = transform;
+      }
+      function text(cls, parent, html, x, y, size, extra) {
+        const e = el("div", "abs " + cls, parent, html);
+        box(e, x, y);
+        e.style.fontSize = size + "px";
+        if (extra) Object.assign(e.style, extra);
+        return e;
+      }
+      /** Camera onto a content layer: show the content rect centred at (cx, cy), vw wide, in a fw×fh frame. */
+      function camera(layer, fw, fh, cx, cy, vw) {
+        const k = fw / vw;
+        layer.style.transformOrigin = "0 0";
+        layer.style.transform = `translate(${fw / 2 - cx * k}px, ${fh / 2 - cy * k}px) scale(${k})`;
+      }
+      function corners(parent, w, h, color) {
+        const c = [];
+        for (const [x, y, bw] of [
+          [-6, -6, "3px 0 0 3px"],
+          [w - 28, -6, "3px 3px 0 0"],
+          [-6, h - 28, "0 0 3px 3px"],
+          [w - 28, h - 28, "0 3px 3px 0"],
+        ]) {
+          const k = el("div", "corner", parent);
+          box(k, x, y);
+          k.style.borderWidth = bw;
+          if (color) k.style.borderColor = color;
+          c.push(k);
+        }
+        return c;
+      }
+
+      /* The SST monogram (public/brand/sst-monogram.svg), split into its documented layers so it
+         can be revealed layer by layer. Geometry, slant and colours are untouched. */
+      const MARK_VB = "-25 -14 458 132";
+      const MARK_G = "translate(0 100) skewX(-24) translate(0 -100)";
+      const LETTERS =
+        '<g fill="#eef1fb"><path d="M10 0H122V25H34V37H122V100H0V75H88V63H0V10Z"/><path d="M144 0H256V25H168V37H256V100H134V75H222V63H134V10Z"/><path d="M268 0H384L374 25H340V100H312V25H268Z"/></g>';
+      const CYAN = '<path fill="#2fe0ff" d="M-34 70L-12 -10H60L52 -4H-6Z"/>';
+      const MAGENTA = '<path fill="#ff2e93" d="M150 114H300L290 108H160ZM318 42H400L392 47H322Z"/>';
+      const svg = (inner, w) =>
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${MARK_VB}" width="${w}" height="${(w * 132) / 458}"><g transform="${MARK_G}">${inner}</g></svg>`;
+
+      /** Layered monogram: returns {root, letters, cyan, magenta}. */
+      function mark(parent, w) {
+        const root = el("div", "abs", parent);
+        const h = (w * 132) / 458;
+        box(root, 0, 0, w, h);
+        const cyan = el("div", "abs", root, svg(CYAN, w));
+        const magenta = el("div", "abs", root, svg(MAGENTA, w));
+        const letters = el("div", "abs", root, svg(LETTERS, w));
+        box(letters, 0, 0, w, h);
+        return { root, letters, cyan, magenta, w, h };
+      }
+
+      /** Lockup: monogram + divider + SESSION / STATS / TRACKER (docs/brand: brand lockup). */
+      function lockup(parent, markW, vertical) {
+        const root = el("div", "abs", parent);
+        const m = mark(root, markW);
+        const words = el("div", "abs", root);
+        const div = el("div", "abs", root);
+        div.style.background = "#2d3863";
+        let w, h;
+        if (!vertical) {
+          const fs = markW * 0.064;
+          box(div, markW + markW * 0.05, m.h * 0.14, 3, m.h * 0.72);
+          words.innerHTML = "SESSION<br>STATS<br>TRACKER";
+          Object.assign(words.style, {
+            fontFamily: "BC",
+            fontWeight: 600,
+            fontSize: fs + "px",
+            letterSpacing: "0.28em",
+            lineHeight: "1.18",
+            color: "#eef1fb",
+          });
+          box(words, markW + markW * 0.12, m.h * 0.12);
+          w = markW * 1.62;
+          h = m.h;
+        } else {
+          const fs = markW * 0.075;
+          box(div, markW * 0.2, m.h + markW * 0.07, markW * 0.6, 3);
+          words.innerHTML = "SESSION STATS TRACKER";
+          Object.assign(words.style, {
+            fontFamily: "BC",
+            fontWeight: 600,
+            fontSize: fs + "px",
+            letterSpacing: "0.3em",
+            color: "#eef1fb",
+            textAlign: "center",
+            whiteSpace: "nowrap",
+          });
+          box(words, 0, m.h + markW * 0.13, markW);
+          w = markW;
+          h = m.h + markW * 0.13 + fs * 1.3;
+        }
+        box(root, 0, 0, w, h);
+        return { root, m, words, div, w, h };
+      }
+
+      /* ───────── background ───────── */
+      const bg = el("div", "abs", stage);
+      box(bg, 0, 0, W, H);
+      const grid = el("div", "abs", bg);
+      box(grid, -120, -120, W + 240, H + 240);
+      grid.style.backgroundImage =
+        "linear-gradient(rgba(47,224,255,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(47,224,255,0.055) 1px, transparent 1px)";
+      grid.style.backgroundSize = "60px 60px";
+      const glowA = el("div", "abs", bg);
+      box(glowA, 0, 0, W, H);
+      glowA.style.background = `radial-gradient(ellipse ${W * 0.7}px ${H * 0.6}px at 15% 0%, rgba(124,92,255,0.16), transparent 70%), radial-gradient(ellipse ${W * 0.6}px ${H * 0.5}px at 100% 100%, rgba(255,46,147,0.10), transparent 70%)`;
+      const vignette = el("div", "abs", bg);
+      box(vignette, 0, 0, W, H);
+      vignette.style.background =
+        "radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%)";
+      const topLine = el("div", "abs", stage);
+      box(topLine, 0, 0, W, 4);
+      topLine.style.background =
+        "linear-gradient(90deg, var(--cyan), var(--violet) 55%, var(--magenta))";
+
+      /* ───────── shared bits ───────── */
+      const S = V
+        ? { pad: 70, label: 26, heading: 120, sub: 40, headY: 210 }
+        : { pad: 120, label: 22, heading: 104, sub: 36, headY: 66 };
+
+      /** Section header: label · heading · subline, left aligned. */
+      function header(parent, label, heading, sub) {
+        const g = el("div", "abs", parent);
+        box(g, S.pad, S.headY);
+        const l = text("label", g, label, 0, 0, S.label);
+        const hh = text("heading", g, heading, 0, S.label * 1.9, S.heading);
+        const lines = (heading.match(/<br>/g) || []).length + 1;
+        const s = sub
+          ? text("sub", g, sub, 0, S.label * 1.9 + S.heading * 0.95 * lines + S.sub * 0.45, S.sub)
+          : null;
+        if (s && V)
+          Object.assign(s.style, {
+            whiteSpace: "normal",
+            width: W - 2 * S.pad + "px",
+            lineHeight: "1.3",
+          });
+        return { g, l, hh, s };
+      }
+      function animHeader(h, t, a, b) {
+        const o = life(t, a, b, 0.5, 0.35);
+        show(h.g, o);
+        show(h.l, ramp(t, a, a + 0.4), `translateX(${(1 - ramp(t, a, a + 0.5)) * -30}px)`);
+        show(
+          h.hh,
+          ramp(t, a + 0.1, a + 0.6),
+          `translateY(${(1 - ramp(t, a + 0.1, a + 0.7)) * 40}px)`,
+        );
+        h.hh.style.clipPath = `inset(0 ${(1 - ramp(t, a + 0.1, a + 0.8)) * 100}% 0 0)`;
+        if (h.s)
+          show(
+            h.s,
+            ramp(t, a + 0.5, a + 1.0),
+            `translateY(${(1 - ramp(t, a + 0.5, a + 1.0)) * 16}px)`,
+          );
+      }
+
+      /** Abstract "match on stream" canvas (1920×1080). Deliberately generic: no game footage, no
+          characters, no third-party marks — a neon arena, a live badge and a webcam slot. */
+      function streamCanvas(parent) {
+        const c = el("div", "abs", parent);
+        box(c, 0, 0, 1920, 1080);
+        c.style.transformOrigin = "0 0";
+        const sky = el("div", "abs", c);
+        box(sky, 0, 0, 1920, 1080);
+        sky.style.background =
+          "radial-gradient(ellipse 1300px 520px at 50% 58%, rgba(124,92,255,0.45), transparent 70%), linear-gradient(180deg, #0a0d24 0%, #1a1240 52%, #07081a 53%, #04050d 100%)";
+        const floor = el("div", "abs", c);
+        box(floor, -960, 560, 3840, 1100);
+        floor.style.backgroundImage =
+          "linear-gradient(rgba(47,224,255,0.35) 2px, transparent 2px), linear-gradient(90deg, rgba(47,224,255,0.35) 2px, transparent 2px)";
+        floor.style.backgroundSize = "120px 120px";
+        floor.style.transformOrigin = "50% 0";
+        floor.style.transform = "perspective(500px) rotateX(62deg)";
+        floor.style.maskImage = "linear-gradient(180deg, rgba(0,0,0,0.1), #000 60%)";
+        const horizon = el("div", "abs", c);
+        box(horizon, 0, 556, 1920, 6);
+        horizon.style.background =
+          "linear-gradient(90deg, transparent, var(--magenta), var(--cyan), transparent)";
+        horizon.style.boxShadow = "0 0 30px rgba(255,46,147,0.6)";
+        const beams = [];
+        for (let i = 0; i < 5; i++) {
+          const b = el("div", "abs", c);
+          box(b, 200 + i * 360, -200, 70, 820);
+          b.style.background = `linear-gradient(180deg, rgba(${i % 2 ? "255,46,147" : "47,224,255"},0.22), transparent)`;
+          b.style.transformOrigin = "50% 0";
+          beams.push(b);
+        }
+        // Two abstract energy shapes clashing in the middle (geometry only).
+        const clashL = el("div", "abs", c);
+        box(clashL, 700, 330, 240, 240);
+        clashL.style.background =
+          "radial-gradient(circle, rgba(47,224,255,0.9), rgba(47,224,255,0) 65%)";
+        const clashR = el("div", "abs", c);
+        box(clashR, 980, 330, 240, 240);
+        clashR.style.background =
+          "radial-gradient(circle, rgba(255,46,147,0.9), rgba(255,46,147,0) 65%)";
+        const live = el("div", "abs tag magenta", c, "● EN DIRECTO");
+        box(live, 40, 36);
+        live.style.fontSize = "30px";
+        const cam = el("div", "abs", c);
+        box(cam, 1500, 690, 380, 340);
+        cam.style.background = "linear-gradient(160deg, #1c2246, #0c1021)";
+        cam.style.border = "3px solid #2d3863";
+        const head = el("div", "abs", cam);
+        box(head, 140, 70, 100, 100);
+        head.style.borderRadius = "50%";
+        head.style.background = "#2d3863";
+        const body = el("div", "abs", cam);
+        box(body, 85, 185, 210, 160);
+        body.style.borderRadius = "105px 105px 0 0";
+        body.style.background = "#2d3863";
+        const camTag = el("div", "abs label", cam, "WEBCAM");
+        box(camTag, 16, 12);
+        camTag.style.fontSize = "18px";
+        camTag.style.color = "#97a1c6";
+        return { c, floor, beams, clashL, clashR, live };
+      }
+      function animStream(s, t) {
+        s.floor.style.backgroundPosition = `0 ${(t * 90) % 120}px`;
+        s.beams.forEach((b, i) => (b.style.transform = `rotate(${Math.sin(t * 0.8 + i) * 9}deg)`));
+        const p = (Math.sin(t * 5.3) + 1) / 2;
+        s.clashL.style.transform = `translateX(${Math.sin(t * 2.1) * 40}px) scale(${0.85 + p * 0.3})`;
+        s.clashR.style.transform = `translateX(${-Math.sin(t * 2.1 + 0.6) * 40}px) scale(${1.15 - p * 0.3})`;
+        s.live.style.opacity = String(0.75 + 0.25 * Math.round((Math.sin(t * 4) + 1) / 2));
+      }
+
+      /* ───────── scene 1 · logo (0–6 s) ───────── */
+      const s1 = el("div", "scene", stage);
+      const L1 = lockup(s1, V ? 760 : 820, V);
+      box(L1.root, (W - L1.w) / 2, V ? 620 : 300);
+      const tagline = el("div", "abs", s1);
+      box(tagline, 0, V ? 620 + L1.h + 120 : 300 + L1.h + 110, W);
+      Object.assign(tagline.style, {
+        textAlign: "center",
+        fontFamily: "B",
+        fontSize: (V ? 50 : 46) + "px",
+        color: "#97a1c6",
+      });
+      const tl = ["Tu sesión.", "Tus estadísticas.", "Tu progreso."].map((w, i) => {
+        const s = el("span", "", tagline, w + (i < 2 && !V ? "&nbsp;&nbsp;" : ""));
+        s.style.display = V ? "block" : "inline-block";
+        if (i === 2) s.style.color = "#eef1fb";
+        return s;
+      });
+      if (V) tagline.style.lineHeight = "1.35";
+
+      /* ───────── scene 2 · dashboard (6–17 s) ───────── */
+      const s2 = el("div", "scene", stage);
+      const h2 = header(
+        s2,
+        "01 · Panel",
+        V ? "Cada partida<br>cuenta" : "Cada partida cuenta",
+        "Estadísticas que evolucionan contigo.",
+      );
+      const D = V ? { x: 40, y: 700, w: 1000, h: 1060 } : { x: 210, y: 268, w: 1500, h: 744 };
+      const win2 = el("div", "abs frame", s2);
+      box(win2, D.x, D.y, D.w, D.h);
+      const dashLayer = el("div", "abs", win2);
+      box(dashLayer, 0, 0, 1920, 1643);
+      dashLayer.style.overflow = "visible";
+      const dashBefore = img(CAP + "dashboard-before.png", dashLayer);
+      const dashAfter = img(CAP + "dashboard-after.png", dashLayer);
+      for (const i of [dashBefore, dashAfter]) box(i, 0, 0, 1920); // natural aspect (pages differ in height)
+      // Callouts in page (CSS px) coordinates, so they ride the camera.
+      const ringW = el("div", "ring", dashLayer);
+      box(ringW, 282, 430, 104, 106);
+      const ringMR = el("div", "ring", dashLayer);
+      box(ringMR, 628, 612, 210, 74);
+      ringMR.style.borderColor = "#29f0a8";
+      ringMR.style.boxShadow = "0 0 18px rgba(41,240,168,0.45)";
+      const chipW = el("div", "chip w", dashLayer, "<b>+1</b> victoria");
+      box(chipW, 282, 368);
+      chipW.style.fontSize = "26px";
+      const chipMR = el("div", "chip w", dashLayer, "<b>+32 MR</b> en la sesión");
+      box(chipMR, 628, 700);
+      chipMR.style.fontSize = "26px";
+      const c2 = corners(win2, D.w, D.h);
+
+      /* ───────── scene 3 · Session overlay on stream (17–29 s) ───────── */
+      const s3 = el("div", "scene", stage);
+      const h3 = header(
+        s3,
+        "02 · Overlay de sesión",
+        V ? "MR y LP con<br>transiciones<br>fluidas" : "MR y LP con transiciones fluidas",
+        "Contar · Fundido · Instantáneo — tú eliges cómo cambian tus números.",
+      );
+      const F3 = V ? { x: 40, y: 790, w: 1000, h: 562.5 } : { x: 300, y: 262, w: 1320, h: 742.5 };
+      const frame3 = el("div", "abs frame", s3);
+      box(frame3, F3.x, F3.y, F3.w, F3.h);
+      frame3.style.transformOrigin = "0 0";
+      const st3 = streamCanvas(frame3);
+      const ov3 = el("div", "abs", st3.c);
+      box(ov3, 40, 860, 800, 180);
+      const countImgs = [];
+      for (let i = 0; i <= 36; i++) {
+        const im = img(CAP + "count/" + String(i).padStart(3, "0") + ".png", ov3);
+        box(im, 0, 0, 800, 180);
+        countImgs.push(im);
+      }
+      const result3 = el("div", "chip w", st3.c, "Resultado: <b>Victoria</b>");
+      box(result3, 52, 790);
+      result3.style.fontSize = "34px";
+      const delta3 = el("div", "chip w", s3, "Delta de sesión <b>+32 MR</b> · 1829 → 1861");
+      box(delta3, V ? 40 : F3.x, V ? F3.y + F3.h + 30 : F3.y + F3.h + 22);
+      delta3.style.fontSize = (V ? 34 : 30) + "px";
+      // Builder card: the real "Transición del rating" controls (builder-style.png, CSS crop).
+      const B3 = V
+        ? { x: 140, y: 1410, w: 800, scale: 800 / 420 }
+        : { x: 1290, y: 300, w: 540, scale: 540 / 420 };
+      const card3 = el("div", "abs panel", s3);
+      const cropH = 200;
+      box(card3, B3.x, B3.y, B3.w, cropH * B3.scale + (V ? 120 : 96));
+      const card3Label = text("label", card3, "Constructor de overlays", 24, 22, V ? 26 : 20);
+      const crop3 = el("div", "abs", card3);
+      box(crop3, 0, V ? 76 : 62, B3.w, cropH * B3.scale);
+      crop3.style.overflow = "hidden";
+      const builderImg = img(CAP + "builder-style.png", crop3);
+      box(builderImg, -262 * B3.scale, -748 * B3.scale, 1920 * B3.scale, 1080 * B3.scale);
+      const c3 = corners(card3, B3.w, cropH * B3.scale + (V ? 120 : 96), "#ff2e93");
+
+      /* ───────── scene 4 · Rank Progress (29–41 s) ───────── */
+      const s4 = el("div", "scene", stage);
+      const h4 = header(
+        s4,
+        "03 · Progreso de rango",
+        V ? "Visualiza tu<br>progreso" : "Visualiza tu progreso",
+        "Cada MR importa. Cada puesto también.",
+      );
+      const rpB = img(CAP + "rank-broadcast.png", s4);
+      const rpC = img(CAP + "rank-compact.png", s4);
+      rpB.style.transformOrigin = "0 0";
+      rpC.style.transformOrigin = "0 0";
+      box(rpB, 0, 0, 1280, 280);
+      box(rpC, 0, 0, 800, 280);
+      const facts = [
+        ["Puesto <b>#530</b> en la clasificación de Ryu", ""],
+        ["<b>7 MR</b> para el corte actual · 2196 MR", ""],
+        ["Legend: <b>Top 500</b> del personaje", "m"],
+      ].map(([h, m]) => {
+        const c = el("div", "chip " + m, s4, h);
+        c.style.fontSize = (V ? 38 : 34) + "px";
+        return c;
+      });
+      const legend4 = el(
+        "div",
+        "chip m",
+        s4,
+        "Legend se decide por <b>puesto</b>: Top 500 del personaje",
+      );
+      legend4.style.fontSize = (V ? 34 : 34) + "px";
+      const capB = text("label", s4, "Broadcast · 640×140", 0, 0, V ? 24 : 20);
+      const capC = text("label", s4, "Compacto · 400×140", 0, 0, V ? 24 : 20);
+      const foot4 = el(
+        "div",
+        "abs sub",
+        s4,
+        "Corte ilustrativo con datos de demostración. Legend se obtiene por puesto (Top 500 por personaje);<br>el MR del corte cambia con la clasificación y no garantiza el rango por sí solo.",
+      );
+      box(foot4, S.pad, V ? 1700 : 958, W - 2 * S.pad);
+      foot4.style.fontSize = (V ? 26 : 22) + "px";
+      foot4.style.lineHeight = "1.4";
+      if (V) {
+        foot4.innerHTML = foot4.innerHTML.replace("<br>", " ");
+        foot4.style.whiteSpace = "normal";
+      }
+
+      /* ───────── scene 5 · built for streamers (41–49 s) ───────── */
+      const s5 = el("div", "scene", stage);
+      const h5 = header(
+        s5,
+        "04 · Para streamers",
+        V ? "Tus estadísticas,<br>en directo" : "Tus estadísticas, en directo",
+        null,
+      );
+      const F5 = V ? { x: 40, y: 640, w: 1000, h: 562.5 } : { x: 100, y: 250, w: 1120, h: 630 };
+      const frame5 = el("div", "abs frame", s5);
+      box(frame5, F5.x, F5.y, F5.w, F5.h);
+      const st5 = streamCanvas(frame5);
+      const ov5 = img(CAP + "count/036.png", st5.c);
+      box(ov5, 40, 860, 800, 180);
+      const rp5 = img(CAP + "rank-compact.png", st5.c);
+      box(rp5, 1480, 26, 400, 140);
+      const c5 = corners(frame5, F5.w, F5.h);
+      const feats = [
+        ["Fuente de navegador de <b>OBS</b>", ""],
+        ["Se actualiza <b>solo</b> tras cada partida", ""],
+        ["Overlay en <b>español</b> o <b>inglés</b>", "m"],
+        ["Sesión · Progreso de rango", "m"],
+      ].map(([h, m]) => {
+        const c = el("div", "chip " + m, s5, h);
+        c.style.fontSize = (V ? 40 : 28) + "px";
+        return c;
+      });
+
+      /* ───────── scene 6 · end card (49–55 s) ───────── */
+      const s6 = el("div", "scene", stage);
+      const words6 = ["Juega.", "Mejora.", "Comparte."].map((w, i) => {
+        const e = text("heading", s6, w, 0, 0, V ? 190 : 150);
+        e.style.color = i === 2 ? "#2fe0ff" : "#eef1fb";
+        return e;
+      });
+      const url6 = text("", s6, "https://sf6-session-tracker-web.onrender.com", 0, 0, V ? 36 : 40, {
+        fontFamily: "M",
+        color: "#eef1fb",
+        width: W + "px",
+        textAlign: "center",
+        left: "0px",
+      });
+      const tag6 = el("div", "abs tag", s6, "Compatible con OBS · Beta");
+      tag6.style.fontSize = (V ? 34 : 30) + "px";
+      const disc6 = text(
+        "sub",
+        s6,
+        "Proyecto independiente. No afiliado ni respaldado por Capcom. Datos de demostración.",
+        0,
+        V ? 1800 : 1010,
+        V ? 22 : 20,
+        { width: W + "px", textAlign: "center", left: "0px" },
+      );
+      const L6 = lockup(s6, V ? 700 : 760, V);
+      box(L6.root, (W - L6.w) / 2, (H - L6.h) / 2);
+
+      /* ───────── overlays: demo tag, watermark, transition slash ───────── */
+      const demoTag = el("div", "abs tag ghost", stage, "Datos de demostración");
+      demoTag.style.fontSize = (V ? 22 : 18) + "px";
+      if (V) box(demoTag, S.pad - 10, 84);
+      else {
+        box(demoTag, 0, H - 56);
+        demoTag.style.right = "60px";
+        demoTag.style.left = "auto";
+      }
+      const wm = el("div", "abs", stage, svg(CYAN + MAGENTA + LETTERS, V ? 150 : 132));
+      box(wm, W - (V ? 150 : 132) - (V ? 50 : 60), V ? 70 : 52);
+      const slash = el("div", "abs", stage);
+      box(slash, 0, -H * 0.25, W * 0.5, H * 1.5);
+      slash.style.background =
+        "linear-gradient(90deg, transparent, rgba(47,224,255,0.9) 30%, rgba(255,46,147,0.9) 70%, transparent)";
+      slash.style.transformOrigin = "50% 50%";
+      const CUTS = [6, 17, 29, 41, 49];
+
+      /* ───────── render(frame) ───────── */
+      function render(frame) {
+        const t = frame / FPS;
+
+        // Background drift.
+        grid.style.transform = `translate(${-(t * 14) % 60}px, ${-(t * 8) % 60}px)`;
+
+        /* Scene 1 */
+        const o1 = 1 - ramp(t, 5.3, 6.0, easeIn);
+        show(s1, t < 6.05 ? o1 : 0, `translateY(${-ramp(t, 5.3, 6.0, easeIn) * 30}px)`);
+        if (t < 6.05) {
+          const m = L1.m;
+          show(m.cyan, ramp(t, 0.35, 1.0), `translateX(${(1 - ramp(t, 0.35, 1.1)) * -120}px)`);
+          m.letters.style.clipPath = `inset(0 ${(1 - ramp(t, 0.7, 1.6, easeInOut)) * 100}% 0 0)`;
+          show(m.letters, t > 0.7 ? 1 : 0);
+          show(m.magenta, ramp(t, 1.3, 1.9), `translateX(${(1 - ramp(t, 1.3, 2.0)) * 120}px)`);
+          m.root.style.filter = `drop-shadow(0 0 ${ramp(t, 1.6, 2.4) * 14}px rgba(47,224,255,0.25))`;
+          show(
+            L1.div,
+            ramp(t, 1.9, 2.3),
+            V ? `scaleX(${ramp(t, 1.9, 2.4)})` : `scaleY(${ramp(t, 1.9, 2.4)})`,
+          );
+          show(
+            L1.words,
+            ramp(t, 2.1, 2.7),
+            `translateX(${(1 - ramp(t, 2.1, 2.8)) * (V ? 0 : -24)}px) translateY(${(1 - ramp(t, 2.1, 2.8)) * (V ? 20 : 0)}px)`,
+          );
+          L1.root.style.transform = `scale(${lerp(
+            1.04,
+            1,
+            ramp(t, 0, 5.3, (k) => k),
+          )})`;
+          L1.root.style.transformOrigin = "50% 50%";
+          tl.forEach((s, i) =>
+            show(
+              s,
+              ramp(t, 2.9 + i * 0.45, 3.4 + i * 0.45),
+              `translateY(${(1 - ramp(t, 2.9 + i * 0.45, 3.5 + i * 0.45)) * 22}px)`,
+            ),
+          );
+        }
+
+        /* Scene 2 */
+        const o2 = life(t, 6.0, 17.2, 0.5, 0.45);
+        show(s2, o2);
+        if (o2 > 0) {
+          animHeader(h2, t, 6.2, 17.2);
+          show(win2, ramp(t, 6.4, 7.1), `translateY(${(1 - ramp(t, 6.4, 7.3)) * 60}px)`);
+          const cam = V
+            ? keys(t, [
+                [6.4, [640, 560, 1180]],
+                [8.6, [640, 560, 1180]],
+                [10.6, [749, 560, 1000]],
+                [13.4, [749, 560, 1000]],
+                [14.4, [600, 600, 760]],
+                [16.0, [600, 600, 760]],
+                [17.2, [640, 560, 1180]],
+              ])
+            : keys(t, [
+                [6.4, [960, 476, 1920]],
+                [8.6, [960, 476, 1920]],
+                [10.6, [749, 545, 1060]],
+                [13.4, [749, 545, 1060]],
+                [14.4, [640, 560, 860]],
+                [16.0, [640, 560, 860]],
+                [17.2, [960, 476, 1920]],
+              ]);
+          camera(dashLayer, D.w, D.h, cam[0], cam[1], cam[2]);
+          show(dashAfter, ramp(t, 11.9, 12.4, easeInOut));
+          const pulse = 0.65 + 0.35 * Math.sin(t * 6);
+          show(
+            ringW,
+            life(t, 12.4, 16.6, 0.3) * pulse,
+            `scale(${lerp(1.3, 1, ramp(t, 12.4, 12.8))})`,
+          );
+          show(chipW, life(t, 12.6, 16.6, 0.3), `translateY(${(1 - ramp(t, 12.6, 13.0)) * 12}px)`);
+          show(
+            ringMR,
+            life(t, 13.0, 16.6, 0.3) * pulse,
+            `scale(${lerp(1.3, 1, ramp(t, 13.0, 13.4))})`,
+          );
+          show(chipMR, life(t, 13.2, 16.6, 0.3), `translateY(${(1 - ramp(t, 13.2, 13.6)) * 12}px)`);
+          ringW.style.transformOrigin = ringMR.style.transformOrigin = "50% 50%";
+          c2.forEach((c) => show(c, ramp(t, 7.0, 7.5)));
+        }
+
+        /* Scene 3 */
+        const o3 = life(t, 17.0, 29.2, 0.5, 0.45);
+        show(s3, o3);
+        if (o3 > 0) {
+          animHeader(h3, t, 17.2, 29.2);
+          animStream(st3, t);
+          const enter = ramp(t, 17.3, 18.1);
+          const side = V ? 0 : ramp(t, 25.0, 25.9, easeInOut);
+          const fs = lerp(1, 0.86, side);
+          frame3.style.transform = `translate(${lerp(0, 120 - F3.x, side)}px, ${(1 - enter) * 60}px) scale(${fs})`;
+          show(frame3, enter);
+          const cam = keys(t, [
+            [17.0, [960, 540, 1920]],
+            [19.4, [960, 540, 1920]],
+            [20.5, [500, 820, 920]],
+            [24.4, [500, 820, 920]],
+            [25.3, [960, 540, 1920]],
+          ]);
+          camera(st3.c, F3.w, F3.h, cam[0], cam[1], cam[2]);
+          const ci = clamp(Math.round((t - 21.4) * FPS), 0, 36);
+          countImgs.forEach((im, i) => (im.style.visibility = i === ci ? "visible" : "hidden"));
+          show(
+            result3,
+            life(t, 20.7, 24.2, 0.25),
+            `translateY(${(1 - ramp(t, 20.7, 21.0)) * 20}px)`,
+          );
+          show(
+            delta3,
+            life(t, 22.7, 24.9, 0.3),
+            `translateX(${(1 - ramp(t, 22.7, 23.1)) * -30}px)`,
+          );
+          const cardIn = ramp(t, 25.5, 26.2);
+          show(
+            card3,
+            cardIn * (1 - ramp(t, 28.8, 29.2)),
+            `translateX(${(1 - cardIn) * (V ? 0 : 80)}px) translateY(${(1 - cardIn) * (V ? 60 : 0)}px)`,
+          );
+          c3.forEach((c) => show(c, ramp(t, 26.0, 26.4)));
+        }
+
+        /* Scene 4 */
+        const o4 = life(t, 29.0, 41.2, 0.5, 0.45);
+        show(s4, o4);
+        if (o4 > 0) {
+          animHeader(h4, t, 29.2, 41.2);
+          const split = ramp(t, 35.0, 36.0, easeInOut);
+          // Broadcast: big & centred, then smaller to make room for Compact.
+          const bS = V ? lerp(1000 / 1280, 1000 / 1280, split) : lerp(1, 0.8, split);
+          const bX = V ? 40 : lerp((W - 1280) / 2, 110, split);
+          const bY = V ? 640 : lerp(300, 300, split);
+          const bIn = ramp(t, 29.7, 30.4);
+          rpB.style.transform = `translate(${bX}px, ${bY + (1 - bIn) * 40}px) scale(${bS})`;
+          show(rpB, bIn);
+          const cS = V ? 1 : 0.8;
+          const cX = V ? (W - 800) / 2 : 1180;
+          const cY = V ? 1080 : 300;
+          const cIn = ramp(t, 35.6, 36.3);
+          rpC.style.transform = `translate(${cX + (1 - cIn) * (V ? 0 : 80)}px, ${cY + (1 - cIn) * (V ? 60 : 0)}px) scale(${cS})`;
+          show(rpC, cIn);
+          box(capB, bX + 30 * bS, bY + 280 * bS + 6);
+          show(capB, ramp(t, 35.8, 36.3) * (V ? 0 : 1));
+          box(capC, cX + 30 * cS, cY + 280 * cS + 6);
+          show(capC, ramp(t, 36.2, 36.7));
+          if (V) show(capB, ramp(t, 35.8, 36.3));
+          facts.forEach((f, i) => {
+            const a = 31.0 + i * 0.9;
+            const fy = V ? 920 + i * 110 : 640 + i * 96;
+            box(f, V ? 60 : (W - 1280) / 2 + 30, fy);
+            const hide = V ? ramp(t, 34.8, 35.3) : ramp(t, 34.8, 35.3);
+            show(
+              f,
+              ramp(t, a, a + 0.35) * (1 - hide),
+              `translateX(${(1 - ramp(t, a, a + 0.45)) * -40}px)`,
+            );
+          });
+          box(legend4, V ? 60 : (W - legend4.offsetWidth) / 2, V ? 1480 : 720);
+          show(legend4, ramp(t, 36.6, 37.1), `translateY(${(1 - ramp(t, 36.6, 37.2)) * 20}px)`);
+          // The caveat stays on screen for the whole Legend part.
+          show(foot4, ramp(t, 31.4, 32.0));
+        }
+
+        /* Scene 5 */
+        const o5 = life(t, 41.0, 49.2, 0.5, 0.45);
+        show(s5, o5);
+        if (o5 > 0) {
+          animHeader(h5, t, 41.2, 49.2);
+          animStream(st5, t);
+          const enter = ramp(t, 41.4, 42.2);
+          show(frame5, enter, `translateY(${(1 - enter) * 60}px)`);
+          const z = lerp(
+            1,
+            1.05,
+            ramp(t, 41.4, 49.2, (k) => k),
+          );
+          camera(st5.c, F5.w, F5.h, 960, 560, 1920 / z);
+          c5.forEach((c) => show(c, ramp(t, 42.0, 42.4)));
+          feats.forEach((f, i) => {
+            const a = 42.6 + i * 0.6;
+            if (V) box(f, 60, F5.y + F5.h + 70 + i * 120);
+            else box(f, F5.x + F5.w + 50, F5.y + 70 + i * 140);
+            show(f, ramp(t, a, a + 0.35), `translateX(${(1 - ramp(t, a, a + 0.45)) * 40}px)`);
+          });
+        }
+
+        /* Scene 6 */
+        const o6 = ramp(t, 48.9, 49.4);
+        show(s6, o6);
+        if (o6 > 0) {
+          const out = ramp(t, 52.7, 53.2, easeIn);
+          // Words: one line (16:9) or stacked (9:16).
+          const sizes = words6.map(
+            (w) => w.getBoundingClientRect().width / (w.style.transform.includes("scale") ? 1 : 1),
+          );
+          const gap = 40;
+          const total = sizes.reduce((a, b) => a + b, 0) + gap * 2;
+          let x = (W - total) / 2;
+          words6.forEach((w, i) => {
+            const a = 49.3 + i * 0.4;
+            if (V) box(w, (W - w.offsetWidth) / 2, 560 + i * 190);
+            else {
+              box(w, x, 330);
+              x += w.offsetWidth + gap;
+            }
+            show(
+              w,
+              ramp(t, a, a + 0.3) * (1 - out),
+              `translateY(${(1 - ramp(t, a, a + 0.4)) * 40}px)`,
+            );
+            w.style.clipPath = `inset(0 ${(1 - ramp(t, a, a + 0.45)) * 100}% 0 0)`;
+          });
+          box(url6, 0, V ? 1200 : 560);
+          show(url6, ramp(t, 50.6, 51.1) * (1 - out));
+          box(tag6, (W - tag6.offsetWidth) / 2, V ? 1300 : 660);
+          show(tag6, ramp(t, 51.0, 51.4) * (1 - out));
+          show(disc6, ramp(t, 51.2, 51.7));
+          // Logo hold (last ~2 s).
+          const lo = ramp(t, 53.0, 53.6);
+          show(L6.root, lo, `scale(${lerp(0.94, 1, ramp(t, 53.0, 54.0))})`);
+          L6.root.style.transformOrigin = "50% 50%";
+          L6.m.root.style.filter = "drop-shadow(0 0 12px rgba(47,224,255,0.22))";
+        }
+
+        // Persistent demo label + watermark (content scenes only).
+        const content = life(t, 6.3, 49.0, 0.4, 0.4);
+        show(demoTag, content);
+        show(wm, content * 0.9);
+
+        // Slash wipe at each cut.
+        let sw = 0;
+        let sx = -W;
+        for (const c of CUTS) {
+          const k = clamp((t - (c - 0.35)) / 0.7);
+          if (k > 0 && k < 1) {
+            sw = Math.sin(k * Math.PI) * 0.55;
+            sx = lerp(-W * 0.6, W * 1.1, easeInOut(k));
+          }
+        }
+        show(slash, sw, `translateX(${sx}px) skewX(-24deg)`);
+      }
+
+      window.TOTAL_FRAMES = TOTAL;
+      window.render = render;
+      window.ready = (async () => {
+        await document.fonts.ready;
+        await Promise.all(
+          [...document.images].map((i) =>
+            i.decode().catch(() => {
+              throw new Error("missing " + i.src);
+            }),
+          ),
+        );
+        await Promise.all(["BC", "B", "M"].map((f) => document.fonts.load(`600 40px ${f}`)));
+        await document.fonts.load("800 40px BC");
+        await document.fonts.load("700 40px BC");
+        await document.fonts.load("400 40px B");
+        render(0);
+        return true;
+      })();
+      if (P.has("t")) window.ready.then(() => render(Math.round(Number(P.get("t")) * FPS)));
+    </script>
+  </body>
+</html>
