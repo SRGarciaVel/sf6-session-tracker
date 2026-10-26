@@ -68,7 +68,7 @@ describe("export area", () => {
       "Convierte estas señales en un resumen para revisar tus replays o compartirlo.",
     );
     expect(area).toMatch(/<button[^>]*data-testid="review-copy"[^>]*>Copiar resumen<\/button>/);
-    expect(area).toMatch(/data-testid="review-pdf"[^>]*>Descargar PDF<\/a>/);
+    expect(area).toMatch(/data-testid="review-pdf"[^>]*>(<svg[\s\S]*?<\/svg>)?Descargar PDF<\/a>/);
     expect(area).toMatch(/<details class="group" data-testid="review-export-preview">/);
     expect(area).not.toMatch(/<details[^>]*open/);
   });

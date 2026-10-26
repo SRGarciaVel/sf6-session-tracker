@@ -1434,6 +1434,17 @@
         "inProgress": "Your report is already being generated. Wait for the download to finish.",
         "busy": "Other reports are being generated right now. Try again in a few seconds.",
         "tooMany": "You have generated several reports in a row. Try again in a few minutes."
+      },
+      "export": {
+        "downloading": "Generating PDF…",
+        "downloaded": "PDF downloaded. Check your downloads folder.",
+        "rateLimited": "The PDF could not be started: another of your reports may still be generating, or you may have reached the report limit. Wait a little before trying again.",
+        "rateLimitedSeconds": "The PDF could not be started: another of your reports may still be generating, or you may have reached the report limit. Try again in {count, plural, one {# second} other {# seconds}}.",
+        "rateLimitedMinutes": "The PDF could not be started: another of your reports may still be generating, or you may have reached the report limit. Try again in {count, plural, one {# minute} other {# minutes}}.",
+        "sessionExpired": "Your session has expired. Sign in again to download the PDF.",
+        "failed": "The PDF could not be generated. Try again.",
+        "network": "SST could not complete the request. Check your connection and try again.",
+        "invalid": "The response was not a valid PDF, so nothing was downloaded. Try again."
       }
     }
   },

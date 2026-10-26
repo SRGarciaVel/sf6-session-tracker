@@ -1434,6 +1434,17 @@
         "inProgress": "Tu informe ya se está generando. Espera a que termine la descarga.",
         "busy": "Ahora mismo se están generando otros informes. Vuelve a intentarlo en unos segundos.",
         "tooMany": "Has generado varios informes seguidos. Vuelve a intentarlo en unos minutos."
+      },
+      "export": {
+        "downloading": "Generando PDF…",
+        "downloaded": "PDF descargado. Revisa tu carpeta de descargas.",
+        "rateLimited": "No se pudo iniciar el PDF: puede que ya se esté generando otro informe tuyo o que hayas alcanzado el límite de informes. Espera un poco antes de volver a intentarlo.",
+        "rateLimitedSeconds": "No se pudo iniciar el PDF: puede que ya se esté generando otro informe tuyo o que hayas alcanzado el límite de informes. Vuelve a intentarlo en {count, plural, one {# segundo} other {# segundos}}.",
+        "rateLimitedMinutes": "No se pudo iniciar el PDF: puede que ya se esté generando otro informe tuyo o que hayas alcanzado el límite de informes. Vuelve a intentarlo en {count, plural, one {# minuto} other {# minutos}}.",
+        "sessionExpired": "Tu sesión ha caducado. Vuelve a iniciar sesión para descargar el PDF.",
+        "failed": "No se pudo generar el PDF. Vuelve a intentarlo.",
+        "network": "SST no pudo completar la solicitud. Comprueba tu conexión y vuelve a intentarlo.",
+        "invalid": "La respuesta no era un PDF válido, así que no se descargó nada. Vuelve a intentarlo."
       }
     }
   },
