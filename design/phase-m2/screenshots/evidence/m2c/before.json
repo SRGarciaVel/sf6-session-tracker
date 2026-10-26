@@ -1,0 +1,14 @@
+{
+  "statuses": [],
+  "outcomes": [
+    "sst-review-all-characters-ranked-all-2026-10-26.pdf failure=none",
+    "sst-review-all-characters-ranked-all-2026-10-26.pdf failure=none",
+    "sst-review-all-characters-ranked-all-2026-10-26.pdf failure=none",
+    "sst-review-all-characters-ranked-all-2026-10-26.pdf failure=none",
+    "sst-review-all-characters-ranked-all-2026-10-26.pdf failure=none",
+    "review.txt failure=canceled",
+    "review.txt failure=canceled"
+  ],
+  "note": "main build: the 6th and 7th exports were refused by the server (account quota / process capacity); the browser saved the error text as review.txt (download canceled) and the page showed no message.",
+  "pageHasErrorOrStatusText": false
+}

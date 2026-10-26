@@ -165,7 +165,10 @@ Verified by clicking in Chromium (§9) and by the existing SSR tests.
   - LIVE → RECAP and RECAP → PREPARE: short `--motion-panel` entrances after navigation, with no
     delay.
   - Coordination with the M1 skeletons: no cross-fade with the skeleton.
-- **M2C: PDF export feedback.**
+- **M2C: PDF export feedback.** Implemented in [`m2c.md`](m2c.md) (PR «fix(analytics): provide
+  feedback for PDF export failures»). Departures from this plan: the control stays a link that
+  intercepts plain clicks, and a success must also carry the `%PDF-` signature. The original plan
+  follows.
   - Client-side `fetch` of the protected route, keeping the server limits.
   - A pending state on the button; no second request while one is in flight.
   - 200 → blob download using the server's filename (`Content-Disposition`), revoking the object

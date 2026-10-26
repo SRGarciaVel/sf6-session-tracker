@@ -1,0 +1,79 @@
+{
+  "ranAt": "2026-10-26T23:23:04.118Z",
+  "statuses": [
+    200,
+    200,
+    200,
+    200,
+    200,
+    429,
+    503,
+    200,
+    503
+  ],
+  "results": [
+    {
+      "check": "pending: visible «Generando PDF…» + aria-busy",
+      "pass": true
+    },
+    {
+      "check": "duplicate clicks while pending send one request",
+      "pass": true,
+      "detail": "requests: 1"
+    },
+    {
+      "check": "success: real PDF saved under the server filename",
+      "pass": true,
+      "detail": "sst-review-all-characters-ranked-all-2026-10-26.pdf"
+    },
+    {
+      "check": "success announced, loading cleared",
+      "pass": true
+    },
+    {
+      "check": "keyboard: Enter on the focused control exports",
+      "pass": true
+    },
+    {
+      "check": "focus stays on the control",
+      "pass": true
+    },
+    {
+      "check": "real 429 → localized wait message with the server's Retry-After",
+      "pass": true,
+      "detail": "Has alcanzado el límite de informes PDF. Vuelve a intentarlo en 10 minutos."
+    },
+    {
+      "check": "real 503 → capacity message",
+      "pass": true,
+      "detail": "Ahora mismo se están generando otros informes. Vuelve a intentarlo en unos segundos."
+    },
+    {
+      "check": "both real refusals were reached",
+      "pass": true,
+      "detail": "statuses: 200,200,200,200,200,429,503"
+    },
+    {
+      "check": "error is an alert linked to the control",
+      "pass": true
+    },
+    {
+      "check": "network failure → retry message, loading cleared",
+      "pass": true
+    },
+    {
+      "check": "HTML served with 200 → nothing saved, invalid-PDF message",
+      "pass": true
+    },
+    {
+      "check": "390 px at 200 % text: the export area (control + error) fits the viewport",
+      "pass": true,
+      "detail": "export -11 px · page 150 px (pre-existing filter form)"
+    },
+    {
+      "check": "English refusal message",
+      "pass": true,
+      "detail": "Other reports are being generated right now. Try again in a few seconds."
+    }
+  ]
+}
