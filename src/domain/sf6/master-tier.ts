@@ -16,7 +16,8 @@
  *
  * Tiers are DERIVED ON READ for current/live presentation only; persisted raw ranks are never
  * rewritten, and ended sessions keep their frozen labels (thresholds may change between phases;
- * an old session must not be relabelled by today's constants).
+ * an old session must not be relabelled by today's constants). An ended session whose stored MR
+ * rank is MISSING shows the tier of its own MR instead of «—» (resolveDisplayRank `fillMissing`).
  */
 import { LEGEND_MAX_POSITION } from "@sf6/capcom-core/legend";
 
@@ -93,24 +94,39 @@ export interface RankSourcePoint {
  *  4. otherwise null.
  *
  * `derive: false` is used for ended sessions: their stored/frozen labels are preserved.
+ * `fillMissing` (ended sessions) adds ONE presentation fallback after step 3: an MR point whose
+ * stored rank is MISSING shows the Master tier of its own MR. Capcom's higher Master leagues
+ * carry no evidence-backed label, so their snapshots store `rank: null` (capcom-core league.ts)
+ * and a finished session would otherwise show «—». A stored label always wins; nothing is
+ * persisted or rewritten. Limitation: the tier uses TODAY's thresholds, so if they change, an old
+ * session without a stored label is shown with the new mapping (labelled sessions never are).
  */
 export function resolveDisplayRank(
   point: RankSourcePoint | null,
   opts: {
     derive: boolean;
+    /** Ended sessions: derive a tier only when the stored rank is missing (see above). */
+    fillMissing?: boolean;
     /**
-     * Authoritative leaderboard position of the SAME observation as `point` (Phase 5.4C). Only
-     * used when deriving (current presentation): 1…500 ⇒ Legend. Ended sessions never pass one.
+     * Authoritative leaderboard position of the SAME observation as `point` (Phase 5.4C):
+     * 1…500 ⇒ Legend. Never inferred: without one, MR alone never yields Legend.
      */
     leaderboardPosition?: number | null;
   },
 ): string | null {
   if (!point) return null;
-  if (opts.derive && point.system === "mr") {
-    const tier = masterTierFromMr(point.value, {
-      leaderboardPosition: opts.leaderboardPosition ?? null,
-    });
+  const tierOf = () =>
+    point.system === "mr"
+      ? masterTierFromMr(point.value, { leaderboardPosition: opts.leaderboardPosition ?? null })
+      : null;
+  if (opts.derive) {
+    const tier = tierOf();
     if (tier) return MASTER_TIER_LABELS[tier];
   }
-  return point.rank ?? null;
+  if (point.rank !== null) return point.rank;
+  if (opts.fillMissing) {
+    const tier = tierOf();
+    if (tier) return MASTER_TIER_LABELS[tier];
+  }
+  return null;
 }

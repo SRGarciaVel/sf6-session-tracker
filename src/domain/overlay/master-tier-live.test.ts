@@ -154,9 +154,10 @@ describe("live Master tier (active / idle)", () => {
 });
 
 describe("ended sessions preserve their historical labels", () => {
-  it("a frozen 1605 with no stored rank stays unlabelled (no retroactive tier)", () => {
+  it("a frozen 1605 with NO stored rank shows its own MR tier (missing-rank fallback)", () => {
+    // Before: «—». Only a MISSING label is filled; stored labels are never rewritten (below).
     const c = akuma(live("ended", { current: [["gouki", mr(1605)]] }));
-    expect(c?.current?.rank).toBeNull();
+    expect(c?.current?.rank).toBe("High Master");
   });
 
   it("a frozen 1712 stored as 'Master' stays 'Master' (today's thresholds don't rewrite history)", () => {
