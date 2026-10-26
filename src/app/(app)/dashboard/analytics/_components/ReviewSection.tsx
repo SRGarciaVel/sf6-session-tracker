@@ -184,12 +184,6 @@ function ReviewExport({ data }: { data: PlayerAnalytics }) {
       <ReviewExportActions
         plainText={plainText}
         pdfHref={reviewPdfHref(data.range, data.mode, data.character)}
-        labels={{
-          copy: t("reviewReport.cta.copy"),
-          copied: t("reviewReport.cta.copied"),
-          copyFailed: t("reviewReport.cta.copyFailed"),
-          download: t("reviewReport.cta.download"),
-        }}
       />
     </div>
   );
