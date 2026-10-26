@@ -1,0 +1,42 @@
+{
+  "ranAt": "2026-10-26T20:12:25.042Z",
+  "stored": {
+    "status": "ended",
+    "initial_rank": null,
+    "final_rank": null,
+    "initial_master_rate": 1866,
+    "final_master_rate": 1903
+  },
+  "results": [
+    {
+      "check": "broadcast: rank Ultimate Master",
+      "pass": true,
+      "detail": "3V 1D75 %Ultimate MasterRyu1903MR▲+37"
+    },
+    {
+      "check": "broadcast: MR 1903 and delta +37 unchanged",
+      "pass": true
+    },
+    {
+      "check": "broadcast: other metrics unchanged (3 W / 1 L, 75 %)",
+      "pass": true
+    },
+    {
+      "check": "competitive: rank Ultimate Master",
+      "pass": true,
+      "detail": "SesiónUltimate MasterVictorias3/Derrotas1% Victorias75 %Ryu1903MR▲+37Racha1"
+    },
+    {
+      "check": "competitive: MR 1903 and delta +37 unchanged",
+      "pass": true
+    },
+    {
+      "check": "competitive: other metrics unchanged (3 W / 1 L, 75 %)",
+      "pass": true
+    },
+    {
+      "check": "stored rows untouched: ended, ranks still null, MR 1866 → 1903",
+      "pass": true
+    }
+  ]
+}

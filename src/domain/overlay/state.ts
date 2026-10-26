@@ -7,7 +7,8 @@
  *
  * `LiveRating.rank` is the rank to DISPLAY (domain/sf6/master-tier.ts): for an active session or
  * the idle state, a valid MR shows its documented Master tier (1605 MR ⇒ High Master); an ended
- * session keeps its frozen/stored labels. Persisted raw ranks are never rewritten.
+ * session keeps its frozen/stored labels, and only a MISSING stored MR rank falls back to the tier
+ * of that point's own MR. Persisted raw ranks are never rewritten.
  */
 import type {
   CharacterProgress,
@@ -124,7 +125,8 @@ export function roundOneDecimal(n: number): number {
 
 /**
  * @param deriveTier  true for current presentation (active session, idle profile): a valid MR
- *   displays its Master tier. false for ended sessions: their stored labels are preserved.
+ *   displays its Master tier. false for ended sessions: their stored labels are preserved and only
+ *   a missing MR rank shows the tier of its own MR (resolveDisplayRank `fillMissing`).
  */
 function toLiveCharacter(
   p: CharacterProgress,
@@ -133,6 +135,8 @@ function toLiveCharacter(
 ): LiveCharacterProgress {
   // The position belongs to ONE profile observation: it is used only for current presentation and
   // only when `current` IS that observation (same system and value) — never new MR + old position.
+  // Ended sessions never get one: today's position says nothing about the session's end, so their
+  // missing-rank fallback is MR-only and can never be Legend.
   const position =
     deriveTier &&
     known &&
@@ -149,7 +153,7 @@ function toLiveCharacter(
           value: r.value,
           rank: resolveDisplayRank(
             { system: r.system, value: r.value, rank: r.rank ?? null },
-            { derive: deriveTier, leaderboardPosition },
+            { derive: deriveTier, fillMissing: !deriveTier, leaderboardPosition },
           ),
         }
       : null;
@@ -223,7 +227,8 @@ export function toLiveSessionState(
     bestWinStreak: summary.bestWinStreak,
     recentResults: summary.recentResults,
     activeCharacterKey: summary.activeCharacterKey,
-    // Ended sessions keep their frozen ranks (no retroactive relabelling with today's rules).
+    // Ended sessions keep their frozen ranks (no retroactive relabelling with today's rules); a
+    // missing MR rank falls back to the tier of the point's own MR.
     characters: summary.characters.map((c) =>
       toLiveCharacter(c, summary.status !== "ended", positions.get(c.characterKey)),
     ),
