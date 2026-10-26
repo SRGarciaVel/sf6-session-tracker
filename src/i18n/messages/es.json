@@ -1438,9 +1438,9 @@
       "export": {
         "downloading": "Generando PDF…",
         "downloaded": "PDF descargado. Revisa tu carpeta de descargas.",
-        "rateLimited": "Has alcanzado el límite de informes PDF. Espera un poco antes de volver a intentarlo.",
-        "rateLimitedSeconds": "Has alcanzado el límite de informes PDF. Vuelve a intentarlo en {count, plural, one {# segundo} other {# segundos}}.",
-        "rateLimitedMinutes": "Has alcanzado el límite de informes PDF. Vuelve a intentarlo en {count, plural, one {# minuto} other {# minutos}}.",
+        "rateLimited": "No se pudo iniciar el PDF: puede que ya se esté generando otro informe tuyo o que hayas alcanzado el límite de informes. Espera un poco antes de volver a intentarlo.",
+        "rateLimitedSeconds": "No se pudo iniciar el PDF: puede que ya se esté generando otro informe tuyo o que hayas alcanzado el límite de informes. Vuelve a intentarlo en {count, plural, one {# segundo} other {# segundos}}.",
+        "rateLimitedMinutes": "No se pudo iniciar el PDF: puede que ya se esté generando otro informe tuyo o que hayas alcanzado el límite de informes. Vuelve a intentarlo en {count, plural, one {# minuto} other {# minutos}}.",
         "sessionExpired": "Tu sesión ha caducado. Vuelve a iniciar sesión para descargar el PDF.",
         "failed": "No se pudo generar el PDF. Vuelve a intentarlo.",
         "network": "SST no pudo completar la solicitud. Comprueba tu conexión y vuelve a intentarlo.",

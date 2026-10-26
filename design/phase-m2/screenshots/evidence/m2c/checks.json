@@ -1,5 +1,5 @@
 {
-  "ranAt": "2026-10-26T23:23:04.118Z",
+  "ranAt": "2026-10-26T23:45:06.220Z",
   "statuses": [
     200,
     200,
@@ -39,9 +39,9 @@
       "pass": true
     },
     {
-      "check": "real 429 → localized wait message with the server's Retry-After",
+      "check": "real 429 → localized message naming both causes, with the server's Retry-After",
       "pass": true,
-      "detail": "Has alcanzado el límite de informes PDF. Vuelve a intentarlo en 10 minutos."
+      "detail": "No se pudo iniciar el PDF: puede que ya se esté generando otro informe tuyo o que hayas alcanzado el límite de informes. Vuelve a intentarlo en 10 minutos."
     },
     {
       "check": "real 503 → capacity message",

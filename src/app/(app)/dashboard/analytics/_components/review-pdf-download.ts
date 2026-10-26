@@ -32,7 +32,11 @@ export function retryAfterSeconds(header: string | null): number | null {
   return seconds > 0 && seconds <= MAX_RETRY_SECONDS ? seconds : null;
 }
 
-/** The localized message for a refused / failed export, from the status (never the body). */
+/**
+ * The localized message for a refused / failed export, from the status (never the body). A 429
+ * has two server causes — this account's export already in progress (`subject_busy`) or the
+ * account quota — that the client cannot tell apart, so its message names both.
+ */
 export function exportErrorFor(status: number, retryAfter: string | null): ExportError {
   if (status === 429) {
     const seconds = retryAfterSeconds(retryAfter);

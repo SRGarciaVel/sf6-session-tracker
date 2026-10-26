@@ -282,8 +282,8 @@ async function run() {
     if (status === 429 && !saw429) {
       saw429 = true;
       check(
-        "real 429 → localized wait message with the server's Retry-After",
-        /^Has alcanzado el límite de informes PDF\. Vuelve a intentarlo en \d+ (minutos?|segundos?)\.$/.test(
+        "real 429 → localized message naming both causes, with the server's Retry-After",
+        /^No se pudo iniciar el PDF: puede que ya se esté generando otro informe tuyo o que hayas alcanzado el límite de informes\. Vuelve a intentarlo en \d+ (minutos?|segundos?)\.$/.test(
           err,
         ),
         err,
@@ -386,7 +386,9 @@ async function run() {
     const err = (await ep.locator('[data-testid="review-pdf-error"]').textContent()) ?? "";
     check(
       "English refusal message",
-      /^(You have reached the PDF report limit\.|Other reports are being generated)/.test(err),
+      /^(The PDF could not be started: another of your reports may still be generating, or you may have reached the report limit\.|Other reports are being generated)/.test(
+        err,
+      ),
       err,
     );
     await ep.locator('[data-testid="review-export"]').screenshot({ path: `${OUT}/08-en.png` });

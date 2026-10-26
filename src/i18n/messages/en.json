@@ -1438,9 +1438,9 @@
       "export": {
         "downloading": "Generating PDF…",
         "downloaded": "PDF downloaded. Check your downloads folder.",
-        "rateLimited": "You have reached the PDF report limit. Wait a little before trying again.",
-        "rateLimitedSeconds": "You have reached the PDF report limit. Try again in {count, plural, one {# second} other {# seconds}}.",
-        "rateLimitedMinutes": "You have reached the PDF report limit. Try again in {count, plural, one {# minute} other {# minutes}}.",
+        "rateLimited": "The PDF could not be started: another of your reports may still be generating, or you may have reached the report limit. Wait a little before trying again.",
+        "rateLimitedSeconds": "The PDF could not be started: another of your reports may still be generating, or you may have reached the report limit. Try again in {count, plural, one {# second} other {# seconds}}.",
+        "rateLimitedMinutes": "The PDF could not be started: another of your reports may still be generating, or you may have reached the report limit. Try again in {count, plural, one {# minute} other {# minutes}}.",
         "sessionExpired": "Your session has expired. Sign in again to download the PDF.",
         "failed": "The PDF could not be generated. Try again.",
         "network": "SST could not complete the request. Check your connection and try again.",

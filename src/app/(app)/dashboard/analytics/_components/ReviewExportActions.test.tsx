@@ -213,21 +213,6 @@ describe("PDF export", () => {
 
   it.each([
     [
-      "429 with Retry-After seconds",
-      refusal(429, "x", { "Retry-After": "5" }),
-      "Has alcanzado el límite de informes PDF. Vuelve a intentarlo en 5 segundos.",
-    ],
-    [
-      "429 with Retry-After minutes",
-      refusal(429, "x", { "Retry-After": "540" }),
-      "Has alcanzado el límite de informes PDF. Vuelve a intentarlo en 9 minutos.",
-    ],
-    [
-      "429 without Retry-After",
-      refusal(429, "x"),
-      "Has alcanzado el límite de informes PDF. Espera un poco antes de volver a intentarlo.",
-    ],
-    [
       "503 capacity",
       refusal(503, "x", { "Retry-After": "5" }),
       "Ahora mismo se están generando otros informes. Vuelve a intentarlo en unos segundos.",
@@ -256,6 +241,37 @@ describe("PDF export", () => {
     expect(status.textContent).toBe("");
     expect(saved).toEqual([]);
     expect(created).toEqual([]);
+  });
+
+  describe("429: one message for both server causes (export in progress / account quota)", () => {
+    const CAUSE = {
+      es: "No se pudo iniciar el PDF: puede que ya se esté generando otro informe tuyo o que hayas alcanzado el límite de informes.",
+      en: "The PDF could not be started: another of your reports may still be generating, or you may have reached the report limit.",
+    };
+    it.each([
+      ["es", "1", `${CAUSE.es} Vuelve a intentarlo en 1 segundo.`],
+      ["es", "5", `${CAUSE.es} Vuelve a intentarlo en 5 segundos.`],
+      ["es", "60", `${CAUSE.es} Vuelve a intentarlo en 1 minuto.`],
+      ["es", "540", `${CAUSE.es} Vuelve a intentarlo en 9 minutos.`],
+      ["es", null, `${CAUSE.es} Espera un poco antes de volver a intentarlo.`],
+      ["es", "soon", `${CAUSE.es} Espera un poco antes de volver a intentarlo.`],
+      ["en", "1", `${CAUSE.en} Try again in 1 second.`],
+      ["en", "30", `${CAUSE.en} Try again in 30 seconds.`],
+      ["en", "61", `${CAUSE.en} Try again in 2 minutes.`],
+      ["en", "600", `${CAUSE.en} Try again in 10 minutes.`],
+      ["en", null, `${CAUSE.en} Wait a little before trying again.`],
+    ] as const)("%s · Retry-After %s", async (locale, retryAfter, message) => {
+      // Either server body (in progress / quota): the client never reads it.
+      stubFetch(async () =>
+        refusal(429, "server text", retryAfter === null ? {} : { "Retry-After": retryAfter }),
+      );
+      const { pdf, error } = mount({ locale });
+      await press(pdf);
+      expect(error.textContent).toBe(message);
+      expect(error.getAttribute("role")).toBe("alert");
+      expect(saved).toEqual([]);
+      expect(pdf.getAttribute("aria-disabled")).toBeNull();
+    });
   });
 
   it("the server's error body is never rendered (untrusted), not even as text", async () => {
@@ -314,7 +330,9 @@ describe("PDF export", () => {
     const { pdf, error } = mount({ locale: "en" });
     expect(pdf.textContent).toBe("Download PDF");
     await press(pdf);
-    expect(error.textContent).toBe("You have reached the PDF report limit. Try again in 1 second.");
+    expect(error.textContent).toBe(
+      "The PDF could not be started: another of your reports may still be generating, or you may have reached the report limit. Try again in 1 second.",
+    );
     stubFetch(async () => {
       throw new TypeError("offline");
     });

@@ -13,7 +13,7 @@ import {
 } from "./review-pdf-download";
 
 describe("exportErrorFor", () => {
-  it("429 → wait message, with the server's Retry-After in seconds or whole minutes", () => {
+  it("429 (in progress OR quota: indistinguishable) → one message, Retry-After as seconds or whole minutes", () => {
     expect(exportErrorFor(429, "5")).toEqual({ key: "export.rateLimitedSeconds", count: 5 });
     expect(exportErrorFor(429, "59")).toEqual({ key: "export.rateLimitedSeconds", count: 59 });
     expect(exportErrorFor(429, "60")).toEqual({ key: "export.rateLimitedMinutes", count: 1 });

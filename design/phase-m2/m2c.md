@@ -26,16 +26,16 @@ the server correctly refused the 6th and 7th. The browser then **saved the error
 
 ## Behaviour now
 
-|                       | Before                         | After                                                                                                      |
-| --------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| Click                 | browser download, no feedback  | «Generando PDF…» on the control (`aria-busy`, `aria-disabled`), announced                                  |
-| Repeated clicks       | each one a new request         | ignored while one is pending (1 request)                                                                   |
-| Success               | file saved                     | the same server file and filename; «PDF descargado. Revisa tu carpeta de descargas.»                       |
-| 429                   | `review.txt` saved, no message | «Has alcanzado el límite de informes PDF. Vuelve a intentarlo en N minutos/segundos.» (from `Retry-After`) |
-| 503                   | `review.txt` saved, no message | the existing «Ahora mismo se están generando otros informes…»                                              |
-| 409 / 401 / other     | file saved with the error text | no-signals message / session expired / generic «No se pudo generar el PDF»                                 |
-| Network failure       | browser «failed»               | «SST no pudo completar la solicitud. Comprueba tu conexión…»                                               |
-| 200 that is not a PDF | saved as `.pdf`                | nothing saved, «La respuesta no era un PDF válido…»                                                        |
+|                       | Before                         | After                                                                                                                                                                                      |
+| --------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Click                 | browser download, no feedback  | «Generando PDF…» on the control (`aria-busy`, `aria-disabled`), announced                                                                                                                  |
+| Repeated clicks       | each one a new request         | ignored while one is pending (1 request)                                                                                                                                                   |
+| Success               | file saved                     | the same server file and filename; «PDF descargado. Revisa tu carpeta de descargas.»                                                                                                       |
+| 429                   | `review.txt` saved, no message | «No se pudo iniciar el PDF: puede que ya se esté generando otro informe tuyo o que hayas alcanzado el límite de informes. Vuelve a intentarlo en N minutos/segundos.» (from `Retry-After`) |
+| 503                   | `review.txt` saved, no message | the existing «Ahora mismo se están generando otros informes…»                                                                                                                              |
+| 409 / 401 / other     | file saved with the error text | no-signals message / session expired / generic «No se pudo generar el PDF»                                                                                                                 |
+| Network failure       | browser «failed»               | «SST no pudo completar la solicitud. Comprueba tu conexión…»                                                                                                                               |
+| 200 that is not a PDF | saved as `.pdf`                | nothing saved, «La respuesta no era un PDF válido…»                                                                                                                                        |
 
 ## Implementation
 
@@ -48,6 +48,10 @@ The implementation is `ReviewExportActions.tsx` plus the pure helpers in `review
   - `credentials: "same-origin"`, `cache: "no-store"`;
   - the same session cookie, the same route, the same server limits;
   - no new endpoint and no new dependency.
+- **One 429 message for two causes.** The server answers 429 both when this account's export is
+  already in progress (`subject_busy`) and when the account quota is reached. Without reading the
+  body the client cannot tell them apart, so the message names both possibilities and gives the
+  `Retry-After` delay.
 - **Errors map from the status only.** The response body is never rendered, not even as text: it
   is untrusted, and the client has its own catalog messages. `Retry-After` is read only as
   delay-seconds (1 s to 24 h); otherwise the message has no time.
@@ -101,13 +105,15 @@ revoked.
   - PDF validation;
   - request options;
   - network failure vs abort.
-- `ReviewExportActions.test.tsx` (29, replaces 4):
+- `ReviewExportActions.test.tsx` (37, replaces 4):
   - copy (unchanged);
   - success with the server filename;
   - 4 fallback-filename cases;
   - object URL revoked by timer and on unmount;
   - pending state and duplicate clicks;
-  - 8 refusal and error statuses;
+  - 429 naming both causes, ES/EN, with `Retry-After` 1 s / N s / 1 min / N min / missing /
+    invalid (11 cases);
+  - the other refusal and error statuses (503, 409, 401, 500, 404);
   - an untrusted body is never rendered;
   - network failure;
   - 3 not-a-PDF cases;
@@ -125,7 +131,8 @@ revoked.
   - a real PDF with the server filename;
   - success announced;
   - keyboard Enter and focus kept;
-  - the **real 429** (quota, «10 minutos») and the **real 503** (process gate), statuses
+  - the **real 429** (here the quota; message naming both causes, «10 minutos») and the
+    **real 503** (process gate), statuses
     `200 ×5, 429, 503`;
   - the alert linked to the control;
   - network failure (simulated);
