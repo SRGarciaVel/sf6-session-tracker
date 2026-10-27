@@ -802,6 +802,14 @@
       }
     },
     "ratingCharacterHintScoped": "Este personaje decide el rating, el rango y las estadísticas del overlay. Si no tiene partidas en la sesión, se muestran a cero.",
+    "identityPlate": {
+      "label": "Placa del personaje",
+      "modes": {
+        "auto": "Automática",
+        "off": "Desactivada"
+      },
+      "hint": "Muestra un identificador tipográfico de SST (por ejemplo «AKI») del mismo personaje que el rating. No es una ilustración del personaje."
+    },
     "sampleCharacter": "Personaje de ejemplo",
     "rotation": {
       "title": "Presentación automática",

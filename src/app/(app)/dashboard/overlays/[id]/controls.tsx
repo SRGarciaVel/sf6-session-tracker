@@ -44,13 +44,20 @@ export function Segmented<T extends string>({
   value,
   options,
   onChange,
+  labelledBy,
 }: {
   value: T;
   options: Array<{ value: T; label: string; disabled?: boolean }>;
   onChange: (v: T) => void;
+  /** id of the visible label that names the group (optional). */
+  labelledBy?: string;
 }) {
   return (
-    <div className="inline-flex flex-wrap border-b border-line-strong" role="radiogroup">
+    <div
+      className="inline-flex flex-wrap border-b border-line-strong"
+      role="radiogroup"
+      aria-labelledby={labelledBy}
+    >
       {options.map((o) => (
         <button
           key={o.value}

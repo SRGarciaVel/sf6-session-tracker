@@ -66,6 +66,7 @@ import {
   Animated,
   Cell,
   Delta,
+  IdentityPlate,
   RatingTransitionProvider,
   RatingValue,
   Ratio,
@@ -219,7 +220,17 @@ function MinimalTheme({ config, live, viewLabel }: ThemeProps) {
   return (
     <div className="ov-panel ov-minimal ov-shadow">
       <MotionFx />
-      <span className="ov-min-bar" aria-hidden />
+      {config.identityPlate === "auto" ? (
+        // M2D: the plate takes the decorative tick's place (same skewed accent language).
+        <IdentityPlate
+          config={config}
+          parts={r}
+          nameShown={f.rating || f.ratingDelta}
+          className="ov-ip-min"
+        />
+      ) : (
+        <span className="ov-min-bar" aria-hidden />
+      )}
       <span className="ov-min-items">
         {joinWith(items, (k) => (
           <span className="ov-min-sep" aria-hidden key={`sep-${k}`} />
@@ -327,9 +338,8 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
     });
 
   const showTop = config.showTitle || f.rank;
-  return (
-    <div className="ov-panel ov-comp ov-shadow">
-      <MotionFx />
+  const content = (
+    <>
       {showTop && (
         <div className="ov-comp-top">
           {config.showTitle && <span className="ov-comp-tag">{config.title || t("session")}</span>}
@@ -343,6 +353,26 @@ function CompetitiveTheme({ config, live }: ThemeProps) {
         ))}
       </div>
       {f.recentForm && <RecentForm results={s.recentResults} max={10} brandSlot />}
+    </>
+  );
+  // M2D: the plate is a left column beside the whole scoreboard; off ⇒ the markup is unchanged.
+  if (config.identityPlate === "auto")
+    return (
+      <div className="ov-panel ov-comp ov-comp-with-ip ov-shadow">
+        <MotionFx />
+        <IdentityPlate
+          config={config}
+          parts={r}
+          nameShown={f.rating || f.ratingDelta}
+          className="ov-ip-comp"
+        />
+        <div className="ov-comp-body">{content}</div>
+      </div>
+    );
+  return (
+    <div className="ov-panel ov-comp ov-shadow">
+      <MotionFx />
+      {content}
     </div>
   );
 }
@@ -362,6 +392,19 @@ function FighterTheme({ config, live }: ThemeProps) {
     <div className="ov-street ov-shadow">
       <MotionFx />
       <span className="ov-st-slash" aria-hidden />
+      {config.identityPlate === "auto" && (
+        // M2D: a leading block of its own, in the theme's skewed block language.
+        <div className="ov-st-block ov-st-ip">
+          <div className="ov-st-inner">
+            <IdentityPlate
+              config={config}
+              parts={r}
+              nameShown={f.rating || f.ratingDelta || f.rank}
+              className="ov-ip-st"
+            />
+          </div>
+        </div>
+      )}
       {(showScore || f.winRate || f.totalGames) && (
         <div className="ov-st-block ov-st-main">
           <div className="ov-st-inner">

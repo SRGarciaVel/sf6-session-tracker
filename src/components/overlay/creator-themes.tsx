@@ -17,6 +17,7 @@ import { MotionFx } from "./motion";
 import {
   Animated,
   Delta,
+  IdentityPlate,
   RatingValue,
   Ratio,
   RecentForm,
@@ -129,6 +130,7 @@ export function RankCardTheme({ config, live }: ThemeProps) {
       </div>
       <div className="ov-rc-body">
         <div className="ov-rc-head">
+          <IdentityPlate config={config} parts={r} nameShown className="ov-ip-rc" />
           <span className="ov-rc-char ov-char">{r.character}</span>
           {config.showTitle && <span className="ov-rc-title">{config.title || t("session")}</span>}
         </div>
@@ -224,6 +226,13 @@ export function BroadcastTheme({ config, live }: ThemeProps) {
       ].join(" ")}
     >
       <MotionFx />
+      {/* M2D: a leading cell of its own. The tab keeps the title / rotation view label. */}
+      <IdentityPlate
+        config={config}
+        parts={r}
+        nameShown={f.rating || f.ratingDelta}
+        className="ov-ip-bc"
+      />
       {config.showTitle && (
         <div className="ov-bc-tab">
           <span>{config.title || t("session")}</span>
@@ -301,9 +310,14 @@ export function PrestigeTheme({ config, live }: ThemeProps) {
       <div className="ov-pr-center">
         {config.showTitle && <span className="ov-pr-title">{config.title || t("session")}</span>}
         <RankEmblem prestige={p} className="ov-pr-emb" />
+        {/* M2D: without the name row the medallion stands under the emblem (and names it). */}
+        {!(f.rating || f.ratingDelta) && (
+          <IdentityPlate config={config} parts={r} nameShown={false} className="ov-ip-pr" />
+        )}
         {f.rank && <span className="ov-pr-rank">{r.rank}</span>}
         {(f.rating || f.ratingDelta) && (
           <span className="ov-pr-rating">
+            <IdentityPlate config={config} parts={r} nameShown className="ov-ip-pr" />
             <span className="ov-char ov-pr-char">{r.character}</span>
             {f.rating && (
               <>
