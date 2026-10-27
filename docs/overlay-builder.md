@@ -389,3 +389,42 @@ Normal; overlays saved before 5.5 show Instant (their actual behaviour) until ch
 uses the production renderer, so **Play update** shows the chosen transition. Whatever the mode,
 a rating whose post-match value is still pending keeps the last confirmed value (up to 3 min)
 instead of "—". Tests: `rating-transition-builder.test.tsx`.
+
+## Character plate (M2D)
+
+Content tab, under **Rating character**: **Character plate**, with two values, **Automatic** and
+**Off** (`identityPlate: "auto" | "off"`, a Free setting).
+
+- **What it is.** An SST-native **typographic identifier** of the character the overlay already
+  shows, for example «AKI», «CHU» or «?» for Random. It is **not a character portrait or
+  illustration**: SST ships no Capcom artwork and none is licensed
+  (`design/phase-m2/character-portraits-audit.md`). No image, no request, no animation.
+- **Which character.** The same one as the rating: `ratingParts().characterKey`, that is, the
+  pinned rating character, else the active character. Rotation views follow it too.
+- **Unknown or no character.** A new character gets a label from the name Capcom sends. No known
+  character shows a neutral SST mark.
+- **Label rules** live only in `domain/overlay/identity-plate.ts`, with one documented override.
+- **Defaults:**
+  - new overlays start **Automatic**;
+  - overlays saved before this setting read as **Off**, so a running OBS layout never changes on
+    its own;
+  - an unusable stored value also reads as Off and keeps the rest of the overlay;
+  - saving uses the existing owner action, and OBS updates over the existing stream with no
+    reload.
+- **Presets** do not carry it (content, like the rating character): applying a preset keeps the
+  overlay's choice.
+- **Placement per theme:**
+  - Broadcast: a leading cell before the title tab; the tab keeps the title or rotation label.
+  - Minimal: a chip in place of the slanted tick.
+  - Competitive: a left column.
+  - Fighter: a first skewed block.
+  - Rank Card: a tag before the name, in the tier colour.
+  - Prestige: a medallion before the name, or under the emblem when the rating row is hidden.
+- **Accessibility.** The plate is decorative when the name is visible beside it. Otherwise
+  (name hidden by the fields or by the Creator switch) it carries the name.
+- **Tests:**
+  - `identity-plate.test.ts`: labels and setting;
+  - `identity-plate-render.test.tsx`: six themes, identity, realtime, CSS contract;
+  - `identity-plate-builder.test.tsx`;
+  - `tests/integration/identity-plate.test.ts`;
+  - the Chromium matrix and live check in `design/phase-m2/e2e/identity-plate.e2e.mts`.

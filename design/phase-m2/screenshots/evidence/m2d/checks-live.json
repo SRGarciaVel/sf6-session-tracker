@@ -1,0 +1,26 @@
+[
+  {
+    "check": "OBS: plate shows the active character (RYU)",
+    "pass": true
+  },
+  {
+    "check": "builder Off → OBS drops the plate without a reload",
+    "pass": true
+  },
+  {
+    "check": "builder Automatic → OBS shows it again without a reload",
+    "pass": true
+  },
+  {
+    "check": "new match with Jamie → plate JAM, same as the name, no reload",
+    "pass": true
+  },
+  {
+    "check": "still exactly one plate after the updates",
+    "pass": true
+  },
+  {
+    "check": "pinned Ryu while Jamie is active → plate RYU",
+    "pass": true
+  }
+]

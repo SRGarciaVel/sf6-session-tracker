@@ -1,0 +1,295 @@
+[
+  {
+    "check": "onboarding overlay stored with identityPlate auto",
+    "pass": true,
+    "detail": "auto"
+  },
+  {
+    "check": "minimal compact: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "minimal compact: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "minimal compact: no overflow with the plate",
+    "pass": true,
+    "detail": "x -13 y -82"
+  },
+  {
+    "check": "minimal compact: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "0.951"
+  },
+  {
+    "check": "minimal standard: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "minimal standard: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "minimal standard: no overflow with the plate",
+    "pass": true,
+    "detail": "x -17 y -129"
+  },
+  {
+    "check": "minimal standard: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "0.955"
+  },
+  {
+    "check": "minimal detailed: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "minimal detailed: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "minimal detailed: no overflow with the plate",
+    "pass": true,
+    "detail": "x -20 y -183"
+  },
+  {
+    "check": "minimal detailed: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "0.957"
+  },
+  {
+    "check": "competitive compact: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "competitive compact: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "competitive compact: no overflow with the plate",
+    "pass": true,
+    "detail": "x -13 y -25"
+  },
+  {
+    "check": "competitive compact: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "0.904"
+  },
+  {
+    "check": "competitive standard: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "competitive standard: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "competitive standard: no overflow with the plate",
+    "pass": true,
+    "detail": "x -20 y -54"
+  },
+  {
+    "check": "competitive standard: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "0.903"
+  },
+  {
+    "check": "competitive detailed: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "competitive detailed: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "competitive detailed: no overflow with the plate",
+    "pass": true,
+    "detail": "x -36 y -101"
+  },
+  {
+    "check": "competitive detailed: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "1.000"
+  },
+  {
+    "check": "fighter compact: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "fighter compact: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "fighter compact: no overflow with the plate",
+    "pass": true,
+    "detail": "x -13 y -56"
+  },
+  {
+    "check": "fighter compact: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "0.871"
+  },
+  {
+    "check": "fighter standard: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "fighter standard: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "fighter standard: no overflow with the plate",
+    "pass": true,
+    "detail": "x -21 y -95"
+  },
+  {
+    "check": "fighter standard: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "0.925"
+  },
+  {
+    "check": "fighter detailed: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "fighter detailed: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "fighter detailed: no overflow with the plate",
+    "pass": true,
+    "detail": "x -56 y -149"
+  },
+  {
+    "check": "fighter detailed: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "1.000"
+  },
+  {
+    "check": "rank-card standard: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "rank-card standard: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "rank-card standard: no overflow with the plate",
+    "pass": true,
+    "detail": "x -391 y -17"
+  },
+  {
+    "check": "rank-card standard: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "0.952"
+  },
+  {
+    "check": "rank-card detailed: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "rank-card detailed: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "rank-card detailed: no overflow with the plate",
+    "pass": true,
+    "detail": "x -429 y -52"
+  },
+  {
+    "check": "rank-card detailed: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "1.000"
+  },
+  {
+    "check": "broadcast compact: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "broadcast compact: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "broadcast compact: no overflow with the plate",
+    "pass": true,
+    "detail": "x -11 y -79"
+  },
+  {
+    "check": "broadcast compact: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "0.935"
+  },
+  {
+    "check": "broadcast standard: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "broadcast standard: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "broadcast standard: no overflow with the plate",
+    "pass": true,
+    "detail": "x -17 y -126"
+  },
+  {
+    "check": "broadcast standard: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "0.934"
+  },
+  {
+    "check": "broadcast detailed: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "broadcast detailed: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "broadcast detailed: no overflow with the plate",
+    "pass": true,
+    "detail": "x -18 y -179"
+  },
+  {
+    "check": "broadcast detailed: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "0.935"
+  },
+  {
+    "check": "prestige standard: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "prestige standard: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "prestige standard: no overflow with the plate",
+    "pass": true,
+    "detail": "x -350 y -16"
+  },
+  {
+    "check": "prestige standard: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "0.995"
+  },
+  {
+    "check": "prestige detailed: plate on (1) / off (0)",
+    "pass": true
+  },
+  {
+    "check": "prestige detailed: metrics text identical on/off",
+    "pass": true
+  },
+  {
+    "check": "prestige detailed: no overflow with the plate",
+    "pass": true,
+    "detail": "x -364 y -44"
+  },
+  {
+    "check": "prestige detailed: content scale on/off ≥ 0.85",
+    "pass": true,
+    "detail": "1.000"
+  }
+]

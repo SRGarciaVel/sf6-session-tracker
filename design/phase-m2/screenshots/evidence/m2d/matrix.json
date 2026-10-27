@@ -1,0 +1,338 @@
+[
+  {
+    "theme": "minimal",
+    "canvas": "compact",
+    "ratio": 0.951,
+    "on": {
+      "font": 15.312,
+      "overflowX": -13,
+      "overflowY": -82,
+      "plate": 1,
+      "plateBox": [
+        13,
+        47,
+        42,
+        23
+      ],
+      "text": "1V 0D100 %1 PMasterRyu1341MR±0mejor 1V"
+    },
+    "off": {
+      "font": 16.104
+    }
+  },
+  {
+    "theme": "minimal",
+    "canvas": "standard",
+    "ratio": 0.955,
+    "on": {
+      "font": 20.448,
+      "overflowX": -17,
+      "overflowY": -129,
+      "plate": 1,
+      "plateBox": [
+        18,
+        73,
+        56,
+        30
+      ],
+      "text": "1V 0D100 %1 PMasterRyu1341MR±0mejor 1V"
+    },
+    "off": {
+      "font": 21.408
+    }
+  },
+  {
+    "theme": "minimal",
+    "canvas": "detailed",
+    "ratio": 0.957,
+    "on": {
+      "font": 22.968,
+      "overflowX": -20,
+      "overflowY": -183,
+      "plate": 1,
+      "plateBox": [
+        20,
+        101,
+        63,
+        34
+      ],
+      "text": "1V 0D100 %1 PMasterRyu1341MR±0mejor 1V"
+    },
+    "off": {
+      "font": 24
+    }
+  },
+  {
+    "theme": "competitive",
+    "canvas": "compact",
+    "ratio": 0.904,
+    "on": {
+      "font": 16.302,
+      "overflowX": -13,
+      "overflowY": -25,
+      "plate": 1,
+      "plateBox": [
+        22,
+        20,
+        46,
+        78
+      ],
+      "text": "SesiónMasterVictorias1/Derrotas0% Victorias100 %Partidas1Ryu1341MR±0Racha1Mejor1V"
+    },
+    "off": {
+      "font": 18.04
+    }
+  },
+  {
+    "theme": "competitive",
+    "canvas": "standard",
+    "ratio": 0.903,
+    "on": {
+      "font": 21.672,
+      "overflowX": -20,
+      "overflowY": -54,
+      "plate": 1,
+      "plateBox": [
+        29,
+        37,
+        61,
+        104
+      ],
+      "text": "SesiónMasterVictorias1/Derrotas0% Victorias100 %Partidas1Ryu1341MR±0Racha1Mejor1V"
+    },
+    "off": {
+      "font": 24
+    }
+  },
+  {
+    "theme": "competitive",
+    "canvas": "detailed",
+    "ratio": 1,
+    "on": {
+      "font": 24,
+      "overflowX": -36,
+      "overflowY": -101,
+      "plate": 1,
+      "plateBox": [
+        32,
+        61,
+        68,
+        115
+      ],
+      "text": "SesiónMasterVictorias1/Derrotas0% Victorias100 %Partidas1Ryu1341MR±0Racha1Mejor1V"
+    },
+    "off": {
+      "font": 24
+    }
+  },
+  {
+    "theme": "fighter",
+    "canvas": "compact",
+    "ratio": 0.871,
+    "on": {
+      "font": 16.72,
+      "overflowX": -13,
+      "overflowY": -56,
+      "plate": 1,
+      "plateBox": [
+        39,
+        46,
+        44,
+        28
+      ],
+      "text": "Sesión1-0% Victorias100 %Partidas1Ryu · Master1341 MR±0Mejor1V"
+    },
+    "off": {
+      "font": 19.206
+    }
+  },
+  {
+    "theme": "fighter",
+    "canvas": "standard",
+    "ratio": 0.925,
+    "on": {
+      "font": 22.2,
+      "overflowX": -21,
+      "overflowY": -95,
+      "plate": 1,
+      "plateBox": [
+        52,
+        71,
+        58,
+        38
+      ],
+      "text": "Sesión1-0% Victorias100 %Partidas1Ryu · Master1341 MR±0Mejor1V"
+    },
+    "off": {
+      "font": 24
+    }
+  },
+  {
+    "theme": "fighter",
+    "canvas": "detailed",
+    "ratio": 1,
+    "on": {
+      "font": 24,
+      "overflowX": -56,
+      "overflowY": -149,
+      "plate": 1,
+      "plateBox": [
+        57,
+        100,
+        63,
+        41
+      ],
+      "text": "Sesión1-0% Victorias100 %Partidas1Ryu · Master1341 MR±0Mejor1V"
+    },
+    "off": {
+      "font": 24
+    }
+  },
+  {
+    "theme": "rank-card",
+    "canvas": "standard",
+    "ratio": 0.952,
+    "on": {
+      "font": 20.832,
+      "overflowX": -391,
+      "overflowY": -17,
+      "plate": 1,
+      "plateBox": [
+        112,
+        21,
+        34,
+        22
+      ],
+      "text": "MasterRyuSesión1341MR±0Récord1-0% Victorias100 %Partidas1Racha1Mejor1V"
+    },
+    "off": {
+      "font": 21.888
+    }
+  },
+  {
+    "theme": "rank-card",
+    "canvas": "detailed",
+    "ratio": 1,
+    "on": {
+      "font": 24,
+      "overflowX": -429,
+      "overflowY": -52,
+      "plate": 1,
+      "plateBox": [
+        130,
+        41,
+        39,
+        25
+      ],
+      "text": "MasterRyuSesión1341MR±0Récord1-0% Victorias100 %Partidas1Racha1Mejor1V"
+    },
+    "off": {
+      "font": 24
+    }
+  },
+  {
+    "theme": "broadcast",
+    "canvas": "compact",
+    "ratio": 0.935,
+    "on": {
+      "font": 13.244,
+      "overflowX": -11,
+      "overflowY": -79,
+      "plate": 1,
+      "plateBox": [
+        5,
+        40,
+        39,
+        41
+      ],
+      "text": "SesiónVictorias1Derrotas0% Victorias100 %Partidas1RangoMasterRyu1341MR±0Racha1Mejor1V"
+    },
+    "off": {
+      "font": 14.168
+    }
+  },
+  {
+    "theme": "broadcast",
+    "canvas": "standard",
+    "ratio": 0.934,
+    "on": {
+      "font": 17.64,
+      "overflowX": -17,
+      "overflowY": -126,
+      "plate": 1,
+      "plateBox": [
+        7,
+        63,
+        52,
+        54
+      ],
+      "text": "SesiónVictorias1Derrotas0% Victorias100 %Partidas1RangoMasterRyu1341MR±0Racha1Mejor1V"
+    },
+    "off": {
+      "font": 18.888
+    }
+  },
+  {
+    "theme": "broadcast",
+    "canvas": "detailed",
+    "ratio": 0.935,
+    "on": {
+      "font": 19.896,
+      "overflowX": -18,
+      "overflowY": -179,
+      "plate": 1,
+      "plateBox": [
+        8,
+        90,
+        59,
+        61
+      ],
+      "text": "SesiónVictorias1Derrotas0% Victorias100 %Partidas1RangoMasterRyu1341MR±0Racha1Mejor1V"
+    },
+    "off": {
+      "font": 21.288
+    }
+  },
+  {
+    "theme": "prestige",
+    "canvas": "standard",
+    "ratio": 0.995,
+    "on": {
+      "font": 20.136,
+      "overflowX": -350,
+      "overflowY": -16,
+      "plate": 1,
+      "plateBox": [
+        152,
+        130,
+        37,
+        24
+      ],
+      "text": "Récord1-01 PSesiónMasterRyu1341MR±0% Victorias100 %Racha 1 · Mejor 1V"
+    },
+    "off": {
+      "font": 20.232
+    }
+  },
+  {
+    "theme": "prestige",
+    "canvas": "detailed",
+    "ratio": 1,
+    "on": {
+      "font": 24,
+      "overflowX": -364,
+      "overflowY": -44,
+      "plate": 1,
+      "plateBox": [
+        181,
+        168,
+        44,
+        29
+      ],
+      "text": "Récord1-01 PSesiónMasterRyu1341MR±0% Victorias100 %Racha 1 · Mejor 1V"
+    },
+    "off": {
+      "font": 24
+    }
+  }
+]
