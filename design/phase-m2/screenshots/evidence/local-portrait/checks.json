@@ -1,0 +1,98 @@
+{
+  "ranAt": "2026-10-27T02:21:16.035Z",
+  "environment": "Playwright Chromium (NOT OBS)",
+  "results": [
+    {
+      "check": "dock served (flag on) with the unchanged CSP",
+      "pass": true,
+      "detail": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-"
+    },
+    {
+      "check": "source served with the same img-src policy",
+      "pass": true
+    },
+    {
+      "check": "dock: empty state",
+      "pass": true
+    },
+    {
+      "check": "source: empty and transparent",
+      "pass": true
+    },
+    {
+      "check": "dock refuses fake.png",
+      "pass": true,
+      "detail": "Solo se aceptan imágenes PNG, JPEG o WebP (se comprueba el contenido, no el nombre)."
+    },
+    {
+      "check": "dock refuses too-big.png",
+      "pass": true,
+      "detail": "El archivo pesa más de 512 KB."
+    },
+    {
+      "check": "dock refuses too-wide.png",
+      "pass": true,
+      "detail": "La imagen supera 1024 × 1024 px."
+    },
+    {
+      "check": "source still empty after refusals",
+      "pass": true
+    },
+    {
+      "check": "dock: real image decoded and previewed",
+      "pass": true,
+      "detail": "PNG · 1,3 KB · 256 × 256 px · guardada 23:21"
+    },
+    {
+      "check": "source (separate page, same profile) shows it via its own blob: URL, no reload",
+      "pass": true,
+      "detail": "{\"w\":256,\"src\":\"blob:\"}"
+    },
+    {
+      "check": "no request carried the image (no POST/PUT, no body)",
+      "pass": true,
+      "detail": "2 requests: GET http://localhost:3171/75410bfa-c17e-4b47-8636-1ae50b5c681d, GET http://localhost:3171/d8735c13-c6e7-4c18-a778-72bc92fdcf90"
+    },
+    {
+      "check": "replace: the source shows the new image",
+      "pass": true,
+      "detail": "47,224,255 → 255,46,147"
+    },
+    {
+      "check": "persists after reloading the source",
+      "pass": true
+    },
+    {
+      "check": "persists after restarting the browser profile",
+      "pass": true
+    },
+    {
+      "check": "fits 160×160: square of min side, centred, no overflow",
+      "pass": true,
+      "detail": "{\"x\":0,\"y\":0,\"width\":160,\"height\":160}"
+    },
+    {
+      "check": "fits 320×180: square of min side, centred, no overflow",
+      "pass": true,
+      "detail": "{\"x\":70,\"y\":0,\"width\":180,\"height\":180}"
+    },
+    {
+      "check": "fits 96×96: square of min side, centred, no overflow",
+      "pass": true,
+      "detail": "{\"x\":0,\"y\":0,\"width\":96,\"height\":96}"
+    },
+    {
+      "check": "delete: the source goes back to empty without reload",
+      "pass": true
+    },
+    {
+      "check": "a different browser profile does not see it (isolation)",
+      "pass": true
+    },
+    {
+      "check": "no CSP violation reported",
+      "pass": true,
+      "detail": ""
+    }
+  ]
+}
