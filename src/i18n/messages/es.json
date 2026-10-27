@@ -1626,5 +1626,46 @@
     "recap": "Cargando el resumen de la sesión…",
     "builder": "Cargando el editor del overlay…",
     "slow": "Está tardando más de lo normal. En la beta gratuita el servidor puede tardar unos segundos en arrancar."
+  },
+  "Prototype": {
+    "localPortrait": {
+      "badge": "Prototipo · no es una función de SST",
+      "title": "Retrato local (prueba para OBS)",
+      "intro": "Comprueba si una imagen elegida aquí, en un dock de OBS, puede mostrarse en una fuente de navegador de OBS separada. La imagen se guarda solo en este navegador (IndexedDB); nunca se envía a SST.",
+      "rights": "Usa solo imágenes que tengas derecho a usar. SST no proporciona, verifica ni autoriza imágenes de personajes.",
+      "choose": "Elegir imagen",
+      "replace": "Reemplazar imagen",
+      "delete": "Borrar imagen",
+      "limits": "PNG, JPEG o WebP · máx. {kb} KB · máx. {px} × {px} px",
+      "state": {
+        "loading": "Leyendo la imagen guardada…",
+        "empty": "No hay ninguna imagen guardada.",
+        "saving": "Guardando…",
+        "saved": "Imagen guardada en este navegador.",
+        "deleted": "Imagen borrada de este navegador."
+      },
+      "meta": "{type} · {kb} KB · {width} × {height} px · guardada <time></time>",
+      "preview": "Vista previa de la imagen guardada",
+      "invalid": {
+        "empty": "El archivo está vacío.",
+        "too-large": "El archivo pesa más de {kb} KB.",
+        "unsupported-type": "Solo se aceptan imágenes PNG, JPEG o WebP (se comprueba el contenido, no el nombre).",
+        "undecodable": "El archivo no se pudo leer como imagen.",
+        "too-many-pixels": "La imagen supera {px} × {px} px."
+      },
+      "storage": {
+        "unavailable": "Este navegador no permite guardar datos locales (IndexedDB no disponible).",
+        "quota": "No hay espacio local suficiente para guardar la imagen.",
+        "failed": "No se pudo acceder al almacenamiento local."
+      },
+      "obsTitle": "Fuente de navegador para OBS",
+      "obsHint": "Añade esta URL como fuente de navegador en OBS. Debe tener exactamente el mismo origen (esquema, host y puerto) que este dock.",
+      "copy": "Copiar URL",
+      "source": {
+        "empty": "Sin imagen local",
+        "loading": "Cargando…",
+        "error": "Almacenamiento local no disponible"
+      }
+    }
   }
 }

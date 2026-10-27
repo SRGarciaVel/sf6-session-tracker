@@ -1,0 +1,27 @@
+/*
+ * PROTOTYPE — OBS Browser Source frame for the local portrait. OBS/CEF-safe like overlay.css:
+ * hand-written, no Tailwind, no oklch()/color-mix()/container queries/:has(), no animation.
+ * The image fills the largest square that fits the source (set the OBS source to e.g. 160×160).
+ */
+.lp-source {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+.lp-image {
+  display: block;
+  width: min(100vw, 100vh);
+  height: min(100vw, 100vh);
+  object-fit: cover;
+}
+.lp-debug {
+  padding: 0.3em 0.6em;
+  font:
+    600 14px/1.2 system-ui,
+    sans-serif;
+  color: #f4f6ff;
+  background: rgba(7, 10, 22, 0.8);
+}

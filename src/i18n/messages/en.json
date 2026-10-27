@@ -1626,5 +1626,46 @@
     "recap": "Loading the session recap…",
     "builder": "Loading the overlay editor…",
     "slow": "This is taking longer than usual. On the free beta the server can take a few seconds to start."
+  },
+  "Prototype": {
+    "localPortrait": {
+      "badge": "Prototype · not an SST feature",
+      "title": "Local portrait (OBS test)",
+      "intro": "Checks whether an image chosen here, in an OBS dock, can be shown in a separate OBS Browser Source. The image is kept only in this browser (IndexedDB); it is never sent to SST.",
+      "rights": "Only use images you have the right to use. SST does not provide, verify or authorize character images.",
+      "choose": "Choose image",
+      "replace": "Replace image",
+      "delete": "Delete image",
+      "limits": "PNG, JPEG or WebP · max {kb} KB · max {px} × {px} px",
+      "state": {
+        "loading": "Reading the saved image…",
+        "empty": "No image saved.",
+        "saving": "Saving…",
+        "saved": "Image saved in this browser.",
+        "deleted": "Image deleted from this browser."
+      },
+      "meta": "{type} · {kb} KB · {width} × {height} px · saved <time></time>",
+      "preview": "Preview of the saved image",
+      "invalid": {
+        "empty": "The file is empty.",
+        "too-large": "The file is larger than {kb} KB.",
+        "unsupported-type": "Only PNG, JPEG or WebP images are accepted (the content is checked, not the name).",
+        "undecodable": "The file could not be read as an image.",
+        "too-many-pixels": "The image is larger than {px} × {px} px."
+      },
+      "storage": {
+        "unavailable": "This browser does not allow saving local data (IndexedDB unavailable).",
+        "quota": "There is not enough local space to save the image.",
+        "failed": "The local storage could not be accessed."
+      },
+      "obsTitle": "OBS Browser Source",
+      "obsHint": "Add this URL as a Browser Source in OBS. It must have exactly the same origin (scheme, host and port) as this dock.",
+      "copy": "Copy URL",
+      "source": {
+        "empty": "No local image",
+        "loading": "Loading…",
+        "error": "Local storage unavailable"
+      }
+    }
   }
 }
