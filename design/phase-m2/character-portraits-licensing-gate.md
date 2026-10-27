@@ -22,11 +22,14 @@ authorization clearly cover the intended use: displaying SF6 fighter portraits i
 overlays, **bundling the image files in a public MIT repository** and **distributing them with an
 application that may be commercialized**.
 
-- **Every official Capcom framework read reserves these rights or excludes them:**
-  - website terms (USA and global);
+- **Directly verified official sources** (primary pages read) reserve these rights or exclude
+  them:
+  - Capcom website terms (USA and global);
   - Fan Content Guidelines;
-  - Video Policy;
-  - the 2026 Japan tournament guidelines (reported by secondary sources).
+  - Video Policy.
+- **Secondary, unverified context (not used as evidence):** the 2026 Japan Community Tournament
+  Guidelines are known only from secondary reporting; the primary page was not retrieved. As
+  reported, they concern tournaments, not software assets (row E).
 - **The licensing route is a paid business process.** Capcom's official **License Business
   website** offers licences only by contract (inquiry, contract, design approval, royalties). It
   declines «personal/private… community» uses.
