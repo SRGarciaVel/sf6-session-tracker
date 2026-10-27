@@ -20,6 +20,7 @@ import {
   type RankProgressStyle,
 } from "./rank-progress";
 import { FONT_IDS } from "./fonts";
+import { IDENTITY_PLATE_MODES, identityPlateModeOf } from "./identity-plate";
 import { THEME_IDS, type OverlayCanvasId, type ThemeId } from "./themes";
 import { parseThemeVariants, themeVariantsSchema } from "./variants";
 
@@ -138,6 +139,13 @@ export const sessionOverlayConfigSchema = z.object({
   ratingTransition: z.enum(RATING_TRANSITIONS).default("instant"),
   ratingTransitionSpeed: z.enum(SPEED_IDS).default("normal"),
   /**
+   * M2D character identity plate (domain/overlay/identity-plate.ts): "auto" draws the SST-native
+   * typographic plate of the character the overlay shows, "off" hides it. Optional on INPUT
+   * (configs / editors from before M2D): missing ⇒ "off", so a running OBS layout never changes
+   * on its own; new overlays start with "auto".
+   */
+  identityPlate: z.enum(IDENTITY_PLATE_MODES).default("off"),
+  /**
    * Creator Beta customization (domain/overlay/creator.ts). Optional and default-safe: old
    * configs have none. Stored even when the owner is not entitled; renderers use
    * getEffectiveOverlayConfig(), which ignores it then.
@@ -211,6 +219,7 @@ export const DEFAULT_SESSION_OVERLAY_CONFIG: SessionOverlayConfig = {
   animations: true,
   ratingTransition: "count",
   ratingTransitionSpeed: "normal",
+  identityPlate: "auto",
 };
 
 /** Historical name, kept to avoid churn: the default overlay IS the default Session overlay. */
@@ -362,6 +371,8 @@ function parseSessionOverlayConfig(obj: Record<string, unknown>): SessionOverlay
     version: 1,
     // Saved before Phase 5.5 ⇒ keep the established (instant) rating rendering.
     ratingTransition: obj.ratingTransition === undefined ? "instant" : obj.ratingTransition,
+    // Saved before M2D (or unusable) ⇒ no plate: the stored layout never changes on its own.
+    identityPlate: identityPlateModeOf(obj.identityPlate) ?? "off",
     fields: { ...DEFAULT_OVERLAY_CONFIG.fields, ...storedFields },
     creator: undefined,
     variants: undefined,

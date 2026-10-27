@@ -6,6 +6,7 @@ import { BrandInterleaveLayer, useBrandInterleave } from "./brand-flag";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import type { RatingTransition, SessionOverlayConfig } from "@/domain/overlay/config";
+import { identityPlateFor } from "@/domain/overlay/identity-plate";
 import { pickRatingCharacter, type PlayerLiveState } from "@/domain/overlay/state";
 import { deltaTone, formatDelta, formatInteger } from "@/domain/format";
 import type { MatchResult } from "@/domain/sf6/types";
@@ -159,8 +160,58 @@ export function ratingParts(live: PlayerLiveState, config: SessionOverlayConfig)
     /** Phase 5.5: the authoritative number and whose it is (for rating transitions). */
     rawValue: c?.current?.value ?? null,
     characterKey: c?.characterKey ?? null,
+    /** M2D: the identity plate of THIS character (same resolution as the name above). */
+    identity: identityPlateFor(c?.characterKey ?? null, c?.characterName ?? null),
     locale: config.locale,
   };
+}
+
+/* ───────── M2D: character identity plate ───────── */
+
+/**
+ * The SST-native identity plate of the overlay's character (domain/overlay/identity-plate.ts):
+ * typography / inline vector only, no image, no request, no animation. Renders nothing when the
+ * overlay's `identityPlate` is "off". Each theme places it and styles it through `className`.
+ *
+ * `nameShown`: the theme already renders the character's name as text beside it, so the plate
+ * is decorative (aria-hidden: one announcement, not two). Otherwise it carries the name.
+ */
+export function IdentityPlate({
+  config,
+  parts,
+  nameShown,
+  className,
+}: {
+  config: SessionOverlayConfig;
+  parts: ReturnType<typeof ratingParts>;
+  nameShown: boolean;
+  className?: string;
+}) {
+  if (config.identityPlate !== "auto") return null;
+  const plate = parts.identity;
+  // The Creator "character name" switch hides the name with CSS: then the plate must carry it.
+  const decorative =
+    plate.kind === "none" || (nameShown && config.creator?.show.characterName !== false);
+  const a11y = decorative
+    ? { "aria-hidden": true as const }
+    : { role: "img" as const, "aria-label": plate.name };
+  return (
+    <span
+      className={`ov-ip ov-ip-${plate.kind} ${className ?? ""}`}
+      data-plate={plate.kind}
+      data-character={plate.kind === "none" ? undefined : plate.key}
+      {...a11y}
+    >
+      {plate.kind === "none" ? (
+        // Neutral SST mark (the slash pair of the HUD language): no character is known.
+        <svg className="ov-ip-mark" viewBox="0 0 24 24" aria-hidden focusable="false">
+          <path d="M9 4h4l-6 16H3zM17 4h4l-6 16h-4z" fill="currentColor" />
+        </svg>
+      ) : (
+        <span className="ov-ip-label">{plate.label}</span>
+      )}
+    </span>
+  );
 }
 
 /* ───────── Phase 5.5: rating transitions ───────── */

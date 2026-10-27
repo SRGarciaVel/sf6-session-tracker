@@ -1515,3 +1515,119 @@
     transition: none;
   }
 }
+
+/* ── M2D: character identity plate ──────────────────────────────────
+ * SST-native typographic identifier of the overlay's character (no artwork, no image, no
+ * animation). Three fixed glyphs, so each theme reserves one stable footprint. Each theme gives
+ * it its own frame; sizes are em-based like everything else (auto-fit scales them).
+ */
+.ov-ip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ov-text);
+}
+.ov-ip-label {
+  display: block;
+}
+.ov-ip-mark {
+  display: block;
+  width: 1em;
+  height: 1em;
+  opacity: 0.7;
+}
+
+/* Minimal: takes the slanted tick's place, as a filled accent chip of the same height. */
+.ov-ip-min {
+  height: 1.7em;
+  min-width: 2.6em;
+  padding: 0 0.45em;
+  font-size: 0.62em;
+  color: var(--ov-ink);
+  background: var(--ov-accent);
+  text-shadow: none;
+  transform: skewX(-18deg);
+}
+.ov-ip-min > * {
+  transform: skewX(18deg);
+}
+
+/* Competitive: a left column beside the whole scoreboard (top row, cells, form). */
+.ov-comp-with-ip {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.7em;
+}
+.ov-comp-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  min-width: 0;
+}
+.ov-ip-comp {
+  min-width: 2.7em;
+  padding: 0 0.35em;
+  font-size: 1.05em;
+  background: rgba(255, 255, 255, 0.06);
+  border-left: 0.12em solid var(--ov-accent);
+  clip-path: polygon(0 0, calc(100% - 0.4em) 0, 100% 0.4em, 100% 100%, 0 100%);
+}
+
+/* Fighter: a leading skewed block of its own (the inner frame counter-skews the text). */
+.ov-st-ip {
+  border-left: 0.22em solid var(--ov-secondary, var(--ov-magenta));
+}
+.ov-ip-st {
+  font-size: 1.7em;
+}
+
+/* Rank Card: a small framed tag before the name, in the rank's tier colour. */
+.ov-ip-rc {
+  align-self: center;
+  padding: 0.28em 0.45em 0.24em;
+  letter-spacing: 0.06em;
+  border: 0.12em solid var(--ov-tier);
+}
+
+/* Broadcast: a leading cell before the title tab, closed by the bar's own underline. */
+.ov-ip-bc {
+  padding: 0 0.75em;
+  font-size: 0.95em;
+  letter-spacing: 0.06em;
+  background: var(--ov-bg);
+  border: var(--ov-border);
+  border-right: 0;
+  border-bottom: 0.1em solid var(--ov-secondary, var(--ov-accent));
+}
+.ov-bc-compact .ov-ip-bc {
+  padding: 0 0.55em;
+}
+
+/* Prestige: an octagonal medallion in the tier colour (the corner ornaments' geometry). */
+.ov-ip-pr {
+  align-self: center;
+  min-width: 3.2em;
+  height: 2.1em;
+  padding: 0 0.55em;
+  font-size: 0.5em;
+  letter-spacing: 0.08em;
+  color: var(--ov-ink);
+  background: var(--ov-tier);
+  text-shadow: none;
+  clip-path: polygon(
+    0.45em 0,
+    calc(100% - 0.45em) 0,
+    100% 0.45em,
+    100% calc(100% - 0.45em),
+    calc(100% - 0.45em) 100%,
+    0.45em 100%,
+    0 calc(100% - 0.45em),
+    0 0.45em
+  );
+}

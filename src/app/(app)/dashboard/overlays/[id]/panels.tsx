@@ -20,6 +20,7 @@ import {
   type RatingTransitionSpeed,
   type OverlayFontId,
 } from "@/domain/overlay/config";
+import { IDENTITY_PLATE_MODES, type IdentityPlateMode } from "@/domain/overlay/identity-plate";
 import { isCreatorTheme, supportedCanvas } from "@/domain/overlay/themes";
 import { LOCALES, type Locale } from "@/i18n/locale";
 import { FIELD_GROUPS, setAllFields, themeDefault, type ResettableKey } from "./builder-state";
@@ -191,6 +192,22 @@ export function ContentPanel({
             </span>
           )}
         </label>
+        {/* M2D: the SST-native plate of the same character (typography only, no artwork). */}
+        <div className="space-y-1.5 text-sm" data-testid="identity-plate">
+          <span className="block" id="identity-plate-label">
+            {t("identityPlate.label")}
+          </span>
+          <Segmented<IdentityPlateMode>
+            value={config.identityPlate}
+            onChange={(v) => update((c) => ({ ...c, identityPlate: v }))}
+            labelledBy="identity-plate-label"
+            options={IDENTITY_PLATE_MODES.map((m) => ({
+              value: m,
+              label: t(`identityPlate.modes.${m}`),
+            }))}
+          />
+          <p className="text-xs text-faint">{t("identityPlate.hint")}</p>
+        </div>
       </Group>
 
       <Group title={t("languageGroup")}>

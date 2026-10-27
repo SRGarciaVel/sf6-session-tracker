@@ -802,6 +802,14 @@
       }
     },
     "ratingCharacterHintScoped": "This character sets the overlay's rating, rank and statistics. With no matches in the session, they show as zero.",
+    "identityPlate": {
+      "label": "Character plate",
+      "modes": {
+        "auto": "Automatic",
+        "off": "Off"
+      },
+      "hint": "Shows an SST typographic identifier (for example “AKI”) of the same character as the rating. It is not a character illustration."
+    },
     "sampleCharacter": "Sample character",
     "rotation": {
       "title": "Automatic presentation",
